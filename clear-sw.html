@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Service Worker</title>
+</head>
+<body>
+    <h1>Clearing Service Worker...</h1>
+    <div id="status">Checking service workers...</div>
+    
+    <script>
+        async function clearServiceWorkers() {
+            const statusDiv = document.getElementById('status');
+            
+            if ('serviceWorker' in navigator) {
+                try {
+                    // Get all registrations
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    
+                    if (registrations.length === 0) {
+                        statusDiv.innerHTML = '✅ No service workers found.';
+                        return;
+                    }
+                    
+                    statusDiv.innerHTML = `Found ${registrations.length} service worker(s). Unregistering...`;
+                    
+                    // Unregister all service workers
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                        console.log('Unregistered service worker:', registration.scope);
+                    }
+                    
+                    // Clear all caches
+                    const cacheNames = await caches.keys();
+                    for (const cacheName of cacheNames) {
+                        await caches.delete(cacheName);
+                        console.log('Deleted cache:', cacheName);
+                    }
+                    
+                    statusDiv.innerHTML = `
+                        ✅ Successfully cleared ${registrations.length} service worker(s) and ${cacheNames.length} cache(s).<br>
+                        <strong>Please close this tab and refresh your other tabs.</strong>
+                    `;
+                    
+                } catch (error) {
+                    statusDiv.innerHTML = `❌ Error: ${error.message}`;
+                    console.error('Error clearing service workers:', error);
+                }
+            } else {
+                statusDiv.innerHTML = '❌ Service workers not supported in this browser.';
+            }
+        }
+        
+        // Run immediately
+        clearServiceWorkers();
+    </script>
+</body>
+</html>
