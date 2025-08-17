@@ -994,7 +994,22 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>window.ChartShim=class{constructor(){}};</script>
+    <script>
+        (function(){
+            var perf=(window.performanceProfile||'balanced');
+            var lazyLoadCharts=function(){
+                var s=document.createElement('script');
+                s.src='https://cdn.jsdelivr.net/npm/chart.js';
+                document.head.appendChild(s);
+            };
+            if(perf==='low'){
+                window.deferChartLoad = lazyLoadCharts;
+            } else {
+                lazyLoadCharts();
+            }
+        })();
+    </script>
     
     <!-- Emergency login function - available immediately -->
     <script>

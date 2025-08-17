@@ -12,7 +12,23 @@ class DashboardManager {
 
     async init() {
         await this.loadDashboardData();
-        this.initializeChart();
+
+        const perf = window.performanceProfile || 'balanced';
+        if (perf === 'low') {
+            // Skip chart rendering in low-performance mode
+            const chartContainer = document.querySelector('.chart-container');
+            if (chartContainer) {
+                chartContainer.innerHTML = `
+                    <div style="display:flex;align-items:center;justify-content:center;height:220px;color:var(--gray);font-size:0.95rem;background:var(--light);border-radius:12px;">
+                        Sales chart disabled for performance
+                    </div>
+                `;
+            }
+        } else {
+            // Defer chart initialization to idle time
+            const defer = window.requestIdleCallback || ((cb) => setTimeout(cb, 0));
+            defer(() => this.initializeChart());
+        }
         await this.loadRecentTransactions();
         await this.loadLowStockAlerts();
     }
@@ -148,6 +164,11 @@ class DashboardManager {
     async initializeChart() {
         const ctx = document.getElementById('salesChart');
         if (!ctx) return;
+
+        // If Chart.js hasn't been loaded yet (low perf), load it on demand now
+        if (typeof Chart === 'undefined' && typeof window.deferChartLoad === 'function') {
+            await new Promise((resolve) => { window.deferChartLoad(); setTimeout(resolve, 300); });
+        }
 
         // Prepare data for last 7 days
         const salesData = await this.getSalesDataForChart();
