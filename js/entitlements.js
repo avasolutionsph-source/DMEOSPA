@@ -546,7 +546,7 @@ class EntitlementsSystem {
                             please register your business account on our website.
                         </p>
                         <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                            <a href="https://avasolutionsph.com/register.html" target="_blank" 
+                            <a href="https://ava-solutions-marketing.netlify.app/register" target="_blank" 
                                class="btn btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
                                 <i class="fas fa-user-plus"></i> Register Now
                             </a>
@@ -723,7 +723,7 @@ class EntitlementsSystem {
                         </div>
                         
                         <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                            <a href="https://avasolutionsph.com/register.html" target="_blank" 
+                            <a href="https://ava-solutions-marketing.netlify.app/register" target="_blank" 
                                class="btn btn-primary btn-lg" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
                                 <i class="fas fa-user-plus"></i> Register Your Business
                             </a>

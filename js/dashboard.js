@@ -51,7 +51,7 @@ class DashboardManager {
                             Your complete business management solution for spas, salons, and service businesses
                         </p>
                         <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                            <a href="https://avasolutionsph.com/register.html" target="_blank" 
+                            <a href="https://ava-solutions-marketing.netlify.app/register" target="_blank" 
                                class="btn btn-light btn-lg" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
                                 <i class="fas fa-user-plus"></i> Register Your Business
                             </a>
