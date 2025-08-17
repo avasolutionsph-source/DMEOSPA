@@ -286,8 +286,8 @@ p {
 
 /* Hero Section */
 .hero {
-  background: radial-gradient(1200px 400px at right -100px top -150px, rgba(34,211,238,0.08), transparent 60%),
-              radial-gradient(1000px 380px at left -200px bottom -120px, rgba(59,130,246,0.08), transparent 60%),
+  background: radial-gradient(800px 280px at right -60px top -100px, rgba(34,211,238,0.06), transparent 60%),
+              radial-gradient(700px 260px at left -120px bottom -80px, rgba(59,130,246,0.06), transparent 60%),
               var(--gradient-light);
   padding: 120px 0 80px;
   overflow: hidden;
@@ -354,8 +354,9 @@ p {
 
 .laptop-device {
   width: 600px;
-  transform: rotateY(-10deg) rotateX(5deg);
-  transition: transform 0.3s;
+  transform: rotateY(-8deg) rotateX(4deg);
+  transition: transform 0.2s ease-out;
+  filter: drop-shadow(0 20px 30px rgba(30,58,138,0.15));
 }
 
 .laptop-device:hover {
@@ -1601,18 +1602,48 @@ input:checked + .toggle-slider:before {
 }
 
 .feature-detail-image {
-  background: var(--gradient-light);
-  padding: 3rem;
+  background: linear-gradient(135deg, rgba(30,58,138,.06) 0%, rgba(34,211,238,.06) 100%);
+  padding: 2.5rem;
   border-radius: 1rem;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr;
   align-items: center;
   justify-content: center;
-  min-height: 300px;
+  min-height: 320px;
+  box-shadow: var(--elev-2);
 }
 
-.feature-detail-image i {
-  font-size: 6rem;
-  color: var(--primary);
+.feature-detail-image .device-frame {
+  width: 100%;
+  max-width: 520px;
+  aspect-ratio: 16 / 9;
+  background: #101827;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.2) inset;
+  position: relative;
+}
+
+.feature-detail-image .device-frame::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 8px;
+  border-radius: 8px;
+  background: #374151;
+}
+
+.feature-detail-image .device-screen {
+  position: absolute;
+  top: 28px;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  background: linear-gradient(180deg, #0b1020 0%, #0f172a 100%);
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 /* Integrations */

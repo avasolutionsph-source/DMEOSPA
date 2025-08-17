@@ -39,29 +39,39 @@ function initScrollEffects() {
 
 // Advanced intersection observer with staggered animations
 function initAnimations() {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
+        threshold: 0.15,
+        rootMargin: '0px 0px -10% 0px'
     };
 
     const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry, index) => {
+        entries.forEach((entry) => {
             if (entry.isIntersecting) {
-                // Staggered animation delay
-                setTimeout(() => {
-                    entry.target.classList.add('animate-in');
-                }, index * 100);
+                entry.target.classList.add('animate-in');
+                observer.unobserve(entry.target); // animate once
             }
         });
     }, observerOptions);
 
-    // Apply initial styles and observe elements
-    document.querySelectorAll('.feature-card, .pricing-card, .stat-card, .laptop-device').forEach((el, index) => {
+    // Lightweight initial state
+    const animated = document.querySelectorAll('.feature-card, .pricing-card, .stat-card, .laptop-device, .hero-text > *');
+    animated.forEach((el, i) => {
         el.style.opacity = '0';
-        el.style.transform = 'translateY(30px)';
-        el.style.transition = `all 0.6s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.1}s`;
+        el.style.transform = 'translateY(24px)';
+        // keep transitions short and GPU friendly
+        el.style.transition = `opacity 420ms ease-out ${i * 35}ms, transform 420ms ease-out ${i * 35}ms`;
         observer.observe(el);
     });
+
+    // Subtle hero entrance (no heavy repaint)
+    if (!prefersReduced) {
+        const hero = document.querySelector('.hero-text');
+        if (hero) {
+            hero.style.willChange = 'transform, opacity';
+        }
+    }
 }
 
 // Interactive elements with enhanced feedback
@@ -130,14 +140,25 @@ function initContactForm() {
 // Parallax effects for hero section (lightweight)
 function initParallaxEffects() {
     const laptop = document.querySelector('.laptop-device');
-    
-    if (laptop && window.innerWidth > 768) { // Only on desktop
-        window.addEventListener('scroll', () => {
-            const scrolled = window.pageYOffset;
-            const rate = scrolled * -0.3; // Reduced for performance
-            laptop.style.transform = `translateY(${rate}px) rotateY(-10deg) rotateX(5deg)`;
-        });
-    }
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!laptop || window.innerWidth <= 768 || prefersReduced) return;
+
+    let lastY = 0;
+    let ticking = false;
+
+    const update = () => {
+        const rate = lastY * -0.15; // very subtle
+        laptop.style.transform = `translateY(${rate}px) rotateY(-8deg) rotateX(4deg)`;
+        ticking = false;
+    };
+
+    window.addEventListener('scroll', () => {
+        lastY = window.pageYOffset;
+        if (!ticking) {
+            window.requestAnimationFrame(update);
+            ticking = true;
+        }
+    }, { passive: true });
 }
 
 // Enhanced smooth scrolling
