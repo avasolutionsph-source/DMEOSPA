@@ -214,7 +214,7 @@ class RoomsManager {
 	}
 
 	// Start room directly from POS with a selected room number
-	async assignRoomFromPOS(roomNumber, employeeIdOverride, serviceNameOverride, serviceDurationOverride) {
+	async assignRoomFromPOS(roomNumber, employeeIdOverride, serviceNameOverride, serviceDurationOverride, serviceIdOverride) {
 		const rooms = await db.getAll('rooms');
 		const room = rooms.find(r => String(r.number) === String(roomNumber));
 		if (!room) { showNotification('Room not found', 'error'); return; }
@@ -226,6 +226,20 @@ class RoomsManager {
 			const cart = window.posSystem?.cart || [];
 			const firstService = cart.find(i => i.type === 'service');
 			if (firstService) { serviceName = firstService.name; duration = firstService.duration || null; }
+		}
+		// If still no duration, try to fetch from products
+		if (!duration) {
+			try {
+				if (serviceIdOverride) {
+					const svc = await db.get('products', serviceIdOverride);
+					if (svc && svc.duration) duration = svc.duration;
+				}
+				if (!duration && serviceName) {
+					const products = await db.getAll('products');
+					const svc2 = products.find(p => p.type === 'service' && p.name === serviceName);
+					if (svc2 && svc2.duration) duration = svc2.duration;
+				}
+			} catch(_) {}
 		}
 		await this.startTimer(room.id, true, { employeeId, serviceName, serviceDuration: duration });
 	}
