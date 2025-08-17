@@ -114,12 +114,14 @@ class RoomsManager {
 		};
 	}
 
-	async startTimer(roomId) {
+	async startTimer(roomId, skipConfirm) {
 		const room = await db.get('rooms', roomId);
 		if (!room) return;
 		if (room.status === 'occupied') { showNotification('Room is already occupied', 'warning'); return; }
-		const ok = await app.confirm('Start Session', `Start session in Room ${room.number}?`);
-		if (!ok) return;
+		if (!skipConfirm) {
+			const ok = await app.confirm('Start Session', `Start session in Room ${room.number}?`);
+			if (!ok) return;
+		}
 		room.status = 'occupied';
 		// Attach selected employee and first service in POS cart if available
 		const employeeId = window.posSystem?.selectedEmployee || null;
@@ -183,6 +185,15 @@ class RoomsManager {
 		await this.loadRooms();
 	}
 
+	// Start room directly from POS with a selected room number
+	async assignRoomFromPOS(roomNumber) {
+		const rooms = await db.getAll('rooms');
+		const room = rooms.find(r => String(r.number) === String(roomNumber));
+		if (!room) { showNotification('Room not found', 'error'); return; }
+		if (room.status === 'occupied') { showNotification('Room already occupied', 'warning'); return; }
+		await this.startTimer(room.id, true);
+	}
+
 	tickTimer(roomId) {
 		const el = document.getElementById(`roomTimer_${roomId}`);
 		if (!el) return;
@@ -201,5 +212,7 @@ class RoomsManager {
 
 const roomsManager = new RoomsManager();
 window.loadRooms = async function() { await roomsManager.init(); };
+// Expose helper for POS
+window.assignRoomFromPOS = (roomNumber) => roomsManager.assignRoomFromPOS(roomNumber);
 
 

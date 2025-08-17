@@ -53,6 +53,19 @@ class POSSystem {
             employeeSelect.dispatchEvent(new Event('change'));
         }
 
+        // Assign room from POS
+        const assignRoomBtn = document.getElementById('assignRoomBtn');
+        if (assignRoomBtn) {
+            assignRoomBtn.addEventListener('click', async () => {
+                const roomInput = document.getElementById('roomAssignNumber');
+                const roomNumber = roomInput?.value?.trim();
+                if (!this.selectedEmployee) { showNotification('Select an employee first', 'warning'); return; }
+                if (!roomNumber) { showNotification('Enter a room number to assign', 'warning'); return; }
+                if (!window.roomsManager || typeof window.assignRoomFromPOS !== 'function') { showNotification('Rooms module not ready', 'error'); return; }
+                await window.assignRoomFromPOS(roomNumber);
+            });
+        }
+
         // Product search
         const searchInput = document.getElementById('productSearch');
         if (searchInput) {

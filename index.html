@@ -294,6 +294,12 @@
                             <select id="employeeSelect" class="form-select" style="width: 100%; padding: 0.75rem; font-size: 1rem; border: 2px solid #ffc107; border-radius: 6px; background: white;">
                                 <option value="">⚠️ Select Employee (Required)</option>
                             </select>
+                            <div style="display:flex; gap:.5rem; align-items:center; margin-top:.5rem;">
+                                <input type="number" id="roomAssignNumber" class="form-input" placeholder="Room #" min="1" style="max-width:120px;">
+                                <button class="btn btn-secondary" id="assignRoomBtn" title="Assign room and start timer">
+                                    <i class="fas fa-door-closed"></i> Assign Room
+                                </button>
+                            </div>
                             <small style="display: block; margin-top: 0.5rem; color: #856404;">Employee must be selected for commission tracking</small>
                         </div>
                         <button class="btn btn-primary btn-checkout" id="checkoutBtn">
