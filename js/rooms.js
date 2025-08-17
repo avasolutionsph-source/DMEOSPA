@@ -42,13 +42,13 @@ class RoomsManager {
 			<div class="room-card">
 				<div style="display:flex;justify-content:space-between;align-items:center;">
 					<strong>Room ${r.number}</strong>
-					<span class="room-status-${r.status}">${r.status}</span>
+					<span id="roomStatus_${r.id}" class="room-status-${r.status}">${r.status}</span>
 				</div>
 				<div class="room-meta"><span class="room-type">${(r.type || 'standard').toUpperCase()}</span><span>Group ${r.group || '-'}</span></div>
 				<div class="room-timer" id="roomTimer_${r.id}">--:--:--</div>
 				<div class="room-actions">
-					<button class="btn btn-secondary" onclick="roomsManager.startTimer(${r.id})">Start</button>
-					<button class="btn btn-primary" onclick="roomsManager.finishTimer(${r.id})">Finish</button>
+					<button id="startBtn_${r.id}" class="btn btn-secondary" onclick="roomsManager.startTimer(${r.id})" ${r.status==='occupied' ? 'disabled' : ''}>Start</button>
+					<button id="finishBtn_${r.id}" class="btn btn-primary" onclick="roomsManager.finishTimer(${r.id})" ${r.status!=='occupied' ? 'disabled' : ''}>Finish</button>
 				</div>
 			</div>
 		`).join('');
@@ -121,6 +121,13 @@ class RoomsManager {
 		if (!ok) return;
 		room.status = 'occupied';
 		await db.update('rooms', room);
+		// Update UI immediately
+		const statusEl = document.getElementById(`roomStatus_${room.id}`);
+		if (statusEl) { statusEl.textContent = 'occupied'; statusEl.className = 'room-status-occupied'; }
+		const startBtn = document.getElementById(`startBtn_${room.id}`);
+		const finishBtn = document.getElementById(`finishBtn_${room.id}`);
+		if (startBtn) startBtn.disabled = true;
+		if (finishBtn) finishBtn.disabled = false;
 		const session = {
 			roomId,
 			status: 'active',
@@ -146,6 +153,13 @@ class RoomsManager {
 		room.status = 'available';
 		delete room.activeSessionId;
 		await db.update('rooms', room);
+		// Update UI immediately
+		const statusEl = document.getElementById(`roomStatus_${room.id}`);
+		if (statusEl) { statusEl.textContent = 'available'; statusEl.className = 'room-status-available'; }
+		const startBtn = document.getElementById(`startBtn_${room.id}`);
+		const finishBtn = document.getElementById(`finishBtn_${room.id}`);
+		if (startBtn) startBtn.disabled = false;
+		if (finishBtn) finishBtn.disabled = true;
 		await this.loadRooms();
 	}
 
