@@ -487,10 +487,11 @@ class EntitlementsSystem {
         }
         
         // Gate employee features in POS
+        // Never fully hide the employee selection; keep visible for assignment even on unpaid plans
         if (!this.can('employees')) {
             const employeeSelect = document.getElementById('employeeSelect');
             if (employeeSelect) {
-                employeeSelect.style.display = 'none';
+                employeeSelect.style.display = '';
             }
         }
         

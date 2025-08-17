@@ -269,11 +269,11 @@ class POSSystem {
 
         if (!cartItemsDiv) return;
 
-        // Update employee selection visibility based on cart content
+        // Always show employee selection; emphasize when needed
         const employeeSelection = document.querySelector('.employee-selection');
         if (employeeSelection) {
+            employeeSelection.style.display = 'block';
             if (this.cart.length > 0) {
-                employeeSelection.style.display = 'block';
                 if (!this.selectedEmployee) {
                     // Add visual emphasis when cart has items but no employee selected
                     employeeSelection.style.boxShadow = '0 0 10px rgba(255, 193, 7, 0.5)';
@@ -281,7 +281,7 @@ class POSSystem {
                     employeeSelection.style.boxShadow = 'none';
                 }
             } else {
-                employeeSelection.style.display = 'none';
+                employeeSelection.style.boxShadow = 'none';
             }
         }
 
