@@ -34,7 +34,7 @@
 1. **Visit Marketing Website** → `http://localhost:3000`
 2. **See pricing and features** → Choose subscription plan
 3. **Register account** → Create account on marketing website
-4. **Access PWA** → `http://localhost:8080`
+4. **Access PWA** → `https://ava-solutions-pwa.netlify.app`
 5. **Login to PWA** → Uses PWA Backend API
 6. **Use business features** → All data syncs with PWA Backend
 
@@ -80,7 +80,7 @@ npx http-server -p 8080 -c-1
 ## 🎯 **Access Points:**
 
 - **🌐 Marketing Website**: http://localhost:3000
-- **📱 PWA Application**: http://localhost:8080  
+- **📱 PWA Application**: https://ava-solutions-pwa.netlify.app  
 - **🔧 PWA Backend API**: http://localhost:4000/api/health
 - **👑 Admin Panel**: http://localhost:3000/admin
 

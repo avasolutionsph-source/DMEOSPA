@@ -40,9 +40,23 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// CORS - Allow all origins for development with comprehensive settings
+// CORS - Allow configured origins (include Netlify and Render domains in production)
+const defaultOrigins = ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8080', 'http://127.0.0.1:5500', 'http://localhost:4000', 'https://ava-solutions-marketing.netlify.app', 'https://ava-solutions-pwa.netlify.app'];
+const envOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+
 app.use(cors({ 
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8080', 'http://127.0.0.1:5500', 'http://localhost:4000'],
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.some(o => origin.startsWith(o)) || /netlify\.app$/.test(new URL(origin).hostname) || /onrender\.com$/.test(new URL(origin).hostname)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'Accept', 'Origin', 'X-Requested-With'],
@@ -410,7 +424,7 @@ app.get('/business-dashboard', (req, res) => {
 
 // Dashboard redirect (redirect to PWA for direct access)
 app.get('/dashboard', (req, res) => {
-  res.redirect('http://localhost:8080');
+  res.redirect('https://ava-solutions-pwa.netlify.app');
 });
 
 // Handle upgrade plan routes

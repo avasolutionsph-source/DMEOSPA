@@ -39,7 +39,7 @@ The PWA is already configured and ready to use. Simply:
    # Using Node.js http-server
    npx http-server -p 8080
    ```
-**PWA will run on: http://localhost:8080**
+**PWA will run on: https://ava-solutions-pwa.netlify.app**
 
 ## 🔧 Configuration
 
@@ -58,7 +58,7 @@ The applications will automatically create the necessary database collections wh
 
 1. **Test PWA Backend**: Visit http://localhost:4000/api/health
 2. **Test Marketing Website**: Visit http://localhost:3000
-3. **Test PWA**: Visit http://localhost:8080 (or wherever you're serving it)
+3. **Test PWA**: Visit https://ava-solutions-pwa.netlify.app
 4. **Test Integration**: 
    - Register a new account on the marketing website
    - Download/access the PWA

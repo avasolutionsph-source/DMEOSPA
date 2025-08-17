@@ -29,9 +29,9 @@ echo Setup Complete!
 echo ========================================
 echo.
 echo Your services are running on:
-echo 🌐 Marketing Website: http://localhost:3001
-echo 🔐 Admin Panel: http://localhost:3001/admin
-echo 📱 PWA Application: http://localhost:8080
+echo 🌐 Marketing Website: https://ava-solutions-marketing.netlify.app
+echo 🔐 Admin Panel: https://ava-solutions-marketing.netlify.app/admin
+echo 📱 PWA Application: https://ava-solutions-pwa.netlify.app
 echo 🔧 PWA Backend: http://localhost:4000
 echo.
 echo ========================================
@@ -42,19 +42,19 @@ echo 👑 PLATFORM SUPER ADMIN (YOU):
 echo Email: avasolutionsph@gmail.com
 echo Password: Ava12345
 echo Role: Platform owner - manages all businesses and sync data
-echo Access: http://localhost:3001/admin
+echo Access: https://ava-solutions-marketing.netlify.app/admin
 echo Features: User management, sync cleanup, platform analytics
 echo.
 echo 🏢 BUSINESS OWNERS:
 echo Email: spa1@example.com
 echo Password: password123
 echo Role: Business owner - manages their own spa
-echo Access: http://localhost:3001/business-dashboard
+echo Access: https://ava-solutions-marketing.netlify.app/business-dashboard
 echo Features: Business stats, PWA access, sync management
 echo.
 echo 📱 PWA ACCESS:
 echo Business owners can access PWA from their dashboard
-echo Direct PWA: http://localhost:8080
+echo Direct PWA: https://ava-solutions-pwa.netlify.app
 echo Demo Login: test@example.com / password123
 echo.
 pause

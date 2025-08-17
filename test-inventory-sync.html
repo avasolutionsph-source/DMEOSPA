@@ -213,7 +213,7 @@
                 
                 // Get API URL from settings
                 const apiSettings = await db.get('settings', 'apiUrl');
-                const apiUrl = apiSettings?.value || 'http://localhost:3001';
+                const apiUrl = apiSettings?.value || 'https://ava-marketing-api.onrender.com';
                 log(`API URL: ${apiUrl}`, 'info');
                 
                 // Set API URL in sync manager
@@ -321,7 +321,7 @@
                 
                 log('Checking backend inventory data...', 'info');
                 
-                const response = await fetch('http://localhost:3001/api/business/inventory', {
+                const response = await fetch('https://ava-marketing-api.onrender.com/api/business/inventory', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 

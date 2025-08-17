@@ -216,7 +216,7 @@
                 
                 // Get API URL from settings
                 const apiSettings = await db.get('settings', 'apiUrl');
-                const apiUrl = apiSettings?.value || 'http://localhost:3001';
+                const apiUrl = apiSettings?.value || 'https://ava-marketing-api.onrender.com';
                 log(`API URL: ${apiUrl}`, 'info');
                 
                 // Get auth token

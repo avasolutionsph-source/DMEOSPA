@@ -9,5 +9,5 @@ echo Admin Login Credentials:
 echo Email: avasolutionsph@gmail.com
 echo Password: Ava12345
 echo.
-echo Admin Panel: http://localhost:3001/admin
+echo Admin Panel: https://ava-solutions-marketing.netlify.app/admin
 pause

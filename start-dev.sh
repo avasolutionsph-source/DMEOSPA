@@ -26,7 +26,7 @@ echo "Development Environment Started!"
 echo "================================"
 echo "PWA Backend:      http://localhost:4000/api/health"
 echo "Marketing Site:   http://localhost:3000"
-echo "PWA Application:  http://localhost:8080"
+echo "PWA Application:  https://ava-solutions-pwa.netlify.app"
 echo ""
 echo "Press Ctrl+C to stop all services"
 

@@ -19,8 +19,8 @@ echo ========================================
 echo Three-Server Architecture Started!
 echo ========================================
 echo 🔧 PWA Backend:      http://localhost:4000/api/health
-echo 🌐 Marketing Site:   http://localhost:3001
-echo 📱 PWA Application:  http://localhost:8080
+echo 🌐 Marketing Site:   https://ava-solutions-marketing.netlify.app
+echo 📱 PWA Application:  https://ava-solutions-pwa.netlify.app
 echo.
 echo ✅ PWA connects to Backend (port 4000)
 echo ✅ Marketing Site has its own API (port 3001)

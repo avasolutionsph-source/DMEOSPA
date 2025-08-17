@@ -304,7 +304,7 @@ class EntitlementsSystem {
                 </div>
             </div>
             <div style="display: flex; gap: 10px; justify-content: center;">
-                <button class="upgrade-btn" onclick="this.parentElement.parentElement.parentElement.remove(); window.open('http://localhost:3001/pricing', '_blank');">
+                <button class="upgrade-btn" onclick="this.parentElement.parentElement.parentElement.remove(); window.open('https://ava-solutions-marketing.netlify.app/pricing', '_blank');">
                     🚀 Upgrade to Pro
                 </button>
                 <button style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;" onclick="this.parentElement.parentElement.parentElement.remove();">

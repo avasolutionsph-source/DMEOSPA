@@ -31,7 +31,7 @@ app.use('/api', limiter);
 
 // CORS - Allow PWA to connect from anywhere with comprehensive settings
 app.use(cors({ 
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8080', 'http://127.0.0.1:5500', 'http://localhost:4000'],
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8080', 'http://127.0.0.1:5500', 'http://localhost:4000', 'https://ava-solutions-marketing.netlify.app', 'https://ava-solutions-pwa.netlify.app'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'Accept', 'Origin', 'X-Requested-With'],
