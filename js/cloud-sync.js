@@ -6,9 +6,17 @@ class CloudSyncManager {
         this.lastSync = null;
         this.syncInterval = null;
         this.isLoggingIn = false;
+        this.enabled = true; // Can be disabled for unpaid users
     }
 
     async init() {
+        // Don't initialize sync for unpaid users
+        if (window.entitlementsSystem?.currentPlan === 'unpaid') {
+            console.log('Cloud sync disabled for unpaid users');
+            this.enabled = false;
+            return;
+        }
+
         // Setup network monitoring
         this.setupNetworkMonitoring();
         
@@ -69,6 +77,11 @@ class CloudSyncManager {
     }
 
     async performSync() {
+        if (!this.enabled) {
+            console.log('Sync disabled for unpaid users');
+            return;
+        }
+        
         if (!this.isOnline || !window.authSystem?.isLoggedIn || this.isLoggingIn) {
             return;
         }

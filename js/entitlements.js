@@ -483,6 +483,7 @@ class EntitlementsSystem {
         // Show registration prompts for unpaid users instead of hiding features
         if (this.currentPlan === 'unpaid') {
             this.showRegistrationPrompts();
+            this.hideSyncForUnpaidUsers();
             return;
         }
 
@@ -744,6 +745,36 @@ class EntitlementsSystem {
         `;
         
         document.body.appendChild(modal);
+    }
+
+    hideSyncForUnpaidUsers() {
+        // Hide connection status and sync indicators for unpaid users
+        const connectionStatus = document.getElementById('connectionStatus');
+        if (connectionStatus) {
+            connectionStatus.style.display = 'none';
+        }
+
+        const syncIndicator = document.getElementById('syncIndicator');
+        if (syncIndicator) {
+            syncIndicator.style.display = 'none';
+        }
+
+        // Hide any sync-related buttons or elements
+        const syncElements = document.querySelectorAll('[data-sync], .sync-btn, .cloud-sync');
+        syncElements.forEach(element => {
+            element.style.display = 'none';
+        });
+
+        // Disable cloud sync functionality
+        if (window.cloudSync) {
+            window.cloudSync.enabled = false;
+        }
+
+        // Hide sync status in settings
+        const syncSettings = document.querySelectorAll('[data-feature="sync"], .sync-settings');
+        syncSettings.forEach(element => {
+            element.style.display = 'none';
+        });
     }
 
     // Redirect to upgrade page (will be your MERN website)
