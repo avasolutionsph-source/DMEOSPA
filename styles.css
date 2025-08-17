@@ -1,3 +1,10 @@
+.tabbar { display: flex; gap: 0.5rem; margin: 0 0 1rem 0; }
+.tab-btn { padding: 0.5rem 1rem; border-radius: 999px; border: 1px solid var(--light); background: var(--white); cursor: pointer; }
+.tab-btn.active { background: var(--primary-50, #eef2ff); border-color: var(--primary-100, #e0e7ff); color: var(--primary-color); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.card { background: var(--white); border-radius: 12px; box-shadow: var(--shadow-sm); padding: 1rem; }
+.table-responsive { width: 100%; overflow-x: auto; }
 /* Modern Reset and Base Styles */
 * {
     margin: 0;

@@ -54,6 +54,24 @@ class EmployeeManager {
                 await this.saveEmployee();
             });
         }
+
+        // Tabs (Roster / Attendance / Payroll)
+        document.querySelectorAll('#employees .tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#employees .tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('#employees .tab-panel').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                const id = btn.getAttribute('data-tab');
+                const panel = document.getElementById(id);
+                if (panel) panel.classList.add('active');
+                if (id === 'attendanceTab') this.loadAttendance();
+            });
+        });
+
+        const savePayrollBtn = document.getElementById('savePayrollSettingsBtn');
+        if (savePayrollBtn) savePayrollBtn.addEventListener('click', () => this.savePayrollSettings());
+        const generatePayrollBtn = document.getElementById('generatePayrollBtn');
+        if (generatePayrollBtn) generatePayrollBtn.addEventListener('click', () => this.generatePayroll());
     }
 
     async loadEmployees() {
@@ -142,7 +160,7 @@ class EmployeeManager {
                 </div>
                 <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
                     <button class="btn btn-secondary" onclick="employeeManager.editEmployee(${emp.id})" style="flex: 1;">
-                        <i class="fas fa-edit"></i> Edit
+                        <i class="fas a-edit"></i> Edit
                     </button>
                     <button class="btn btn-danger" onclick="employeeManager.deleteEmployee(${emp.id})" style="flex: 1;">
                         <i class="fas fa-trash"></i> Delete
@@ -257,57 +275,124 @@ class EmployeeManager {
         }
     }
 
-    // Generate commission report
-    async generateCommissionReport() {
-        const startDate = prompt('Enter start date (YYYY-MM-DD):');
-        const endDate = prompt('Enter end date (YYYY-MM-DD):');
-        
-        if (!startDate || !endDate) return;
+    // Attendance & Payroll helpers
+    async loadAttendance() {
+        const tbody = document.getElementById('attendanceTableBody');
+        const dateLabel = document.getElementById('attendanceDate');
+        if (dateLabel) dateLabel.textContent = new Date().toDateString();
+        if (!tbody) return;
+        const attendance = await db.getAll('attendance');
+        const today = new Date().toDateString();
+        const todayRows = attendance.filter(a => new Date(a.date).toDateString() === today);
+        const byEmp = new Map();
+        todayRows.forEach(a => { byEmp.set(a.employeeId, a); });
+        const rows = await Promise.all(this.employees.map(async emp => {
+            const rec = byEmp.get(emp.id) || {};
+            const timeIn = rec.timeIn ? new Date(rec.timeIn).toLocaleTimeString() : '-';
+            const timeOut = rec.timeOut ? new Date(rec.timeOut).toLocaleTimeString() : '-';
+            const ot = rec.otRequested ? 'Pending' : (rec.otApproved ? 'Approved' : '-');
+            return `
+                <tr>
+                    <td>${emp.name}</td>
+                    <td>${timeIn}</td>
+                    <td>${timeOut}</td>
+                    <td>${ot}</td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="employeeManager.timeIn(${emp.id})">Time In</button>
+                        <button class="btn btn-secondary" onclick="employeeManager.timeOut(${emp.id})">Time Out</button>
+                        <button class="btn btn-primary" onclick="employeeManager.requestOT(${emp.id})">Request OT</button>
+                    </td>
+                </tr>`;
+        }));
+        tbody.innerHTML = rows.join('');
+    }
 
-        const report = [];
-        
-        for (const emp of this.employees) {
-            const transactions = await db.getByIndex('transactions', 'employeeId', emp.id.toString());
-            const filteredTransactions = transactions.filter(t => {
-                const date = new Date(t.date);
-                return date >= new Date(startDate) && date <= new Date(endDate);
-            });
-            
-            const totalSales = filteredTransactions.reduce((sum, t) => sum + t.total, 0);
-            const commission = totalSales * (emp.commissionRate / 100);
-            
-            report.push({
-                employee: emp.name,
-                position: emp.position,
-                totalSales,
-                commissionRate: emp.commissionRate,
-                commission,
-                transactionCount: filteredTransactions.length
-            });
-        }
+    async timeIn(employeeId) {
+        const today = new Date();
+        const records = await db.getAll('attendance');
+        const existing = records.find(r => r.employeeId === employeeId && new Date(r.date).toDateString() === today.toDateString());
+        if (existing && existing.timeIn) { showNotification('Already timed in', 'warning'); return; }
+        const record = existing || { employeeId, date: today.toISOString() };
+        record.timeIn = today.toISOString();
+        await db[existing ? 'update' : 'add']('attendance', record);
+        showNotification('Time in recorded', 'success');
+        await this.loadAttendance();
+    }
 
-        // Create CSV
-        const headers = ['Employee', 'Position', 'Total Sales', 'Commission Rate', 'Commission', 'Transactions'];
-        const rows = report.map(r => [
-            r.employee,
-            r.position,
-            r.totalSales.toFixed(2),
-            r.commissionRate + '%',
-            r.commission.toFixed(2),
-            r.transactionCount
-        ]);
+    async timeOut(employeeId) {
+        const now = new Date();
+        const records = await db.getAll('attendance');
+        const existing = records.find(r => r.employeeId === employeeId && new Date(r.date).toDateString() === now.toDateString());
+        if (!existing || !existing.timeIn) { showNotification('No time-in record found', 'warning'); return; }
+        existing.timeOut = now.toISOString();
+        await db.update('attendance', existing);
+        showNotification('Time out recorded', 'success');
+        await this.loadAttendance();
+    }
 
-        let csv = headers.join(',') + '\n';
-        rows.forEach(row => {
-            csv += row.map(field => `"${field}"`).join(',') + '\n';
-        });
+    async requestOT(employeeId) {
+        const records = await db.getAll('attendance');
+        const today = new Date();
+        const existing = records.find(r => r.employeeId === employeeId && new Date(r.date).toDateString() === today.toDateString());
+        if (!existing) { showNotification('No attendance record found', 'warning'); return; }
+        existing.otRequested = true;
+        await db.update('attendance', existing);
+        showNotification('OT request submitted', 'info');
+        await this.loadAttendance();
+    }
 
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `commission_report_${startDate}_to_${endDate}.csv`;
-        a.click();
+    async savePayrollSettings() {
+        const settings = await db.get('settings', 'payrollSettings');
+        const current = settings?.value || {};
+        const updated = {
+            ...current,
+            otRatePercent: parseFloat(document.getElementById('otRatePercent')?.value || current.otRatePercent || 25),
+            nightDiffPercent: parseFloat(document.getElementById('nightDiffPercent')?.value || current.nightDiffPercent || 10),
+            thirteenthMonthPeriod: document.getElementById('thirteenthMonthPeriod')?.value || current.thirteenthMonthPeriod || ''
+        };
+        await db.update('settings', { key: 'payrollSettings', value: updated });
+        showNotification('Payroll settings saved', 'success');
+    }
+
+    async generatePayroll() {
+        const startInput = document.getElementById('payrollStart');
+        const endInput = document.getElementById('payrollEnd');
+        if (!startInput || !endInput) return;
+        const start = new Date(startInput.value);
+        const end = new Date(endInput.value);
+        if (isNaN(start) || isNaN(end)) { showNotification('Select a valid period', 'warning'); return; }
+        const tbody = document.getElementById('payrollTableBody');
+        const settings = (await db.get('settings', 'payrollSettings'))?.value || { otRatePercent: 25, nightDiffPercent: 10 };
+        const sessions = await db.getAll('sessions');
+        const tips = await db.getAll('tips');
+        const rows = await Promise.all(this.employees.map(async (emp) => {
+            const empSessions = sessions.filter(s => s.employeeId === String(emp.id) && s.status === 'completed');
+            const hours = empSessions.reduce((sum, s) => {
+                const st = new Date(s.startTime); const et = new Date(s.endTime || s.startTime);
+                if (st >= start && et <= end) return sum + (et - st) / 3600000; else return sum;
+            }, 0);
+            const type = emp.employmentType || 'daily';
+            const base = type === 'salary' ? (parseFloat(emp.monthlySalary || 0) / 2) : (parseFloat(emp.dailyRate || 0) * Math.ceil(hours / 8));
+            const otPay = 0; const nightPay = 0; const holidayPay = 0;
+            const empTips = tips.filter(t => t.employeeId === String(emp.id) && new Date(t.date) >= start && new Date(t.date) <= end).reduce((s,t)=>s+(t.amount||0),0);
+            const deductions = 0;
+            const total = base + otPay + nightPay + holidayPay + empTips - deductions;
+            return `
+                <tr>
+                    <td>${emp.name}</td>
+                    <td>${type}</td>
+                    <td>${hours.toFixed(2)}</td>
+                    <td>${app.formatCurrency(base)}</td>
+                    <td>${app.formatCurrency(otPay)}</td>
+                    <td>${app.formatCurrency(nightPay)}</td>
+                    <td>${app.formatCurrency(holidayPay)}</td>
+                    <td>${app.formatCurrency(empTips)}</td>
+                    <td>${app.formatCurrency(deductions)}</td>
+                    <td>${app.formatCurrency(total)}</td>
+                </tr>`;
+        }));
+        if (tbody) tbody.innerHTML = rows.join('');
+        showNotification('Payroll generated (preview)', 'info');
     }
 }
 

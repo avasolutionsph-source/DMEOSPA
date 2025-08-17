@@ -327,7 +327,90 @@
                         </button>
                     </div>
                 </div>
-                <div class="employees-grid" id="employeesGrid"></div>
+                <div class="tabbar">
+                    <button class="tab-btn active" data-tab="rosterTab">Roster</button>
+                    <button class="tab-btn" data-tab="attendanceTab">Attendance</button>
+                    <button class="tab-btn" data-tab="payrollTab">Payroll</button>
+                </div>
+                <div id="rosterTab" class="tab-panel active">
+                    <div class="employees-grid" id="employeesGrid"></div>
+                </div>
+                <div id="attendanceTab" class="tab-panel">
+                    <div class="card">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                            <strong>Today</strong>
+                            <small id="attendanceDate"></small>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Employee</th>
+                                        <th>Time In</th>
+                                        <th>Time Out</th>
+                                        <th>OT</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="attendanceTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div id="payrollTab" class="tab-panel">
+                    <div class="card" style="margin-bottom:1rem;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Period Start</label>
+                                <input type="date" id="payrollStart" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label>Period End</label>
+                                <input type="date" id="payrollEnd" class="form-input">
+                            </div>
+                            <div class="form-group" style="align-self:flex-end;">
+                                <button class="btn btn-primary" id="generatePayrollBtn"><i class="fas fa-calculator"></i> Generate</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Employee</th>
+                                        <th>Type</th>
+                                        <th>Hours</th>
+                                        <th>Base Pay</th>
+                                        <th>OT</th>
+                                        <th>Night Diff</th>
+                                        <th>Holiday</th>
+                                        <th>Tips</th>
+                                        <th>Deductions</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="payrollTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3 style="margin-bottom:0.5rem;">Payroll Settings</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>OT Rate %</label>
+                                <input type="number" id="otRatePercent" class="form-input" min="0" step="1" placeholder="25">
+                            </div>
+                            <div class="form-group">
+                                <label>Night Diff %</label>
+                                <input type="number" id="nightDiffPercent" class="form-input" min="0" step="1" placeholder="10">
+                            </div>
+                            <div class="form-group">
+                                <label>13th Month Pay Month</label>
+                                <input type="month" id="thirteenthMonthPeriod" class="form-input">
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" id="savePayrollSettingsBtn"><i class="fas fa-save"></i> Save Settings</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Chatbot Page -->
