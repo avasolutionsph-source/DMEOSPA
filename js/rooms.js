@@ -114,7 +114,7 @@ class RoomsManager {
 		};
 	}
 
-	async startTimer(roomId, skipConfirm) {
+	async startTimer(roomId, skipConfirm, overrides = {}) {
 		const room = await db.get('rooms', roomId);
 		if (!room) return;
 		if (room.status === 'occupied') { showNotification('Room is already occupied', 'warning'); return; }
@@ -124,16 +124,20 @@ class RoomsManager {
 		}
 		room.status = 'occupied';
 		// Attach selected employee and first service in POS cart if available
-		const employeeId = window.posSystem?.selectedEmployee || null;
+		const employeeId = overrides.employeeId || window.posSystem?.selectedEmployee || null;
 		let employeeName = '';
 		if (employeeId) {
 			const emp = await db.get('employees', parseInt(employeeId));
 			employeeName = emp?.name || '';
 		}
 		let serviceName = '';
-		const cart = window.posSystem?.cart || [];
-		const firstService = cart.find(i => i.type === 'service');
-		if (firstService) serviceName = firstService.name;
+		if (overrides.serviceName) {
+			serviceName = overrides.serviceName;
+		} else {
+			const cart = window.posSystem?.cart || [];
+			const firstService = cart.find(i => i.type === 'service');
+			if (firstService) serviceName = firstService.name;
+		}
 		room.currentEmployeeId = employeeId || null;
 		room.currentEmployeeName = employeeName || '';
 		room.currentServiceName = serviceName || '';
@@ -191,7 +195,12 @@ class RoomsManager {
 		const room = rooms.find(r => String(r.number) === String(roomNumber));
 		if (!room) { showNotification('Room not found', 'error'); return; }
 		if (room.status === 'occupied') { showNotification('Room already occupied', 'warning'); return; }
-		await this.startTimer(room.id, true);
+		const employeeId = window.posSystem?.selectedEmployee || null;
+		let serviceName = '';
+		const cart = window.posSystem?.cart || [];
+		const firstService = cart.find(i => i.type === 'service');
+		if (firstService) serviceName = firstService.name;
+		await this.startTimer(room.id, true, { employeeId, serviceName });
 	}
 
 	tickTimer(roomId) {

@@ -62,7 +62,10 @@ class POSSystem {
                 if (!this.selectedEmployee) { showNotification('Select an employee first', 'warning'); return; }
                 if (!roomNumber) { showNotification('Enter a room number to assign', 'warning'); return; }
                 if (!window.roomsManager || typeof window.assignRoomFromPOS !== 'function') { showNotification('Rooms module not ready', 'error'); return; }
-                await window.assignRoomFromPOS(roomNumber);
+                // Determine first service in cart
+                const firstService = (this.cart || []).find(i => i.type === 'service');
+                const serviceName = firstService ? firstService.name : '';
+                await window.roomsManager.assignRoomFromPOS(roomNumber, this.selectedEmployee, serviceName);
             });
         }
 
