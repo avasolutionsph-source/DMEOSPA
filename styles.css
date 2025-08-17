@@ -236,6 +236,16 @@
     --z-index-toast: 1080;
 }
 
+/* Respect reduced motion for performance and battery, helpful on some Intel laptop GPUs */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
 /* Ultra-Professional Body Styling */
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

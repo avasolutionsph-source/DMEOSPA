@@ -16,6 +16,10 @@ class App {
             return;
         }
         
+        // Detect performance profile (optimize for laptops with different CPU/thermal limits)
+        this.performanceProfile = this.detectPerformanceProfile();
+        window.performanceProfile = this.performanceProfile;
+        
         // Check if user is already logged in before showing setup wizard
         const isUserLoggedIn = this.checkIfUserLoggedIn();
         
@@ -37,9 +41,10 @@ class App {
         // Set up navigation
         this.setupNavigation();
         
-        // Set up date/time display
+        // Set up date/time display (throttle on low/balanced devices)
         this.updateDateTime();
-        setInterval(() => this.updateDateTime(), 1000);
+        const dateInterval = this.performanceProfile === 'low' ? 60000 : (this.performanceProfile === 'balanced' ? 5000 : 1000);
+        setInterval(() => this.updateDateTime(), dateInterval);
         
         // Load business name from settings
         await this.loadBusinessName();
@@ -67,6 +72,20 @@ class App {
         
         // Check for updates from service worker
         this.checkForUpdates();
+    }
+
+    // Heuristic performance detection (cores/memory/reduced motion)
+    detectPerformanceProfile() {
+        try {
+            const cores = navigator.hardwareConcurrency || 2;
+            const mem = navigator.deviceMemory || 4;
+            const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reducedMotion || cores <= 4 || mem <= 4) return 'low';
+            if (cores <= 8 || mem <= 8) return 'balanced';
+            return 'high';
+        } catch (e) {
+            return 'balanced';
+        }
     }
 
     setupNavigation() {

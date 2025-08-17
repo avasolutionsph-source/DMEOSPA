@@ -1,5 +1,5 @@
 // Service Worker for Offline Functionality - Updated with Enhanced Chatbot
-const CACHE_NAME = 'ava-solutions-v1.6.2';
+const CACHE_NAME = 'ava-solutions-v1.6.3';
 const urlsToCache = [
     './',
     './index.html',
@@ -67,16 +67,16 @@ self.addEventListener('fetch', (event) => {
     const currentOrigin = self.location.origin;
     const requestUrl = new URL(event.request.url);
     
-    // Only handle requests for the PWA port (8080) or file:// protocol
-    // This prevents interference with marketing website (port 3000) and backend (port 4000)
+    // Handle Netlify/production origins and dev ports
     const isPWAPort = requestUrl.port === '8080' || requestUrl.port === '5500' || requestUrl.protocol === 'file:';
     const isSameOriginDifferentPort = requestUrl.hostname === 'localhost' && requestUrl.port !== '8080' && requestUrl.port !== '5500';
+    const isNetlify = /netlify\.app$/.test(requestUrl.hostname);
     
     if (isSameOriginDifferentPort) {
         return; // Don't handle requests for other localhost ports
     }
     
-    if (requestUrl.origin !== currentOrigin && !isPWAPort) {
+    if (requestUrl.origin !== currentOrigin && !isPWAPort && !isNetlify) {
         return; // Don't handle requests for other origins/ports
     }
 

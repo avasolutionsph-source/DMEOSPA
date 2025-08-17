@@ -157,6 +157,10 @@ class DashboardManager {
             this.salesChart.destroy();
         }
 
+        const perf = window.performanceProfile || 'balanced';
+        const tension = perf === 'low' ? 0.1 : 0.3;
+        const animation = perf === 'low' ? false : { duration: perf === 'balanced' ? 300 : 600 };
+
         this.salesChart = new Chart(ctx, {
             type: 'line',
             data: {
@@ -166,7 +170,7 @@ class DashboardManager {
                     data: salesData.values,
                     borderColor: 'rgb(99, 102, 241)',
                     backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                    tension: 0.3,
+                    tension: tension,
                     fill: true
                 }]
             },
@@ -174,6 +178,7 @@ class DashboardManager {
                 responsive: true,
                 maintainAspectRatio: false,
                 aspectRatio: 2, // Make chart wider than tall
+                animation: animation,
                 plugins: {
                     legend: {
                         display: false
