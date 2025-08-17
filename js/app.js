@@ -17,7 +17,8 @@ class App {
         }
         
         // Detect performance profile (optimize for laptops with different CPU/thermal limits)
-        this.performanceProfile = this.detectPerformanceProfile();
+        const savedMode = localStorage.getItem('perfMode');
+        this.performanceProfile = (savedMode && savedMode !== 'auto') ? savedMode : this.detectPerformanceProfile();
         window.performanceProfile = this.performanceProfile;
         this.applyPerformanceTuning();
         this.autotunePerformance();

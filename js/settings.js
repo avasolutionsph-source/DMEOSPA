@@ -14,6 +14,7 @@ class SettingsManager {
         this.addApiUrlInput();
         this.addSyncButton();
         this.addImportButton();
+        this.addPerformanceSection();
         this.displaySyncStatus();
     }
 
@@ -59,6 +60,56 @@ class SettingsManager {
             });
             forceRefreshBtn.setAttribute('data-listener', 'true');
         }
+    }
+
+    addPerformanceSection() {
+        if (document.getElementById('perfModeSelect')) return;
+        const settingsSection = document.querySelector('.settings-section');
+        if (!settingsSection) return;
+
+        const perf = document.createElement('div');
+        perf.className = 'dynamic-content';
+        perf.innerHTML = `
+            <h3 style="margin-top:2rem;">Performance</h3>
+            <div class="form-group">
+                <label>Performance Mode</label>
+                <select id="perfModeSelect" class="form-select">
+                    <option value="auto">Auto (recommended)</option>
+                    <option value="low">Low (max battery/perf)</option>
+                    <option value="balanced">Balanced</option>
+                    <option value="high">High (best visuals)</option>
+                </select>
+                <small style="color: var(--gray); display:block; margin-top:0.5rem;">Changes apply immediately.</small>
+            </div>`;
+        settingsSection.appendChild(perf);
+
+        // initialize
+        const select = document.getElementById('perfModeSelect');
+        const saved = localStorage.getItem('perfMode') || 'auto';
+        select.value = saved;
+        select.onchange = (e) => {
+            const mode = e.target.value;
+            localStorage.setItem('perfMode', mode);
+            // Apply immediately
+            if (mode === 'low') {
+                document.documentElement.classList.add('perf-low');
+                window.performanceProfile = 'low';
+            } else if (mode === 'balanced') {
+                document.documentElement.classList.remove('perf-low');
+                window.performanceProfile = 'balanced';
+            } else if (mode === 'high') {
+                document.documentElement.classList.remove('perf-low');
+                window.performanceProfile = 'high';
+            } else {
+                // Auto - recompute
+                if (window.app && typeof window.app.detectPerformanceProfile === 'function') {
+                    const profile = window.app.detectPerformanceProfile();
+                    window.performanceProfile = profile;
+                    if (profile === 'low') document.documentElement.classList.add('perf-low'); else document.documentElement.classList.remove('perf-low');
+                }
+            }
+            showNotification('Performance mode updated', 'success');
+        };
     }
 
     async loadSettings() {
