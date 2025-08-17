@@ -148,6 +148,14 @@ class RoomsManager {
 			if (firstService) { serviceName = firstService.name; serviceDuration = firstService.duration || 0; }
 		}
 		if (overrides.serviceDuration) { serviceDuration = overrides.serviceDuration; }
+		// Fallback: if duration is still unknown, look up the service in products by name
+		if ((!serviceDuration || serviceDuration === 0) && serviceName) {
+			try {
+				const products = await db.getAll('products');
+				const svc = products.find(p => p.type === 'service' && p.name === serviceName);
+				if (svc && svc.duration) serviceDuration = svc.duration;
+			} catch(_) {}
+		}
 		room.currentEmployeeId = employeeId || null;
 		room.currentEmployeeName = employeeName || '';
 		room.currentServiceName = serviceName || '';
