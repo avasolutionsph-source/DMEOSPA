@@ -423,6 +423,53 @@ class App {
         }
     }
 
+    // Unified confirm dialog
+    async confirm(title, message) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('confirmModal');
+            if (!modal) { resolve(window.confirm(message)); return; }
+            modal.querySelector('#confirmTitle').textContent = title || 'Confirm';
+            modal.querySelector('#confirmMessage').textContent = message || '';
+            const ok = modal.querySelector('#confirmOkBtn');
+            const cancel = modal.querySelector('#confirmCancelBtn');
+            const cleanup = () => {
+                ok.onclick = null; cancel.onclick = null; this.closeModal('confirmModal');
+            };
+            ok.onclick = () => { cleanup(); resolve(true); };
+            cancel.onclick = () => { cleanup(); resolve(false); };
+            modal.classList.add('active');
+        });
+    }
+
+    // Unified prompt dialog (text or select)
+    async prompt(options) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('promptModal');
+            if (!modal) { resolve(window.prompt(options?.label || 'Input', options?.value || '')); return; }
+            modal.querySelector('#promptTitle').textContent = options?.title || 'Input';
+            modal.querySelector('#promptLabel').textContent = options?.label || '';
+            modal.querySelector('#promptHint').textContent = options?.hint || '';
+            const input = modal.querySelector('#promptInput');
+            const select = modal.querySelector('#promptSelect');
+            if (options?.type === 'select') {
+                input.style.display = 'none'; select.style.display = '';
+                select.innerHTML = (options?.options || []).map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+                select.value = options?.value || (options?.options?.[0]?.value || '');
+            } else {
+                select.style.display = 'none'; input.style.display = '';
+                input.type = options?.inputType || 'text';
+                input.value = options?.value || '';
+            }
+            const ok = modal.querySelector('#promptOkBtn');
+            const cancel = modal.querySelector('#promptCancelBtn');
+            const cleanup = () => { ok.onclick = null; cancel.onclick = null; this.closeModal('promptModal'); };
+            ok.onclick = () => { const val = options?.type === 'select' ? select.value : input.value; cleanup(); resolve(val); };
+            cancel.onclick = () => { cleanup(); resolve(null); };
+            modal.classList.add('active');
+            setTimeout(() => { (options?.type === 'select' ? select : input).focus(); }, 50);
+        });
+    }
+
     checkForUpdates() {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.ready.then(registration => {

@@ -55,12 +55,18 @@ class RoomsManager {
 	}
 
 	async configureRooms() {
-		const countStr = prompt('How many rooms? (1-100)', String(this.rooms.length || 8));
+		const countStr = await app.prompt({ title: 'Configure Rooms', label: 'How many rooms? (1-100)', inputType: 'number', value: String(this.rooms.length || 8) });
+		if (countStr === null) return;
 		const count = Math.min(100, Math.max(1, parseInt(countStr || '8')));
 		const existing = await db.getAll('rooms');
 		for (const r of existing) { await db.delete('rooms', r.id); }
 		for (let i = 1; i <= count; i++) {
-			const type = prompt(`Type for Room ${i} (standard/vip/couple)`, i % 5 === 0 ? 'vip' : (i % 2 === 0 ? 'couple' : 'standard')) || 'standard';
+			const type = await app.prompt({ title: `Room ${i}`, label: 'Type', type: 'select', options: [
+				{ value: 'standard', label: 'Standard' },
+				{ value: 'vip', label: 'VIP' },
+				{ value: 'couple', label: 'Couple' },
+			], value: (i % 5 === 0 ? 'vip' : (i % 2 === 0 ? 'couple' : 'standard')) });
+			if (type === null) { continue; }
 			await db.add('rooms', { number: i.toString(), status: 'available', group: i % 2 === 0 ? 'B' : 'A', type });
 		}
 		await this.loadRooms();
@@ -70,7 +76,8 @@ class RoomsManager {
 		const room = await db.get('rooms', roomId);
 		if (!room) return;
 		if (room.status === 'occupied') { showNotification('Room is already occupied', 'warning'); return; }
-		if (!confirm(`Start session in Room ${room.number}?`)) return;
+		const ok = await app.confirm('Start Session', `Start session in Room ${room.number}?`);
+		if (!ok) return;
 		room.status = 'occupied';
 		await db.update('rooms', room);
 		const session = {
@@ -88,7 +95,8 @@ class RoomsManager {
 	async finishTimer(roomId) {
 		const room = await db.get('rooms', roomId);
 		if (!room || !room.activeSessionId) return;
-		if (!confirm(`Finish session in Room ${room.number}?`)) return;
+		const ok = await app.confirm('Finish Session', `Finish session in Room ${room.number}?`);
+		if (!ok) return;
 		const session = await db.get('sessions', room.activeSessionId);
 		if (!session) return;
 		session.status = 'completed';

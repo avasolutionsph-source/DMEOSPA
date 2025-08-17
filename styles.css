@@ -3282,6 +3282,10 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
     overflow: hidden;
 }
 
+/* Prompt/Confirm modal overrides */
+#confirmModal .modal-actions .btn-primary { background: var(--primary-color); }
+#promptModal .modal-actions .btn-primary { background: var(--primary-color); }
+
 .modal-content::before {
     content: '';
     position: absolute;
