@@ -46,6 +46,7 @@ class RoomsManager {
 				</div>
 				<div class="room-meta"><span class="room-type">${(r.type || 'standard').toUpperCase()}</span><span>Group ${r.group || '-'}</span></div>
 				<div class="room-timer" id="roomTimer_${r.id}">--:--:--</div>
+				${r.currentEmployeeName || r.currentServiceName ? `<div style="font-size:.85rem;color:var(--gray);margin:.25rem 0;">${r.currentEmployeeName ? `<strong>${r.currentEmployeeName}</strong>` : ''} ${r.currentServiceName ? `• ${r.currentServiceName}` : ''}</div>` : ''}
 				<div class="room-actions">
 					<button id="startBtn_${r.id}" class="btn btn-secondary" onclick="roomsManager.startTimer(${r.id})" ${r.status==='occupied' ? 'disabled' : ''}>Start</button>
 					<button id="finishBtn_${r.id}" class="btn btn-primary" onclick="roomsManager.finishTimer(${r.id})" ${r.status!=='occupied' ? 'disabled' : ''}>Finish</button>
@@ -120,6 +121,20 @@ class RoomsManager {
 		const ok = await app.confirm('Start Session', `Start session in Room ${room.number}?`);
 		if (!ok) return;
 		room.status = 'occupied';
+		// Attach selected employee and first service in POS cart if available
+		const employeeId = window.posSystem?.selectedEmployee || null;
+		let employeeName = '';
+		if (employeeId) {
+			const emp = await db.get('employees', parseInt(employeeId));
+			employeeName = emp?.name || '';
+		}
+		let serviceName = '';
+		const cart = window.posSystem?.cart || [];
+		const firstService = cart.find(i => i.type === 'service');
+		if (firstService) serviceName = firstService.name;
+		room.currentEmployeeId = employeeId || null;
+		room.currentEmployeeName = employeeName || '';
+		room.currentServiceName = serviceName || '';
 		await db.update('rooms', room);
 		// Update UI immediately
 		const statusEl = document.getElementById(`roomStatus_${room.id}`);
@@ -131,13 +146,17 @@ class RoomsManager {
 		const session = {
 			roomId,
 			status: 'active',
-			startTime: new Date().toISOString()
+			startTime: new Date().toISOString(),
+			employeeId: employeeId ? String(employeeId) : null,
+			employeeName: employeeName || null,
+			serviceName: serviceName || null
 		};
 		const id = await db.add('sessions', session);
 		room.activeSessionId = id;
 		await db.update('rooms', room);
 		this.tickTimer(roomId);
 		showNotification(`Timer started for Room ${room.number}`, 'success');
+		await this.loadRooms();
 	}
 
 	async finishTimer(roomId) {
@@ -152,6 +171,7 @@ class RoomsManager {
 		await db.update('sessions', session);
 		room.status = 'available';
 		delete room.activeSessionId;
+		delete room.currentEmployeeId; delete room.currentEmployeeName; delete room.currentServiceName;
 		await db.update('rooms', room);
 		// Update UI immediately
 		const statusEl = document.getElementById(`roomStatus_${room.id}`);
