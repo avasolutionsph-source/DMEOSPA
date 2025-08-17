@@ -19,6 +19,8 @@ class App {
         // Detect performance profile (optimize for laptops with different CPU/thermal limits)
         this.performanceProfile = this.detectPerformanceProfile();
         window.performanceProfile = this.performanceProfile;
+        this.applyPerformanceTuning();
+        this.autotunePerformance();
         
         // Check if user is already logged in before showing setup wizard
         const isUserLoggedIn = this.checkIfUserLoggedIn();
@@ -54,14 +56,14 @@ class App {
             await window.authSystem.init();
         }
         
-        // Initialize API client
+        // Initialize API client (deferred)
         if (window.apiClient) {
-            await window.apiClient.init();
+            this.defer(() => window.apiClient.init());
         }
         
-        // Initialize entitlements
+        // Initialize entitlements (deferred)
         if (window.entitlementsSystem) {
-            await window.entitlementsSystem.init();
+            this.defer(() => window.entitlementsSystem.init());
         }
         
         // Initialize page
@@ -86,6 +88,40 @@ class App {
         } catch (e) {
             return 'balanced';
         }
+    }
+
+    applyPerformanceTuning() {
+        if (this.performanceProfile === 'low') {
+            document.documentElement.classList.add('perf-low');
+            if (!localStorage.getItem('debugLogs')) {
+                try { console.log = () => {}; console.info = () => {}; console.debug = () => {}; } catch(_){}
+            }
+        }
+    }
+
+    autotunePerformance() {
+        try {
+            let frames = 0; let last = performance.now(); let total = 0; let stop = false;
+            const sample = (t) => {
+                if (stop) return;
+                total += (t - last); last = t; frames++;
+                if (frames < 60) { requestAnimationFrame(sample); } else {
+                    const avg = total / frames;
+                    if (avg > 24 && this.performanceProfile !== 'low') {
+                        this.performanceProfile = 'low';
+                        window.performanceProfile = 'low';
+                        this.applyPerformanceTuning();
+                    }
+                }
+            };
+            requestAnimationFrame(sample);
+            setTimeout(() => { stop = true; }, 3000);
+        } catch(_e) {}
+    }
+
+    defer(fn) {
+        const ric = window.requestIdleCallback || function(cb){ return setTimeout(() => cb({ timeRemaining: () => 0 }), 1); };
+        try { ric(() => { try { fn(); } catch(e) { console.error(e); } }); } catch(_e) { setTimeout(fn, 0); }
     }
 
     setupNavigation() {

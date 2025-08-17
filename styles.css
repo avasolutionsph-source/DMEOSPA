@@ -246,6 +246,13 @@
     }
 }
 
+/* Additional hard cap for app-driven low performance mode */
+.perf-low *, .perf-low *::before, .perf-low *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+}
+
 /* Ultra-Professional Body Styling */
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
