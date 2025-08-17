@@ -9,6 +9,10 @@ class POSSystem {
     }
 
     async init() {
+        // Ensure Rooms module is initialized so assignRoomFromPOS is available
+        if (window.loadRooms && !window.roomsInitialized) {
+            try { await window.loadRooms(); window.roomsInitialized = true; } catch(_) {}
+        }
         await this.loadEmployees();
         await this.loadProducts();
         this.setupEventListeners();
@@ -61,7 +65,7 @@ class POSSystem {
                 const roomNumber = roomInput?.value?.trim();
                 if (!this.selectedEmployee) { showNotification('Select an employee first', 'warning'); return; }
                 if (!roomNumber) { showNotification('Enter a room number to assign', 'warning'); return; }
-                if (!window.roomsManager || typeof window.assignRoomFromPOS !== 'function') { showNotification('Rooms module not ready', 'error'); return; }
+                if (typeof window.roomsManager?.assignRoomFromPOS !== 'function') { showNotification('Rooms module not ready', 'error'); return; }
                 // Determine first service in cart
                 const firstService = (this.cart || []).find(i => i.type === 'service');
                 const serviceName = firstService ? firstService.name : '';

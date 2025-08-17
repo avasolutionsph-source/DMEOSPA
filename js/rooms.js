@@ -53,6 +53,13 @@ class RoomsManager {
 				</div>
 			</div>
 		`).join('');
+
+		// Start timers for any rooms already occupied
+		this.rooms.forEach(r => {
+			if (r.status === 'occupied' && r.sessionStartTime) {
+				this.tickTimer(r.id, r.sessionStartTime);
+			}
+		});
 	}
 
 	// New multi-field configuration modal
@@ -159,8 +166,9 @@ class RoomsManager {
 		};
 		const id = await db.add('sessions', session);
 		room.activeSessionId = id;
+		room.sessionStartTime = session.startTime;
 		await db.update('rooms', room);
-		this.tickTimer(roomId);
+		this.tickTimer(roomId, room.sessionStartTime);
 		showNotification(`Timer started for Room ${room.number}`, 'success');
 		await this.loadRooms();
 	}
@@ -177,6 +185,7 @@ class RoomsManager {
 		await db.update('sessions', session);
 		room.status = 'available';
 		delete room.activeSessionId;
+		delete room.sessionStartTime;
 		delete room.currentEmployeeId; delete room.currentEmployeeName; delete room.currentServiceName;
 		await db.update('rooms', room);
 		// Update UI immediately
@@ -190,23 +199,25 @@ class RoomsManager {
 	}
 
 	// Start room directly from POS with a selected room number
-	async assignRoomFromPOS(roomNumber) {
+	async assignRoomFromPOS(roomNumber, employeeIdOverride, serviceNameOverride) {
 		const rooms = await db.getAll('rooms');
 		const room = rooms.find(r => String(r.number) === String(roomNumber));
 		if (!room) { showNotification('Room not found', 'error'); return; }
 		if (room.status === 'occupied') { showNotification('Room already occupied', 'warning'); return; }
-		const employeeId = window.posSystem?.selectedEmployee || null;
-		let serviceName = '';
-		const cart = window.posSystem?.cart || [];
-		const firstService = cart.find(i => i.type === 'service');
-		if (firstService) serviceName = firstService.name;
+		const employeeId = employeeIdOverride || window.posSystem?.selectedEmployee || null;
+		let serviceName = serviceNameOverride || '';
+		if (!serviceName) {
+			const cart = window.posSystem?.cart || [];
+			const firstService = cart.find(i => i.type === 'service');
+			if (firstService) serviceName = firstService.name;
+		}
 		await this.startTimer(room.id, true, { employeeId, serviceName });
 	}
 
-	tickTimer(roomId) {
+	tickTimer(roomId, startTimeISO) {
 		const el = document.getElementById(`roomTimer_${roomId}`);
 		if (!el) return;
-		let start = Date.now();
+		let start = startTimeISO ? new Date(startTimeISO).getTime() : Date.now();
 		const update = () => {
 			const diff = Date.now() - start;
 			const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
