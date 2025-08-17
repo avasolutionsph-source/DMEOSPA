@@ -243,7 +243,8 @@ class POSSystem {
                     name: item.name,
                     price: item.price || item.unitPrice || 0,
                     quantity: 1,
-                    maxStock: item.currentStock
+                    maxStock: item.currentStock,
+                    duration: itemType !== 'inventory' ? (item.duration || 0) : undefined
                 });
             }
 
@@ -449,6 +450,7 @@ class POSSystem {
             const desiredRoomAtCheckout = preRoomInput?.value?.trim();
             const firstServiceInCart = (this.cart || []).find(i => i.type === 'service');
             const serviceNameAtCheckout = firstServiceInCart ? firstServiceInCart.name : '';
+            const serviceDurationAtCheckout = firstServiceInCart ? (firstServiceInCart.duration || 0) : 0;
             
             // Calculate totals
             const total = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -516,7 +518,7 @@ class POSSystem {
                     if (available) roomNumberToUse = available.number;
                 }
                 if (roomNumberToUse && serviceNameAtCheckout && this.selectedEmployee && typeof window.roomsManager?.assignRoomFromPOS === 'function') {
-                    await window.roomsManager.assignRoomFromPOS(roomNumberToUse, this.selectedEmployee, serviceNameAtCheckout);
+                    await window.roomsManager.assignRoomFromPOS(roomNumberToUse, this.selectedEmployee, serviceNameAtCheckout, serviceDurationAtCheckout);
                 }
             } catch (e) {
                 console.warn('Auto room start after checkout failed:', e);

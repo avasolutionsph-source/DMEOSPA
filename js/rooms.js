@@ -47,6 +47,7 @@ class RoomsManager {
 				<div class="room-meta"><span class="room-type">${(r.type || 'standard').toUpperCase()}</span><span>Group ${r.group || '-'}</span></div>
 				<div class="room-timer" id="roomTimer_${r.id}">--:--:--</div>
 				<div id="roomAssign_${r.id}" style="font-size:.85rem;color:var(--gray);margin:.25rem 0;">${r.currentEmployeeName || r.currentServiceName ? `${r.currentEmployeeName ? `<strong>${r.currentEmployeeName}</strong>` : ''} ${r.currentServiceName ? `• ${r.currentServiceName}` : ''}` : ''}</div>
+				${r.estimatedMinutes ? `<div class="room-meta" style="margin-top:2px; font-size:.8rem; color:#64748b;">⏱ ${r.estimatedMinutes} min</div>` : ''}
 				<div class="room-actions">
 					<button id="startBtn_${r.id}" class="btn btn-secondary" onclick="roomsManager.startTimer(${r.id})" ${r.status==='occupied' ? 'disabled' : ''}>Start</button>
 					<button id="finishBtn_${r.id}" class="btn btn-primary" onclick="roomsManager.finishTimer(${r.id})" ${r.status!=='occupied' ? 'disabled' : ''}>Finish</button>
@@ -138,13 +139,15 @@ class RoomsManager {
 			employeeName = emp?.name || '';
 		}
 		let serviceName = '';
+		let serviceDuration = 0;
 		if (overrides.serviceName) {
 			serviceName = overrides.serviceName;
 		} else {
 			const cart = window.posSystem?.cart || [];
 			const firstService = cart.find(i => i.type === 'service');
-			if (firstService) serviceName = firstService.name;
+			if (firstService) { serviceName = firstService.name; serviceDuration = firstService.duration || 0; }
 		}
+		if (overrides.serviceDuration) { serviceDuration = overrides.serviceDuration; }
 		room.currentEmployeeId = employeeId || null;
 		room.currentEmployeeName = employeeName || '';
 		room.currentServiceName = serviceName || '';
@@ -164,11 +167,13 @@ class RoomsManager {
 			startTime: new Date().toISOString(),
 			employeeId: employeeId ? String(employeeId) : null,
 			employeeName: employeeName || null,
-			serviceName: serviceName || null
+			serviceName: serviceName || null,
+			estimatedMinutes: serviceDuration || null
 		};
 		const id = await db.add('sessions', session);
 		room.activeSessionId = id;
 		room.sessionStartTime = session.startTime;
+		room.estimatedMinutes = serviceDuration || null;
 		await db.update('rooms', room);
 		this.tickTimer(roomId, room.sessionStartTime);
 		showNotification(`Timer started for Room ${room.number}`, 'success');
@@ -201,19 +206,20 @@ class RoomsManager {
 	}
 
 	// Start room directly from POS with a selected room number
-	async assignRoomFromPOS(roomNumber, employeeIdOverride, serviceNameOverride) {
+	async assignRoomFromPOS(roomNumber, employeeIdOverride, serviceNameOverride, serviceDurationOverride) {
 		const rooms = await db.getAll('rooms');
 		const room = rooms.find(r => String(r.number) === String(roomNumber));
 		if (!room) { showNotification('Room not found', 'error'); return; }
 		if (room.status === 'occupied') { showNotification('Room already occupied', 'warning'); return; }
 		const employeeId = employeeIdOverride || window.posSystem?.selectedEmployee || null;
 		let serviceName = serviceNameOverride || '';
+		let duration = serviceDurationOverride || null;
 		if (!serviceName) {
 			const cart = window.posSystem?.cart || [];
 			const firstService = cart.find(i => i.type === 'service');
-			if (firstService) serviceName = firstService.name;
+			if (firstService) { serviceName = firstService.name; duration = firstService.duration || null; }
 		}
-		await this.startTimer(room.id, true, { employeeId, serviceName });
+		await this.startTimer(room.id, true, { employeeId, serviceName, serviceDuration: duration });
 	}
 
 	tickTimer(roomId, startTimeISO) {
