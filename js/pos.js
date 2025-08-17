@@ -444,6 +444,11 @@ class POSSystem {
         
         try {
             const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+            // Capture context for auto room start BEFORE clearing the cart
+            const preRoomInput = document.getElementById('roomAssignNumber');
+            const desiredRoomAtCheckout = preRoomInput?.value?.trim();
+            const firstServiceInCart = (this.cart || []).find(i => i.type === 'service');
+            const serviceNameAtCheckout = firstServiceInCart ? firstServiceInCart.name : '';
             
             // Calculate totals
             const total = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -501,13 +506,17 @@ class POSSystem {
             setButtonLoading('confirmCheckoutBtn', false);
             closeModal('checkoutModal');
 
-            // Auto-start room timer if a room number was entered and a service exists
+            // Auto-start room timer after successful checkout
             try {
-                const roomInput = document.getElementById('roomAssignNumber');
-                const roomNumber = roomInput?.value?.trim();
-                const firstService = (this.cart || []).find(i => i.type === 'service');
-                if (roomNumber && firstService && this.selectedEmployee && typeof window.roomsManager?.assignRoomFromPOS === 'function') {
-                    await window.roomsManager.assignRoomFromPOS(roomNumber, this.selectedEmployee, firstService.name);
+                // Prefer the entered room number; otherwise choose the first available room
+                let roomNumberToUse = desiredRoomAtCheckout || '';
+                if (!roomNumberToUse) {
+                    const rooms = await db.getAll('rooms');
+                    const available = rooms.find(r => r.status === 'available');
+                    if (available) roomNumberToUse = available.number;
+                }
+                if (roomNumberToUse && serviceNameAtCheckout && this.selectedEmployee && typeof window.roomsManager?.assignRoomFromPOS === 'function') {
+                    await window.roomsManager.assignRoomFromPOS(roomNumberToUse, this.selectedEmployee, serviceNameAtCheckout);
                 }
             } catch (e) {
                 console.warn('Auto room start after checkout failed:', e);

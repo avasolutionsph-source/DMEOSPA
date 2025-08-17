@@ -46,7 +46,7 @@ class RoomsManager {
 				</div>
 				<div class="room-meta"><span class="room-type">${(r.type || 'standard').toUpperCase()}</span><span>Group ${r.group || '-'}</span></div>
 				<div class="room-timer" id="roomTimer_${r.id}">--:--:--</div>
-				${r.currentEmployeeName || r.currentServiceName ? `<div style="font-size:.85rem;color:var(--gray);margin:.25rem 0;">${r.currentEmployeeName ? `<strong>${r.currentEmployeeName}</strong>` : ''} ${r.currentServiceName ? `• ${r.currentServiceName}` : ''}</div>` : ''}
+				<div id="roomAssign_${r.id}" style="font-size:.85rem;color:var(--gray);margin:.25rem 0;">${r.currentEmployeeName || r.currentServiceName ? `${r.currentEmployeeName ? `<strong>${r.currentEmployeeName}</strong>` : ''} ${r.currentServiceName ? `• ${r.currentServiceName}` : ''}` : ''}</div>
 				<div class="room-actions">
 					<button id="startBtn_${r.id}" class="btn btn-secondary" onclick="roomsManager.startTimer(${r.id})" ${r.status==='occupied' ? 'disabled' : ''}>Start</button>
 					<button id="finishBtn_${r.id}" class="btn btn-primary" onclick="roomsManager.finishTimer(${r.id})" ${r.status!=='occupied' ? 'disabled' : ''}>Finish</button>
@@ -156,6 +156,8 @@ class RoomsManager {
 		const finishBtn = document.getElementById(`finishBtn_${room.id}`);
 		if (startBtn) startBtn.disabled = true;
 		if (finishBtn) finishBtn.disabled = false;
+		const assignEl = document.getElementById(`roomAssign_${room.id}`);
+		if (assignEl) assignEl.innerHTML = `${employeeName ? `<strong>${employeeName}</strong>` : ''} ${serviceName ? `• ${serviceName}` : ''}`;
 		const session = {
 			roomId,
 			status: 'active',
