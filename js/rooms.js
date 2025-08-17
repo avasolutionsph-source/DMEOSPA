@@ -54,22 +54,63 @@ class RoomsManager {
 		`).join('');
 	}
 
+	// New multi-field configuration modal
 	async configureRooms() {
-		const countStr = await app.prompt({ title: 'Configure Rooms', label: 'How many rooms? (1-100)', inputType: 'number', value: String(this.rooms.length || 8) });
-		if (countStr === null) return;
-		const count = Math.min(100, Math.max(1, parseInt(countStr || '8')));
-		const existing = await db.getAll('rooms');
-		for (const r of existing) { await db.delete('rooms', r.id); }
-		for (let i = 1; i <= count; i++) {
-			const type = await app.prompt({ title: `Room ${i}`, label: 'Type', type: 'select', options: [
-				{ value: 'standard', label: 'Standard' },
-				{ value: 'vip', label: 'VIP' },
-				{ value: 'couple', label: 'Couple' },
-			], value: (i % 5 === 0 ? 'vip' : (i % 2 === 0 ? 'couple' : 'standard')) });
-			if (type === null) { continue; }
-			await db.add('rooms', { number: i.toString(), status: 'available', group: i % 2 === 0 ? 'B' : 'A', type });
-		}
-		await this.loadRooms();
+		const modal = document.getElementById('roomsConfigModal');
+		if (!modal) return;
+		const form = modal.querySelector('#roomsConfigForm');
+		const countInput = modal.querySelector('#roomsCount');
+		const defaultSelect = modal.querySelector('#defaultRoomType');
+		const list = modal.querySelector('#roomTypeList');
+		const applyBtn = modal.querySelector('#applyDefaultTypeBtn');
+
+		// Build grid
+		const buildList = () => {
+			const count = Math.min(100, Math.max(1, parseInt(countInput.value || '8')));
+			list.innerHTML = '';
+			for (let i = 1; i <= count; i++) {
+				const wrapper = document.createElement('div');
+				wrapper.className = 'room-type-item';
+				wrapper.innerHTML = `
+					<label style="min-width:60px;">Room ${i}</label>
+					<select class="form-input room-type-select">
+						<option value="standard">Standard</option>
+						<option value="vip">VIP</option>
+						<option value="couple">Couple</option>
+					</select>
+				`;
+				const select = wrapper.querySelector('select');
+				select.value = (i % 5 === 0 ? 'vip' : (i % 2 === 0 ? 'couple' : defaultSelect.value));
+				list.appendChild(wrapper);
+			}
+		};
+
+		// Events
+		countInput.oninput = buildList;
+		applyBtn.onclick = () => {
+			const selects = list.querySelectorAll('.room-type-select');
+			selects.forEach(s => { s.value = defaultSelect.value; });
+		};
+
+		// Initial render
+		buildList();
+		modal.classList.add('active');
+
+		form.onsubmit = async (e) => {
+			e.preventDefault();
+			const count = Math.min(100, Math.max(1, parseInt(countInput.value || '8')));
+			// Replace all rooms
+			const existing = await db.getAll('rooms');
+			for (const r of existing) { await db.delete('rooms', r.id); }
+			const selects = list.querySelectorAll('.room-type-select');
+			for (let i = 1; i <= count; i++) {
+				const type = selects[i-1]?.value || defaultSelect.value;
+				await db.add('rooms', { number: i.toString(), status: 'available', group: i % 2 === 0 ? 'B' : 'A', type });
+			}
+			modal.classList.remove('active');
+			await this.loadRooms();
+			showNotification('Rooms configuration saved', 'success');
+		};
 	}
 
 	async startTimer(roomId) {

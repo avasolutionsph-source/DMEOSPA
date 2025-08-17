@@ -784,6 +784,48 @@
         </div>
     </div>
 
+    <!-- Rooms Config Modal -->
+    <div id="roomsConfigModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Configure Rooms</h2>
+                <button class="modal-close" onclick="closeModal('roomsConfigModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="roomsConfigForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>How many rooms? (1-100)</label>
+                            <input type="number" id="roomsCount" class="form-input" min="1" max="100" value="8">
+                        </div>
+                        <div class="form-group">
+                            <label>Default Room Type</label>
+                            <div style="display:flex; gap:.5rem; align-items:center;">
+                                <select id="defaultRoomType" class="form-input">
+                                    <option value="standard">Standard</option>
+                                    <option value="vip">VIP</option>
+                                    <option value="couple">Couple</option>
+                                </select>
+                                <button type="button" class="btn btn-secondary" id="applyDefaultTypeBtn">Apply to All</button>
+                            </div>
+                            <small class="form-hint">You can still change individual rooms below</small>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Room Types</label>
+                        <div id="roomTypeList" class="room-types-grid"></div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('roomsConfigModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Checkout Modal -->
     <div id="checkoutModal" class="modal">
         <div class="modal-content">

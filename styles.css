@@ -3582,6 +3582,11 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
 
 .room-actions { display: flex; gap: 0.5rem; }
 .room-type { padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.75rem; background: var(--light); }
+
+/* Rooms Config */
+.room-types-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: .5rem; }
+.room-type-item { background: var(--white); border: 1px solid var(--light); border-radius: 10px; padding: .5rem; display: flex; gap: .5rem; align-items: center; }
+.room-type-item label { font-weight: 600; }
 .connection-status {
     padding: 0.875rem 1.25rem;
     display: flex;
