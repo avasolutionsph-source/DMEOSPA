@@ -79,14 +79,21 @@ class EmployeeManager {
             return;
         }
 
-        // Calculate commissions for each employee
+        // Calculate commissions and hours for each employee
+        const sessions = await db.getAll('sessions');
         const employeesWithStats = await Promise.all(this.employees.map(async (emp) => {
             const transactions = await db.getByIndex('transactions', 'employeeId', emp.id.toString());
             const totalSales = transactions.reduce((sum, t) => sum + t.total, 0);
             const totalCommission = totalSales * (emp.commissionRate / 100);
             const transactionCount = transactions.length;
-            
-            return { ...emp, totalSales, totalCommission, transactionCount };
+
+            const mySessions = sessions.filter(s => s.employeeId === String(emp.id) && s.status === 'completed');
+            const hours = mySessions.reduce((sum, s) => {
+                if (!s.startTime || !s.endTime) return sum;
+                return sum + (new Date(s.endTime) - new Date(s.startTime)) / 3600000;
+            }, 0);
+
+            return { ...emp, totalSales, totalCommission, transactionCount, hoursWorked: Math.round(hours * 100) / 100 };
         }));
 
         grid.innerHTML = employeesWithStats.map(emp => `
@@ -127,6 +134,10 @@ class EmployeeManager {
                                 app.formatCurrency(0)
                             }
                         </div>
+                    </div>
+                    <div class="employee-stat">
+                        <div class="employee-stat-label">Hours</div>
+                        <div class="employee-stat-value">${emp.hoursWorked || 0}</div>
                     </div>
                 </div>
                 <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
@@ -233,11 +244,6 @@ class EmployeeManager {
             }
 
             await this.loadEmployees();
-
-            // Reload POS if it's the current page to update employee dropdown
-            if (window.app.currentPage === 'pos') {
-                window.loadPOS && window.loadPOS();
-            }
         } catch (error) {
             console.error('Failed to save employee:', error);
             hideLoading();
