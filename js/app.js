@@ -239,7 +239,8 @@ class App {
     async loadBusinessConfig() {
         try {
             const config = await db.get('settings', 'businessConfig');
-            this.businessConfig = config?.value || {
+            // Defaults
+            const defaultConfig = {
                 businessType: 'spa',
                 modules: {
                     dashboard: true,
@@ -247,6 +248,8 @@ class App {
                     services: true,
                     inventory: true,
                     employees: true,
+                    bookings: true,
+                    rooms: true,
                     chatbot: true,
                     settings: true
                 },
@@ -257,6 +260,14 @@ class App {
                     showServiceDuration: true
                 }
             };
+
+            // Merge with defaults to include any newly added modules/features
+            this.businessConfig = config?.value || defaultConfig;
+            this.businessConfig.modules = { ...defaultConfig.modules, ...(this.businessConfig.modules || {}) };
+            this.businessConfig.features = { ...defaultConfig.features, ...(this.businessConfig.features || {}) };
+
+            // Persist back if we filled in missing fields
+            await db.update('settings', { key: 'businessConfig', value: this.businessConfig });
             
             // Apply feature flags to UI
             this.applyFeatureFlags();

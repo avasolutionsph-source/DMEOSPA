@@ -191,10 +191,10 @@ async function syncDataWithServer() {
     }
 }
 
-// Helper function to open IndexedDB
+// Helper function to open IndexedDB (ensure version aligns with schema)
 function openDB() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open('AvaSolutionsDB', 1);
+        const request = indexedDB.open('AvaSolutionsDB', 2);
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
     });
