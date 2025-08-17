@@ -294,7 +294,7 @@ body {
     height: 100vh;
     background: var(--gray-50);
     position: relative;
-    overflow: hidden;
+    overflow-x: hidden;
 }
 
 /* Ultra-Modern Sidebar with Glassmorphism */
