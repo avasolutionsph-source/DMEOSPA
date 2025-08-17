@@ -501,6 +501,18 @@ class POSSystem {
             setButtonLoading('confirmCheckoutBtn', false);
             closeModal('checkoutModal');
 
+            // Auto-start room timer if a room number was entered and a service exists
+            try {
+                const roomInput = document.getElementById('roomAssignNumber');
+                const roomNumber = roomInput?.value?.trim();
+                const firstService = (this.cart || []).find(i => i.type === 'service');
+                if (roomNumber && firstService && this.selectedEmployee && typeof window.roomsManager?.assignRoomFromPOS === 'function') {
+                    await window.roomsManager.assignRoomFromPOS(roomNumber, this.selectedEmployee, firstService.name);
+                }
+            } catch (e) {
+                console.warn('Auto room start after checkout failed:', e);
+            }
+
             // Small delay to ensure modal closes, then show success
             setTimeout(() => {
                 showNotification('Sale completed successfully!', 'success');

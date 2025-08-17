@@ -234,5 +234,7 @@ const roomsManager = new RoomsManager();
 window.loadRooms = async function() { await roomsManager.init(); };
 // Expose helper for POS
 window.assignRoomFromPOS = (roomNumber) => roomsManager.assignRoomFromPOS(roomNumber);
+// Also expose the instance for direct calls from POS
+window.roomsManager = roomsManager;
 
 
