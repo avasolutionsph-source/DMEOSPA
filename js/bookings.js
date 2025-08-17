@@ -49,40 +49,62 @@ class BookingsManager {
 	}
 
 	async openCreateDialog() {
-		const date = prompt('Booking date & time (YYYY-MM-DDTHH:mm)');
-		if (!date) return;
-		const serviceName = prompt('Service name');
-		const employeeName = prompt('Therapist name');
-		const customerName = prompt('Customer name');
-		const roomNumber = prompt('Room number');
-		const record = {
-			date: new Date(date).toISOString(),
-			serviceName,
-			employeeName,
-			customerName,
-			roomNumber,
-			status: 'confirmed'
+		const modal = document.getElementById('bookingModal');
+		if (!modal) return;
+		const form = document.getElementById('bookingForm');
+		// Reset
+		form.reset();
+		modal.classList.add('active');
+		form.onsubmit = async (e) => {
+			e.preventDefault();
+			const record = {
+				date: new Date(document.getElementById('bookingDate').value).toISOString(),
+				serviceName: document.getElementById('bookingService').value,
+				employeeName: document.getElementById('bookingEmployee').value,
+				customerName: document.getElementById('bookingCustomer').value,
+				roomNumber: document.getElementById('bookingRoom').value,
+				status: document.getElementById('bookingStatus').value || 'confirmed'
+			};
+			await db.add('bookings', record);
+			modal.classList.remove('active');
+			await this.loadBookings();
+			showNotification('Booking created', 'success');
 		};
-		await db.add('bookings', record);
-		await this.loadBookings();
-		showNotification('Booking created', 'success');
 	}
 
 	async edit(id) {
 		const b = await db.get('bookings', id);
 		if (!b) return;
-		const newDate = prompt('New date (YYYY-MM-DDTHH:mm)', b.date?.slice(0,16));
-		if (!newDate) return;
-		b.date = new Date(newDate).toISOString();
-		b.modifiedAt = new Date().toISOString();
-		await db.update('bookings', b);
-		await this.loadBookings();
+		const modal = document.getElementById('bookingModal');
+		const form = document.getElementById('bookingForm');
+		document.getElementById('bookingModalTitle').textContent = 'Edit Booking';
+		document.getElementById('bookingDate').value = (b.date||'').slice(0,16);
+		document.getElementById('bookingService').value = b.serviceName||'';
+		document.getElementById('bookingEmployee').value = b.employeeName||'';
+		document.getElementById('bookingCustomer').value = b.customerName||'';
+		document.getElementById('bookingRoom').value = b.roomNumber||'';
+		document.getElementById('bookingStatus').value = b.status||'confirmed';
+		modal.classList.add('active');
+		form.onsubmit = async (e) => {
+			e.preventDefault();
+			b.date = new Date(document.getElementById('bookingDate').value).toISOString();
+			b.serviceName = document.getElementById('bookingService').value;
+			b.employeeName = document.getElementById('bookingEmployee').value;
+			b.customerName = document.getElementById('bookingCustomer').value;
+			b.roomNumber = document.getElementById('bookingRoom').value;
+			b.status = document.getElementById('bookingStatus').value || 'confirmed';
+			b.modifiedAt = new Date().toISOString();
+			await db.update('bookings', b);
+			modal.classList.remove('active');
+			await this.loadBookings();
+		};
 	}
 
 	async cancel(id) {
 		const b = await db.get('bookings', id);
 		if (!b) return;
-		if (!confirm('Cancel this booking?')) return;
+		const ok = await app.confirm('Cancel Booking', 'Cancel this booking?');
+		if (!ok) return;
 		b.status = 'cancelled';
 		b.modifiedAt = new Date().toISOString();
 		await db.update('bookings', b);
