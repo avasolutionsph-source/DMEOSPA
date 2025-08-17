@@ -126,22 +126,24 @@ class RoomsManager {
 		const room = await db.get('rooms', roomId);
 		if (!room) return;
 		if (room.status === 'occupied') { showNotification('Room is already occupied', 'warning'); return; }
-		// Ask for service and duration if not provided
+		// Ask for service, duration, and employee if not provided
 		let selectedServiceName = overrides.serviceName || '';
 		let selectedServiceDuration = overrides.serviceDuration || 0;
-		if (!selectedServiceName || !selectedServiceDuration) {
-			const details = await this.promptSessionDetails(room);
+		let selectedEmployeeId = overrides.employeeId || window.posSystem?.selectedEmployee || null;
+		if (!selectedServiceName || !selectedServiceDuration || !selectedEmployeeId) {
+			const details = await this.promptSessionDetails(room, { employeeId: selectedEmployeeId });
 			if (!details) return; // cancelled
 			selectedServiceName = details.serviceName;
 			selectedServiceDuration = details.duration;
+			selectedEmployeeId = details.employeeId || selectedEmployeeId;
 		}
 		if (!skipConfirm) {
 			const ok = await app.confirm('Start Session', `Start ${selectedServiceName} for ${selectedServiceDuration} min in Room ${room.number}?`);
 			if (!ok) return;
 		}
 		room.status = 'occupied';
-		// Attach selected employee and first service in POS cart if available
-		const employeeId = overrides.employeeId || window.posSystem?.selectedEmployee || null;
+		// Attach selected employee
+		const employeeId = selectedEmployeeId || null;
 		let employeeName = '';
 		if (employeeId) {
 			const emp = await db.get('employees', parseInt(employeeId));
@@ -189,34 +191,77 @@ class RoomsManager {
 		await this.loadRooms();
 	}
 
-	// Prompt helper for selecting service and duration
-	async promptSessionDetails(room) {
+	// Prompt helper for selecting service + duration + employee in ONE modal
+	async promptSessionDetails(room, prefill = {}) {
 		try {
 			const products = await db.getAll('products');
 			const services = (products || []).filter(p => p.type === 'service');
+			const employees = await db.getAll('employees');
 			if (!services.length) { showNotification('No services configured. Please add services first.', 'warning'); return null; }
-			const options = services.map(s => ({ value: String(s.id), label: `${s.name}${s.duration ? ` (${s.duration} min)` : ''}` }));
-			let chosenId = null;
-			if (window.app?.prompt) {
-				chosenId = await app.prompt({ title: 'Start Session', label: 'Select service', type: 'select', options });
-			} else {
-				const names = services.map(s => s.name).join(', ');
-				const name = window.prompt(`Select service for Room ${room.number}:\n${names}`);
-				const svc = services.find(s => s.name === name);
-				chosenId = svc ? String(svc.id) : null;
-			}
-			if (!chosenId) return null;
-			const svcObj = services.find(s => String(s.id) === String(chosenId));
-			let duration = svcObj?.duration || 60;
-			if (window.app?.prompt) {
-				const durStr = await app.prompt({ title: 'Duration', label: 'How many minutes?', value: String(duration), inputType: 'number' });
-				if (!durStr) return null;
-				duration = Math.max(1, parseInt(durStr, 10) || duration);
-			} else {
-				const durStr = window.prompt('Duration (minutes):', String(duration));
-				duration = Math.max(1, parseInt(durStr || String(duration), 10) || duration);
-			}
-			return { serviceName: svcObj?.name || 'Service', duration };
+
+			// Build modal dynamically (single step)
+			const modal = document.createElement('div');
+			modal.className = 'modal active';
+			modal.innerHTML = `
+				<div class="modal-content">
+					<div class="modal-header">
+						<h2>Start Session</h2>
+						<button class="modal-close" aria-label="Close">&times;</button>
+					</div>
+					<div class="modal-body">
+						<label style="font-weight:600;">Select service</label>
+						<select id="sessionServiceSelect" class="form-input">
+							${services.map(s => `<option value="${s.id}">${s.name}${s.duration ? ` (${s.duration} min)` : ''}</option>`).join('')}
+						</select>
+						<div style="height:8px;"></div>
+						<label style="font-weight:600;">Duration (minutes)</label>
+						<input id="sessionDurationInput" class="form-input" type="number" min="1" placeholder="Minutes" />
+						<div style="height:8px;"></div>
+						<label style="font-weight:600;">Assign Employee</label>
+						<select id="sessionEmployeeSelect" class="form-input">
+							${employees.map(e => `<option value="${e.id}">${e.name}</option>`).join('')}
+						</select>
+					</div>
+					<div class="modal-footer">
+						<button class="btn btn-secondary" id="sessionCancelBtn">Cancel</button>
+						<button class="btn btn-primary" id="sessionOkBtn">OK</button>
+					</div>
+				</div>
+			`;
+			document.body.appendChild(modal);
+
+			const close = () => { try { document.body.removeChild(modal); } catch(_){} };
+			modal.querySelector('.modal-close').onclick = close;
+			modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+			const serviceSelect = modal.querySelector('#sessionServiceSelect');
+			const durationInput = modal.querySelector('#sessionDurationInput');
+			const employeeSelect = modal.querySelector('#sessionEmployeeSelect');
+
+			// Prefill values
+			if (prefill.employeeId) employeeSelect.value = String(prefill.employeeId);
+			// Default selection sync with duration
+			const syncDuration = () => {
+				const svc = services.find(s => String(s.id) === String(serviceSelect.value));
+				if (svc && svc.duration && (!durationInput.value || durationInput.value === '')) {
+					durationInput.value = String(svc.duration);
+				}
+			};
+			syncDuration();
+			serviceSelect.addEventListener('change', syncDuration);
+
+			return await new Promise(resolve => {
+				modal.querySelector('#sessionCancelBtn').onclick = () => { close(); resolve(null); };
+				modal.querySelector('#sessionOkBtn').onclick = () => {
+					const svc = services.find(s => String(s.id) === String(serviceSelect.value));
+					const duration = Math.max(1, parseInt(durationInput.value || (svc?.duration || 60), 10));
+					const employeeId = employeeSelect.value ? String(employeeSelect.value) : null;
+					if (!svc || !employeeId) { showNotification('Please select service and employee', 'warning'); return; }
+					const payload = { serviceName: svc.name, duration, employeeId };
+					close();
+					resolve(payload);
+				};
+			});
 		} catch (e) {
 			console.error('Failed to prompt session details', e);
 			return null;
