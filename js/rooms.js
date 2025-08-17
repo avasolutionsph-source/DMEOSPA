@@ -222,7 +222,7 @@ class RoomsManager {
 							${employees.map(e => `<option value="${e.id}">${e.name}</option>`).join('')}
 						</select>
 					</div>
-					<div class="modal-footer">
+					<div class="modal-footer" style="display:flex; justify-content:flex-end; gap:.75rem;">
 						<button class="btn btn-secondary" id="sessionCancelBtn">Cancel</button>
 						<button class="btn btn-primary" id="sessionOkBtn">OK</button>
 					</div>
@@ -230,7 +230,12 @@ class RoomsManager {
 			`;
 			document.body.appendChild(modal);
 
-			const close = () => { try { document.body.removeChild(modal); } catch(_){} };
+			const close = () => { 
+				try { 
+					document.removeEventListener('keydown', keyHandler);
+					document.body.removeChild(modal); 
+				} catch(_){} 
+			};
 			modal.querySelector('.modal-close').onclick = close;
 			modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
 
@@ -249,6 +254,12 @@ class RoomsManager {
 			};
 			syncDuration();
 			serviceSelect.addEventListener('change', syncDuration);
+
+			const keyHandler = (e) => {
+				if (e.key === 'Escape') { e.preventDefault(); close(); }
+				if (e.key === 'Enter') { e.preventDefault(); modal.querySelector('#sessionOkBtn').click(); }
+			};
+			document.addEventListener('keydown', keyHandler);
 
 			return await new Promise(resolve => {
 				modal.querySelector('#sessionCancelBtn').onclick = () => { close(); resolve(null); };
