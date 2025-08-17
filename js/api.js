@@ -24,8 +24,8 @@ class APIClient {
     // Load settings and configuration
     async loadSettings() {
         try {
-            const apiUrlSetting = await db.get('settings', 'apiUrl');
-            this.baseUrl = apiUrlSetting?.value || 'http://localhost:3001'; // Marketing Website URL
+            // Hardcoded API URL for production deployment
+            this.baseUrl = 'https://ava-marketing-api.onrender.com';
             
             // Load token from auth system
             if (window.authSystem) {
@@ -33,7 +33,7 @@ class APIClient {
             }
         } catch (error) {
             console.error('Failed to load API settings:', error);
-            this.baseUrl = 'http://localhost:4000'; // Fallback to PWA Backend
+            this.baseUrl = 'https://ava-marketing-api.onrender.com'; // Production API
         }
     }
 

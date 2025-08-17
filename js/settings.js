@@ -64,7 +64,6 @@ class SettingsManager {
     async loadSettings() {
         try {
             const businessName = await db.get('settings', 'businessName');
-            const apiUrl = await db.get('settings', 'apiUrl');
             const lastSync = await db.get('settings', 'lastSync');
 
             if (businessName) {
@@ -73,7 +72,6 @@ class SettingsManager {
 
             this.settings = {
                 businessName: businessName?.value || 'Ava Solutions',
-                apiUrl: apiUrl?.value || '',
                 lastSync: lastSync?.value || null
             };
 
@@ -85,7 +83,6 @@ class SettingsManager {
     async saveSettings() {
         try {
             const businessName = document.getElementById('businessNameInput').value;
-            const apiUrl = document.getElementById('apiUrlInput')?.value || '';
             
             // Save business configuration
             const businessType = document.getElementById('businessTypeSelect')?.value || 'spa';
@@ -124,18 +121,7 @@ class SettingsManager {
                 value: businessConfig
             });
 
-            // Update API URL if provided
-            if (apiUrl) {
-                await db.update('settings', {
-                    key: 'apiUrl',
-                    value: apiUrl
-                });
-                
-                // Update sync manager
-                if (window.syncManager) {
-                    await window.syncManager.setApiUrl(apiUrl);
-                }
-            }
+            // API URL is now hardcoded in production - no need to save it
 
             // Update UI
             document.getElementById('businessName').textContent = businessName;
@@ -234,29 +220,7 @@ class SettingsManager {
         }
     }
 
-    addApiUrlInput() {
-        // Check if API URL input already exists
-        if (document.getElementById('apiUrlInput')) return;
-        
-        const settingsSection = document.querySelector('.settings-section');
-        if (!settingsSection) return;
-
-        const apiSection = document.createElement('div');
-        apiSection.className = 'dynamic-content';
-        apiSection.innerHTML = `
-            <div class="form-group" style="margin-top: 1.5rem;">
-                <label>API Server URL (for sync with MongoDB)</label>
-                <input type="url" id="apiUrlInput" class="form-input" 
-                       placeholder="https://your-server.com" 
-                       value="${this.settings.apiUrl || ''}">
-                <small style="color: var(--gray); display: block; margin-top: 0.5rem;">
-                    Enter your MERN backend URL to enable automatic sync. Leave empty for offline-only mode.
-                </small>
-            </div>
-        `;
-
-        settingsSection.appendChild(apiSection);
-    }
+    // API URL input removed - now hardcoded for production deployment
 
     addSyncButton() {
         // Check if sync section already exists

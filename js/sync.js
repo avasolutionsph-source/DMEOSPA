@@ -14,15 +14,9 @@ class SyncManager {
         // Delayed initialization to prevent blocking
         setTimeout(async () => {
             try {
-                // Get API URL from settings
-                const apiUrlSetting = await db.get('settings', 'apiUrl');
-                if (apiUrlSetting) {
-                    this.apiUrl = apiUrlSetting.value;
-                } else {
-                    // Fallback to Marketing Website API
-                    this.apiUrl = 'http://localhost:3001';
-                    console.log('🔄 Using fallback API URL:', this.apiUrl);
-                }
+                // Hardcoded API URL for production deployment
+                this.apiUrl = 'https://ava-marketing-api.onrender.com';
+                console.log('🔄 Using production API URL:', this.apiUrl);
 
                 // Set up online/offline listeners
                 window.addEventListener('online', () => this.handleOnline());
@@ -689,14 +683,7 @@ class SyncManager {
         await this.syncAll();
     }
 
-    // Method to set API URL for MERN backend
-    async setApiUrl(url) {
-        this.apiUrl = url;
-        await db.update('settings', {
-            key: 'apiUrl',
-            value: url
-        });
-    }
+    // API URL is now hardcoded for production deployment
 
     // Get sync statistics
     async getSyncStats() {

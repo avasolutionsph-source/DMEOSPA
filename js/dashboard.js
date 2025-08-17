@@ -50,9 +50,8 @@ class DashboardManager {
                 return;
             }
 
-            // Get API URL from settings
-            const apiUrlSetting = await db.get('settings', 'apiUrl');
-            const apiUrl = apiUrlSetting?.value || 'http://localhost:3001';
+            // Hardcoded API URL for production deployment
+            const apiUrl = 'https://ava-marketing-api.onrender.com';
 
             console.log('📊 Fetching synced business stats from:', `${apiUrl}/api/business/stats`);
 

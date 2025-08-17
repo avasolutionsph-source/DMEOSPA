@@ -611,7 +611,7 @@ class EntitlementsSystem {
 
     // Get upgrade URL (customize for your MERN website)
     getUpgradeUrl(plan) {
-        const baseUrl = this.serverUrl || 'http://localhost:3001'; // Marketing Website URL
+        const baseUrl = 'https://ava-marketing-api.onrender.com';
         const currentUser = window.authSystem?.currentUser;
         const email = currentUser?.email || '';
         
@@ -652,9 +652,8 @@ class EntitlementsSystem {
     // Make authenticated API call
     async makeAPICall(endpoint, method = 'GET', data = null) {
         if (!this.serverUrl) {
-            // Try to get server URL from settings
-            const setting = await db.get('settings', 'apiUrl');
-            this.serverUrl = setting?.value || 'http://localhost:3001'; // Marketing Website URL
+            // Hardcoded server URL for production deployment
+            this.serverUrl = 'https://ava-marketing-api.onrender.com';
         }
 
         const options = {
@@ -721,9 +720,8 @@ class EntitlementsSystem {
                 return;
             }
 
-            // Get API URL from settings
-            const apiUrlSetting = await db.get('settings', 'apiUrl');
-            const apiUrl = apiUrlSetting?.value || 'http://localhost:3001';
+            // Hardcoded API URL for production deployment
+            const apiUrl = 'https://ava-marketing-api.onrender.com';
 
             console.log('🔄 Checking subscription status from server...');
             
