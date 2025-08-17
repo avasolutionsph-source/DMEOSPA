@@ -17,6 +17,7 @@ class POSSystem {
         await this.loadProducts();
         this.setupEventListeners();
         this.updateCartDisplay();
+        this.updateRoomStatus();
     }
 
     setupEventListeners() {
@@ -72,6 +73,8 @@ class POSSystem {
                 const serviceDuration = firstService ? (firstService.duration || 0) : 0;
                 const serviceId = firstService ? firstService.id : null;
                 await window.roomsManager.assignRoomFromPOS(roomNumber, this.selectedEmployee, serviceName, serviceDuration, serviceId);
+                // Update room status display after assignment
+                setTimeout(() => this.updateRoomStatus(), 500);
             });
         }
 
@@ -119,6 +122,11 @@ class POSSystem {
         document.getElementById('confirmCheckoutBtn').addEventListener('click', () => {
             this.processCheckout();
         });
+
+        // Update room status periodically
+        setInterval(() => {
+            this.updateRoomStatus();
+        }, 30000); // Every 30 seconds
     }
 
     async loadEmployees() {
@@ -522,6 +530,8 @@ class POSSystem {
                 }
                 if (roomNumberToUse && serviceNameAtCheckout && this.selectedEmployee && typeof window.roomsManager?.assignRoomFromPOS === 'function') {
                     await window.roomsManager.assignRoomFromPOS(roomNumberToUse, this.selectedEmployee, serviceNameAtCheckout, serviceDurationAtCheckout, serviceIdAtCheckout);
+                    // Update room status display after assignment
+                    setTimeout(() => this.updateRoomStatus(), 500);
                 }
             } catch (e) {
                 console.warn('Auto room start after checkout failed:', e);
@@ -621,6 +631,45 @@ class POSSystem {
             
         } catch (error) {
             console.error('Failed to update inventory with usage tracking:', error);
+        }
+    }
+
+    // Update room status display in POS
+    async updateRoomStatus() {
+        const grid = document.getElementById('roomStatusGrid');
+        if (!grid) return;
+
+        try {
+            const rooms = await db.getAll('rooms');
+            if (!rooms || rooms.length === 0) {
+                grid.innerHTML = '<span style="color:#999;">No rooms configured</span>';
+                return;
+            }
+
+            grid.innerHTML = rooms.map(room => {
+                const isOccupied = room.status === 'occupied';
+                const bgColor = isOccupied ? '#fee2e2' : '#dcfce7';
+                const textColor = isOccupied ? '#dc2626' : '#16a34a';
+                const icon = isOccupied ? 'fas fa-times-circle' : 'fas fa-check-circle';
+                
+                return `
+                    <div style="
+                        background: ${bgColor}; 
+                        color: ${textColor}; 
+                        padding: 4px 8px; 
+                        border-radius: 4px; 
+                        font-size: 0.8rem;
+                        border: 1px solid ${isOccupied ? '#fca5a5' : '#86efac'};
+                        cursor: ${isOccupied ? 'default' : 'pointer'};
+                    " ${!isOccupied ? `onclick="document.getElementById('roomAssignNumber').value='${room.number}'"` : ''} 
+                    title="${isOccupied ? `Room ${room.number} - Occupied${room.currentEmployeeName ? ` by ${room.currentEmployeeName}` : ''}` : `Room ${room.number} - Available (click to select)`}">
+                        <i class="${icon}"></i> ${room.number}
+                    </div>
+                `;
+            }).join('');
+        } catch (error) {
+            console.error('Failed to load room status:', error);
+            grid.innerHTML = '<span style="color:#ef4444;">Error loading rooms</span>';
         }
     }
 
