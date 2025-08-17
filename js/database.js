@@ -2,7 +2,7 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 1;
+        this.version = 2; // Bump when schema changes
         this.db = null;
         this.userId = null;
     }
@@ -76,6 +76,8 @@ class Database {
                                 services: true,
                                 inventory: true,
                                 employees: true,
+                                bookings: true,
+                                rooms: true,
                                 chatbot: true,
                                 settings: true
                             },
@@ -87,6 +89,24 @@ class Database {
                             }
                         }
                     });
+                    // Payroll settings defaults
+                    settingsStore.add({
+                        key: 'payrollSettings',
+                        value: {
+                            otRatePercent: 25, // additional percent
+                            nightDiffPercent: 10,
+                            tipDistribution: 'toTherapist', // or 'pool'
+                            holidayRates: {
+                                regular_not_worked: 100,
+                                regular_worked: 200,
+                                special_not_worked: 0,
+                                special_worked: 130,
+                                special_working_day: 100,
+                                double_not_worked: 200,
+                                double_worked: 300
+                            }
+                        }
+                    });
                 }
 
                 // Sync Queue store for offline operations
@@ -95,6 +115,92 @@ class Database {
                     syncStore.createIndex('timestamp', 'timestamp', { unique: false });
                     syncStore.createIndex('type', 'type', { unique: false });
                     syncStore.createIndex('status', 'status', { unique: false });
+                }
+
+                // New stores - v2
+                // Customers store (for retention analytics and bookings)
+                if (!this.db.objectStoreNames.contains('customers')) {
+                    const customers = this.db.createObjectStore('customers', { keyPath: 'id', autoIncrement: true });
+                    customers.createIndex('name', 'name', { unique: false });
+                    customers.createIndex('phone', 'phone', { unique: false });
+                    customers.createIndex('email', 'email', { unique: false });
+                    customers.createIndex('createdAt', 'createdAt', { unique: false });
+                }
+
+                // Bookings store
+                if (!this.db.objectStoreNames.contains('bookings')) {
+                    const bookings = this.db.createObjectStore('bookings', { keyPath: 'id', autoIncrement: true });
+                    bookings.createIndex('date', 'date', { unique: false }); // start date/time ISO
+                    bookings.createIndex('status', 'status', { unique: false });
+                    bookings.createIndex('employeeId', 'employeeId', { unique: false });
+                    bookings.createIndex('roomId', 'roomId', { unique: false });
+                    bookings.createIndex('customerId', 'customerId', { unique: false });
+                }
+
+                // Rooms store
+                if (!this.db.objectStoreNames.contains('rooms')) {
+                    const rooms = this.db.createObjectStore('rooms', { keyPath: 'id', autoIncrement: true });
+                    rooms.createIndex('number', 'number', { unique: true });
+                    rooms.createIndex('status', 'status', { unique: false }); // available, occupied, maintenance
+                    rooms.createIndex('group', 'group', { unique: false }); // adjacency group
+                }
+
+                // Sessions (active treatments with timers)
+                if (!this.db.objectStoreNames.contains('sessions')) {
+                    const sessions = this.db.createObjectStore('sessions', { keyPath: 'id', autoIncrement: true });
+                    sessions.createIndex('roomId', 'roomId', { unique: false });
+                    sessions.createIndex('employeeId', 'employeeId', { unique: false });
+                    sessions.createIndex('status', 'status', { unique: false }); // active, completed, cancelled
+                    sessions.createIndex('startTime', 'startTime', { unique: false });
+                }
+
+                // Gift Certificates
+                if (!this.db.objectStoreNames.contains('giftCertificates')) {
+                    const gcs = this.db.createObjectStore('giftCertificates', { keyPath: 'id', autoIncrement: true });
+                    gcs.createIndex('code', 'code', { unique: true });
+                    gcs.createIndex('status', 'status', { unique: false }); // issued, redeemed, expired
+                    gcs.createIndex('expiryDate', 'expiryDate', { unique: false });
+                }
+
+                // Suppliers
+                if (!this.db.objectStoreNames.contains('suppliers')) {
+                    const suppliers = this.db.createObjectStore('suppliers', { keyPath: 'id', autoIncrement: true });
+                    suppliers.createIndex('name', 'name', { unique: false });
+                }
+
+                // Attendance and Time Tracking
+                if (!this.db.objectStoreNames.contains('attendance')) {
+                    const attendance = this.db.createObjectStore('attendance', { keyPath: 'id', autoIncrement: true });
+                    attendance.createIndex('employeeId', 'employeeId', { unique: false });
+                    attendance.createIndex('date', 'date', { unique: false });
+                }
+
+                // Shift Schedules
+                if (!this.db.objectStoreNames.contains('schedules')) {
+                    const schedules = this.db.createObjectStore('schedules', { keyPath: 'id', autoIncrement: true });
+                    schedules.createIndex('employeeId', 'employeeId', { unique: false });
+                    schedules.createIndex('date', 'date', { unique: false });
+                }
+
+                // Leave Requests
+                if (!this.db.objectStoreNames.contains('leaveRequests')) {
+                    const leave = this.db.createObjectStore('leaveRequests', { keyPath: 'id', autoIncrement: true });
+                    leave.createIndex('employeeId', 'employeeId', { unique: false });
+                    leave.createIndex('status', 'status', { unique: false });
+                }
+
+                // Payroll Runs
+                if (!this.db.objectStoreNames.contains('payrollRuns')) {
+                    const payroll = this.db.createObjectStore('payrollRuns', { keyPath: 'id', autoIncrement: true });
+                    payroll.createIndex('periodStart', 'periodStart', { unique: false });
+                    payroll.createIndex('periodEnd', 'periodEnd', { unique: false });
+                }
+
+                // Tips
+                if (!this.db.objectStoreNames.contains('tips')) {
+                    const tips = this.db.createObjectStore('tips', { keyPath: 'id', autoIncrement: true });
+                    tips.createIndex('employeeId', 'employeeId', { unique: false });
+                    tips.createIndex('date', 'date', { unique: false });
                 }
 
                 console.log('Database setup complete');

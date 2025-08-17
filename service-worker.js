@@ -1,5 +1,5 @@
 // Service Worker for Offline Functionality - Updated with Enhanced Chatbot
-const CACHE_NAME = 'ava-solutions-v1.6.6';
+const CACHE_NAME = 'ava-solutions-v1.7.0';
 const urlsToCache = [
     './',
     './index.html',
@@ -10,6 +10,10 @@ const urlsToCache = [
     './js/products.js',
     './js/inventory.js',
     './js/employees.js',
+    './js/bookings.js',
+    './js/rooms.js',
+    './js/payroll.js',
+    './js/giftcerts.js',
     './js/chatbot.js',
     './js/dashboard.js',
     './js/settings.js',

@@ -169,6 +169,16 @@ class App {
                     await window.loadPOS();
                 }
                 break;
+            case 'bookings':
+                if (window.loadBookings) {
+                    await window.loadBookings();
+                }
+                break;
+            case 'rooms':
+                if (window.loadRooms) {
+                    await window.loadRooms();
+                }
+                break;
             case 'products':
                 if (window.loadProducts) {
                     await window.loadProducts();
