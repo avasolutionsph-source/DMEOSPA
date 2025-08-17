@@ -58,7 +58,7 @@ class RoomsManager {
 		// Start timers for any rooms already occupied
 		this.rooms.forEach(r => {
 			if (r.status === 'occupied' && r.sessionStartTime) {
-				this.tickTimer(r.id, r.sessionStartTime);
+				this.tickTimer(r.id, r.sessionStartTime, r.estimatedMinutes || null);
 			}
 		});
 	}
@@ -126,8 +126,17 @@ class RoomsManager {
 		const room = await db.get('rooms', roomId);
 		if (!room) return;
 		if (room.status === 'occupied') { showNotification('Room is already occupied', 'warning'); return; }
+		// Ask for service and duration if not provided
+		let selectedServiceName = overrides.serviceName || '';
+		let selectedServiceDuration = overrides.serviceDuration || 0;
+		if (!selectedServiceName || !selectedServiceDuration) {
+			const details = await this.promptSessionDetails(room);
+			if (!details) return; // cancelled
+			selectedServiceName = details.serviceName;
+			selectedServiceDuration = details.duration;
+		}
 		if (!skipConfirm) {
-			const ok = await app.confirm('Start Session', `Start session in Room ${room.number}?`);
+			const ok = await app.confirm('Start Session', `Start ${selectedServiceName} for ${selectedServiceDuration} min in Room ${room.number}?`);
 			if (!ok) return;
 		}
 		room.status = 'occupied';
@@ -138,16 +147,8 @@ class RoomsManager {
 			const emp = await db.get('employees', parseInt(employeeId));
 			employeeName = emp?.name || '';
 		}
-		let serviceName = '';
-		let serviceDuration = 0;
-		if (overrides.serviceName) {
-			serviceName = overrides.serviceName;
-		} else {
-			const cart = window.posSystem?.cart || [];
-			const firstService = cart.find(i => i.type === 'service');
-			if (firstService) { serviceName = firstService.name; serviceDuration = firstService.duration || 0; }
-		}
-		if (overrides.serviceDuration) { serviceDuration = overrides.serviceDuration; }
+		let serviceName = selectedServiceName;
+		let serviceDuration = selectedServiceDuration;
 		// Fallback: if duration is still unknown, look up the service in products by name
 		if ((!serviceDuration || serviceDuration === 0) && serviceName) {
 			try {
@@ -183,9 +184,43 @@ class RoomsManager {
 		room.sessionStartTime = session.startTime;
 		room.estimatedMinutes = serviceDuration || null;
 		await db.update('rooms', room);
-		this.tickTimer(roomId, room.sessionStartTime);
+		this.tickTimer(roomId, room.sessionStartTime, serviceDuration);
 		showNotification(`Timer started for Room ${room.number}`, 'success');
 		await this.loadRooms();
+	}
+
+	// Prompt helper for selecting service and duration
+	async promptSessionDetails(room) {
+		try {
+			const products = await db.getAll('products');
+			const services = (products || []).filter(p => p.type === 'service');
+			if (!services.length) { showNotification('No services configured. Please add services first.', 'warning'); return null; }
+			const options = services.map(s => ({ value: String(s.id), label: `${s.name}${s.duration ? ` (${s.duration} min)` : ''}` }));
+			let chosenId = null;
+			if (window.app?.prompt) {
+				chosenId = await app.prompt({ title: 'Start Session', label: 'Select service', type: 'select', options });
+			} else {
+				const names = services.map(s => s.name).join(', ');
+				const name = window.prompt(`Select service for Room ${room.number}:\n${names}`);
+				const svc = services.find(s => s.name === name);
+				chosenId = svc ? String(svc.id) : null;
+			}
+			if (!chosenId) return null;
+			const svcObj = services.find(s => String(s.id) === String(chosenId));
+			let duration = svcObj?.duration || 60;
+			if (window.app?.prompt) {
+				const durStr = await app.prompt({ title: 'Duration', label: 'How many minutes?', value: String(duration), inputType: 'number' });
+				if (!durStr) return null;
+				duration = Math.max(1, parseInt(durStr, 10) || duration);
+			} else {
+				const durStr = window.prompt('Duration (minutes):', String(duration));
+				duration = Math.max(1, parseInt(durStr || String(duration), 10) || duration);
+			}
+			return { serviceName: svcObj?.name || 'Service', duration };
+		} catch (e) {
+			console.error('Failed to prompt session details', e);
+			return null;
+		}
 	}
 
 	async finishTimer(roomId) {
@@ -244,7 +279,7 @@ class RoomsManager {
 		await this.startTimer(room.id, true, { employeeId, serviceName, serviceDuration: duration });
 	}
 
-	tickTimer(roomId, startTimeISO) {
+	tickTimer(roomId, startTimeISO, expectedMinutes = null) {
 		const el = document.getElementById(`roomTimer_${roomId}`);
 		if (!el) return;
 		let start = startTimeISO ? new Date(startTimeISO).getTime() : Date.now();
@@ -254,6 +289,10 @@ class RoomsManager {
 			const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
 			const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
 			el.textContent = `${h}:${m}:${s}`;
+			if (expectedMinutes && expectedMinutes > 0) {
+				const exceeded = diff > expectedMinutes * 60000;
+				el.style.color = exceeded ? '#dc2626' : '';
+			}
 			if (el.isConnected) requestAnimationFrame(update);
 		};
 		requestAnimationFrame(update);
