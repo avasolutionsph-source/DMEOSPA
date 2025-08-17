@@ -290,18 +290,21 @@ class EmployeeManager {
             const rec = byEmp.get(emp.id) || {};
             const timeIn = rec.timeIn ? new Date(rec.timeIn).toLocaleTimeString() : '-';
             const timeOut = rec.timeOut ? new Date(rec.timeOut).toLocaleTimeString() : '-';
-            const ot = rec.otRequested ? 'Pending' : (rec.otApproved ? 'Approved' : '-');
+            let otLabel = '-';
+            if (rec.otRequested && !rec.otApproved) otLabel = 'Pending';
+            if (rec.otApproved) otLabel = `Approved${rec.otHours ? ' ' + rec.otHours + 'h' : ''}`;
+            const actions = `
+                <button class="btn btn-secondary" onclick="employeeManager.timeIn(${emp.id})">Time In</button>
+                <button class="btn btn-secondary" onclick="employeeManager.timeOut(${emp.id})">Time Out</button>
+                ${!rec.otRequested ? `<button class=\"btn btn-primary\" onclick=\"employeeManager.requestOT(${emp.id})\">Request OT</button>` : rec.otApproved ? '' : `<button class=\"btn btn-primary\" onclick=\"employeeManager.approveOT(${emp.id})\">Approve OT</button> <button class=\"btn btn-danger\" onclick=\"employeeManager.rejectOT(${emp.id})\">Reject</button>`}
+            `;
             return `
                 <tr>
                     <td>${emp.name}</td>
                     <td>${timeIn}</td>
                     <td>${timeOut}</td>
-                    <td>${ot}</td>
-                    <td>
-                        <button class="btn btn-secondary" onclick="employeeManager.timeIn(${emp.id})">Time In</button>
-                        <button class="btn btn-secondary" onclick="employeeManager.timeOut(${emp.id})">Time Out</button>
-                        <button class="btn btn-primary" onclick="employeeManager.requestOT(${emp.id})">Request OT</button>
-                    </td>
+                    <td>${otLabel}</td>
+                    <td>${actions}</td>
                 </tr>`;
         }));
         tbody.innerHTML = rows.join('');
@@ -336,8 +339,42 @@ class EmployeeManager {
         const existing = records.find(r => r.employeeId === employeeId && new Date(r.date).toDateString() === today.toDateString());
         if (!existing) { showNotification('No attendance record found', 'warning'); return; }
         existing.otRequested = true;
+        existing.otApproved = false;
         await db.update('attendance', existing);
         showNotification('OT request submitted', 'info');
+        await this.loadAttendance();
+    }
+
+    async approveOT(employeeId) {
+        const records = await db.getAll('attendance');
+        const today = new Date();
+        const existing = records.find(r => r.employeeId === employeeId && new Date(r.date).toDateString() === today.toDateString());
+        if (!existing) { showNotification('No attendance record found', 'warning'); return; }
+        const hoursStr = await app.prompt({ title: 'Approve OT', label: 'Overtime hours', inputType: 'number', value: '1', hint: 'Enter decimal hours, e.g., 1.5' });
+        if (hoursStr === null) return;
+        const hours = parseFloat(hoursStr);
+        if (isNaN(hours) || hours < 0) { showNotification('Invalid hours', 'error'); return; }
+        existing.otRequested = true;
+        existing.otApproved = true;
+        existing.otHours = hours;
+        existing.otApprovedAt = new Date().toISOString();
+        await db.update('attendance', existing);
+        showNotification('OT approved', 'success');
+        await this.loadAttendance();
+    }
+
+    async rejectOT(employeeId) {
+        const records = await db.getAll('attendance');
+        const today = new Date();
+        const existing = records.find(r => r.employeeId === employeeId && new Date(r.date).toDateString() === today.toDateString());
+        if (!existing) { showNotification('No attendance record found', 'warning'); return; }
+        const ok = await app.confirm('Reject OT', 'Reject this OT request?');
+        if (!ok) return;
+        existing.otRequested = false;
+        existing.otApproved = false;
+        existing.otHours = 0;
+        await db.update('attendance', existing);
+        showNotification('OT rejected', 'info');
         await this.loadAttendance();
     }
 
@@ -365,15 +402,29 @@ class EmployeeManager {
         const settings = (await db.get('settings', 'payrollSettings'))?.value || { otRatePercent: 25, nightDiffPercent: 10 };
         const sessions = await db.getAll('sessions');
         const tips = await db.getAll('tips');
+        const attendance = await db.getAll('attendance');
         const rows = await Promise.all(this.employees.map(async (emp) => {
             const empSessions = sessions.filter(s => s.employeeId === String(emp.id) && s.status === 'completed');
             const hours = empSessions.reduce((sum, s) => {
                 const st = new Date(s.startTime); const et = new Date(s.endTime || s.startTime);
                 if (st >= start && et <= end) return sum + (et - st) / 3600000; else return sum;
             }, 0);
+
+            // Approved OT hours within period
+            const empAttendance = attendance.filter(a => a.employeeId === emp.id && a.otApproved);
+            const otHours = empAttendance.reduce((sum, a) => {
+                const d = new Date(a.date);
+                if (d >= start && d <= end) return sum + (parseFloat(a.otHours || 0)); else return sum;
+            }, 0);
+
+            // Base pay
             const type = emp.employmentType || 'daily';
-            const base = type === 'salary' ? (parseFloat(emp.monthlySalary || 0) / 2) : (parseFloat(emp.dailyRate || 0) * Math.ceil(hours / 8));
-            const otPay = 0; const nightPay = 0; const holidayPay = 0;
+            const dailyRate = parseFloat(emp.dailyRate || 0);
+            const monthlySalary = parseFloat(emp.monthlySalary || 0);
+            const base = type === 'salary' ? (monthlySalary / 2) : (dailyRate * Math.ceil(hours / 8));
+            const hourlyRate = type === 'salary' ? (monthlySalary / (22 * 8)) : (dailyRate / 8);
+            const otPay = otHours * hourlyRate * (settings.otRatePercent / 100);
+            const nightPay = 0; const holidayPay = 0;
             const empTips = tips.filter(t => t.employeeId === String(emp.id) && new Date(t.date) >= start && new Date(t.date) <= end).reduce((s,t)=>s+(t.amount||0),0);
             const deductions = 0;
             const total = base + otPay + nightPay + holidayPay + empTips - deductions;
@@ -383,7 +434,7 @@ class EmployeeManager {
                     <td>${type}</td>
                     <td>${hours.toFixed(2)}</td>
                     <td>${app.formatCurrency(base)}</td>
-                    <td>${app.formatCurrency(otPay)}</td>
+                    <td>${app.formatCurrency(otPay)} (${otHours.toFixed(2)}h)</td>
                     <td>${app.formatCurrency(nightPay)}</td>
                     <td>${app.formatCurrency(holidayPay)}</td>
                     <td>${app.formatCurrency(empTips)}</td>
