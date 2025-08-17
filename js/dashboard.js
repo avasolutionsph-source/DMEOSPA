@@ -11,6 +11,12 @@ class DashboardManager {
     }
 
     async init() {
+        // Check if user is on unpaid plan and show registration prompt
+        if (window.entitlementsSystem?.currentPlan === 'unpaid') {
+            this.showUnpaidDashboard();
+            return;
+        }
+
         await this.loadDashboardData();
 
         const perf = window.performanceProfile || 'balanced';
@@ -31,6 +37,117 @@ class DashboardManager {
         }
         await this.loadRecentTransactions();
         await this.loadLowStockAlerts();
+    }
+
+    showUnpaidDashboard() {
+        const dashboardElement = document.getElementById('dashboard');
+        if (dashboardElement) {
+            dashboardElement.innerHTML = `
+                <div style="padding: 2rem; text-align: center; max-width: 800px; margin: 0 auto;">
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 3rem 2rem; border-radius: 16px; margin-bottom: 2rem;">
+                        <i class="fas fa-chart-line" style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.9;"></i>
+                        <h1 style="margin-bottom: 1rem; font-size: 2.5rem;">Welcome to Ava Solutions</h1>
+                        <p style="font-size: 1.2rem; opacity: 0.9; margin-bottom: 2rem;">
+                            Your complete business management solution for spas, salons, and service businesses
+                        </p>
+                        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                            <a href="https://avasolutionsph.com/register.html" target="_blank" 
+                               class="btn btn-light btn-lg" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-user-plus"></i> Register Your Business
+                            </a>
+                            <button onclick="showLoginModalDirect()" class="btn btn-outline-light btn-lg">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+                        <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 4px solid #10b981;">
+                            <i class="fas fa-cash-register" style="font-size: 2.5rem; color: #10b981; margin-bottom: 1rem;"></i>
+                            <h3 style="margin-bottom: 0.5rem;">Point of Sale</h3>
+                            <p style="color: #6b7280; margin-bottom: 1rem;">Process transactions, manage cart, track sales with employee assignment and commission tracking.</p>
+                            <span style="background: #dcfce7; color: #166534; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.875rem;">
+                                <i class="fas fa-lock"></i> Registration Required
+                            </span>
+                        </div>
+                        
+                        <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 4px solid #f59e0b;">
+                            <i class="fas fa-boxes" style="font-size: 2.5rem; color: #f59e0b; margin-bottom: 1rem;"></i>
+                            <h3 style="margin-bottom: 0.5rem;">Inventory Management</h3>
+                            <p style="color: #6b7280; margin-bottom: 1rem;">Track stock levels, manage suppliers, monitor expiry dates, and automate reorder alerts.</p>
+                            <span style="background: #fef3c7; color: #92400e; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.875rem;">
+                                <i class="fas fa-lock"></i> Registration Required
+                            </span>
+                        </div>
+                        
+                        <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 4px solid #8b5cf6;">
+                            <i class="fas fa-users" style="font-size: 2.5rem; color: #8b5cf6; margin-bottom: 1rem;"></i>
+                            <h3 style="margin-bottom: 0.5rem;">Employee & Payroll</h3>
+                            <p style="color: #6b7280; margin-bottom: 1rem;">Manage staff, track attendance, process payroll with deductions, and monitor performance.</p>
+                            <span style="background: #ede9fe; color: #6b21a8; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.875rem;">
+                                <i class="fas fa-lock"></i> Registration Required
+                            </span>
+                        </div>
+                        
+                        <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 4px solid #ef4444;">
+                            <i class="fas fa-door-open" style="font-size: 2.5rem; color: #ef4444; margin-bottom: 1rem;"></i>
+                            <h3 style="margin-bottom: 0.5rem;">Room Management</h3>
+                            <p style="color: #6b7280; margin-bottom: 1rem;">Track massage rooms, session timers, and automatically assign rooms to services.</p>
+                            <span style="background: #fee2e2; color: #991b1b; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.875rem;">
+                                <i class="fas fa-lock"></i> Registration Required
+                            </span>
+                        </div>
+                        
+                        <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 4px solid #06b6d4;">
+                            <i class="fas fa-calendar-alt" style="font-size: 2.5rem; color: #06b6d4; margin-bottom: 1rem;"></i>
+                            <h3 style="margin-bottom: 0.5rem;">Booking System</h3>
+                            <p style="color: #6b7280; margin-bottom: 1rem;">Manage appointments, track cancellations, and analyze booking patterns.</p>
+                            <span style="background: #cffafe; color: #155e75; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.875rem;">
+                                <i class="fas fa-lock"></i> Registration Required
+                            </span>
+                        </div>
+                        
+                        <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 4px solid #84cc16;">
+                            <i class="fas fa-robot" style="font-size: 2.5rem; color: #84cc16; margin-bottom: 1rem;"></i>
+                            <h3 style="margin-bottom: 0.5rem;">AI Assistant</h3>
+                            <p style="color: #6b7280; margin-bottom: 1rem;">Get instant help, business insights, and automated support with our AI chatbot.</p>
+                            <span style="background: #ecfccb; color: #365314; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.875rem;">
+                                <i class="fas fa-lock"></i> Registration Required
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #f9fafb; padding: 2rem; border-radius: 12px; border: 2px dashed #d1d5db;">
+                        <h3 style="color: #374151; margin-bottom: 1rem;">
+                            <i class="fas fa-info-circle" style="color: #6366f1;"></i>
+                            Why Choose Ava Solutions?
+                        </h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; text-align: left;">
+                            <div>
+                                <i class="fas fa-shield-alt" style="color: #10b981; margin-right: 0.5rem;"></i>
+                                <strong>Secure & Reliable</strong>
+                                <p style="font-size: 0.9rem; color: #6b7280; margin: 0;">Your data is encrypted and backed up</p>
+                            </div>
+                            <div>
+                                <i class="fas fa-mobile-alt" style="color: #f59e0b; margin-right: 0.5rem;"></i>
+                                <strong>Mobile Optimized</strong>
+                                <p style="font-size: 0.9rem; color: #6b7280; margin: 0;">Works on any device, anywhere</p>
+                            </div>
+                            <div>
+                                <i class="fas fa-wifi" style="color: #8b5cf6; margin-right: 0.5rem;"></i>
+                                <strong>Offline Capable</strong>
+                                <p style="font-size: 0.9rem; color: #6b7280; margin: 0;">Continue working without internet</p>
+                            </div>
+                            <div>
+                                <i class="fas fa-headset" style="color: #ef4444; margin-right: 0.5rem;"></i>
+                                <strong>24/7 Support</strong>
+                                <p style="font-size: 0.9rem; color: #6b7280; margin: 0;">Get help when you need it</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
     }
 
     async loadDashboardData() {

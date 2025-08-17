@@ -2,7 +2,7 @@
 class EntitlementsSystem {
     constructor() {
         this.entitlements = null;
-        this.currentPlan = 'free';
+        this.currentPlan = 'unpaid'; // Default to unpaid instead of free
         this.token = null;
         this.serverUrl = null; // Will be set from settings or environment
     }
@@ -31,7 +31,7 @@ class EntitlementsSystem {
                 
                 if (decoded && decoded.entitlements) {
                     // Get subscription plan from JWT token
-                    this.currentPlan = decoded.subscriptionPlan || decoded.plan || 'free';
+                    this.currentPlan = decoded.subscriptionPlan || decoded.plan || 'unpaid';
                     console.log('🎯 LOADED SUBSCRIPTION PLAN FROM JWT:', this.currentPlan);
                     console.log('📊 JWT subscriptionPlan:', decoded.subscriptionPlan);
                     console.log('📊 JWT plan:', decoded.plan);
@@ -44,7 +44,7 @@ class EntitlementsSystem {
 
             // Try to load from localStorage as fallback
             const cachedToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-            const cachedPlan = localStorage.getItem('subscriptionPlan') || 'free';
+            const cachedPlan = localStorage.getItem('subscriptionPlan') || 'unpaid';
             
             if (cachedToken) {
                 this.token = cachedToken;
@@ -98,7 +98,7 @@ class EntitlementsSystem {
             
         } catch (error) {
             console.error('Error loading entitlements:', error);
-            this.setFreePlanEntitlements();
+            this.setUnpaidPlanEntitlements();
         }
     }
 
@@ -138,21 +138,23 @@ class EntitlementsSystem {
         console.log(`✅ Set ${plan} plan entitlements successfully`);
     }
 
-    // Set unpaid plan entitlements (basic features only)
+    // Set unpaid plan entitlements (very limited features)
     setUnpaidPlanEntitlements() {
         this.currentPlan = 'unpaid';
         this.entitlements = {
-            pos: true,              // Basic POS access
+            pos: false,             // No POS access - need registration
             inventory: false,       // No inventory management
             employees: false,       // No employee management
-            dashboard: true,        // Basic dashboard access
+            dashboard: 'limited',   // Very limited dashboard access
             chatbot: false,         // No AI assistant
             cloudBackup: false,     // No cloud backup
             analytics: false,       // No analytics
             multiUser: false,       // No multi-user
-            support: false          // No support
+            support: false,         // No support
+            bookings: false,        // No bookings
+            rooms: false            // No rooms
         };
-        console.log('Set unpaid plan entitlements - basic features only (POS + Dashboard)');
+        console.log('Set unpaid plan entitlements - very limited features, registration required');
     }
 
     // Legacy method for backward compatibility
@@ -478,6 +480,12 @@ class EntitlementsSystem {
 
     // Gate specific feature sections
     gateFeatureSections() {
+        // Show registration prompts for unpaid users instead of hiding features
+        if (this.currentPlan === 'unpaid') {
+            this.showRegistrationPrompts();
+            return;
+        }
+
         // Gate inventory features in POS
         if (!this.can('inventory')) {
             const inventoryRelated = document.querySelectorAll('.inventory-related');
@@ -502,6 +510,70 @@ class EntitlementsSystem {
                 element.style.display = 'none';
             });
         }
+    }
+
+    showRegistrationPrompts() {
+        // Add registration overlay to restricted pages
+        const restrictedPages = ['pos', 'inventory', 'employees', 'bookings', 'rooms'];
+        
+        restrictedPages.forEach(pageId => {
+            const pageElement = document.getElementById(pageId);
+            if (pageElement && !pageElement.querySelector('.registration-overlay')) {
+                const overlay = document.createElement('div');
+                overlay.className = 'registration-overlay';
+                overlay.style.cssText = `
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(255, 255, 255, 0.95);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1000;
+                    padding: 2rem;
+                    text-align: center;
+                `;
+                
+                overlay.innerHTML = `
+                    <div style="max-width: 400px;">
+                        <i class="fas fa-lock" style="font-size: 3rem; color: #6366f1; margin-bottom: 1rem;"></i>
+                        <h2 style="color: #1f2937; margin-bottom: 1rem;">Registration Required</h2>
+                        <p style="color: #6b7280; margin-bottom: 2rem;">
+                            To access ${pageId.charAt(0).toUpperCase() + pageId.slice(1)} and other premium features, 
+                            please register your business account on our website.
+                        </p>
+                        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                            <a href="https://avasolutionsph.com/register.html" target="_blank" 
+                               class="btn btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-user-plus"></i> Register Now
+                            </a>
+                            <button onclick="showLoginModalDirect()" class="btn btn-secondary">
+                                <i class="fas fa-sign-in-alt"></i> Already Registered? Login
+                            </button>
+                        </div>
+                        <p style="font-size: 0.875rem; color: #9ca3af; margin-top: 1.5rem;">
+                            <i class="fas fa-shield-alt"></i> Secure • Free Trial Available • No Credit Card Required
+                        </p>
+                    </div>
+                `;
+                
+                pageElement.style.position = 'relative';
+                pageElement.appendChild(overlay);
+            }
+        });
+        
+        // Also add registration prompts to navigation items
+        const navItems = document.querySelectorAll('.nav-item[data-page]');
+        navItems.forEach(navItem => {
+            const page = navItem.getAttribute('data-page');
+            if (restrictedPages.includes(page)) {
+                navItem.style.opacity = '0.6';
+                navItem.title = `${page.charAt(0).toUpperCase() + page.slice(1)} - Registration Required`;
+            }
+        });
     }
 
     // Update subscription status in UI
@@ -529,18 +601,18 @@ class EntitlementsSystem {
         };
         
         statusIndicator.innerHTML = `
-            <div class="plan-badge" style="background-color: ${planColors[this.currentPlan]}">
-                <i class="fas fa-${this.currentPlan === 'free' ? 'gift' : 'crown'}"></i>
+            <div class="plan-badge" style="background-color: ${planColors[this.currentPlan] || '#ef4444'}">
+                <i class="fas fa-${this.currentPlan === 'unpaid' ? 'lock' : this.currentPlan === 'free' ? 'gift' : 'crown'}"></i>
                 <span>${this.currentPlan.toUpperCase()}</span>
             </div>
         `;
         
-        // Add upgrade button for free/basic plans
-        if (this.currentPlan === 'free' || this.currentPlan === 'basic') {
+        // Add registration/upgrade button for unpaid/free/basic plans
+        if (this.currentPlan === 'unpaid' || this.currentPlan === 'free' || this.currentPlan === 'basic') {
             if (!statusIndicator.querySelector('.upgrade-btn')) {
                 const upgradeBtn = document.createElement('button');
                 upgradeBtn.className = 'upgrade-btn btn-sm btn-primary';
-                upgradeBtn.innerHTML = '<i class="fas fa-arrow-up"></i> Upgrade';
+                upgradeBtn.innerHTML = this.currentPlan === 'unpaid' ? '<i class="fas fa-user-plus"></i> Register' : '<i class="fas fa-arrow-up"></i> Upgrade';
                 upgradeBtn.onclick = () => this.showUpgradeModal();
                 statusIndicator.appendChild(upgradeBtn);
             }
@@ -549,6 +621,11 @@ class EntitlementsSystem {
 
     // Show upgrade modal
     showUpgradeModal() {
+        // For unpaid users, show registration prompt instead of upgrade modal
+        if (this.currentPlan === 'unpaid') {
+            this.showRegistrationModal();
+            return;
+        }
         const modal = document.createElement('div');
         modal.className = 'modal active';
         modal.id = 'upgradeModal';
@@ -596,6 +673,71 @@ class EntitlementsSystem {
                     </div>
                     <div class="upgrade-note">
                         <p><i class="fas fa-info-circle"></i> You'll be redirected to our secure payment portal to complete your upgrade.</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+
+    showRegistrationModal() {
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.id = 'registrationModal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-user-plus"></i> Get Started with Ava Solutions</h2>
+                    <button class="modal-close" onclick="this.parentElement.parentElement.parentElement.remove()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div style="text-align: center; padding: 2rem;">
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+                            <i class="fas fa-rocket" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <h3>Unlock All Features</h3>
+                            <p>Register your business account to access POS, Inventory, Employee Management, and more!</p>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                            <div style="padding: 1rem; border: 2px solid #e5e7eb; border-radius: 8px;">
+                                <i class="fas fa-cash-register" style="color: #10b981; font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                                <h4>Point of Sale</h4>
+                                <p style="font-size: 0.9rem; color: #6b7280;">Process transactions and manage sales</p>
+                            </div>
+                            <div style="padding: 1rem; border: 2px solid #e5e7eb; border-radius: 8px;">
+                                <i class="fas fa-boxes" style="color: #f59e0b; font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                                <h4>Inventory</h4>
+                                <p style="font-size: 0.9rem; color: #6b7280;">Track stock and manage supplies</p>
+                            </div>
+                            <div style="padding: 1rem; border: 2px solid #e5e7eb; border-radius: 8px;">
+                                <i class="fas fa-users" style="color: #8b5cf6; font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                                <h4>Staff Management</h4>
+                                <p style="font-size: 0.9rem; color: #6b7280;">Manage employees and payroll</p>
+                            </div>
+                            <div style="padding: 1rem; border: 2px solid #e5e7eb; border-radius: 8px;">
+                                <i class="fas fa-door-open" style="color: #ef4444; font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                                <h4>Room Management</h4>
+                                <p style="font-size: 0.9rem; color: #6b7280;">Track sessions and timers</p>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                            <a href="https://avasolutionsph.com/register.html" target="_blank" 
+                               class="btn btn-primary btn-lg" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-user-plus"></i> Register Your Business
+                            </a>
+                            <button onclick="showLoginModalDirect()" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-sign-in-alt"></i> Already Registered? Login
+                            </button>
+                        </div>
+                        
+                        <div style="margin-top: 2rem; padding: 1rem; background: #f3f4f6; border-radius: 8px;">
+                            <p style="margin: 0; font-size: 0.9rem; color: #6b7280;">
+                                <i class="fas fa-shield-alt" style="color: #10b981;"></i>
+                                <strong>100% Secure</strong> • Free Trial Available • No Credit Card Required
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
