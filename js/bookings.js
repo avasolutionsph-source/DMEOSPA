@@ -115,4 +115,28 @@ class BookingsManager {
 const bookingsManager = new BookingsManager();
 window.loadBookings = async function() { await bookingsManager.init(); };
 
+// Hook: when a new booking is created (example function)
+async function createBooking(booking) {
+	// booking: {customerId, serviceId, startTime, durationMins, employeeId?}
+	try {
+		const toSave = { ...booking };
+		// If no therapist chosen, use rotation
+		if (!toSave.employeeId && window.assignTherapistByRotation) {
+			const assigned = await window.assignTherapistByRotation({ bookingId: null });
+			toSave.employeeId = assigned || null;
+		}
+		toSave.date = toSave.startTime;
+		toSave.status = toSave.status || 'pending';
+		await db.add('bookings', toSave);
+		showNotification('Booking saved', 'success');
+		return toSave;
+	} catch (e) {
+		console.error('Failed creating booking', e);
+		showNotification('Failed to create booking', 'error');
+	}
+}
+
+// Expose for other modules/UI
+window.createBooking = createBooking;
+
 

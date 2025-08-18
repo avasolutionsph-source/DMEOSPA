@@ -454,3 +454,75 @@ const employeeManager = new EmployeeManager();
 window.loadEmployees = async function() {
     await employeeManager.init();
 };
+
+// Employee Rotation Manager - priority by time-in ranking
+class EmployeeRotationManager {
+	constructor() {
+		this.queue = []; // [{employeeId, timeInISO}]
+		this.lastBuiltAt = null;
+	}
+
+	async rebuildQueueForToday() {
+		const today = new Date().toDateString();
+		const attendance = await db.getAll('attendance');
+		const todays = attendance
+			.filter(a => new Date(a.date).toDateString() === today && a.timeIn && !a.timeOut)
+			.map(a => ({ employeeId: a.employeeId, timeInISO: a.timeIn }));
+		// sort by earliest time-in first
+		todays.sort((a,b) => new Date(a.timeInISO) - new Date(b.timeInISO));
+		this.queue = todays;
+		this.lastBuiltAt = new Date().toISOString();
+		console.log('Rotation queue rebuilt:', this.queue);
+	}
+
+	async onEmployeeTimeIn(employeeId) {
+		// insert in queue at appropriate position
+		const nowISO = new Date().toISOString();
+		this.queue.push({ employeeId, timeInISO: nowISO });
+		this.queue.sort((a,b) => new Date(a.timeInISO) - new Date(b.timeInISO));
+	}
+
+	async onEmployeeTimeOut(employeeId) {
+		this.queue = this.queue.filter(e => e.employeeId !== employeeId);
+	}
+
+	getQueue() {
+		return this.queue.slice();
+	}
+
+	// Assign next available therapist; optionally reserve for bookingId
+	async assignNext({ bookingId = null } = {}) {
+		if (this.queue.length === 0) return null;
+		const next = this.queue.shift();
+		// push to back of queue (round-robin)
+		this.queue.push(next);
+		// record assignment
+		try {
+			await db.add('rotationAssignments', {
+				date: new Date().toISOString(),
+				employeeId: next.employeeId,
+				bookingId: bookingId || null
+			});
+		} catch (_) {}
+		return next.employeeId;
+	}
+}
+
+// create a global instance
+window.rotationManager = new EmployeeRotationManager();
+
+// Hook rotation with existing attendance flows if present
+if (typeof window.addEventListener === 'function') {
+	// Rebuild on load
+	window.addEventListener('load', () => {
+		setTimeout(() => {
+			window.rotationManager.rebuildQueueForToday();
+		}, 200);
+	});
+}
+
+// Expose helper API for bookings/POS to use rotation
+window.assignTherapistByRotation = async function(opts = {}) {
+	if (!window.rotationManager) return null;
+	return await window.rotationManager.assignNext(opts);
+};

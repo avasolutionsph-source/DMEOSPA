@@ -2,7 +2,7 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 3; // Bump when schema changes
+        this.version = 4; // Bump when schema changes
         this.db = null;
         this.userId = null;
     }
@@ -208,6 +208,14 @@ class Database {
                     const consents = this.db.createObjectStore('consentLogs', { keyPath: 'id', autoIncrement: true });
                     consents.createIndex('timestamp', 'timestamp', { unique: false });
                     consents.createIndex('action', 'action', { unique: false });
+                }
+
+                // Rotation Assignments - to keep audit of which therapist was assigned when
+                if (!this.db.objectStoreNames.contains('rotationAssignments')) {
+                    const rot = this.db.createObjectStore('rotationAssignments', { keyPath: 'id', autoIncrement: true });
+                    rot.createIndex('date', 'date', { unique: false });
+                    rot.createIndex('employeeId', 'employeeId', { unique: false });
+                    rot.createIndex('bookingId', 'bookingId', { unique: false });
                 }
 
                 console.log('Database setup complete');
