@@ -143,22 +143,53 @@ function initParallaxEffects() {
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!laptop || window.innerWidth <= 768 || prefersReduced) return;
 
+    // Base rotations
+    const base = { rx: 4, ry: -8 };
     let lastY = 0;
-    let ticking = false;
+    let pointerX = 0.5; // 0..1 across hero
+    let pointerY = 0.5; // 0..1 down hero
+    let lastMoveTs = Date.now();
+    let rafId = null;
 
-    const update = () => {
-        const rate = lastY * -0.15; // very subtle
-        laptop.style.transform = `translateY(${rate}px) rotateY(-8deg) rotateX(4deg)`;
-        ticking = false;
+    const hero = document.querySelector('.hero');
+    const onMouseMove = (e) => {
+        const rect = hero.getBoundingClientRect();
+        pointerX = (e.clientX - rect.left) / Math.max(rect.width, 1);
+        pointerY = (e.clientY - rect.top) / Math.max(rect.height, 1);
+        lastMoveTs = Date.now();
+    };
+    if (hero) hero.addEventListener('mousemove', onMouseMove, { passive: true });
+
+    const render = () => {
+        const now = Date.now();
+        const idle = Math.min(1, (now - lastMoveTs) / 4000); // >4s → fully idle
+        // Scroll parallax
+        const ty = lastY * -0.15; // subtle translateY
+        // Pointer tilt (smaller on idle)
+        const maxRy = 6; // deg
+        const maxRx = 4; // deg
+        const ry = base.ry + (pointerX - 0.5) * maxRy * (1 - 0.5 * idle);
+        const rx = base.rx + (0.5 - pointerY) * maxRx * (1 - 0.5 * idle);
+        // Idle bobbing (only when idle > 0)
+        const bob = idle > 0 ? Math.sin(now * 0.002) * (4 * idle) : 0; // up to 4px
+
+        laptop.style.transform = `translateY(${ty + bob}px) rotateY(${ry}deg) rotateX(${rx}deg)`;
+        rafId = requestAnimationFrame(render);
     };
 
-    window.addEventListener('scroll', () => {
-        lastY = window.pageYOffset;
-        if (!ticking) {
-            window.requestAnimationFrame(update);
-            ticking = true;
+    const onScroll = () => { lastY = window.pageYOffset; };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    rafId = requestAnimationFrame(render);
+
+    // Pause when tab hidden
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = null;
+        } else if (!rafId) {
+            rafId = requestAnimationFrame(render);
         }
-    }, { passive: true });
+    });
 }
 
 // Enhanced smooth scrolling
