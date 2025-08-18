@@ -348,6 +348,9 @@ class AuthSystem {
 
     // Set authentication state
     async setAuthState(user, token, rememberMe = false) {
+        // Ensure account isolation: if switching users, purge local data first
+        await this.ensureAccountIsolation(user);
+
         this.currentUser = user;
         this.authToken = token;
         this.isLoggedIn = true;
@@ -367,6 +370,53 @@ class AuthSystem {
         
         // Add user ID to all future database operations
         await this.initializeUserData();
+    }
+
+    // Ensure that when a different user logs in, previous user's local data is not visible
+    async ensureAccountIsolation(user) {
+        try {
+            const previousUserId = localStorage.getItem('activeUserId');
+            const newUserId = String(user?.id || '');
+            if (!newUserId) return; // nothing to do
+
+            if (previousUserId && previousUserId !== newUserId) {
+                console.log('🔐 Switching account detected. Purging local data for isolation...');
+                showLoading('Switching account...', 'Clearing previous offline data');
+
+                // Clear IndexedDB data except settings (keep minimal app defaults)
+                const storesToClear = [
+                    'products','inventory','employees','transactions','customers',
+                    'bookings','rooms','sessions','attendance','schedules','leaveRequests',
+                    'payrollRuns','tips','giftCertificates','syncQueue'
+                ];
+                try {
+                    if (window.db && typeof window.ensureDBInit === 'function') {
+                        await ensureDBInit();
+                        for (const store of storesToClear) {
+                            try { await db.clearStore(store); } catch (_) {}
+                        }
+                        // Also reset some settings that are user-specific but safe to remove
+                        const userSpecificSettings = ['businessName','businessConfig','lastSync'];
+                        for (const key of userSpecificSettings) {
+                            try { await db.delete('settings', key); } catch (_) {}
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Purge encountered issues:', e);
+                }
+
+                // Clear any cached UI/session hints
+                sessionStorage.clear();
+                // Keep auth keys for the new session; others will be overwritten below
+                hideLoading();
+                showNotification('Previous account data cleared', 'success');
+            }
+
+            // Mark the active user
+            localStorage.setItem('activeUserId', newUserId);
+        } catch (error) {
+            console.warn('ensureAccountIsolation error:', error);
+        }
     }
 
     // Load saved authentication state
