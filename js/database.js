@@ -2,7 +2,7 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 2; // Bump when schema changes
+        this.version = 3; // Bump when schema changes
         this.db = null;
         this.userId = null;
     }
@@ -201,6 +201,13 @@ class Database {
                     const tips = this.db.createObjectStore('tips', { keyPath: 'id', autoIncrement: true });
                     tips.createIndex('employeeId', 'employeeId', { unique: false });
                     tips.createIndex('date', 'date', { unique: false });
+                }
+
+                // Consent Logs (for DPA compliance)
+                if (!this.db.objectStoreNames.contains('consentLogs')) {
+                    const consents = this.db.createObjectStore('consentLogs', { keyPath: 'id', autoIncrement: true });
+                    consents.createIndex('timestamp', 'timestamp', { unique: false });
+                    consents.createIndex('action', 'action', { unique: false });
                 }
 
                 console.log('Database setup complete');
