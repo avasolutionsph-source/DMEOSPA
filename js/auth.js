@@ -718,6 +718,117 @@ class AuthSystem {
     }
 }
 
+class RoleManager {
+	constructor() {
+		this.activeEmployee = null; // {id, name, role}
+		this.roles = {
+			receptionist: {
+				allowPages: ['pos','bookings','rooms','dashboard','settings'],
+				denyPages: ['inventory','employees','chatbot','products']
+			},
+			manager: {
+				allowPages: ['dashboard','pos','bookings','rooms','inventory','employees','settings'],
+				denyPages: ['chatbot']
+			},
+			therapist: {
+				allowPages: ['rooms','bookings','dashboard'],
+				denyPages: ['pos','inventory','employees','products','chatbot','settings']
+			}
+		};
+	}
+
+	setEmployeeSession(employee) {
+		this.activeEmployee = employee; // {id, name, role}
+		localStorage.setItem('activeEmployeeRole', JSON.stringify(employee));
+		this.gateNavigationByRole();
+		showNotification(`Logged in as ${employee.name} (${employee.role})`, 'success');
+	}
+
+	clearEmployeeSession() {
+		this.activeEmployee = null;
+		localStorage.removeItem('activeEmployeeRole');
+		this.gateNavigationByRole();
+		showNotification('Employee role session cleared', 'info');
+	}
+
+	loadFromStorage() {
+		const str = localStorage.getItem('activeEmployeeRole');
+		if (str) {
+			try { this.activeEmployee = JSON.parse(str); } catch(_) {}
+		}
+	}
+
+	gateNavigationByRole() {
+		const navItems = document.querySelectorAll('.nav-item');
+		if (!this.activeEmployee) {
+			// Show all (plan gating still applies)
+			navItems.forEach(i => i.style.display = '');
+			return;
+		}
+		const roleCfg = this.roles[this.activeEmployee.role] || {allowPages: [], denyPages: []};
+		navItems.forEach(item => {
+			const page = item.dataset.page;
+			if (roleCfg.allowPages.length && !roleCfg.allowPages.includes(page)) {
+				item.style.display = 'none';
+			} else if (roleCfg.denyPages.includes(page)) {
+				item.style.display = 'none';
+			} else {
+				item.style.display = '';
+			}
+		});
+	}
+
+	showRoleLoginModal() {
+		const modal = document.createElement('div');
+		modal.className = 'modal active';
+		modal.innerHTML = `
+			<div class="modal-content" style="max-width: 580px;">
+				<div class="modal-header">
+					<h2><i class=\"fas fa-user-lock\"></i> Employee Role Login</h2>
+				</div>
+				<div class="modal-body">
+					<label class="form-label">Select Employee</label>
+					<select id="roleEmployeeSelect" class="form-input"></select>
+					<div style="height:8px"></div>
+					<label class="form-label">Role</label>
+					<select id="roleRoleSelect" class="form-input">
+						<option value="receptionist">Receptionist</option>
+						<option value="manager">Manager</option>
+						<option value="therapist">Therapist</option>
+					</select>
+				</div>
+				<div class="modal-footer">
+					<button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+					<button class="btn btn-primary" id="confirmRoleLoginBtn">Login</button>
+				</div>
+			</div>
+		`;
+		document.body.appendChild(modal);
+
+		// Populate employees
+		setTimeout(async () => {
+			const select = modal.querySelector('#roleEmployeeSelect');
+			const emps = await db.getAll('employees');
+			select.innerHTML = (emps || []).map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+		}, 50);
+
+		modal.querySelector('#confirmRoleLoginBtn').onclick = () => {
+			const empId = parseInt(modal.querySelector('#roleEmployeeSelect').value, 10);
+			const role = modal.querySelector('#roleRoleSelect').value;
+			this.setEmployeeSession({ id: empId, name: modal.querySelector('#roleEmployeeSelect').selectedOptions[0].textContent, role });
+			modal.remove();
+		};
+	}
+}
+
+// Global role manager instance
+window.roleManager = new RoleManager();
+window.addEventListener('DOMContentLoaded', () => window.roleManager.loadFromStorage());
+
+// Expose quick actions on settings page via console
+window.showRoleLogin = () => window.roleManager.showRoleLoginModal();
+window.clearRoleLogin = () => window.roleManager.clearEmployeeSession();
+
 // Initialize auth system
 const authSystem = new AuthSystem();
 
