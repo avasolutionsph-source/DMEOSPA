@@ -428,27 +428,21 @@ class EntitlementsSystem {
                     break;
             }
             
+            // If plan is unpaid, hide everything except settings
+            if (this.currentPlan === 'unpaid' && page !== 'settings' && page !== 'dashboard') {
+                item.style.display = 'none';
+                return;
+            }
+
             if (!canAccess) {
-                item.style.opacity = '0.5';
-                item.style.pointerEvents = 'none';
-                
-                // Add upgrade indicator
-                if (showUpgrade && !item.querySelector('.upgrade-indicator')) {
-                    const upgradeIndicator = document.createElement('span');
-                    upgradeIndicator.className = 'upgrade-indicator';
-                    upgradeIndicator.innerHTML = '<i class="fas fa-crown"></i>';
-                    upgradeIndicator.title = 'Upgrade required';
-                    item.appendChild(upgradeIndicator);
-                }
+                // For paid but not entitled features, hide items entirely
+                item.style.display = 'none';
             } else {
                 item.style.opacity = '1';
                 item.style.pointerEvents = 'auto';
                 
-                // Remove upgrade indicator if present
-                const upgradeIndicator = item.querySelector('.upgrade-indicator');
-                if (upgradeIndicator) {
-                    upgradeIndicator.remove();
-                }
+                // Ensure it is visible when allowed
+                item.style.display = '';
             }
         });
     }
@@ -480,9 +474,10 @@ class EntitlementsSystem {
 
     // Gate specific feature sections
     gateFeatureSections() {
-        // Show registration prompts for unpaid users instead of hiding features
+        // For unpaid users, hide restricted pages entirely (only settings and a minimal dashboard allowed)
         if (this.currentPlan === 'unpaid') {
-            this.showRegistrationPrompts();
+            const pagesToHide = ['pos','inventory','employees','bookings','rooms','products','chatbot'];
+            pagesToHide.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
             this.hideSyncForUnpaidUsers();
             return;
         }
