@@ -354,9 +354,19 @@ class PrivacyManager {
                                 <h4>Contact DPO</h4>
                                 <p>Reach our Data Protection Officer for privacy questions</p>
                             </div>
-                            <a href="mailto:${this.dpoEmail}" class="btn btn-secondary">
+                            <button class="btn btn-secondary" onclick="privacyManager.showDPOContactModal()">
                                 <i class="fas fa-envelope"></i> Contact DPO
-                            </a>
+                            </button>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>Report Security Incident</h4>
+                                <p>Log a suspected breach and notify the DPO</p>
+                            </div>
+                            <button class="btn btn-secondary" onclick="privacyManager.showReportBreachDialog()">
+                                <i class="fas fa-bullhorn"></i> Report Incident
+                            </button>
                         </div>
                         
                         <div class="setting-item" style="border: 2px solid var(--error); background: #fef2f2;">
@@ -434,6 +444,76 @@ class PrivacyManager {
         
         // Show admin notification
         showNotification(`Security breach reported (${breach.id}). DPO has been notified.`, 'error');
+    }
+
+    showReportBreachDialog() {
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 580px;">
+                <div class="modal-header">
+                    <h2><i class=\"fas fa-bullhorn\"></i> Report Security Incident</h2>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label">Describe the incident</label>
+                    <textarea id="breachDesc" class="form-input" rows="4" placeholder="What happened? Include when and how you discovered it."></textarea>
+                    <div style="height:8px"></div>
+                    <label class="form-label">Severity</label>
+                    <select id="breachSeverity" class="form-input">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+                    <button class="btn btn-primary" id="submitBreachBtn">Submit</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        modal.querySelector('#submitBreachBtn').onclick = async () => {
+            const desc = modal.querySelector('#breachDesc').value.trim();
+            const sev = modal.querySelector('#breachSeverity').value;
+            if (!desc) { showNotification('Please describe the incident', 'warning'); return; }
+            const id = await this.reportBreach(desc, sev);
+            showNotification(`Incident logged (#${id})`, 'success');
+            modal.remove();
+        };
+    }
+
+    showDPOContactModal() {
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 580px;">
+                <div class="modal-header">
+                    <h2><i class=\"fas fa-envelope\"></i> Contact Data Protection Officer</h2>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label">Subject</label>
+                    <input id="dpoSubject" class="form-input" placeholder="Subject" />
+                    <div style="height:8px"></div>
+                    <label class="form-label">Message</label>
+                    <textarea id="dpoMessage" class="form-input" rows="5" placeholder="Write your message..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+                    <button class="btn btn-primary" id="sendDpoBtn">Send</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        modal.querySelector('#sendDpoBtn').onclick = () => {
+            const subject = encodeURIComponent(modal.querySelector('#dpoSubject').value || 'Privacy Inquiry');
+            const body = encodeURIComponent(modal.querySelector('#dpoMessage').value + `\n\n---\nApp Version: ${window.app?.version || 'N/A'}\nUser Agent: ${navigator.userAgent}`);
+            window.open(`mailto:${this.dpoEmail}?subject=${subject}&body=${body}`);
+            modal.remove();
+            showNotification('Opening mail app to contact DPO', 'info');
+        };
     }
 
     // Check if user has given specific consent
