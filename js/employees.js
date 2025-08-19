@@ -456,6 +456,7 @@ class EmployeeManager {
         showNotification('Payroll generated (preview)', 'info');
     }
 
+    // Invite employee via marketing API
     async inviteEmployee(email, name, role) {
         try {
             const token = localStorage.getItem('userToken') || localStorage.getItem('authToken');
