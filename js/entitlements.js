@@ -216,6 +216,15 @@ class EntitlementsSystem {
             }
         });
         
+        // Additional role-based hiding for employees: hide settings by default
+        try {
+            const decoded = this.decodeToken(localStorage.getItem('userToken') || localStorage.getItem('authToken')) || {};
+            if (decoded && decoded.role && decoded.role !== 'owner' && decoded.role !== 'admin' && decoded.role !== 'superAdmin') {
+                const settingsNav = document.querySelector('a.nav-item[data-page="settings"]');
+                if (settingsNav) settingsNav.style.display = 'none';
+            }
+        } catch(_){}
+
         // Update plan badge in sidebar
         this.updatePlanBadge();
         
