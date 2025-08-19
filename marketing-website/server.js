@@ -621,6 +621,44 @@ app.use('/api/products', async (req, res) => {
   }
 });
 
+// Public employees for booking site (no auth) – uses x-user-id header
+app.get('/api/public/employees', async (req, res) => {
+  try {
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';
+    const url = `${pwaBackendUrl}/api/employees`;
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(req.headers['x-user-id'] ? { 'x-user-id': req.headers['x-user-id'] } : {})
+    };
+    const response = await fetch(url, { method: 'GET', headers });
+    if (response.ok) {
+      const ct = response.headers.get('content-type') || '';
+      const text = await response.text();
+      if (ct.includes('application/json')) {
+        try {
+          const j = JSON.parse(text);
+          const list = (j.data || j.employees || []);
+          if (Array.isArray(list) && list.length > 0) {
+            return res.json({ success: true, data: list });
+          }
+        } catch(_){}
+      }
+    }
+  } catch(err) {
+    console.error('Public employees proxy error:', err.message);
+  }
+  // Fallback: employees from marketing DB
+  try {
+    const User = (await import('./models/User.js')).default;
+    const userId = req.headers['x-user-id'];
+    if (!userId) return res.json({ success: true, data: [] });
+    const user = await User.findById(userId).lean();
+    return res.json({ success: true, data: user?.employees || [] });
+  } catch (e) {
+    return res.status(500).json({ error: 'Failed to load employees' });
+  }
+});
+
 app.use('/api/employees', async (req, res) => {
   try {
     const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';

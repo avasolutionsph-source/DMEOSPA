@@ -75,7 +75,22 @@
 		}
 	}
 
-	async function loadCatalog(){ await ensureBackendUrl(); const res = await tryProducts(); if (!res) { availabilityResult.textContent = 'Unable to load services.'; return; } const services = (res.data||[]).filter(p=>p.category==='service' || p.category==='massage'); serviceSelect.innerHTML = services.map(s=>`<option value="${s._id||s.id}" data-name="${s.name}" data-duration="${s.duration||60}">${s.name}${s.duration?` (${s.duration}m)`:''}</option>`).join(''); renderServiceChips(services); renderServiceCards(services); if (services[0]) selectService({ id: services[0]._id||services[0].id, name: services[0].name, duration: services[0].duration||60 }); const empsRes = await fetchJSON(`${apiBase()}/employees`).catch(()=>null); if (empsRes) { employeeSelect.innerHTML = '<option value="">Any available</option>' + (empsRes.data||[]).map(e=>`<option value="${e._id||e.id}" data-name="${e.name}">${e.name||e.email||'Employee'}</option>`).join(''); } }
+	async function loadCatalog(){
+		await ensureBackendUrl();
+		const res = await tryProducts();
+		if (!res) { availabilityResult.textContent = 'Unable to load services.'; return; }
+		const services = (res.data||[]).filter(p=>p.category==='service' || p.category==='massage');
+		serviceSelect.innerHTML = services.map(s=>`<option value="${s._id||s.id}" data-name="${s.name}" data-duration="${s.duration||60}">${s.name}${s.duration?` (${s.duration}m)`:''}</option>`).join('');
+		renderServiceChips(services);
+		renderServiceCards(services);
+		if (services[0]) selectService({ id: services[0]._id||services[0].id, name: services[0].name, duration: services[0].duration||60 });
+		// Try public employees first (no auth), then fallback
+		let empsRes = await fetchJSON(`${apiBase()}/public/employees`).catch(()=>null);
+		if (!empsRes) { empsRes = await fetchJSON(`${apiBase()}/employees`).catch(()=>null); }
+		if (empsRes) {
+			employeeSelect.innerHTML = '<option value="">Any available</option>' + (empsRes.data||[]).map(e=>`<option value="${e._id||e.id}" data-name="${e.name}">${e.name||e.email||'Employee'}</option>`).join('');
+		}
+	}
 
 	function updateSummary(){ summaryService.textContent = selectedService ? selectedService.name : 'Select a service'; summaryTime.textContent = selectedSlot ? new Date(selectedSlot).toLocaleString() : 'No time selected'; }
 
@@ -113,7 +128,7 @@
 					alert('Booking submitted!');
 					return;
 				}
-			} catch(_){}
+			} catch(_){ }
 			alert('Booking failed');
 		}
 	}
