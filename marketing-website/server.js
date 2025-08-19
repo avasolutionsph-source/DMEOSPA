@@ -175,6 +175,46 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api', syncRoutes); // Mount sync routes under /api
 
+// Proxy bookings and availability to PWA backend so PWA/webapp can use one base URL
+app.use('/api/bookings', async (req, res) => {
+  try {
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';
+    const url = `${pwaBackendUrl}${req.originalUrl}`; // preserve /api/bookings... path
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(req.headers.authorization ? { 'Authorization': req.headers.authorization } : {}),
+      ...(req.headers['x-user-id'] ? { 'x-user-id': req.headers['x-user-id'] } : {})
+    };
+    const response = await fetch(url, {
+      method: req.method,
+      headers,
+      body: ['POST','PUT','PATCH'].includes(req.method) ? JSON.stringify(req.body) : undefined
+    });
+    const text = await response.text();
+    res.status(response.status).type(response.headers.get('content-type') || 'application/json').send(text);
+  } catch (err) {
+    console.error('Bookings proxy error:', err);
+    res.status(500).json({ error: 'Failed to reach bookings backend' });
+  }
+});
+
+app.use('/api/availability', async (req, res) => {
+  try {
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';
+    const url = `${pwaBackendUrl}${req.originalUrl}`;
+    const headers = {
+      ...(req.headers.authorization ? { 'Authorization': req.headers.authorization } : {}),
+      ...(req.headers['x-user-id'] ? { 'x-user-id': req.headers['x-user-id'] } : {})
+    };
+    const response = await fetch(url, { method: 'GET', headers });
+    const text = await response.text();
+    res.status(response.status).type(response.headers.get('content-type') || 'application/json').send(text);
+  } catch (err) {
+    console.error('Availability proxy error:', err);
+    res.status(500).json({ error: 'Failed to reach availability backend' });
+  }
+});
+
 // Business employees endpoint
 app.get('/api/business/employees', async (req, res) => {
   try {
