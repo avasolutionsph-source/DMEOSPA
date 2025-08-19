@@ -217,7 +217,7 @@ class EntitlementsSystem {
         });
         
         // Business owner and manager should have access to all features - always unlock for logged in users
-        const isLoggedIn = window.authSystem?.isLoggedIn;
+        const isLoggedIn = window.authSystem?.isLoggedIn || localStorage.getItem('isLoggedIn')==='true';
         if (isLoggedIn) {
             // Determine role from stored token/user data
             let role = '';
@@ -239,15 +239,14 @@ class EntitlementsSystem {
             localStorage.setItem('managerAssigned', 'true');
         }
 
-        // Additional role-based hiding for employees: hide settings only for explicit employee roles
+        // Apply role gate using stored userData
         try {
-            const decoded = this.decodeToken(localStorage.getItem('userToken') || localStorage.getItem('authToken')) || {};
-            const employeeRoles = ['employee','receptionist','therapist'];
-            if (decoded && decoded.role && employeeRoles.includes(decoded.role)) {
-                const settingsNav = document.querySelector('a.nav-item[data-page="settings"]');
-                if (settingsNav) settingsNav.style.display = 'none';
+            const user = JSON.parse(localStorage.getItem('userData')||'{}');
+            const role = (user.role||'').toLowerCase();
+            if (role && window.roleManager) {
+                window.roleManager.setEmployeeSession({ id: user.employeeId||'self', name: user.firstName||user.email?.split('@')[0]||'Employee', role });
             }
-        } catch(_){}
+        } catch(_){ }
 
         // Update plan badge in sidebar
         this.updatePlanBadge();

@@ -1809,6 +1809,13 @@
                         // Also force UI update
                         setTimeout(() => {
                             window.entitlementsSystem.updateUI();
+                            // Apply role-based page visibility for employee accounts
+                            try {
+                                const role = userData.role || '';
+                                if (window.roleManager && role) {
+                                    window.roleManager.setEmployeeSession({ id: userData.employeeId || 'self', name: userData.firstName || userData.email.split('@')[0], role });
+                                }
+                            } catch(_) {}
                         }, 100);
                     }
                     
