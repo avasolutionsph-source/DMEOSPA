@@ -1288,17 +1288,22 @@
                 .then(j => {
                     const branches = j.data || [];
                     // Only show Branch selector when logged in as MAIN owner (not a branch account)
-                    if (!j.isMainOwner) { select.style.display = 'none'; localStorage.removeItem('dashboardBranchId');
-                        // Also hide Branch Accounts section for non-main accounts
+                    if (!j.isMainOwner) {
+                        select.style.display = 'none';
+                        localStorage.removeItem('dashboardBranchId');
                         const branchSection = document.querySelector('.branch-section');
                         if (branchSection) branchSection.style.display = 'none';
-                        return; }
+                        return;
+                    }
                     select.style.display = branches.length ? 'block' : 'none';
                     if (!branches.length) return;
-                    const options = [
-                        `<option value="owner">Main Account</option>`,
-                        ...branches.map(b => `<option value="${b.id}">${b.name || b.email}</option>`)
-                    ];
+                    // Ensure the main owner label is correct and branches do not duplicate it
+                    const options = [`<option value="owner">Main Account</option>`];
+                    branches.forEach(b => {
+                        if (String(b.id) !== String(j.selfId)) {
+                            options.push(`<option value="${b.id}">${b.name || b.email}</option>`);
+                        }
+                    });
                     select.innerHTML = options.join('');
                     const saved = localStorage.getItem('dashboardBranchId') || 'owner';
                     select.value = saved;
@@ -1373,12 +1378,16 @@
                         try {
                             btn.disabled = true; btn.textContent = (action === 'change') ? 'Saving...' : 'Loading...';
                             let body = undefined;
+                            let method = 'GET';
+                            let endpoint = `/api/branches/${id}/password`;
                             if (action === 'change') {
                                 const npw = prompt('Enter new branch password (min 6 chars)');
                                 if (!npw || npw.length < 6) { btn.disabled = false; btn.textContent = 'Change Password'; return; }
                                 body = JSON.stringify({ newPassword: npw });
+                                method = 'POST';
+                                endpoint = `/api/branches/${id}/reset-password`;
                             }
-                            const r = await fetch(`/api/branches/${id}/reset-password`, { method:'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' }, body });
+                            const r = await fetch(endpoint, { method, headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' }, body });
                             const j = await r.json();
                             if (!r.ok) throw new Error(j.error || 'Failed');
                             const span = document.getElementById(`temp-${id}`);

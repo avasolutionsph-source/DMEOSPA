@@ -262,9 +262,9 @@ app.get('/api/branches', async (req, res) => {
     const self = await User.findById(ownerId).select('ownerId businessName email').lean();
     const isMainOwner = !self?.ownerId; // true when this account is the primary owner
     const branches = await User.find({ ownerId, role: 'owner' })
-      .select('_id email businessName subscriptionPlan createdAt')
+      .select('_id email businessName subscriptionPlan createdAt ownerPasswordNote')
       .lean();
-    res.json({ success: true, isMainOwner, selfId: String(ownerId), data: branches.map(b => ({ id: String(b._id), email: b.email, name: b.businessName, plan: b.subscriptionPlan, createdAt: b.createdAt })) });
+    res.json({ success: true, isMainOwner, selfId: String(ownerId), data: branches.map(b => ({ id: String(b._id), email: b.email, name: b.businessName, plan: b.subscriptionPlan, createdAt: b.createdAt, ownerPasswordNote: b.ownerPasswordNote || '' })) });
   } catch (e) {
     console.error('List branches error:', e.message);
     res.status(500).json({ error: 'Failed to list branches' });
@@ -300,6 +300,26 @@ app.post('/api/branches/:id/reset-password', async (req, res) => {
   } catch (e) {
     console.error('Reset branch password error:', e.message);
     res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+// Show a branch's current password note (owner only, no mutation)
+app.get('/api/branches/:id/password', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const jwt = await import('jsonwebtoken');
+    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const ownerId = decoded.userId;
+    const branchId = req.params.id;
+    const User = (await import('./models/User.js')).default;
+    const branch = await User.findById(branchId).select('ownerId ownerPasswordNote');
+    if (!branch) return res.status(404).json({ error: 'Branch not found' });
+    if (String(branch.ownerId) !== String(ownerId)) return res.status(403).json({ error: 'Not your branch' });
+    return res.json({ success: true, password: branch.ownerPasswordNote || '' });
+  } catch (e) {
+    console.error('Show branch password error:', e.message);
+    res.status(500).json({ error: 'Failed to fetch password' });
   }
 });
 
