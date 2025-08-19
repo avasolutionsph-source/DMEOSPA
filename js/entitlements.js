@@ -216,10 +216,19 @@ class EntitlementsSystem {
             }
         });
         
+        // Additional gating: until a manager is assigned, hide all nav except settings & dashboard
+        const managerAssigned = (localStorage.getItem('managerAssigned') === 'true');
+        if (!managerAssigned) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                const page = item.getAttribute('data-page');
+                if (page !== 'settings' && page !== 'dashboard') item.style.display = 'none';
+            });
+        }
+
         // Additional role-based hiding for employees: hide settings only for explicit employee roles
         try {
             const decoded = this.decodeToken(localStorage.getItem('userToken') || localStorage.getItem('authToken')) || {};
-            const employeeRoles = ['employee','receptionist','therapist','manager'];
+            const employeeRoles = ['employee','receptionist','therapist'];
             if (decoded && decoded.role && employeeRoles.includes(decoded.role)) {
                 const settingsNav = document.querySelector('a.nav-item[data-page="settings"]');
                 if (settingsNav) settingsNav.style.display = 'none';

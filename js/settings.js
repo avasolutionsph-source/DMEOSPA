@@ -73,6 +73,15 @@ class SettingsManager {
         perf.innerHTML = `
             <h3 style="margin-top:2rem;">Performance</h3>
             <div class="form-group">
+                <label>Manager Assignment</label>
+                <div style="display:flex; gap:.5rem; align-items:center;">
+                    <input type="text" id="managerNameInput" class="form-input" placeholder="Manager name">
+                    <input type="email" id="managerEmailInput" class="form-input" placeholder="Manager email">
+                    <button class="btn btn-primary" id="assignManagerBtn">Assign</button>
+                </div>
+                <small class="form-hint">Until a manager is assigned, only Settings will be visible.</small>
+            </div>
+            <div class="form-group">
                 <label>Performance Mode</label>
                 <select id="perfModeSelect" class="form-select">
                     <option value="auto">Auto (recommended)</option>
@@ -111,6 +120,28 @@ class SettingsManager {
             }
             showNotification('Performance mode updated', 'success');
         };
+
+        // Assign manager handler
+        const assignBtn = document.getElementById('assignManagerBtn');
+        if (assignBtn) {
+            assignBtn.onclick = async () => {
+                const name = document.getElementById('managerNameInput').value.trim();
+                const email = document.getElementById('managerEmailInput').value.trim();
+                if (!name || !email) { showNotification('Enter manager name and email', 'warning'); return; }
+                try {
+                    // Create/update manager invite
+                    if (employeeManager && employeeManager.inviteEmployee) {
+                        await employeeManager.inviteEmployee(email, name, 'manager');
+                    }
+                    localStorage.setItem('managerAssigned', 'true');
+                    showNotification('Manager assigned. Features are now unlocked.', 'success');
+                    // Re-apply gates
+                    if (window.entitlementsSystem) window.entitlementsSystem.updateUI();
+                } catch (e) {
+                    console.error(e);
+                }
+            };
+        }
     }
 
     async loadSettings() {
