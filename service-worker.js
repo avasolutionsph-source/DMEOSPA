@@ -1,5 +1,5 @@
 // Service Worker for Offline Functionality - Updated with Enhanced Chatbot
-const CACHE_NAME = 'ava-solutions-v1.8.0';
+const CACHE_NAME = 'ava-solutions-v1.9.0';
 const urlsToCache = [
     './',
     './index.html',
