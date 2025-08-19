@@ -117,12 +117,13 @@ router.post('/login', [
       });
     } catch (e) { /* non-fatal */ }
 
-    // Generate JWT
+    // Generate JWT including ownerId for branch/employee and an optional branchId
     const token = jwt.sign(
       { 
         userId: user._id, 
         email: user.email, 
         role: user.role,
+        ownerId: user.ownerId || (user.role === 'owner' ? user._id : undefined),
         subscriptionPlan: user.subscriptionPlan,
         businessName: user.businessName
       },
