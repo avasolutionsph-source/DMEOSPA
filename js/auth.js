@@ -145,7 +145,18 @@ class AuthSystem {
                     if (modal) modal.style.display = 'none';
                 }
                 
-                showNotification(`Welcome back, ${loginData.user.businessName}!`, 'success');
+                try {
+                    const fullName = [loginData.user.firstName, loginData.user.lastName].filter(Boolean).join(' ')
+                        || loginData.user.employeeName
+                        || (loginData.user.email ? loginData.user.email.split('@')[0] : 'User');
+                    const branchName = loginData.user.businessName || 'Branch';
+                    const msg = (String(loginData.user.role).toLowerCase() === 'manager')
+                        ? `Welcome to ${branchName}, ${fullName}!`
+                        : `Welcome back, ${loginData.user.businessName}!`;
+                    showNotification(msg, 'success');
+                } catch (_) {
+                    showNotification(`Welcome back, ${loginData.user.businessName}!`, 'success');
+                }
                 
                 // Update UI to show logged in state
                 this.updateAuthUI();

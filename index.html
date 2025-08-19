@@ -1802,7 +1802,18 @@
                     
                     // Close modal and show success
                     modal.style.display = 'none';
-                    alert(`Welcome back, ${displayName}!`);
+                    try {
+                        const fullName = [userData.firstName, userData.lastName].filter(Boolean).join(' ') 
+                            || userData.employeeName 
+                            || (userData.email ? userData.email.split('@')[0] : 'User');
+                        const branchName = userData.businessName || 'Branch';
+                        const welcomeMsg = (userData.role === 'manager')
+                            ? `Welcome to ${branchName}, ${fullName}!`
+                            : `Welcome back, ${displayName}!`;
+                        alert(welcomeMsg);
+                    } catch(_) {
+                        alert(`Welcome back, ${displayName}!`);
+                    }
                     
                 } else {
                     // Login failed

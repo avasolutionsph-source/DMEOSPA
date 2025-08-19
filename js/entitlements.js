@@ -216,13 +216,25 @@ class EntitlementsSystem {
             }
         });
         
-        // Business owner should have access to all features - always unlock for logged in users
+        // Business owner and manager should have access to all features - always unlock for logged in users
         const isLoggedIn = window.authSystem?.isLoggedIn;
         if (isLoggedIn) {
-            // Show all features for any logged in user (business owner or branch)
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.style.display = '';
-            });
+            // Determine role from stored token/user data
+            let role = '';
+            try {
+                const userStr = localStorage.getItem('userData') || localStorage.getItem('currentUser');
+                if (userStr) {
+                    const u = JSON.parse(userStr);
+                    role = (u.role || '').toLowerCase();
+                }
+            } catch(_) {}
+
+            // If logged in (owner/branch) OR manager role, show everything
+            if (!role || role === 'owner' || role === 'manager' || role === 'admin') {
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.style.display = '';
+                });
+            }
             // Force unlock manager assigned for logged in users
             localStorage.setItem('managerAssigned', 'true');
         }
