@@ -206,6 +206,11 @@ app.post('/api/employees/invite', async (req, res) => {
       ownerPasswordNote: tempPassword
     });
     await employee.save();
+    // Log invite (initial credential creation)
+    try {
+      const AuthLog = (await import('./models/AuthLog.js')).default;
+      await AuthLog.create({ userId: String(employee._id), ownerId: String(inviter._id), email, role, userAgent: 'invite', deviceName: 'owner-dashboard' });
+    } catch(_) {}
     res.json({ success: true, tempPassword, employeeId: employee._id });
   } catch (e) {
     console.error('Invite employee error:', e.message);
@@ -341,6 +346,24 @@ app.get('/api/employees', async (req, res) => {
   } catch (e) {
     console.error('List employees error:', e.message);
     res.status(500).json({ error: 'Failed to list employees' });
+  }
+});
+
+// Fetch login history for current owner or employee
+app.get('/api/auth/logs', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const jwt = await import('jsonwebtoken');
+    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const AuthLog = (await import('./models/AuthLog.js')).default;
+    const isOwner = !decoded.role || decoded.role === 'owner';
+    const query = isOwner ? { ownerId: decoded.userId } : { userId: decoded.userId };
+    const logs = await AuthLog.find(query).sort({ createdAt: -1 }).limit(200).lean();
+    res.json({ success: true, data: logs });
+  } catch (e) {
+    console.error('Auth logs error:', e.message);
+    res.status(500).json({ error: 'Failed to fetch auth logs' });
   }
 });
 

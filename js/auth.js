@@ -138,11 +138,9 @@ class AuthSystem {
                 setButtonLoading('loginBtn', false);
                 
                 // Close modal
-                if (typeof closeModal === 'function') {
-                    closeModal('authModal');
-                } else {
+                try { closeModal('authModal'); } catch(_) {
                     const modal = document.getElementById('authModal');
-                    if (modal) modal.style.display = 'none';
+                    if (modal) { modal.style.display = 'none'; document.body.classList.remove('modal-open'); modal.onclick = null; }
                 }
                 
                 try {

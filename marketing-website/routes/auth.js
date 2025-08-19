@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import User from '../models/User.js';
+import AuthLog from '../models/AuthLog.js';
 
 const router = express.Router();
 
@@ -99,9 +100,21 @@ router.post('/login', [
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Update last active
+    // Update last active and log auth
     user.businessMetrics.lastActiveDate = new Date();
     await user.save();
+
+    try {
+      await AuthLog.create({
+        userId: String(user._id),
+        ownerId: user.ownerId || (user.role === 'owner' ? String(user._id) : ''),
+        email: user.email,
+        role: user.role,
+        ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress || '',
+        userAgent: req.headers['user-agent'] || '',
+        deviceName: req.headers['x-device-name'] || ''
+      });
+    } catch (e) { /* non-fatal */ }
 
     // Generate JWT
     const token = jwt.sign(

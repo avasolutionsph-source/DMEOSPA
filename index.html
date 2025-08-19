@@ -1071,7 +1071,7 @@
     </div>
 
     <!-- Authentication Modal -->
-    <div id="authModal" class="modal" onclick="if(event.target === this){ this.style.display='none'; document.body.classList.remove('modal-open'); }">
+    <div id="authModal" class="modal" onclick="if(event.target === this){ try{event.stopPropagation();}catch(_){}; document.getElementById('loginForm')?.reset(); closeModal('authModal'); }">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="authModalTitle">Welcome to Ava Solutions</h2>
@@ -1467,6 +1467,9 @@
                 if (form) form.removeAttribute('data-handler-attached');
                 // stop any bubbling that could re-open
                 try { event?.stopImmediatePropagation(); } catch(_) {}
+                // Ensure overlay is hidden
+                modal.style.visibility = 'hidden';
+                modal.style.pointerEvents = 'none';
             }
         }
         
@@ -1723,6 +1726,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'x-device-name': (window.__deviceName || navigator.userAgent || 'webapp')
                     },
                     credentials: 'omit',
                     body: JSON.stringify({
@@ -2039,6 +2043,8 @@
                         }
                         
                         console.log('✅ Calling performRealLogin with manual credentials');
+                        // Tag device name for server logs
+                        try { window.__deviceName = navigator.userAgent || 'webapp'; } catch(_) {}
                         // Always use the real API login
                         performRealLogin(email, password, modal);
                     }, true); // Use capture phase
