@@ -216,13 +216,15 @@ class EntitlementsSystem {
             }
         });
         
-        // Additional gating: until a manager is assigned, hide all nav except settings & dashboard
-        const managerAssigned = (localStorage.getItem('managerAssigned') === 'true');
-        if (!managerAssigned) {
+        // Business owner should have access to all features - always unlock for logged in users
+        const isLoggedIn = window.authSystem?.isLoggedIn;
+        if (isLoggedIn) {
+            // Show all features for any logged in user (business owner or branch)
             document.querySelectorAll('.nav-item').forEach(item => {
-                const page = item.getAttribute('data-page');
-                if (page !== 'settings' && page !== 'dashboard') item.style.display = 'none';
+                item.style.display = '';
             });
+            // Force unlock manager assigned for logged in users
+            localStorage.setItem('managerAssigned', 'true');
         }
 
         // Additional role-based hiding for employees: hide settings only for explicit employee roles

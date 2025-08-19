@@ -215,7 +215,7 @@ class ExpensesManager {
                     canvas.toBlob(async (blob) => {
                         try {
                             const receiptId = 'receipt_' + Date.now();
-                            await this.storeReceiptBlob(receiptId, blob);
+                            await expensesManager.storeReceiptBlob(receiptId, blob);
                             // Mark canvas with the receipt ID for later retrieval
                             canvas.dataset.receiptId = receiptId;
                             showNotification('Receipt captured and saved', 'success');
@@ -357,28 +357,54 @@ class ExpensesManager {
     }
 
     async storeReceiptBlob(receiptId, blob) {
-        return new Promise((resolve, reject) => {
-            const transaction = db.db.transaction(['receipts'], 'readwrite');
-            const store = transaction.objectStore('receipts');
-            const request = store.put({ id: receiptId, blob, createdAt: new Date().toISOString() });
+        try {
+            // Ensure DB is initialized
+            await ensureDBInit();
             
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
+            return new Promise((resolve, reject) => {
+                const transaction = db.db.transaction(['receipts'], 'readwrite');
+                const store = transaction.objectStore('receipts');
+                const request = store.put({ id: receiptId, blob, createdAt: new Date().toISOString() });
+                
+                request.onsuccess = () => {
+                    console.log('Receipt blob stored successfully:', receiptId);
+                    resolve();
+                };
+                request.onerror = () => {
+                    console.error('Failed to store receipt blob:', request.error);
+                    reject(request.error);
+                };
+            });
+        } catch (error) {
+            console.error('Store receipt blob error:', error);
+            throw error;
+        }
     }
 
     async getReceiptBlob(receiptId) {
-        return new Promise((resolve, reject) => {
-            const transaction = db.db.transaction(['receipts'], 'readonly');
-            const store = transaction.objectStore('receipts');
-            const request = store.get(receiptId);
+        try {
+            // Ensure DB is initialized
+            await ensureDBInit();
             
-            request.onsuccess = () => {
-                const result = request.result;
-                resolve(result ? result.blob : null);
-            };
-            request.onerror = () => reject(request.error);
-        });
+            return new Promise((resolve, reject) => {
+                const transaction = db.db.transaction(['receipts'], 'readonly');
+                const store = transaction.objectStore('receipts');
+                const request = store.get(receiptId);
+                
+                request.onsuccess = () => {
+                    const result = request.result;
+                    console.log('Retrieved receipt blob:', receiptId, !!result);
+                    resolve(result ? result.blob : null);
+                };
+                request.onerror = () => {
+                    console.error('Failed to get receipt blob:', request.error);
+                    reject(request.error);
+                };
+            });
+        } catch (error) {
+            console.error('Get receipt blob error:', error);
+            return null;
+        }
     }
 }
 

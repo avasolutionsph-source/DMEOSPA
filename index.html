@@ -71,7 +71,7 @@
                     </div>
                 </div>
                 <div class="auth-indicator" id="authIndicator">
-                    <button id="showLoginBtn" class="btn btn-primary">
+                    <button id="showLoginBtn" class="btn btn-primary" style="cursor: pointer; z-index: 10; position: relative;" onclick="console.log('🔥 MAIN LOGIN BUTTON CLICKED!'); showLoginModalDirect();">
                         <i class="fas fa-sign-in-alt"></i> Login
                     </button>
                     <div id="userInfo" style="display: none;" class="user-info">
@@ -548,25 +548,20 @@
                     </div>
                 </div>
                 <div id="payrollTab" class="tab-panel">
-                    <!-- Therapist-specific payroll view -->
-                    <div id="therapistPayrollContainer" style="display:none;"></div>
-                    
-                    <!-- Manager/Admin payroll generation -->
-                    <div id="managerPayrollContainer">
-                        <div class="card" style="margin-bottom:1rem;">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Period Start</label>
-                                    <input type="date" id="payrollStart" class="form-input">
-                                </div>
-                                <div class="form-group">
-                                    <label>Period End</label>
-                                    <input type="date" id="payrollEnd" class="form-input">
-                                </div>
-                                <div class="form-group" style="align-self:flex-end;">
-                                    <button class="btn btn-primary" id="generatePayrollBtn"><i class="fas fa-calculator"></i> Generate</button>
-                                </div>
+                    <div class="card" style="margin-bottom:1rem;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Period Start</label>
+                                <input type="date" id="payrollStart" class="form-input">
                             </div>
+                            <div class="form-group">
+                                <label>Period End</label>
+                                <input type="date" id="payrollEnd" class="form-input">
+                            </div>
+                            <div class="form-group" style="align-self:flex-end;">
+                                <button class="btn btn-primary" id="generatePayrollBtn"><i class="fas fa-calculator"></i> Generate</button>
+                            </div>
+                        </div>
                         <div class="table-responsive">
                             <table class="data-table">
                                 <thead>
@@ -1107,10 +1102,15 @@
                                 Remember me on this device
                             </label>
                         </div>
-                        <button type="submit" id="loginBtn" class="btn btn-primary btn-full">
+                        <button type="submit" id="loginBtn" class="btn btn-primary btn-full" onclick="console.log('🔥 LOGIN BUTTON CLICKED');">
                             <i class="fas fa-sign-in-alt"></i> Sign In
                         </button>
-
+                        <button type="button" onclick="testLogin()" class="btn btn-secondary btn-full" style="margin-top: 10px;">
+                            🧪 Test Super Admin Login
+                        </button>
+                        <button type="button" onclick="debugFormValues()" class="btn btn-outline btn-full" style="margin-top: 5px; font-size: 0.8rem;">
+                            🔍 Debug Form Values
+                        </button>
                     </form>
                     <div class="auth-footer">
                         <p>Don't have an account? <a href="#" id="showRegister">Create one here</a></p>
@@ -1905,7 +1905,30 @@
             showLoginModalDirect();
         }
 
+        // Test login function
+        function testLogin() {
+            console.log('🧪 TESTING SUPER ADMIN LOGIN - Automatic');
+            const modal = document.getElementById('authModal');
+            console.log('🧪 Test credentials: avasolutionsph@gmail.com / Ava12345');
+            performRealLogin('avasolutionsph@gmail.com', 'Ava12345', modal);
+        }
 
+        // Debug form values
+        function debugFormValues() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            console.log('🔍 FORM DEBUG:');
+            console.log('📧 Email field value:', `"${email}"`);
+            console.log('📧 Email length:', email.length);
+            console.log('📧 Email trimmed:', `"${email.trim()}"`);
+            console.log('🔑 Password field value:', `"${password}"`);
+            console.log('🔑 Password length:', password.length);
+            console.log('🔑 Password first char:', password.charAt(0));
+            console.log('🔑 Password last char:', password.charAt(password.length - 1));
+            
+            alert(`Email: "${email}"\nPassword: "${password}"\nEmail length: ${email.length}\nPassword length: ${password.length}`);
+        }
 
         // Add hover effects to login button
         document.addEventListener('DOMContentLoaded', function() {
@@ -1931,11 +1954,7 @@
         });
 
         function showLoginModalDirect() {
-            // Use the auth system's modal instead of bypassing
-            if (window.authSystem && window.authSystem.showLoginModal) {
-                window.authSystem.showLoginModal();
-                return;
-            }
+            console.log('🚨 DIRECT LOGIN MODAL FUNCTION CALLED - BYPASSING AUTH SYSTEM 🚨');
             
             // Force close setup wizard if it's open
             if (window.app && typeof window.app.forceCloseSetupWizard === 'function') {
@@ -2045,8 +2064,6 @@
     <script src="js/expenses.js"></script>
     <script src="js/payroll-requests.js"></script>
     <script src="js/scheduling.js"></script>
-    <script src="js/therapist-payroll.js"></script>
-    <script src="js/dashboard-roles.js"></script>
     <script src="js/chatbot.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/settings.js"></script>

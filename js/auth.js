@@ -23,44 +23,40 @@ class AuthSystem {
     }
 
     setupEventListeners() {
-        // Login form
-        const loginForm = document.getElementById('loginForm');
-        if (loginForm && !loginForm.hasAttribute('data-listener-attached')) {
-            loginForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.handleLogin();
-            });
-            loginForm.setAttribute('data-listener-attached', 'true');
-        }
+        // Login form - DISABLED: Using HTML inline handler instead
+        // const loginForm = document.getElementById('loginForm');
+        // if (loginForm) {
+        //     loginForm.addEventListener('submit', (e) => {
+        //         e.preventDefault();
+        //         this.handleLogin();
+        //     });
+        // }
 
         // Register form
         const registerForm = document.getElementById('registerForm');
-        if (registerForm && !registerForm.hasAttribute('data-listener-attached')) {
+        if (registerForm) {
             registerForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 this.handleRegister();
             });
-            registerForm.setAttribute('data-listener-attached', 'true');
         }
 
         // Switch between login/register
         const showRegisterBtn = document.getElementById('showRegister');
         const showLoginBtn = document.getElementById('showLogin');
         
-        if (showRegisterBtn && !showRegisterBtn.hasAttribute('data-listener-attached')) {
+        if (showRegisterBtn) {
             showRegisterBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.showRegisterForm();
             });
-            showRegisterBtn.setAttribute('data-listener-attached', 'true');
         }
         
-        if (showLoginBtn && !showLoginBtn.hasAttribute('data-listener-attached')) {
+        if (showLoginBtn) {
             showLoginBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.showLoginForm();
             });
-            showLoginBtn.setAttribute('data-listener-attached', 'true');
         }
 
         // Main login button (in sidebar)
@@ -69,17 +65,40 @@ class AuthSystem {
 
     // Attach event listener to main login button
     attachMainLoginButton() {
+        console.log('🚫 DISABLED: Auth.js login button handler - using direct modal instead');
+        return; // DISABLED to prevent interference
+        
         const mainLoginBtn = document.getElementById('showLoginBtn');
-        if (mainLoginBtn && !mainLoginBtn.hasAttribute('data-listener-attached')) {
-            console.log('Attaching login button handler');
-            mainLoginBtn.addEventListener('click', (e) => {
+        if (mainLoginBtn) {
+            console.log('Attaching click event to login button');
+            
+            // Remove any existing event listeners
+            mainLoginBtn.replaceWith(mainLoginBtn.cloneNode(true));
+            const newBtn = document.getElementById('showLoginBtn');
+            
+            newBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Login button clicked, showing modal');
+                console.log('Login button clicked!');
                 this.showLoginModal();
             });
-            mainLoginBtn.setAttribute('data-listener-attached', 'true');
+            
+            // Also add a direct onclick as backup
+            newBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Login button clicked via onclick!');
+                this.showLoginModal();
+            };
+            
+        } else {
+            console.log('Login button not found, will retry...');
+            // Retry after a short delay if button not found
+            setTimeout(() => {
+                this.attachMainLoginButton();
+            }, 100);
         }
+    }
 
     // Handle user login
     async handleLogin() {
@@ -96,14 +115,8 @@ class AuthSystem {
         showLoading('Signing in...', 'Please wait while we verify your credentials');
 
         try {
-            // Use marketing website for authentication
-            const response = await fetch('https://ava-marketing-api.onrender.com/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-            
-            const loginData = await response.json();
+            // REMOVED: Blocking code that prevented login
+            console.log('handleLogin called - but this should not be used anymore');
             
             if (loginData.success) {
                 await this.setAuthState(loginData.user, loginData.token, rememberMe);
@@ -358,25 +371,19 @@ class AuthSystem {
         // Add user ID to all future database operations
         await this.initializeUserData();
 
-                    // Re-load entitlements and gates immediately without requiring manual refresh
-            try {
-                if (window.entitlementsSystem) {
-                    window.entitlementsSystem.token = token;
-                    await window.entitlementsSystem.loadEntitlements();
-                    window.entitlementsSystem.updateUI();
-                }
-                if (window.app && typeof window.app.onUserLoggedIn === 'function') {
-                    window.app.onUserLoggedIn();
-                }
-                // Reduced auto-refresh delay and ensure it only happens once
-                if (!this._refreshScheduled) {
-                    this._refreshScheduled = true;
-                    setTimeout(() => { 
-                        this._refreshScheduled = false;
-                        try { window.location.reload(true); } catch(_) { window.location.reload(); } 
-                    }, 500);
-                }
-            } catch(_) {}
+        // Re-load entitlements and gates immediately without requiring manual refresh
+        try {
+            if (window.entitlementsSystem) {
+                window.entitlementsSystem.token = token;
+                await window.entitlementsSystem.loadEntitlements();
+                window.entitlementsSystem.updateUI();
+            }
+            if (window.app && typeof window.app.onUserLoggedIn === 'function') {
+                window.app.onUserLoggedIn();
+            }
+            // Auto refresh to ensure menus, caches, and SW pick up session immediately
+            setTimeout(() => { try { window.location.reload(true); } catch(_) { window.location.reload(); } }, 300);
+        } catch(_) {}
     }
 
     // Ensure that when a different user logs in, previous user's local data is not visible
@@ -394,8 +401,7 @@ class AuthSystem {
                 const storesToClear = [
                     'products','inventory','employees','transactions','customers',
                     'bookings','rooms','sessions','attendance','schedules','leaveRequests',
-                    'payrollRuns','tips','giftCertificates','syncQueue','expenses',
-                    'payrollRequests','receipts','rotationAssignments','consentLogs'
+                    'payrollRuns','tips','giftCertificates','syncQueue'
                 ];
                 try {
                     if (window.db && typeof window.ensureDBInit === 'function') {
@@ -413,12 +419,8 @@ class AuthSystem {
                     console.warn('Purge encountered issues:', e);
                 }
 
-                // Clear any cached UI/session hints and role sessions
+                // Clear any cached UI/session hints
                 sessionStorage.clear();
-                // Clear role manager to prevent data bleed
-                if (window.roleManager) {
-                    window.roleManager.clearEmployeeSession();
-                }
                 // Keep auth keys for the new session; others will be overwritten below
                 hideLoading();
                 showNotification('Previous account data cleared', 'success');
@@ -496,18 +498,10 @@ class AuthSystem {
         localStorage.removeItem('authToken');
         localStorage.removeItem('currentUser');
         localStorage.removeItem('subscriptionPlan');
-        localStorage.removeItem('activeUserId');
-        localStorage.removeItem('managerAssigned');
-        localStorage.removeItem('dashboardBranchId');
         sessionStorage.removeItem('authToken');
         sessionStorage.removeItem('currentUser');
 
-        // Clear role manager session to prevent data bleed
-        if (window.roleManager) {
-            window.roleManager.clearEmployeeSession();
-        }
-
-        console.log('🧹 Cleared all auth state and role sessions');
+        console.log('🧹 Cleared all auth state');
         this.updateAuthUI();
     }
 
@@ -650,13 +644,37 @@ class AuthSystem {
                 return;
             }
             
-            // Use the global openModal function
+            // Clear any blocking styles
+            modal.style.display = '';
+            modal.classList.remove('active');
+            
+            // Try to use the global openModal function
             if (typeof openModal === 'function') {
-                console.log('Opening auth modal');
-                openModal('authModal');
+                console.log('Using openModal function');
+                setTimeout(() => {
+                    openModal('authModal');
+                }, 10);
             } else {
-                console.log('openModal function not available, using direct approach');
-                modal.classList.add('active');
+                console.log('Using fallback modal opening');
+                // Fallback: manually show modal
+                modal.style.display = 'flex';
+                modal.style.position = 'fixed';
+                modal.style.top = '0';
+                modal.style.left = '0';
+                modal.style.width = '100%';
+                modal.style.height = '100%';
+                modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                modal.style.zIndex = '1000';
+                modal.style.alignItems = 'center';
+                modal.style.justifyContent = 'center';
+                
+                document.body.classList.add('modal-open');
+                
+                // Focus on email input
+                setTimeout(() => {
+                    const emailInput = document.getElementById('loginEmail');
+                    if (emailInput) emailInput.focus();
+                }, 100);
             }
         } catch (error) {
             console.error('Error showing login modal:', error);
@@ -855,16 +873,42 @@ window.authSystem = authSystem;
 
 // Global function for HTML onclick backup
 window.showLoginModal = function() {
+    console.log('🚫 DISABLED: Global showLoginModal - using direct modal instead');
+    return; // DISABLED to prevent interference
+    
+    console.log('Global showLoginModal called');
     if (window.authSystem && window.authSystem.showLoginModal) {
         window.authSystem.showLoginModal();
-        return;
-    }
-    
-    // Fallback if auth system not ready
-    console.warn('AuthSystem not available, using fallback modal');
-    const modal = document.getElementById('authModal');
-    if (modal && typeof openModal === 'function') {
-        openModal('authModal');
+    } else {
+        console.error('AuthSystem not available');
+        // Ultimate fallback - directly show modal
+        const modal = document.getElementById('authModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            modal.style.zIndex = '1000';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            
+            // Show login form
+            const loginForm = document.getElementById('authLoginForm');
+            const registerForm = document.getElementById('authRegisterForm');
+            if (loginForm) loginForm.style.display = 'block';
+            if (registerForm) registerForm.style.display = 'none';
+            
+            // Add close functionality
+            modal.onclick = function(e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                }
+            };
+        }
     }
 };
 

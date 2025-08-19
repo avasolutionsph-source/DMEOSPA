@@ -134,28 +134,17 @@ class App {
     }
 
     setupNavigation() {
-        // Clear any existing listeners first
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(item => {
-            // Remove existing listeners by cloning
-            if (!item.hasAttribute('data-nav-attached')) {
-                const newItem = item.cloneNode(true);
-                item.parentNode.replaceChild(newItem, item);
-                newItem.setAttribute('data-nav-attached', 'true');
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = item.dataset.page;
+                this.showPage(page);
                 
-                // Add single clean listener
-                newItem.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const page = newItem.dataset.page;
-                    console.log('Navigation clicked:', page);
-                    this.showPage(page);
-                    
-                    // Update active state
-                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-                    newItem.classList.add('active');
-                });
-            }
+                // Update active state
+                navItems.forEach(nav => nav.classList.remove('active'));
+                item.classList.add('active');
+            });
         });
     }
 
