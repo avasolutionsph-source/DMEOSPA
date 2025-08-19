@@ -2,7 +2,7 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 5; // Bump when schema changes
+        this.version = 6; // Bump when schema changes
         this.db = null;
         this.userId = null;
     }
@@ -233,6 +233,12 @@ class Database {
                     requests.createIndex('type', 'type', { unique: false }); // cash_advance, leave, other
                     requests.createIndex('status', 'status', { unique: false }); // submitted, approved, denied
                     requests.createIndex('date', 'date', { unique: false });
+                }
+
+                // Receipts store (for storing image blobs)
+                if (!this.db.objectStoreNames.contains('receipts')) {
+                    const receipts = this.db.createObjectStore('receipts', { keyPath: 'id' });
+                    receipts.createIndex('createdAt', 'createdAt', { unique: false });
                 }
 
                 console.log('Database setup complete');

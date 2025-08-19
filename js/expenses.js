@@ -211,6 +211,20 @@ class ExpensesManager {
                     ctx.drawImage(video, 0, 0);
                     canvas.style.display = 'block';
                     
+                    // Convert to blob and store in IndexedDB
+                    canvas.toBlob(async (blob) => {
+                        try {
+                            const receiptId = 'receipt_' + Date.now();
+                            await this.storeReceiptBlob(receiptId, blob);
+                            // Mark canvas with the receipt ID for later retrieval
+                            canvas.dataset.receiptId = receiptId;
+                            showNotification('Receipt captured and saved', 'success');
+                        } catch (e) {
+                            console.error('Failed to store receipt:', e);
+                            showNotification('Failed to save receipt', 'error');
+                        }
+                    }, 'image/jpeg', 0.8);
+                    
                     stream.getTracks().forEach(track => track.stop());
                     captureModal.remove();
                 };
@@ -241,15 +255,14 @@ class ExpensesManager {
                 const canvas = modal.querySelector('#receiptCanvas');
                 
                 if (fileInput.files.length > 0) {
-                    // Store file as base64
+                    // Store file blob in IndexedDB
                     const file = fileInput.files[0];
-                    const reader = new FileReader();
-                    receiptPath = await new Promise(resolve => {
-                        reader.onload = () => resolve(reader.result);
-                        reader.readAsDataURL(file);
-                    });
-                } else if (canvas.style.display !== 'none') {
-                    receiptPath = canvas.toDataURL('image/jpeg', 0.8);
+                    const receiptId = 'receipt_' + Date.now();
+                    await this.storeReceiptBlob(receiptId, file);
+                    receiptPath = receiptId;
+                } else if (canvas.style.display !== 'none' && canvas.dataset.receiptId) {
+                    // Use the stored receipt ID from camera capture
+                    receiptPath = canvas.dataset.receiptId;
                 }
 
                 const expenseData = {
@@ -306,6 +319,14 @@ class ExpensesManager {
             return;
         }
 
+        // Retrieve receipt from IndexedDB
+        const receiptBlob = await this.getReceiptBlob(expense.receiptPath);
+        if (!receiptBlob) {
+            showNotification('Receipt file not found', 'error');
+            return;
+        }
+
+        const imageUrl = URL.createObjectURL(receiptBlob);
         const modal = document.createElement('div');
         modal.className = 'modal active';
         modal.innerHTML = `
@@ -315,7 +336,7 @@ class ExpensesManager {
                     <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
                 </div>
                 <div class="modal-body" style="text-align:center;">
-                    <img src="${expense.receiptPath}" style="max-width:100%;height:auto;border:1px solid #ddd;">
+                    <img src="${imageUrl}" style="max-width:100%;height:auto;border:1px solid #ddd;">
                     <div style="margin-top:1rem;">
                         <strong>Amount:</strong> ${app.formatCurrency(expense.amount)}<br>
                         <strong>Date:</strong> ${new Date(expense.date).toLocaleString()}<br>
@@ -328,6 +349,36 @@ class ExpensesManager {
             </div>
         `;
         document.body.appendChild(modal);
+
+        // Clean up URL when modal is closed
+        modal.querySelector('.modal-close').addEventListener('click', () => {
+            URL.revokeObjectURL(imageUrl);
+        });
+    }
+
+    async storeReceiptBlob(receiptId, blob) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.db.transaction(['receipts'], 'readwrite');
+            const store = transaction.objectStore('receipts');
+            const request = store.put({ id: receiptId, blob, createdAt: new Date().toISOString() });
+            
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async getReceiptBlob(receiptId) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.db.transaction(['receipts'], 'readonly');
+            const store = transaction.objectStore('receipts');
+            const request = store.get(receiptId);
+            
+            request.onsuccess = () => {
+                const result = request.result;
+                resolve(result ? result.blob : null);
+            };
+            request.onerror = () => reject(request.error);
+        });
     }
 }
 

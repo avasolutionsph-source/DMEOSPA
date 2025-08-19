@@ -754,11 +754,18 @@ class RoleManager {
 			therapist: {
 				allowPages: ['rooms','bookings','dashboard'],
 				denyPages: ['pos','inventory','employees','products','chatbot','settings']
-			}
-			,
+			},
 			admin: {
 				allowPages: ['dashboard','pos','bookings','rooms','inventory','employees','settings','products'],
 				denyPages: []
+			},
+			rider: {
+				allowPages: ['bookings','dashboard'],
+				denyPages: ['pos','rooms','inventory','employees','products','chatbot','settings']
+			},
+			utility: {
+				allowPages: ['dashboard'],
+				denyPages: ['pos','bookings','rooms','inventory','employees','products','chatbot','settings']
 			}
 		};
 	}
@@ -821,6 +828,9 @@ class RoleManager {
 						<option value="receptionist">Receptionist</option>
 						<option value="manager">Manager</option>
 						<option value="therapist">Therapist</option>
+						<option value="admin">Admin</option>
+						<option value="rider">Rider</option>
+						<option value="utility">Utility Staff</option>
 					</select>
 				</div>
 				<div class="modal-footer">

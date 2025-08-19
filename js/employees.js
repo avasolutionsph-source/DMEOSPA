@@ -502,6 +502,8 @@ class EmployeeManager {
                         <option value="therapist">Therapist</option>
                         <option value="manager">Manager</option>
                         <option value="admin">Admin</option>
+                        <option value="rider">Rider</option>
+                        <option value="utility">Utility Staff</option>
                     </select></label>
                 </div>
                 <div class="modal-actions">
@@ -540,7 +542,7 @@ class EmployeeManager {
                     <td>${u.email || ''}</td>
                     <td>
                         <select class="form-input role-select" data-userid="${u.id}">
-                            ${['employee','receptionist','therapist','manager','admin'].map(r => `<option value="${r}" ${u.role===r?'selected':''}>${r}</option>`).join('')}
+                            ${['employee','receptionist','therapist','manager','admin','rider','utility'].map(r => `<option value="${r}" ${u.role===r?'selected':''}>${r}</option>`).join('')}
                         </select>
                     </td>
                     <td>
@@ -645,7 +647,7 @@ class EmployeeManager {
                     <td>${emp.email || ''}</td>
                     <td>
                         <select class="form-input role-select-local" data-email="${emp.email || ''}" data-name="${emp.name}">
-                            ${['employee','receptionist','therapist','manager','admin'].map(r => `<option value="${r}">${r}</option>`).join('')}
+                            ${['employee','receptionist','therapist','manager','admin','rider','utility'].map(r => `<option value="${r}">${r}</option>`).join('')}
                         </select>
                     </td>
                 </tr>

@@ -38,7 +38,17 @@ class RoomsManager {
 			grid.innerHTML = '<div style="text-align:center;padding:1rem;grid-column:1/-1;">No rooms configured</div>';
 			return;
 		}
-		grid.innerHTML = this.rooms.map(r => `
+		
+		// Filter rooms for therapist role - show only their assigned rooms
+		let roomsToShow = this.rooms;
+		if (window.roleManager?.activeEmployee?.role === 'therapist') {
+			const therapistId = window.roleManager.activeEmployee.id;
+			roomsToShow = this.rooms.filter(r => 
+				!r.currentEmployeeId || String(r.currentEmployeeId) === String(therapistId)
+			);
+		}
+		
+		grid.innerHTML = roomsToShow.map(r => `
 			<div class="room-card">
 				<div style="display:flex;justify-content:space-between;align-items:center;">
 					<strong>Room ${r.number}</strong>
@@ -51,7 +61,7 @@ class RoomsManager {
 				<div class="room-actions">
 					<button id="startBtn_${r.id}" class="btn btn-secondary" onclick="roomsManager.startTimer(${r.id})" ${r.status==='occupied' ? 'disabled' : ''}>Start</button>
 					<button id="finishBtn_${r.id}" class="btn btn-primary" onclick="roomsManager.finishTimer(${r.id})" ${r.status!=='occupied' ? 'disabled' : ''}>Finish</button>
-					<button id="cleanBtn_${r.id}" class="btn btn-warning" onclick="roomsManager.markCleaning(${r.id})" ${r.status==='cleaning' ? 'disabled' : ''} style="font-size:.8rem;">Clean</button>
+					<button id="cleanBtn_${r.id}" class="btn btn-warning" onclick="roomsManager.showCleaningChecklist(${r.id})" ${r.status==='cleaning' ? 'disabled' : ''} style="font-size:.8rem;">Clean</button>
 					<button id="readyBtn_${r.id}" class="btn btn-success" onclick="roomsManager.markReady(${r.id})" ${r.status!=='cleaning' ? 'disabled' : ''} style="font-size:.8rem;">Ready</button>
 				</div>
 			</div>
@@ -337,15 +347,73 @@ class RoomsManager {
 		await this.startTimer(room.id, true, { employeeId, serviceName, serviceDuration: duration });
 	}
 
-	async markCleaning(roomId) {
+	async showCleaningChecklist(roomId) {
 		const room = await db.get('rooms', roomId);
 		if (!room) return;
 		if (room.status === 'occupied') { showNotification('Cannot clean occupied room', 'warning'); return; }
-		room.status = 'cleaning';
-		room.cleaningStartTime = new Date().toISOString();
-		await db.update('rooms', room);
-		showNotification(`Room ${room.number} marked for cleaning`, 'info');
-		await this.loadRooms();
+		
+		const modal = document.createElement('div');
+		modal.className = 'modal active';
+		modal.innerHTML = `
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2>Cleaning Checklist - Room ${room.number}</h2>
+					<button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+				</div>
+				<div class="modal-body">
+					<div class="form-group">
+						<label style="margin-bottom:.5rem;">Was the room cleaned by the previous therapist?</label>
+						<div style="display:flex;gap:1rem;">
+							<label><input type="radio" name="prevCleaned" value="yes"> Yes</label>
+							<label><input type="radio" name="prevCleaned" value="no"> No</label>
+						</div>
+					</div>
+					<div class="form-group">
+						<label style="margin-bottom:.5rem;">Cleaning Items:</label>
+						<div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;">
+							<label><input type="checkbox" id="cleanBoxer"> Boxer/Linens</label>
+							<label><input type="checkbox" id="cleanBedding"> Beddings</label>
+							<label><input type="checkbox" id="cleanPillow"> Pillow</label>
+							<label><input type="checkbox" id="cleanTowel"> Towel</label>
+						</div>
+					</div>
+					<div class="form-group">
+						<label>Additional Notes</label>
+						<textarea id="cleaningNotes" class="form-input" rows="2" placeholder="Any issues or special notes"></textarea>
+					</div>
+				</div>
+				<div class="modal-actions">
+					<button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+					<button class="btn btn-primary" id="completeCleaningBtn">Complete Cleaning</button>
+				</div>
+			</div>
+		`;
+		document.body.appendChild(modal);
+
+		modal.querySelector('#completeCleaningBtn').onclick = async () => {
+			const prevCleaned = modal.querySelector('input[name="prevCleaned"]:checked')?.value;
+			const items = {
+				boxer: modal.querySelector('#cleanBoxer').checked,
+				bedding: modal.querySelector('#cleanBedding').checked,
+				pillow: modal.querySelector('#cleanPillow').checked,
+				towel: modal.querySelector('#cleanTowel').checked
+			};
+			const notes = modal.querySelector('#cleaningNotes').value.trim();
+
+			room.status = 'cleaning';
+			room.cleaningStartTime = new Date().toISOString();
+			room.cleaningChecklist = {
+				prevCleaned,
+				items,
+				notes,
+				cleanedBy: window.roleManager?.activeEmployee?.name || 'Unknown',
+				completedAt: new Date().toISOString()
+			};
+			await db.update('rooms', room);
+			showNotification(`Room ${room.number} cleaning recorded`, 'success');
+			modal.remove();
+			await this.loadRooms();
+		};
 	}
 
 	async markReady(roomId) {

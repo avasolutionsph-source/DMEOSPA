@@ -21,7 +21,13 @@ class BookingsManager {
 	}
 
 	async loadBookings() {
-		this.bookings = await db.getAll('bookings');
+		let allBookings = await db.getAll('bookings');
+		// Filter for therapist role - show only their own bookings
+		if (window.roleManager?.activeEmployee?.role === 'therapist') {
+			const therapistId = window.roleManager.activeEmployee.id;
+			allBookings = allBookings.filter(b => String(b.employeeId) === String(therapistId));
+		}
+		this.bookings = allBookings;
 		this.renderBookingsTable();
 	}
 
