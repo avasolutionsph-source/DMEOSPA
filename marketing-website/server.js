@@ -260,7 +260,38 @@ app.use('/api/bookings', async (req, res) => {
     const text = await response.text();
     res.status(response.status).type(response.headers.get('content-type') || 'application/json').send(text);
   } catch (err) {
-    console.error('Bookings proxy error:', err);
+    console.error('Bookings proxy error:', err.message);
+    // Fallback: store booking directly in marketing DB so owners can still see it
+    try {
+      if (req.method === 'POST') {
+        const User = (await import('./models/User.js')).default;
+        const userId = req.headers['x-user-id'];
+        if (!userId) return res.status(500).json({ error: 'Failed to reach bookings backend' });
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        const payload = req.body || {};
+        user.bookings = user.bookings || [];
+        user.bookings.push({
+          source: payload.source || 'booking-site',
+          storeId: payload.storeId,
+          storeName: payload.storeName,
+          customer: payload.customer,
+          serviceId: payload.serviceId,
+          serviceName: payload.serviceName,
+          durationMins: payload.durationMins || 60,
+          partySize: payload.partySize || 1,
+          employeeId: payload.employeeId,
+          employeeName: payload.employeeName,
+          startTime: payload.startTime ? new Date(payload.startTime) : new Date(),
+          status: payload.status || 'pending',
+          notes: payload.notes || ''
+        });
+        await user.save();
+        return res.status(201).json({ success: true, data: { id: user.bookings[user.bookings.length-1]._id } });
+      }
+    } catch (fallbackErr) {
+      console.error('Bookings fallback error:', fallbackErr.message);
+    }
     res.status(500).json({ error: 'Failed to reach bookings backend' });
   }
 });
@@ -358,6 +389,22 @@ app.use('/api/employees', async (req, res) => {
     return res.json({ success: true, data: employees });
   } catch (e) {
     return res.status(500).json({ error: 'Failed to load employees' });
+  }
+});
+
+// Owner fetch bookings fallback from marketing DB
+app.get('/api/business/bookings', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'No token provided' });
+    const jwt = await import('jsonwebtoken');
+    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const User = (await import('./models/User.js')).default;
+    const user = await User.findById(decoded.userId).lean();
+    return res.json({ bookings: user?.bookings || [] });
+  } catch (e) {
+    console.error('Business bookings fetch error:', e.message);
+    return res.status(500).json({ error: 'Failed to fetch bookings' });
   }
 });
 
@@ -594,6 +641,11 @@ app.get('/download', (req, res) => {
 // Business Dashboard (for business owners)
 app.get('/business-dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/business-dashboard.html'));
+});
+
+// Owner bookings page
+app.get('/bookings', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/bookings.html'));
 });
 
 // Dashboard redirect (redirect to PWA for direct access)

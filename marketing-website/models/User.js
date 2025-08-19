@@ -128,6 +128,28 @@ const userSchema = new mongoose.Schema({
     lastUpdated: { type: Date, default: Date.now }
   }],
 
+  // Customer bookings captured by marketing site when PWA backend is unreachable
+  bookings: [{
+    source: { type: String, default: 'booking-site' },
+    storeId: String,
+    storeName: String,
+    customer: {
+      name: String,
+      phone: String,
+      email: String
+    },
+    serviceId: String,
+    serviceName: String,
+    durationMins: { type: Number, default: 60 },
+    partySize: { type: Number, default: 1 },
+    employeeId: String,
+    employeeName: String,
+    startTime: Date,
+    status: { type: String, default: 'pending' },
+    notes: String,
+    createdAt: { type: Date, default: Date.now }
+  }],
+
   // Stores/branches
   stores: [{
     id: { type: String, default: 'default' },

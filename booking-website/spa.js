@@ -96,7 +96,27 @@
 
 	async function checkAvailability(){ availabilityResult.textContent=''; const dateStr = dateInput.value || new Date().toISOString().split('T')[0]; if (!serviceSelect.value) { availabilityResult.textContent = 'Select a service first'; return; } const r = await tryAvailability(dateStr); if (!r) { availabilityResult.textContent = 'Unable to load availability.'; return; } const slots = r.data?.slots || []; buildSlots(slots); availabilityResult.textContent = slots.length ? 'Select a slot' : 'No slots available'; }
 
-	async function submitBooking(){ try { const sOpt = serviceSelect.options[serviceSelect.selectedIndex]; const payload = { source: 'booking-site', storeId: storeSelect.value, storeName: storeSelect.options[storeSelect.selectedIndex]?.text || 'Main Branch', customer: { name: qs('#customerName').value, phone: qs('#customerPhone').value, email: qs('#customerEmail').value }, serviceId: serviceSelect.value, serviceName: sOpt?.dataset?.name || selectedService?.name || '', durationMins: parseInt(qs('#durationInput').value || selectedService?.duration || '60', 10), partySize: parseInt(qs('#partySizeInput').value || '1', 10), startTime: selectedSlot ? new Date(selectedSlot).toISOString() : new Date(`${dateInput.value}T09:00:00`).toISOString(), status: 'pending', employeeId: employeeSelect.value || undefined, employeeName: (employeeSelect.options[employeeSelect.selectedIndex]?.text || ''), notes: qs('#notes').value || '' }; await fetchJSON(`${apiBase()}/bookings`, { method:'POST', body: JSON.stringify(payload) }); alert('Booking submitted!'); } catch(e){ alert('Booking failed'); } }
+	async function submitBooking(){
+		try {
+			const sOpt = serviceSelect.options[serviceSelect.selectedIndex];
+			const payload = { source: 'booking-site', storeId: storeSelect.value, storeName: storeSelect.options[storeSelect.selectedIndex]?.text || 'Main Branch', customer: { name: qs('#customerName').value, phone: qs('#customerPhone').value, email: qs('#customerEmail').value }, serviceId: serviceSelect.value, serviceName: sOpt?.dataset?.name || selectedService?.name || '', durationMins: parseInt(qs('#durationInput').value || selectedService?.duration || '60', 10), partySize: parseInt(qs('#partySizeInput').value || '1', 10), startTime: selectedSlot ? new Date(selectedSlot).toISOString() : new Date(`${dateInput.value}T09:00:00`).toISOString(), status: 'pending', employeeId: employeeSelect.value || undefined, employeeName: (employeeSelect.options[employeeSelect.selectedIndex]?.text || ''), notes: qs('#notes').value || '' };
+			// Try marketing proxy first
+			apiHost = marketingApi;
+			await fetchJSON(`${apiBase()}/bookings`, { method:'POST', body: JSON.stringify(payload) });
+			alert('Booking submitted!');
+		} catch(e){
+			// Fallback: try direct PWA if configured
+			try {
+				const pwa = localStorage.getItem('pwaApiUrl');
+				if (isHttps(pwa)) {
+					await fetchJSON(`${pwa}/api/bookings`, { method:'POST', body: JSON.stringify(payload) });
+					alert('Booking submitted!');
+					return;
+				}
+			} catch(_){}
+			alert('Booking failed');
+		}
+	}
 
 	dateInput.valueAsDate = new Date();
 	loadStores();
