@@ -1,7 +1,13 @@
 (function(){
 	const isLocal = ['localhost','127.0.0.1'].some(h => location.hostname.startsWith(h));
 	const marketingApi = 'https://ava-marketing-api.onrender.com';
-	const pwaDefault = isLocal ? 'http://localhost:4000' : (localStorage.getItem('pwaApiUrl') || 'https://ava-marketing-api.onrender.com');
+	// Read overrides early
+	try {
+		const paramsEarly = new URLSearchParams(location.search);
+		const qpPwa = paramsEarly.get('pwa');
+		if (qpPwa) localStorage.setItem('pwaApiUrl', qpPwa);
+	} catch(e) {}
+	const pwaDefault = isLocal ? 'http://localhost:4000' : (localStorage.getItem('pwaApiUrl') || marketingApi);
 	let apiHost = pwaDefault; // will swap to PWA directly if proxy fails
 	const apiBase = () => `${apiHost}/api`;
 	let token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || null;
