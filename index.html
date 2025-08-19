@@ -71,7 +71,7 @@
                     </div>
                 </div>
                 <div class="auth-indicator" id="authIndicator">
-                    <button id="showLoginBtn" class="btn btn-primary" style="cursor: pointer; z-index: 10; position: relative;" onclick="console.log('🔥 MAIN LOGIN BUTTON CLICKED!'); showLoginModalDirect();">
+                    <button id="showLoginBtn" class="btn btn-primary">
                         <i class="fas fa-sign-in-alt"></i> Login
                     </button>
                     <div id="userInfo" style="display: none;" class="user-info">
@@ -1107,7 +1107,7 @@
                                 Remember me on this device
                             </label>
                         </div>
-                        <button type="submit" id="loginBtn" class="btn btn-primary btn-full" onclick="console.log('🔥 LOGIN BUTTON CLICKED');">
+                        <button type="submit" id="loginBtn" class="btn btn-primary btn-full">
                             <i class="fas fa-sign-in-alt"></i> Sign In
                         </button>
                         <button type="button" onclick="testLogin()" class="btn btn-secondary btn-full" style="margin-top: 10px;">
@@ -1959,7 +1959,11 @@
         });
 
         function showLoginModalDirect() {
-            console.log('🚨 DIRECT LOGIN MODAL FUNCTION CALLED - BYPASSING AUTH SYSTEM 🚨');
+            // Use the auth system's modal instead of bypassing
+            if (window.authSystem && window.authSystem.showLoginModal) {
+                window.authSystem.showLoginModal();
+                return;
+            }
             
             // Force close setup wizard if it's open
             if (window.app && typeof window.app.forceCloseSetupWizard === 'function') {
