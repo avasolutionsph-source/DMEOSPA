@@ -1,3 +1,22 @@
+// Branch-aware POS
+document.addEventListener('DOMContentLoaded', () => {
+    const bs = document.getElementById('branchSelect');
+    if (bs) {
+        // Populate from localStorage branches [{id,name}]
+        try {
+            const branches = JSON.parse(localStorage.getItem('branches') || '[]');
+            bs.innerHTML = branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+            const current = localStorage.getItem('activeBranchId') || (branches[0]?.id || 'default');
+            bs.value = current;
+        } catch(_){ }
+        bs.addEventListener('change', async () => {
+            localStorage.setItem('activeBranchId', bs.value);
+            // Reload branch-specific data for employees/products
+            if (window.loadPOS) await window.loadPOS();
+        });
+    }
+});
+
 // POS System Management
 class POSSystem {
     constructor() {

@@ -184,6 +184,9 @@ class SettingsManager {
                 lastSync: lastSync?.value || null
             };
 
+            // Load branches (from marketing or local cache)
+            this.branches = JSON.parse(localStorage.getItem('branches') || '[]');
+
         } catch (error) {
             console.error('Failed to load settings:', error);
         }
