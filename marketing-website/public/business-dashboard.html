@@ -1386,9 +1386,24 @@
                                 method = 'POST';
                                 endpoint = `/api/branches/${id}/reset-password`;
                             }
-                            const r = await fetch(endpoint, { method, headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' }, body });
-                            const j = await r.json();
-                            if (!r.ok) throw new Error(j.error || 'Failed');
+                            const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
+                            if (method !== 'GET') headers['Content-Type'] = 'application/json';
+                            let r = await fetch(endpoint, { method, headers, body });
+                            let txt = await r.text();
+                            let j = null;
+                            try { j = JSON.parse(txt); }
+                            catch (e) {
+                                // Fallback to direct API (bypass Netlify) if HTML was returned
+                                if (txt && txt.trim().startsWith('<')) {
+                                    const direct = `https://ava-marketing-api.onrender.com${endpoint}`;
+                                    r = await fetch(direct, { method, headers, body });
+                                    txt = await r.text();
+                                    try { j = JSON.parse(txt); } catch(_) { throw new Error('Unexpected response from server'); }
+                                } else {
+                                    throw new Error('Unexpected response from server');
+                                }
+                            }
+                            if (!r.ok) throw new Error((j && j.error) || 'Failed');
                             const span = document.getElementById(`temp-${id}`);
                             if (span) span.textContent = j.password || '';
                             btn.textContent = (action === 'change') ? 'Change Password' : 'Show';
