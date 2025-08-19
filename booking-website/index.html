@@ -6,34 +6,56 @@
 	<title>Ava Booking</title>
 	<link rel="stylesheet" href="/style.css">
 	<link rel="preconnect" href="https://fonts.googleapis.com">
-	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-	<header class="container">
-		<h1>Ava Booking</h1>
-		<div id="authArea">
-			<button id="loginBtn" class="btn">Login</button>
-			<button id="logoutBtn" class="btn" style="display:none">Logout</button>
+	<header>
+		<div class="row">
+			<div class="brand"><span class="dot"></span> Ava Booking</div>
+			<div id="authArea">
+				<button id="loginBtn" class="btn">Login</button>
+				<button id="logoutBtn" class="btn" style="display:none">Logout</button>
+			</div>
 		</div>
 	</header>
 	<main class="container">
 		<section id="storeSection" class="card">
-			<h2>Select Store</h2>
+			<div class="section-title"><h2>Select Store</h2></div>
 			<select id="storeSelect"></select>
+			<p class="sub">Choose outlet to see available services and therapists.</p>
 		</section>
 
-		<section id="bookingSection" class="card">
-			<h2>Book a Service</h2>
-			<div class="grid">
-				<label>Service
+		<section class="card">
+			<div class="section-title">
+				<h2>Choose Service</h2>
+				<small class="sub">Tap to select</small>
+			</div>
+			<div id="serviceChips" class="chips"></div>
+			<div class="grid" style="margin-top:10px">
+				<label>Service (full list)
 					<select id="serviceSelect"></select>
-				</label>
-				<label>Date & Time
-					<input type="datetime-local" id="dateTimeInput" required>
 				</label>
 				<label>Duration (mins)
 					<input type="number" id="durationInput" min="15" step="15" value="60">
 				</label>
+			</div>
+		</section>
+
+		<section class="card">
+			<div class="section-title">
+				<h2>Pick a Time</h2>
+				<button id="checkAvailabilityBtn" class="btn secondary">Refresh</button>
+			</div>
+			<label>Date
+				<input type="date" id="dateInput">
+			</label>
+			<div id="slotGrid" class="slot-grid"></div>
+			<div id="availabilityResult" class="sub" style="margin-top:8px"></div>
+		</section>
+
+		<section class="card">
+			<div class="section-title"><h2>Details</h2></div>
+			<div class="grid">
 				<label>Therapist (optional)
 					<select id="employeeSelect"><option value="">Any available</option></select>
 				</label>
@@ -53,13 +75,17 @@
 					<input type="text" id="notes" placeholder="Preferences, requests...">
 				</label>
 			</div>
-			<div style="margin-top:1rem; display:flex; gap:.5rem; justify-content:flex-end">
-				<button id="checkAvailabilityBtn" class="btn secondary">Check Availability</button>
-				<button id="submitBookingBtn" class="btn primary">Book Now</button>
-			</div>
-			<div id="availabilityResult" style="margin-top: .75rem; font-size:.9rem; color:#555;"></div>
 		</section>
 	</main>
+	<div class="bottom-bar">
+		<div class="bottom-wrap">
+			<div class="summary">
+				<div class="main" id="summaryService">Select a service</div>
+				<div id="summaryTime">No time selected</div>
+			</div>
+			<button id="submitBookingBtn" class="btn primary">Book Now</button>
+		</div>
+	</div>
 	<script src="/main.js"></script>
 </body>
 </html>

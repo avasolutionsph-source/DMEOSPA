@@ -41,7 +41,7 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // CORS - Allow configured origins (include Netlify and Render domains in production)
-const defaultOrigins = ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8080', 'http://127.0.0.1:5500', 'http://localhost:4000', 'https://ava-solutions-marketing.netlify.app', 'https://ava-solutions-pwa.netlify.app'];
+const defaultOrigins = ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8080', 'http://127.0.0.1:5500', 'http://localhost:4000', 'https://ava-solutions-marketing.netlify.app', 'https://ava-solutions-pwa.netlify.app', 'https://ava-solutions-booking.netlify.app'];
 const envOrigins = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
   .map(o => o.trim())
@@ -174,6 +174,21 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api', syncRoutes); // Mount sync routes under /api
+
+// Public: list businesses for booking directory
+app.get('/api/public/businesses', async (req, res) => {
+  try {
+    const User = (await import('./models/User.js')).default;
+    const businesses = await User.find({ subscriptionStatus: 'active' })
+      .select('_id businessName')
+      .limit(500)
+      .lean();
+    res.json({ success: true, data: businesses.map(b => ({ id: String(b._id), name: b.businessName })) });
+  } catch (err) {
+    console.error('List businesses error:', err);
+    res.status(500).json({ error: 'Failed to list businesses' });
+  }
+});
 
 // Proxy bookings and availability to PWA backend so PWA/webapp can use one base URL
 app.use('/api/bookings', async (req, res) => {
@@ -386,19 +401,9 @@ app.post('/api/business/sync', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // In a real implementation, you would:
-    // 1. Receive sync data from PWA backend
-    // 2. Update user's business metrics
-    // 3. Store detailed records if needed
-    // 4. Clean up old data to save space
-
-    // For now, we'll simulate receiving data from PWA
-    // You would typically call the PWA backend API here to get latest data
     const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';
     
     try {
-      // Fetch latest data from PWA backend for this user
-      // This is where you'd implement the real sync logic
       const pwaResponse = await fetch(`${pwaBackendUrl}/api/user-summary/${user._id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -408,7 +413,6 @@ app.post('/api/business/sync', async (req, res) => {
         syncData = await pwaResponse.json();
       }
 
-      // Update user's business metrics with real or simulated data
       const updatedMetrics = {
         totalSales: syncData.totalSales || user.businessMetrics?.totalSales || 0,
         totalTransactions: syncData.totalTransactions || user.businessMetrics?.totalTransactions || 0,
@@ -429,7 +433,6 @@ app.post('/api/business/sync', async (req, res) => {
       });
 
     } catch (pwaError) {
-      // If PWA backend is not available, still update sync date
       user.businessMetrics = {
         ...user.businessMetrics,
         lastSyncDate: new Date(),

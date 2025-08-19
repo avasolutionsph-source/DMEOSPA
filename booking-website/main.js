@@ -22,6 +22,14 @@
 	const submitBtn = qs('#submitBookingBtn');
 	const checkBtn = qs('#checkAvailabilityBtn');
 	const availabilityResult = qs('#availabilityResult');
+	const serviceChips = qs('#serviceChips');
+	const slotGrid = qs('#slotGrid');
+	const dateInput = qs('#dateInput');
+	const summaryService = qs('#summaryService');
+	const summaryTime = qs('#summaryTime');
+
+	let selectedService = null;
+	let selectedSlot = null;
 
 	function setToken(t){ token = t; if(t){ localStorage.setItem('authToken', t); } }
 
@@ -67,9 +75,22 @@
 	}
 
 	async function loadStores(){
-		// Placeholder stores; can be enhanced later via user profile
 		const stores = [ { id:'default', name:'Main Branch' } ];
 		storeSelect.innerHTML = stores.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+	}
+
+	function renderServiceChips(services){
+		serviceChips.innerHTML = services.map(s => `<button class="chip" data-id="${s._id||s.id}" data-name="${s.name}" data-duration="${s.duration||60}">${s.name}</button>`).join('');
+		serviceChips.querySelectorAll('.chip').forEach(chip => {
+			chip.addEventListener('click', () => {
+				serviceChips.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+				chip.classList.add('active');
+				serviceSelect.value = chip.dataset.id;
+				qs('#durationInput').value = chip.dataset.duration || '60';
+				selectedService = { id: chip.dataset.id, name: chip.dataset.name, duration: parseInt(chip.dataset.duration||'60',10) };
+				updateSummary();
+			});
+		});
 	}
 
 	async function loadCatalog(){
@@ -77,6 +98,15 @@
 			const res = await fetchJSON(`${apiBase}/products`);
 			const services = (res.data||[]).filter(p=>p.category==='service' || p.category==='massage');
 			serviceSelect.innerHTML = services.map(s=>`<option value="${s._id||s.id}" data-name="${s.name}" data-duration="${s.duration||60}">${s.name}${s.duration?` (${s.duration}m)`:''}</option>`).join('');
+			renderServiceChips(services);
+			// Preselect first
+			if (services[0]) {
+				selectedService = { id: services[0]._id||services[0].id, name: services[0].name, duration: services[0].duration||60 };
+				serviceSelect.value = selectedService.id;
+				qs('#durationInput').value = selectedService.duration;
+				serviceChips.querySelector('.chip')?.classList.add('active');
+				updateSummary();
+			}
 			const empsRes = await fetchJSON(`${apiBase}/employees`);
 			employeeSelect.innerHTML = '<option value="">Any available</option>' + (empsRes.data||[]).map(e=>`<option value="${e._id||e.id}" data-name="${e.name}">${e.name||e.email||'Employee'}</option>`).join('');
 		} catch(e){
@@ -84,14 +114,32 @@
 		}
 	}
 
+	function updateSummary(){
+		summaryService.textContent = selectedService ? selectedService.name : 'Select a service';
+		summaryTime.textContent = selectedSlot ? new Date(selectedSlot).toLocaleString() : 'No time selected';
+	}
+
+	function buildSlots(slots){
+		slotGrid.innerHTML = slots.map(s=>`<button class="slot" data-ts="${s.startTime}" ${s.available===false?'disabled':''}>${new Date(s.startTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</button>`).join('');
+		slotGrid.querySelectorAll('.slot').forEach(btn => {
+			if (btn.disabled) btn.classList.add('disabled');
+			btn.addEventListener('click', () => {
+				slotGrid.querySelectorAll('.slot').forEach(b=>b.classList.remove('selected'));
+				btn.classList.add('selected');
+				selectedSlot = btn.dataset.ts;
+				updateSummary();
+			});
+		});
+	}
+
 	async function checkAvailability(){
 		availabilityResult.textContent = 'Checking...';
 		try{
-			const dateTime = qs('#dateTimeInput').value;
-			const serviceId = serviceSelect.value;
-			const r = await fetchJSON(`${apiBase}/availability?date=${encodeURIComponent(dateTime)}&serviceId=${encodeURIComponent(serviceId)}`);
+			const dateStr = dateInput.value || new Date().toISOString().split('T')[0];
+			const r = await fetchJSON(`${apiBase}/availability?date=${encodeURIComponent(dateStr)}&serviceId=${encodeURIComponent(serviceSelect.value)}`);
 			const slots = r.data?.slots || [];
-			availabilityResult.innerHTML = slots.slice(0,8).map(s=>`<span>${new Date(s.startTime).toLocaleTimeString()}</span>`).join('');
+			buildSlots(slots);
+			availabilityResult.textContent = slots.length ? 'Select a slot' : 'No slots available';
 		}catch(e){
 			availabilityResult.textContent = 'Availability check failed';
 		}
@@ -100,10 +148,10 @@
 	async function submitBooking(){
 		try {
 			const serviceId = serviceSelect.value;
-			const selectedService = serviceSelect.options[serviceSelect.selectedIndex];
-			const serviceName = selectedService?.dataset?.name || '';
-			const durationMins = parseInt(qs('#durationInput').value || selectedService?.dataset?.duration || '60', 10);
-			const startTime = new Date(qs('#dateTimeInput').value).toISOString();
+			const sOpt = serviceSelect.options[serviceSelect.selectedIndex];
+			const serviceName = sOpt?.dataset?.name || selectedService?.name || '';
+			const durationMins = parseInt(qs('#durationInput').value || sOpt?.dataset?.duration || selectedService?.duration || '60', 10);
+			const startTime = selectedSlot ? new Date(selectedSlot).toISOString() : new Date(`${dateInput.value}T09:00:00`).toISOString();
 			const employeeId = employeeSelect.value || null;
 			const employeeName = employeeId ? (employeeSelect.options[employeeSelect.selectedIndex]?.text || '') : '';
 			const payload = {
@@ -136,9 +184,16 @@
 	logoutBtn?.addEventListener('click', logout);
 	checkBtn?.addEventListener('click', checkAvailability);
 	submitBtn?.addEventListener('click', submitBooking);
+	serviceSelect?.addEventListener('change', () => {
+		const opt = serviceSelect.options[serviceSelect.selectedIndex];
+		selectedService = { id: opt.value, name: opt.dataset.name, duration: parseInt(opt.dataset.duration||'60',10) };
+		qs('#durationInput').value = selectedService.duration;
+		updateSummary();
+	});
 
+	// init
 	initAuth();
 	loadStores();
-	// Load catalog if we have auth or public business id
-	if (token || businessId) loadCatalog();
+	dateInput.valueAsDate = new Date();
+	if (token || businessId) loadCatalog().then(checkAvailability);
 })();
