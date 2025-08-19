@@ -199,7 +199,7 @@ class EmployeeManager {
             if (posEl && posEl.tagName === 'SELECT') {
                 posEl.value = (employee.position || '').toLowerCase();
             } else {
-                document.getElementById('employeePosition').value = employee.position;
+            document.getElementById('employeePosition').value = employee.position;
             }
             document.getElementById('employeeEmail').value = employee.email || '';
             document.getElementById('employeePhone').value = employee.phone || '';
@@ -271,6 +271,15 @@ class EmployeeManager {
                 // Add new employee
                 employeeData.createdAt = new Date().toISOString();
                 await db.add('employees', employeeData);
+                // Also create/login invite on marketing site so they appear under Invited Employees
+                try {
+                    if (employeeData.email) {
+                        const temp = await this.inviteEmployee(employeeData.email, employeeData.name, (employeeData.position||'employee'));
+                        if (temp) console.log('Invite created with temp password');
+                        // Refresh invited list immediately
+                        await this.loadInvitedEmployees();
+                    }
+                } catch(_) {}
                 
                 hideLoading();
                 saveBtn.classList.remove('loading');
