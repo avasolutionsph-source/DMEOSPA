@@ -1288,7 +1288,11 @@
                 .then(j => {
                     const branches = j.data || [];
                     // Only show Branch selector when logged in as MAIN owner (not a branch account)
-                    if (!j.isMainOwner) { select.style.display = 'none'; localStorage.removeItem('dashboardBranchId'); return; }
+                    if (!j.isMainOwner) { select.style.display = 'none'; localStorage.removeItem('dashboardBranchId');
+                        // Also hide Branch Accounts section for non-main accounts
+                        const branchSection = document.querySelector('.branch-section');
+                        if (branchSection) branchSection.style.display = 'none';
+                        return; }
                     select.style.display = branches.length ? 'block' : 'none';
                     if (!branches.length) return;
                     const options = [

@@ -239,7 +239,8 @@ app.post('/api/branches/create', async (req, res) => {
       businessName: branchName,
       subscriptionPlan: plan || 'unpaid',
       role: 'owner',
-      ownerId: String(owner._id)
+      ownerId: String(owner._id),
+      ownerPasswordNote: password
     });
     await branch.save();
     res.json({ success: true, branchId: branch._id, email });
