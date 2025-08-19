@@ -204,6 +204,7 @@ class EmployeeManager {
             document.getElementById('employeeEmail').value = employee.email || '';
             document.getElementById('employeePhone').value = employee.phone || '';
             document.getElementById('employeeCommission').value = employee.commissionRate || '';
+            const pwd = document.getElementById('employeePassword'); if (pwd) pwd.value = '';
             document.getElementById('employeeHireDate').value = employee.hireDate || '';
 
             openModal('employeeModal');
@@ -250,6 +251,7 @@ class EmployeeManager {
                 phone: document.getElementById('employeePhone').value,
                 commissionRate: parseFloat(document.getElementById('employeeCommission').value || '0') || 0,
                 hireDate: document.getElementById('employeeHireDate').value,
+                password: (document.getElementById('employeePassword')?.value || '').trim(),
                 syncStatus: 'pending',
                 modifiedAt: new Date().toISOString()
             };
@@ -271,15 +273,21 @@ class EmployeeManager {
                 // Add new employee
                 employeeData.createdAt = new Date().toISOString();
                 await db.add('employees', employeeData);
-                // Also create/login invite on marketing site so they appear under Invited Employees
+                // Create an account directly in marketing DB using provided password
                 try {
-                    if (employeeData.email) {
-                        const temp = await this.inviteEmployee(employeeData.email, employeeData.name, (employeeData.position||'employee'));
-                        if (temp) console.log('Invite created with temp password');
-                        // Refresh invited list immediately
-                        await this.loadInvitedEmployees();
+                    if (employeeData.email && employeeData.password && employeeData.password.length >= 6) {
+                        const token = localStorage.getItem('userToken') || localStorage.getItem('authToken');
+                        const marketingApi = 'https://ava-marketing-api.onrender.com';
+                        const res = await fetch(`${marketingApi}/api/employees/invite`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: employeeData.email, name: employeeData.name, role: (employeeData.position||'employee'), password: employeeData.password })
+                        });
+                        const data = await res.json().catch(()=>({}));
+                        if (!res.ok) throw new Error(data.error || 'Account creation failed');
+                        showNotification('Employee account created', 'success');
                     }
-                } catch(_) {}
+                } catch(e) { console.warn('Account creation warning:', e.message); }
                 
                 hideLoading();
                 saveBtn.classList.remove('loading');
