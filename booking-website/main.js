@@ -23,6 +23,7 @@
 	const checkBtn = qs('#checkAvailabilityBtn');
 	const availabilityResult = qs('#availabilityResult');
 	const businessChips = qs('#businessChips');
+	const businessList = qs('#businessList');
 	const serviceChips = qs('#serviceChips');
 	const slotGrid = qs('#slotGrid');
 	const dateInput = qs('#dateInput');
@@ -80,23 +81,48 @@
 		try {
 			const r = await fetchJSON(`${defaultApiHost}/api/public/businesses`);
 			const list = r.data || [];
-			businessChips.innerHTML = list.map(b => `<button class="chip${businessId===b.id?' active':''}" data-biz="${b.id}">${b.name}</button>`).join('');
-			businessChips.querySelectorAll('.chip').forEach(btn => {
-				btn.addEventListener('click', async () => {
-					businessId = btn.dataset.biz;
-					localStorage.setItem('bookingBusinessId', businessId);
-					businessChips.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
-					btn.classList.add('active');
-					storeSection.style.display = 'block';
-					businessHint.textContent = 'Loading services...';
-					await loadCatalog();
-					businessHint.textContent = 'Spa selected';
-					await checkAvailability();
+			if (businessList) {
+				businessList.innerHTML = list.map(b => `
+					<button class="biz-card${businessId===b.id?' active':''}" data-biz="${b.id}">
+						<div class="biz-thumb">${(b.name||'S')[0]}</div>
+						<div class="biz-info">
+							<div class="biz-name">${b.name}</div>
+							<div class="biz-meta">Spa • Open</div>
+						</div>
+					</button>
+				`).join('');
+				businessList.querySelectorAll('.biz-card').forEach(card => {
+					card.addEventListener('click', async () => {
+						businessId = card.dataset.biz;
+						localStorage.setItem('bookingBusinessId', businessId);
+						businessList.querySelectorAll('.biz-card').forEach(x=>x.classList.remove('active'));
+						card.classList.add('active');
+						storeSection.style.display = 'block';
+						businessHint.textContent = 'Loading services...';
+						await loadCatalog();
+						businessHint.textContent = 'Spa selected';
+						await checkAvailability();
+					});
 				});
-			});
-			// Auto-select first if none
+			} else if (businessChips) {
+				businessChips.innerHTML = list.map(b => `<button class="chip${businessId===b.id?' active':''}" data-biz="${b.id}">${b.name}</button>`).join('');
+				businessChips.querySelectorAll('.chip').forEach(btn => {
+					btn.addEventListener('click', async () => {
+						businessId = btn.dataset.biz;
+						localStorage.setItem('bookingBusinessId', businessId);
+						businessChips.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+						btn.classList.add('active');
+						storeSection.style.display = 'block';
+						businessHint.textContent = 'Loading services...';
+						await loadCatalog();
+						businessHint.textContent = 'Spa selected';
+						await checkAvailability();
+					});
+				});
+			}
 			if (!businessId && list[0]) {
-				businessChips.querySelector('.chip')?.click();
+				if (businessList) businessList.querySelector('.biz-card')?.click();
+				else businessChips.querySelector('.chip')?.click();
 			}
 		} catch(e){ console.warn('Failed to load businesses', e); }
 	}
@@ -217,10 +243,11 @@
 		updateSummary();
 	});
 
-	// init
+	// init (no top-level await to avoid module requirement)
 	initAuth();
-	dateInput.valueAsDate = new Date();
-	await loadBusinesses();
-	await loadStores();
-	if (businessId) { await loadCatalog(); await checkAvailability(); }
+	if (dateInput) dateInput.valueAsDate = new Date();
+	loadBusinesses().then(() => {
+		loadStores();
+		if (businessId) { loadCatalog().then(checkAvailability); }
+	});
 })();
