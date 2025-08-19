@@ -370,6 +370,18 @@ class AuthSystem {
         
         // Add user ID to all future database operations
         await this.initializeUserData();
+
+        // Re-load entitlements and gates immediately without requiring manual refresh
+        try {
+            if (window.entitlementsSystem) {
+                window.entitlementsSystem.token = token;
+                await window.entitlementsSystem.loadEntitlements();
+                window.entitlementsSystem.updateUI();
+            }
+            if (window.app && typeof window.app.onUserLoggedIn === 'function') {
+                window.app.onUserLoggedIn();
+            }
+        } catch(_) {}
     }
 
     // Ensure that when a different user logs in, previous user's local data is not visible

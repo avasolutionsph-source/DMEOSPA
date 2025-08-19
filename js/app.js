@@ -95,8 +95,16 @@ class App {
         if (this.performanceProfile === 'low') {
             document.documentElement.classList.add('perf-low');
             if (!localStorage.getItem('debugLogs')) {
-                try { console.log = () => {}; console.info = () => {}; console.debug = () => {}; } catch(_){}
+                try { console.log = () => {}; console.info = () => {}; console.debug = () => {}; } catch(_){ }
             }
+            // Extra scroll/paint optimizations for low-power Intel CPUs
+            try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch(_){ }
+            // Ensure any global scroll listeners are passive and cheap
+            try {
+                if (this._passiveScrollHandler) window.removeEventListener('scroll', this._passiveScrollHandler);
+                this._passiveScrollHandler = () => {};
+                window.addEventListener('scroll', this._passiveScrollHandler, { passive: true });
+            } catch(_){ }
         }
     }
 
@@ -364,6 +372,13 @@ class App {
         // Reload business configuration and name
         this.loadBusinessName();
         this.loadBusinessConfig();
+
+        // Ensure initial page shows Settings if manager not yet assigned
+        try {
+            if (localStorage.getItem('managerAssigned') !== 'true') {
+                this.showPage('settings');
+            }
+        } catch(_) {}
     }
 
     // Handle logout - called when user logs out
