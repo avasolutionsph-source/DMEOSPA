@@ -1061,7 +1061,7 @@
 
         <!-- Detailed Sales Reports Section -->
         <div class="detailed-reports-section">
-            <h3 style="margin-bottom: 1.5rem; color: var(--text-dark);">📊 Detailed Sales Reports</h3>
+            <h3 style="margin-bottom: 1.5rem; color: var(--text-dark);">📊 Detailed Sales Reports <span id="aggregateHint" style="font-size:.9rem; color:var(--gray-600);"></span></h3>
             <div class="reports-grid">
                 <div class="report-card today">
                     <div class="report-header">
@@ -1226,6 +1226,7 @@
                                 <th>Email</th>
                                 <th>Plan</th>
                                 <th>Created</th>
+                                <th>Password</th>
                             </tr>
                         </thead>
                         <tbody id="branchesTableBody">
@@ -1341,15 +1342,42 @@
                 const res = await fetch('/api/branches', { headers: { 'Authorization': `Bearer ${token}` } });
                 const j = await res.json();
                 const tbody = document.getElementById('branchesTableBody');
-                if (!res.ok) { tbody.innerHTML = '<tr><td colspan="4" style="color:var(--danger-color);">Failed to load branches</td></tr>'; return; }
+                if (!res.ok) { tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger-color);">Failed to load branches</td></tr>'; return; }
                 const rows = (j.data || []).map(b => {
                     const created = b.createdAt ? new Date(b.createdAt).toLocaleDateString('en-PH') : '';
-                    return `<tr><td>${b.name || ''}</td><td>${b.email || ''}</td><td><span class="badge-plan">${b.plan || 'unpaid'}</span></td><td>${created}</td></tr>`;
+                    return `<tr>
+                        <td>${b.name || ''}</td>
+                        <td>${b.email || ''}</td>
+                        <td><span class="badge-plan">${b.plan || 'unpaid'}</span></td>
+                        <td>${created}</td>
+                        <td><button class="btn-secondary-sm" data-branch-id="${b.id}">Show/Reset</button> <span class="branch-temp" id="temp-${b.id}"></span></td>
+                    </tr>`;
                 }).join('');
-                tbody.innerHTML = rows || '<tr><td colspan="4" style="color: var(--gray-600);">No branches yet</td></tr>';
+                tbody.innerHTML = rows || '<tr><td colspan="5" style="color: var(--gray-600);">No branches yet</td></tr>';
+                // Attach handlers
+                tbody.querySelectorAll('button[data-branch-id]').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            const token = localStorage.getItem('userToken');
+                            const id = btn.getAttribute('data-branch-id');
+                            btn.disabled = true; btn.textContent = 'Working...';
+                            const r = await fetch(`/api/branches/${id}/reset-password`, { method:'POST', headers: { 'Authorization': `Bearer ${token}` } });
+                            const j = await r.json();
+                            if (!r.ok) throw new Error(j.error || 'Failed');
+                            const span = document.getElementById(`temp-${id}`);
+                            if (span) span.textContent = j.tempPassword;
+                            btn.textContent = 'Reset Again';
+                            btn.disabled = false;
+                        } catch(e) {
+                            alert(e.message || 'Failed to reset');
+                            btn.textContent = 'Show/Reset';
+                            btn.disabled = false;
+                        }
+                    });
+                });
             } catch(e) {
                 const tbody = document.getElementById('branchesTableBody');
-                tbody.innerHTML = '<tr><td colspan="4" style="color:var(--danger-color);">Error loading branches</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger-color);">Error loading branches</td></tr>';
             }
         }
 
@@ -1391,6 +1419,15 @@
                     document.getElementById('monthTransactions').textContent = stats.monthTransactions || 0;
                     document.getElementById('yearSales').textContent = `₱${(stats.yearSales || 0).toLocaleString()}.00`;
                     document.getElementById('yearTransactions').textContent = stats.yearTransactions || 0;
+                    // If aggregating across branches, show hint
+                    const hint = document.getElementById('aggregateHint');
+                    if (hint) {
+                        if (!branchId || branchId === 'owner') {
+                            hint.textContent = '(Totals across all branches)';
+                        } else {
+                            hint.textContent = '';
+                        }
+                    }
                     
                     console.log('📊 Detailed sales data loaded:', {
                         today: `₱${stats.todaySales}`,

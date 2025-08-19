@@ -270,6 +270,37 @@ app.get('/api/branches', async (req, res) => {
   }
 });
 
+// Reset a branch account password (owner only) and return the new temp password
+app.post('/api/branches/:id/reset-password', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const jwt = await import('jsonwebtoken');
+    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const ownerId = decoded.userId;
+    const branchId = req.params.id;
+
+    const User = (await import('./models/User.js')).default;
+    const branch = await User.findById(branchId);
+    if (!branch) return res.status(404).json({ error: 'Branch not found' });
+    if (String(branch.ownerId) !== String(ownerId)) return res.status(403).json({ error: 'Not your branch' });
+
+    const generateTempPassword = (len = 10) => {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+      let s = '';
+      for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
+      return s;
+    };
+    const temp = generateTempPassword();
+    branch.password = temp; // will be hashed by pre-save hook
+    await branch.save();
+    res.json({ success: true, tempPassword: temp });
+  } catch (e) {
+    console.error('Reset branch password error:', e.message);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
 // List invited employees for owner
 app.get('/api/employees', async (req, res) => {
   try {
