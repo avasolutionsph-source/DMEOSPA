@@ -212,6 +212,93 @@ app.post('/api/employees/invite', async (req, res) => {
   }
 });
 
+// List invited employees for owner
+app.get('/api/employees', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const jwt = await import('jsonwebtoken');
+    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const ownerId = decoded.userId;
+    const User = (await import('./models/User.js')).default;
+    const employees = await User.find({ ownerId, role: { $in: ['employee','receptionist','therapist','manager'] } })
+      .select('_id email role employeeId employeeName firstName lastName')
+      .lean();
+    res.json({ success: true, data: employees.map(u => ({ id: String(u._id), email: u.email, role: u.role, employeeId: u.employeeId||null, employeeName: u.employeeName || `${u.firstName} ${u.lastName}`.trim() })) });
+  } catch (e) {
+    console.error('List employees error:', e.message);
+    res.status(500).json({ error: 'Failed to list employees' });
+  }
+});
+
+// Reset employee password (owner)
+app.post('/api/employees/reset-password', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const jwt = await import('jsonwebtoken');
+    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const ownerId = decoded.userId;
+    const { userId, email } = req.body || {};
+    const User = (await import('./models/User.js')).default;
+    const query = userId ? { _id: userId, ownerId } : { email, ownerId };
+    const user = await User.findOne(query);
+    if (!user) return res.status(404).json({ error: 'Employee not found' });
+    const temp = Math.random().toString(36).slice(-10);
+    user.password = temp; // pre-save hook hashes
+    await user.save();
+    res.json({ success: true, tempPassword: temp });
+  } catch (e) {
+    console.error('Reset employee password error:', e.message);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+// Change employee role
+app.put('/api/employees/:id/role', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const jwt = await import('jsonwebtoken');
+    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const ownerId = decoded.userId;
+    const User = (await import('./models/User.js')).default;
+    const user = await User.findOne({ _id: req.params.id, ownerId });
+    if (!user) return res.status(404).json({ error: 'Employee not found' });
+    const role = String(req.body.role || 'employee');
+    user.role = role;
+    await user.save();
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Update employee role error:', e.message);
+    res.status(500).json({ error: 'Failed to update role' });
+  }
+});
+
+// Link a marketing user to a PWA employee record
+app.post('/api/employees/link', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const jwt = await import('jsonwebtoken');
+    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const ownerId = decoded.userId;
+    const { email, userId, employeeId, employeeName } = req.body || {};
+    if (!employeeId) return res.status(400).json({ error: 'employeeId required' });
+    const User = (await import('./models/User.js')).default;
+    const query = userId ? { _id: userId, ownerId } : { email, ownerId };
+    const user = await User.findOne(query);
+    if (!user) return res.status(404).json({ error: 'Employee not found' });
+    user.employeeId = String(employeeId);
+    if (employeeName) user.employeeName = employeeName;
+    await user.save();
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Link employee error:', e.message);
+    res.status(500).json({ error: 'Failed to link employee' });
+  }
+});
+
 // Public config for clients (e.g., booking site)
 app.get('/api/config', (req, res) => {
   const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';

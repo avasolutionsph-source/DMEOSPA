@@ -508,7 +508,25 @@ class EmployeeManager {
             if (!email) { showNotification('Email required', 'warning'); return; }
             await this.inviteEmployee(email, name, role);
             modal.remove();
+            this.loadInvitedEmployees();
         };
+    }
+
+    async loadInvitedEmployees() {
+        try {
+            const token = localStorage.getItem('userToken') || localStorage.getItem('authToken');
+            if (!token) return;
+            const marketingApi = 'https://ava-marketing-api.onrender.com';
+            const res = await fetch(`${marketingApi}/api/employees`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to load invites');
+            const container = document.getElementById('invitedEmployeesContainer');
+            if (!container) return;
+            const rows = (data.data||[]).map(u => `<tr><td>${u.employeeName || u.email}</td><td>${u.role}</td></tr>`).join('');
+            container.innerHTML = `<table class="table"><thead><tr><th>Name</th><th>Role</th></tr></thead><tbody>${rows||'<tr><td colspan="2">No invited employees</td></tr>'}</tbody></table>`;
+        } catch (e) {
+            console.warn('Invited employees load error:', e.message);
+        }
     }
 }
 
