@@ -493,29 +493,24 @@ class AuthSystem {
 
     // Handle logout
     async handleLogout() {
-        if (confirm('Are you sure you want to logout?\n\nYour data will be synced to the cloud before logging out.')) {
-            showLoading('Logging out...', 'Syncing your data to the cloud');
-            
-            try {
-                // Sync pending changes before logout
-                if (window.syncManager && typeof window.syncManager.syncAll === 'function') {
-                    await window.syncManager.syncAll();
-                }
-                
-                this.clearAuthState();
-                hideLoading();
-                showNotification('Logged out successfully', 'success');
-                
-                // Show login modal
-                this.showLoginModal();
-                
-            } catch (error) {
-                console.error('Logout error:', error);
-                hideLoading();
-                showNotification('Logout completed with sync warnings', 'warning');
-                this.clearAuthState();
-                this.showLoginModal();
+        const ok = await window.app?.confirm('Confirm Logout','Are you sure you want to logout? Your data will be synced before logging out.')
+            .catch(()=> false);
+        if (!ok) return;
+        showLoading('Logging out...', 'Syncing your data to the cloud');
+        try {
+            if (window.syncManager && typeof window.syncManager.syncAll === 'function') {
+                await window.syncManager.syncAll();
             }
+            this.clearAuthState();
+            hideLoading();
+            showNotification('Logged out successfully', 'success');
+            this.showLoginModal();
+        } catch (error) {
+            console.error('Logout error:', error);
+            hideLoading();
+            showNotification('Logout completed with sync warnings', 'warning');
+            this.clearAuthState();
+            this.showLoginModal();
         }
     }
 

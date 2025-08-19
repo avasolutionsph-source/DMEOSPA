@@ -1096,17 +1096,19 @@ class EntitlementsSystem {
 
     // Check if user has reached plan limits
     async checkPlanLimits(type) {
+        if (this._checkingLimits) return false;
+        this._checkingLimits = true;
         const limits = this.getPlanLimits();
         const limit = limits[type];
-        
-        if (limit === -1) return false; // Unlimited
-        
+        if (limit === -1) { this._checkingLimits = false; return false; }
         try {
             const count = await this.getCurrentCount(type);
             return count >= limit;
         } catch (error) {
             console.error('Error checking plan limits:', error);
             return false;
+        } finally {
+            this._checkingLimits = false;
         }
     }
 
