@@ -381,6 +381,8 @@ class AuthSystem {
             if (window.app && typeof window.app.onUserLoggedIn === 'function') {
                 window.app.onUserLoggedIn();
             }
+            // Auto refresh to ensure menus, caches, and SW pick up session immediately
+            setTimeout(() => { try { window.location.reload(true); } catch(_) { window.location.reload(); } }, 300);
         } catch(_) {}
     }
 
@@ -612,6 +614,18 @@ class AuthSystem {
             
             // Re-attach login event
             this.attachMainLoginButton();
+
+            // Hide all nav items when logged out (show only dashboard + settings)
+            try {
+                document.querySelectorAll('.nav-item').forEach(el => {
+                    const page = el.getAttribute('data-page');
+                    if (page === 'dashboard' || page === 'settings') {
+                        el.style.display = '';
+                    } else {
+                        el.style.display = 'none';
+                    }
+                });
+            } catch(_){}
         }
     }
 
