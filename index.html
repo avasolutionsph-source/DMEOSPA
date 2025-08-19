@@ -1071,11 +1071,11 @@
     </div>
 
     <!-- Authentication Modal -->
-    <div id="authModal" class="modal">
+    <div id="authModal" class="modal" onclick="if(event.target === this){ this.style.display='none'; document.body.classList.remove('modal-open'); }">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="authModalTitle">Welcome to Ava Solutions</h2>
-                <button class="modal-close" onclick="closeModal('authModal')">
+                <button class="modal-close" onclick="closeModal('authModal'); event.stopPropagation();">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -1459,7 +1459,12 @@
             const modal = document.getElementById(modalId);
             if (modal) {
                 modal.style.display = 'none';
+                modal.classList.remove('active');
                 document.body.classList.remove('modal-open');
+                // remove handlers added on open to avoid blocking
+                modal.onclick = null;
+                const form = document.getElementById('loginForm');
+                if (form) form.removeAttribute('data-handler-attached');
             }
         }
         
@@ -2039,13 +2044,15 @@
                     console.log('✅ Form submission handler attached with priority');
                 }
                 
-                // Add close functionality
+                // Add close functionality (click outside or ESC)
                 modal.onclick = function(e) {
                     if (e.target === modal) {
-                        modal.style.display = 'none';
-                        document.body.classList.remove('modal-open');
+                        closeModal('authModal');
                     }
                 };
+                document.addEventListener('keydown', function escClose(ev){
+                    if (ev.key === 'Escape') { closeModal('authModal'); document.removeEventListener('keydown', escClose); }
+                });
                 
                 // Focus on email input
                 setTimeout(() => {
