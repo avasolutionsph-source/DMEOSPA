@@ -175,6 +175,12 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api', syncRoutes); // Mount sync routes under /api
 
+// Public config for clients (e.g., booking site)
+app.get('/api/config', (req, res) => {
+  const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';
+  res.json({ pwaBackendUrl });
+});
+
 // Public: list businesses for booking directory
 app.get('/api/public/businesses', async (req, res) => {
   try {

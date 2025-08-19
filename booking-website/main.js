@@ -11,7 +11,19 @@
 		logoutBtn.style.display = token ? 'inline-block' : 'none';
 	}
 
+	async function ensureBackendUrl(){
+		const existing = localStorage.getItem('pwaApiUrl');
+		if (existing) return existing;
+		try{
+			const r = await fetch(`${marketingApi}/api/config`);
+			const j = await r.json();
+			if (j.pwaBackendUrl) localStorage.setItem('pwaApiUrl', j.pwaBackendUrl);
+			return j.pwaBackendUrl;
+		}catch(e){ return null; }
+	}
+
 	async function loadBusinesses(){
+		await ensureBackendUrl();
 		try {
 			const r = await fetch(`${marketingApi}/api/public/businesses`);
 			const j = await r.json();
