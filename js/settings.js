@@ -13,6 +13,7 @@ class SettingsManager {
         this.addBusinessTypeSection();
         this.addApiUrlInput();
         this.addSyncButton();
+        this.addPublishCatalogButton();
         this.addImportButton();
         this.addPerformanceSection();
         this.displaySyncStatus();
@@ -310,6 +311,97 @@ class SettingsManager {
         document.getElementById('debugEmployeesBtn').addEventListener('click', async () => {
             await this.debugEmployees();
         });
+    }
+
+    // Publish booking catalog (services + employees) to marketing API
+    addPublishCatalogButton() {
+        const dataSection = document.querySelectorAll('.settings-section')[1];
+        if (!dataSection) return;
+
+        if (document.getElementById('publishCatalogBtn')) return;
+
+        const wrap = document.createElement('div');
+        wrap.className = 'dynamic-content';
+        wrap.innerHTML = `
+            <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Booking Catalog</h3>
+            <p style="color: var(--gray); margin-bottom: 0.5rem;">
+                Publish your services and therapists so the booking website can load them.
+            </p>
+            <button class="btn btn-primary" id="publishCatalogBtn">
+                <i class="fas fa-cloud-upload-alt"></i> Publish Booking Catalog
+            </button>
+        `;
+        dataSection.appendChild(wrap);
+
+        document.getElementById('publishCatalogBtn').addEventListener('click', async () => {
+            await this.publishCatalog();
+        });
+    }
+
+    async publishCatalog() {
+        try {
+            const btn = document.getElementById('publishCatalogBtn');
+            const original = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publishing...';
+
+            // 1) Gather from IndexedDB
+            const allProducts = await db.getAll('products');
+            const allEmployees = await db.getAll('employees');
+
+            const services = (allProducts || [])
+                .filter(p => (p.category === 'service') || (p.type === 'service'))
+                .map(p => ({
+                    id: String(p.id || p._id || ''),
+                    name: String(p.name || ''),
+                    category: 'service',
+                    duration: Number(p.duration || 0),
+                    price: Number(p.price || 0),
+                    isActive: p.isActive !== false
+                }));
+
+            const employees = (allEmployees || [])
+                .map(e => ({
+                    id: String(e.id || e._id || ''),
+                    name: String(e.name || ''),
+                    position: String(e.position || ''),
+                    email: String(e.email || ''),
+                    phone: String(e.phone || '')
+                }));
+
+            // 2) Send to marketing API
+            const marketingApi = 'https://ava-marketing-api.onrender.com';
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            if (!token) {
+                btn.disabled = false; btn.innerHTML = original;
+                showNotification('Please login on the marketing website first to obtain a token.', 'warning');
+                window.open('https://ava-solutions-marketing.netlify.app/login', '_blank');
+                return;
+            }
+
+            const res = await fetch(`${marketingApi}/api/public/publish-catalog`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ products: services, employees })
+            });
+            const data = await res.json();
+            btn.disabled = false; btn.innerHTML = original;
+
+            if (res.ok) {
+                showNotification(`Published ${data.products || 0} services and ${data.employees || 0} employees for booking.`, 'success');
+            } else {
+                console.error('Publish failed:', data);
+                showNotification(data.error || 'Publish failed', 'error');
+            }
+        } catch (error) {
+            console.error('Publish catalog error:', error);
+            showNotification('Publish failed. See console for details.', 'error');
+            const btn = document.getElementById('publishCatalogBtn');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Publish Booking Catalog'; }
+        }
     }
 
     async displaySyncStatus() {
