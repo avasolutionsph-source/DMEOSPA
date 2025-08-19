@@ -41,7 +41,18 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // CORS - Allow configured origins (include Netlify and Render domains in production)
-const defaultOrigins = ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8080', 'http://127.0.0.1:5500', 'http://localhost:4000', 'https://ava-solutions-marketing.netlify.app', 'https://ava-solutions-pwa.netlify.app', 'https://ava-solutions-booking.netlify.app'];
+const defaultOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:8080',
+  'http://127.0.0.1:5500',
+  'http://localhost:4000',
+  'https://ava-solutions-marketing.netlify.app',
+  'https://ava-solutions-pwa.netlify.app',
+  'https://ava-solutions-booking.netlify.app',
+  // New booking site domain(s)
+  'https://avaphbooking.netlify.app'
+];
 const envOrigins = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
   .map(o => o.trim())
