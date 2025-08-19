@@ -295,7 +295,7 @@ app.post('/api/branches/:id/reset-password', async (req, res) => {
       return res.json({ success: true, changed: true, password: branch.ownerPasswordNote });
     }
     // Just return the last recorded/password note; if absent, return masked
-    const note = branch.ownerPasswordNote ? branch.ownerPasswordNote : '••••••••';
+    const note = branch.ownerPasswordNote ? branch.ownerPasswordNote : '';
     return res.json({ success: true, changed: false, password: note });
   } catch (e) {
     console.error('Reset branch password error:', e.message);

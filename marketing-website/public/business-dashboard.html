@@ -1418,7 +1418,14 @@
                             }
                             if (!r.ok) throw new Error((j && j.error) || 'Failed');
                             const span = document.getElementById(`temp-${id}`);
-                            if (span) span.textContent = j.password || '';
+                            if (span) {
+                                if (j.password) {
+                                    span.textContent = j.password;
+                                } else {
+                                    span.textContent = 'Not saved';
+                                    alert('No password is saved for this branch yet. Click "Change Password" once to set it, then "Show" will display it next time.');
+                                }
+                            }
                             // update cache if changed
                             if (j.password && window.__branchesCache) {
                                 const idx = window.__branchesCache.findIndex(b => String(b.id) === String(id));
