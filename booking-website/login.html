@@ -37,6 +37,7 @@
       const data = await res.json();
       if (!res.ok || !data.token) throw new Error(data.error || 'Login failed');
       localStorage.setItem('authToken', data.token);
+      try { if (data.user && (data.user._id || data.user.id)) { localStorage.setItem('bookingBusinessId', String(data.user._id || data.user.id)); } } catch(_){}
       // Decide destination by role
       const role = (data.user && data.user.role) || 'customer';
       if (role === 'customer') {
