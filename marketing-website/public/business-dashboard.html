@@ -1350,27 +1350,40 @@
                         <td>${b.email || ''}</td>
                         <td><span class="badge-plan">${b.plan || 'unpaid'}</span></td>
                         <td>${created}</td>
-                        <td><button class="btn-secondary-sm" data-branch-id="${b.id}">Show/Reset</button> <span class="branch-temp" id="temp-${b.id}"></span></td>
+                        <td>
+                            <div style="display:flex; gap:.5rem; align-items:center;">
+                                <button class="btn-secondary-sm" data-branch-id="${b.id}" data-action="show">Show</button>
+                                <button class="btn-primary-sm" data-branch-id="${b.id}" data-action="change">Change Password</button>
+                                <span class="branch-temp" id="temp-${b.id}" style="font-family:monospace;"></span>
+                            </div>
+                        </td>
                     </tr>`;
                 }).join('');
                 tbody.innerHTML = rows || '<tr><td colspan="5" style="color: var(--gray-600);">No branches yet</td></tr>';
                 // Attach handlers
                 tbody.querySelectorAll('button[data-branch-id]').forEach(btn => {
                     btn.addEventListener('click', async () => {
+                        const token = localStorage.getItem('userToken');
+                        const id = btn.getAttribute('data-branch-id');
+                        const action = btn.getAttribute('data-action');
                         try {
-                            const token = localStorage.getItem('userToken');
-                            const id = btn.getAttribute('data-branch-id');
-                            btn.disabled = true; btn.textContent = 'Working...';
-                            const r = await fetch(`/api/branches/${id}/reset-password`, { method:'POST', headers: { 'Authorization': `Bearer ${token}` } });
+                            btn.disabled = true; btn.textContent = (action === 'change') ? 'Saving...' : 'Loading...';
+                            let body = undefined;
+                            if (action === 'change') {
+                                const npw = prompt('Enter new branch password (min 6 chars)');
+                                if (!npw || npw.length < 6) { btn.disabled = false; btn.textContent = 'Change Password'; return; }
+                                body = JSON.stringify({ newPassword: npw });
+                            }
+                            const r = await fetch(`/api/branches/${id}/reset-password`, { method:'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' }, body });
                             const j = await r.json();
                             if (!r.ok) throw new Error(j.error || 'Failed');
                             const span = document.getElementById(`temp-${id}`);
-                            if (span) span.textContent = j.tempPassword;
-                            btn.textContent = 'Reset Again';
+                            if (span) span.textContent = j.password || '';
+                            btn.textContent = (action === 'change') ? 'Change Password' : 'Show';
                             btn.disabled = false;
                         } catch(e) {
-                            alert(e.message || 'Failed to reset');
-                            btn.textContent = 'Show/Reset';
+                            alert(e.message || 'Failed');
+                            btn.textContent = (action === 'change') ? 'Change Password' : 'Show';
                             btn.disabled = false;
                         }
                     });

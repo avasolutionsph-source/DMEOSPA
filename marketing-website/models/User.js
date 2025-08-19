@@ -66,6 +66,8 @@ const userSchema = new mongoose.Schema({
   ownerId: { type: String },
   employeeId: { type: String }, // link to PWA employee record id
   employeeName: { type: String },
+  // For branch accounts only: owner's view of the current password (owner-only display)
+  ownerPasswordNote: { type: String },
   
   // PWA connection
   pwaUserId: {

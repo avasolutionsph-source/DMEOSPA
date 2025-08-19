@@ -285,16 +285,17 @@ app.post('/api/branches/:id/reset-password', async (req, res) => {
     if (!branch) return res.status(404).json({ error: 'Branch not found' });
     if (String(branch.ownerId) !== String(ownerId)) return res.status(403).json({ error: 'Not your branch' });
 
-    const generateTempPassword = (len = 10) => {
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
-      let s = '';
-      for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
-      return s;
-    };
-    const temp = generateTempPassword();
-    branch.password = temp; // will be hashed by pre-save hook
-    await branch.save();
-    res.json({ success: true, tempPassword: temp });
+    // If a newPassword was provided, change it; otherwise just show the ownerPasswordNote
+    const { newPassword } = req.body || {};
+    if (typeof newPassword === 'string' && newPassword.trim().length >= 6) {
+      branch.password = newPassword.trim();
+      branch.ownerPasswordNote = newPassword.trim();
+      await branch.save();
+      return res.json({ success: true, changed: true, password: branch.ownerPasswordNote });
+    }
+    // Just return the last recorded/password note; if absent, return masked
+    const note = branch.ownerPasswordNote ? branch.ownerPasswordNote : '••••••••';
+    return res.json({ success: true, changed: false, password: note });
   } catch (e) {
     console.error('Reset branch password error:', e.message);
     res.status(500).json({ error: 'Failed to reset password' });
