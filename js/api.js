@@ -11,6 +11,8 @@ class APIClient {
     async init() {
         // Load API URL from settings
         await this.loadSettings();
+        // Load business/user id for x-user-id fallback
+        await this.loadBusinessId();
         
         // Set up network monitoring
         this.setupNetworkMonitoring();
@@ -35,6 +37,26 @@ class APIClient {
             console.error('Failed to load API settings:', error);
             this.baseUrl = 'https://ava-marketing-api.onrender.com'; // Production API
         }
+    }
+
+    // Load business id (owner/branch id) for x-user-id header when no Authorization
+    async loadBusinessId() {
+        try {
+            // Try from IndexedDB settings (populated during owner login)
+            if (window.db) {
+                const cfg = await db.get('settings', 'businessConfig');
+                const uid = cfg?.value?.userId;
+                if (uid) { this.userId = String(uid); return; }
+            }
+        } catch(_) {}
+        try {
+            // Fallback to cached marketing user data
+            const ustr = localStorage.getItem('userData');
+            if (ustr) {
+                const u = JSON.parse(ustr);
+                if (u && u.id) { this.userId = String(u.id); }
+            }
+        } catch(_) {}
     }
 
     // Set authentication token
@@ -78,6 +100,10 @@ class APIClient {
         try {
             this.pendingRequests.set(requestId, { endpoint, options: defaultOptions });
             
+            // Add x-user-id if no bearer token
+            if (!defaultOptions.headers['Authorization'] && this.userId) {
+                defaultOptions.headers['x-user-id'] = this.userId;
+            }
             const response = await fetch(url, defaultOptions);
             
             this.pendingRequests.delete(requestId);

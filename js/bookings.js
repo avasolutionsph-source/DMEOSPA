@@ -66,6 +66,7 @@ class BookingsManager {
 			// Only sync if logged in
 			if (!window.authSystem?.isLoggedIn) return;
 			const since = this.lastSync || (await db.get('settings', 'externalBookingsLastSync'))?.value || '';
+			// Always include x-user-id via apiClient if no token; apiClient injects it now
 			const res = await window.apiClient.get(`/api/bookings${since ? `?since=${encodeURIComponent(since)}` : ''}`);
 			if (!res.ok) return;
 			const { data } = await res.json();
