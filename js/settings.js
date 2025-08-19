@@ -273,6 +273,11 @@ class SettingsManager {
     }
 
     // API URL input removed - now hardcoded for production deployment
+    // Keep a no-op method for backward compatibility so init() doesn't throw
+    // and block subsequent sections (e.g., Sync and Booking Catalog) from rendering.
+    addApiUrlInput() {
+        return; // intentionally no UI
+    }
 
     addSyncButton() {
         // Check if sync section already exists
