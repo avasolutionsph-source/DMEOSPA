@@ -63,7 +63,14 @@ const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 app.use(cors({ 
   origin: function(origin, callback) {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.some(o => origin.startsWith(o)) || /netlify\.app$/.test(new URL(origin).hostname) || /onrender\.com$/.test(new URL(origin).hostname)) {
+    try {
+      const host = new URL(origin).hostname;
+      if (allowedOrigins.some(o => origin.startsWith(o)) || /netlify\.app$/.test(host) || /onrender\.com$/.test(host)) {
+        return callback(null, true);
+      }
+    } catch(_) {}
+    // Allow specific booking site subdomains dynamically
+    if (/avaphbooking\.netlify\.app$/.test(origin) || /ava-solutions-booking\.netlify\.app$/.test(origin)) {
       return callback(null, true);
     }
     return callback(new Error('Not allowed by CORS'));
@@ -623,6 +630,7 @@ app.use('/api/products', async (req, res) => {
   try {
     const User = (await import('./models/User.js')).default;
     const userId = req.headers['x-user-id'];
+    const userId = req.headers['x-user-id'] || req.query.userId;
     if (!userId) return res.json({ success: true, data: [] });
     const user = await User.findById(userId).lean();
     const products = user?.products || [];
@@ -636,10 +644,11 @@ app.use('/api/products', async (req, res) => {
 app.get('/api/public/employees', async (req, res) => {
   try {
     const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';
+    const userId = req.headers['x-user-id'] || req.query.userId;
     const url = `${pwaBackendUrl}/api/employees`;
     const headers = {
       'Content-Type': 'application/json',
-      ...(req.headers['x-user-id'] ? { 'x-user-id': req.headers['x-user-id'] } : {})
+      ...(userId ? { 'x-user-id': userId } : {})
     };
     const response = await fetch(url, { method: 'GET', headers });
     if (response.ok) {

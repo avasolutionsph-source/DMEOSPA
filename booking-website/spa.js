@@ -46,8 +46,9 @@
 
 	async function fetchJSON(url, opts={}){
 		const headers = { 'Content-Type':'application/json' };
-		if (businessId) headers['x-user-id'] = businessId;
-		const res = await fetch(url, { ...opts, headers });
+		const bid = businessId || localStorage.getItem('bookingBusinessId');
+		if (bid) headers['x-user-id'] = bid;
+		const res = await fetch(url, { ...opts, headers, mode:'cors', credentials:'omit' });
 		if (!res.ok) throw new Error(await res.text());
 		const ct = res.headers.get('content-type') || '';
 		return ct.includes('application/json') ? res.json() : { raw: await res.text() };
