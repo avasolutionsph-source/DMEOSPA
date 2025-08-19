@@ -74,9 +74,10 @@ class SettingsManager {
             <h3 style="margin-top:2rem;">Performance</h3>
             <div class="form-group">
                 <label>Manager Assignment</label>
-                <div style="display:flex; gap:.5rem; align-items:center;">
+                <div style="display:grid; grid-template-columns: 2fr 2fr 2fr auto; gap:.5rem; align-items:center;">
                     <input type="text" id="managerNameInput" class="form-input" placeholder="Manager name">
                     <input type="email" id="managerEmailInput" class="form-input" placeholder="Manager email">
+                    <input type="text" id="managerTempPw" class="form-input" placeholder="Temp password (auto)" readonly>
                     <button class="btn btn-primary" id="assignManagerBtn">Assign</button>
                 </div>
                 <small class="form-hint">Until a manager is assigned, only Settings will be visible.</small>
@@ -130,9 +131,12 @@ class SettingsManager {
                 if (!name || !email) { showNotification('Enter manager name and email', 'warning'); return; }
                 try {
                     // Create/update manager invite
+                    let temp = null;
                     if (employeeManager && employeeManager.inviteEmployee) {
-                        await employeeManager.inviteEmployee(email, name, 'manager');
+                        temp = await employeeManager.inviteEmployee(email, name, 'manager');
                     }
+                    const pwField = document.getElementById('managerTempPw');
+                    if (pwField && temp) pwField.value = temp;
                     localStorage.setItem('managerAssigned', 'true');
                     showNotification('Manager assigned. Features are now unlocked.', 'success');
                     // Re-apply gates

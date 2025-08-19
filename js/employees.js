@@ -464,7 +464,7 @@ class EmployeeManager {
     async inviteEmployee(email, name, role) {
         try {
             const token = localStorage.getItem('userToken') || localStorage.getItem('authToken');
-            if (!token) { showNotification('Login first', 'warning'); return; }
+            if (!token) { showNotification('Login first', 'warning'); return null; }
             const marketingApi = 'https://ava-marketing-api.onrender.com';
             const res = await fetch(`${marketingApi}/api/employees/invite`, {
                 method: 'POST',
@@ -474,9 +474,11 @@ class EmployeeManager {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Invite failed');
             showNotification(`Invited ${name || email}. Temp password: ${data.tempPassword}`, 'success');
+            return data.tempPassword || null;
         } catch (e) {
             console.error('Invite employee error:', e);
             showNotification(e.message || 'Invite failed', 'error');
+            return null;
         }
     }
 
@@ -608,7 +610,7 @@ class EmployeeManager {
         }
     }
 
-    async resetEmployeePassword(userId) {
+    async resetEmployeePassword(userId, email) {
         try {
             const token = localStorage.getItem('userToken') || localStorage.getItem('authToken');
             if (!token) { showNotification('Login first', 'warning'); return null; }
@@ -616,7 +618,7 @@ class EmployeeManager {
             const res = await fetch(`${marketingApi}/api/employees/reset-password`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId })
+                body: JSON.stringify({ userId, email })
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to reset password');
