@@ -42,25 +42,33 @@
         const rows = qs('#rows');
         rows.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
         const sp = new URLSearchParams(); if(status) sp.set('status',status); if(since) sp.set('since',since);
+        let data = [];
+        // Try proxy to PWA backend first
         try {
           apiHost = marketingApi;
-          let j = await fetchJSON(`${apiBase()}/bookings${sp.toString()?`?${sp.toString()}`:''}`);
-          let data = j.data || [];
-          if (!data.length) {
-            // Fallback: marketing DB
+          const j = await fetchJSON(`${apiBase()}/bookings${sp.toString()?`?${sp.toString()}`:''}`);
+          data = j.data || [];
+        } catch (e) {
+          // ignore and try fallback
+        }
+        // Fallback to marketing DB when proxy fails or returned empty
+        if (!Array.isArray(data) || data.length === 0) {
+          try {
             const token = localStorage.getItem('authToken')||'';
             const r2 = await fetch(`${marketingApi}/api/business/bookings`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (r2.ok) { const j2 = await r2.json(); data = j2.bookings || []; }
-          }
-          rows.innerHTML = data.map(b => `<tr>
+          } catch(_) {}
+        }
+        try {
+          rows.innerHTML = (data||[]).map(b => `<tr>
             <td>${b.startTime ? new Date(b.startTime).toLocaleString() : ''}</td>
             <td>${b.customer?.name || ''}</td>
             <td>${b.serviceName || ''}</td>
             <td>${b.employeeName || ''}</td>
             <td><span class="status ${b.status||'pending'}">${(b.status||'pending').toUpperCase()}</span></td>
           </tr>`).join('');
-          if (!data.length) rows.innerHTML = '<tr><td colspan="5">No bookings yet</td></tr>';
-        } catch (e) {
+          if (!data || data.length === 0) rows.innerHTML = '<tr><td colspan="5">No bookings yet</td></tr>';
+        } catch(_) {
           rows.innerHTML = '<tr><td colspan="5">Failed to load</td></tr>';
         }
       }
