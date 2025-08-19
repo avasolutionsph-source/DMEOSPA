@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Business Dashboard - Ava Solutions</title>
+    <title>Branch View - Ava Solutions</title>
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1004,7 +1004,7 @@
     <header class="dashboard-header">
         <div class="dashboard-brand">
             <i class="fas fa-spa"></i>
-            <h1>Business Dashboard</h1>
+            <h1>Branch View</h1>
         </div>
         <div class="user-info">
             <select id="branchSelect" style="margin-right:1rem; padding:.45rem .6rem; border:1px solid var(--gray-300); border-radius:6px; font-size:.9rem; display:none;"></select>
@@ -1022,10 +1022,7 @@
     <!-- Main Content -->
     <div class="dashboard-container">
         <!-- Welcome Section -->
-        <div class="welcome-section">
-            <h2>Welcome to Your Business Dashboard</h2>
-            <p>Manage your spa business, view analytics, and access your PWA application from here.</p>
-        </div>
+        <!-- welcome removed for branch view naming clarity -->
 
         <!-- Stats Grid -->
         <div class="stats-grid">
@@ -1288,10 +1285,10 @@
                 .then(j => {
                     const branches = j.data || [];
                     // Only show Branch selector when logged in as MAIN owner (not a branch account)
-                    // Always show full dashboard for main owner (controls everything)
-                    applyOwnerView();
+                    // Apply owner/branch views
+                    applyOwnerView(!!j.isMainOwner);
                     if (!j.isMainOwner) {
-                        // Branch account: still show full dashboard; hide selector
+                        // Branch account: hide selector
                         select.style.display = 'none';
                         localStorage.removeItem('dashboardBranchId');
                         return;
@@ -1835,7 +1832,7 @@ The PWA will open now...`;
             
             // Auto-refresh this page after 30 seconds
             setTimeout(() => {
-                if (confirm('Auto-refresh Business Dashboard to check for synced data?')) {
+                if (confirm('Auto-refresh Branch View to check for synced data?')) {
                     location.reload();
                 }
             }, 30000);
@@ -2131,10 +2128,22 @@ The PWA will open now...`;
             }
         }
 
-        // Main owner must see everything; branch also sees everything (owner controls branches here)
-        function applyOwnerView(){
-            const sections = ['.welcome-section', '.stats-grid', '.employees-section', '.inventory-section', '.actions-section', '.sync-status', '.branch-section'];
-            sections.forEach(sel => { const el = document.querySelector(sel); if (el) el.style.display = ''; });
+        // Main owner: show only Detailed Reports + Branch Accounts
+        // Branch account: show everything EXCEPT Branch Accounts
+        function applyOwnerView(isMainOwner){
+            const showForOwner = ['.detailed-reports-section', '.branch-section'];
+            const hideForOwner = ['.stats-grid', '.employees-section', '.inventory-section', '.actions-section', '.sync-status'];
+            const allSections = ['.detailed-reports-section', '.branch-section', '.stats-grid', '.employees-section', '.inventory-section', '.actions-section', '.sync-status'];
+            allSections.forEach(sel => { const el = document.querySelector(sel); if (el) el.style.display = ''; });
+            if (isMainOwner) {
+                // Hide everything except reports and branch accounts
+                hideForOwner.forEach(sel => { const el = document.querySelector(sel); if (el) el.style.display = 'none'; });
+                showForOwner.forEach(sel => { const el = document.querySelector(sel); if (el) el.style.display = ''; });
+            } else {
+                // Branch view: hide branch accounts only, show other features
+                const branchSection = document.querySelector('.branch-section');
+                if (branchSection) branchSection.style.display = 'none';
+            }
         }
     </script>
 </body>
