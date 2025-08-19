@@ -1075,7 +1075,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="authModalTitle">Welcome to Ava Solutions</h2>
-                <button class="modal-close" onclick="closeModal('authModal'); event.stopPropagation();">
+                <button class="modal-close" onclick="event.stopPropagation(); document.getElementById('loginForm')?.reset(); closeModal('authModal');">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -2047,11 +2047,12 @@
                 // Add close functionality (click outside or ESC)
                 modal.onclick = function(e) {
                     if (e.target === modal) {
+                        document.getElementById('loginForm')?.reset();
                         closeModal('authModal');
                     }
                 };
                 document.addEventListener('keydown', function escClose(ev){
-                    if (ev.key === 'Escape') { closeModal('authModal'); document.removeEventListener('keydown', escClose); }
+                    if (ev.key === 'Escape') { document.getElementById('loginForm')?.reset(); closeModal('authModal'); document.removeEventListener('keydown', escClose); }
                 });
                 
                 // Focus on email input
