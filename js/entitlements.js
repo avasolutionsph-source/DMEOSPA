@@ -216,10 +216,11 @@ class EntitlementsSystem {
             }
         });
         
-        // Additional role-based hiding for employees: hide settings by default
+        // Additional role-based hiding for employees: hide settings only for explicit employee roles
         try {
             const decoded = this.decodeToken(localStorage.getItem('userToken') || localStorage.getItem('authToken')) || {};
-            if (decoded && decoded.role && decoded.role !== 'owner' && decoded.role !== 'admin' && decoded.role !== 'superAdmin') {
+            const employeeRoles = ['employee','receptionist','therapist','manager'];
+            if (decoded && decoded.role && employeeRoles.includes(decoded.role)) {
                 const settingsNav = document.querySelector('a.nav-item[data-page="settings"]');
                 if (settingsNav) settingsNav.style.display = 'none';
             }
