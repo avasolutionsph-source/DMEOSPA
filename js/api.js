@@ -111,6 +111,20 @@ class APIClient {
         }
     }
 
+    // Convenience booking APIs
+    async listBookings(since) {
+        const qs = since ? `?since=${encodeURIComponent(since)}` : '';
+        return this.get(`/api/bookings${qs}`);
+    }
+
+    async createBooking(payload) {
+        return this.post('/api/bookings', payload);
+    }
+
+    async updateBookingStatus(id, data) {
+        return this.put(`/api/bookings/${id}/status`, data);
+    }
+
     // Queue request for later retry
     queueRequest(endpoint, options) {
         const queuedRequest = {

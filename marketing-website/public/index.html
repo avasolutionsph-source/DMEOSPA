@@ -290,6 +290,11 @@
 
     <!-- Scripts -->
     <script src="/assets/main.js"></script>
+    <script>
+      window.getMarketingAuthToken = function(){
+        try { return localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || null; } catch(e){ return null; }
+      };
+    </script>
     <script src="/assets/cookie-banner.js"></script>
 </body>
 </html>

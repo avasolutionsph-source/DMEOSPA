@@ -117,6 +117,28 @@ const userSchema = new mongoose.Schema({
     lastUpdated: { type: Date, default: Date.now }
   }],
   
+  // Detailed products/services data (synced from PWA)
+  products: [{
+    id: String,
+    name: String,
+    category: String,
+    price: { type: Number, default: 0 },
+    duration: { type: Number, default: 0 },
+    isActive: { type: Boolean, default: true },
+    lastUpdated: { type: Date, default: Date.now }
+  }],
+
+  // Stores/branches
+  stores: [{
+    id: { type: String, default: 'default' },
+    name: { type: String, default: 'Main Branch' },
+    address: String,
+    phone: String,
+    isActive: { type: Boolean, default: true },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
+  }],
+  
   // Admin notes
   notes: {
     type: String,

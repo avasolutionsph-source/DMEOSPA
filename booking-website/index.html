@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Ava Booking</title>
+	<link rel="stylesheet" href="/style.css">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+	<header class="container">
+		<h1>Ava Booking</h1>
+		<div id="authArea">
+			<button id="loginBtn" class="btn">Login</button>
+			<button id="logoutBtn" class="btn" style="display:none">Logout</button>
+		</div>
+	</header>
+	<main class="container">
+		<section id="storeSection" class="card">
+			<h2>Select Store</h2>
+			<select id="storeSelect"></select>
+		</section>
+
+		<section id="bookingSection" class="card">
+			<h2>Book a Service</h2>
+			<div class="grid">
+				<label>Service
+					<select id="serviceSelect"></select>
+				</label>
+				<label>Date & Time
+					<input type="datetime-local" id="dateTimeInput" required>
+				</label>
+				<label>Duration (mins)
+					<input type="number" id="durationInput" min="15" step="15" value="60">
+				</label>
+				<label>Therapist (optional)
+					<select id="employeeSelect"><option value="">Any available</option></select>
+				</label>
+				<label>Party Size
+					<input type="number" id="partySizeInput" min="1" max="4" value="1">
+				</label>
+				<label>Customer Name
+					<input type="text" id="customerName" placeholder="Full name" required>
+				</label>
+				<label>Phone
+					<input type="tel" id="customerPhone" placeholder="09XXXXXXXXX" required>
+				</label>
+				<label>Email
+					<input type="email" id="customerEmail" placeholder="you@email.com">
+				</label>
+				<label>Notes
+					<input type="text" id="notes" placeholder="Preferences, requests...">
+				</label>
+			</div>
+			<div style="margin-top:1rem; display:flex; gap:.5rem; justify-content:flex-end">
+				<button id="checkAvailabilityBtn" class="btn secondary">Check Availability</button>
+				<button id="submitBookingBtn" class="btn primary">Book Now</button>
+			</div>
+			<div id="availabilityResult" style="margin-top: .75rem; font-size:.9rem; color:#555;"></div>
+		</section>
+	</main>
+	<script src="/main.js"></script>
+</body>
+</html>

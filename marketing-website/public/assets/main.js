@@ -260,3 +260,12 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Expose auth token for SSO with booking site if sharing origin/storage context
+try {
+    if (!window.getMarketingAuthToken) {
+        window.getMarketingAuthToken = function() {
+            try { return localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || null; } catch(e){ return null; }
+        };
+    }
+} catch (e) {}

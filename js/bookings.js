@@ -2,11 +2,13 @@
 class BookingsManager {
 	constructor() {
 		this.bookings = [];
+		this.lastSync = null;
 	}
 
 	async init() {
 		await this.loadBookings();
 		this.setupEventListeners();
+		this.setupAutoSync();
 	}
 
 	setupEventListeners() {
@@ -23,11 +25,68 @@ class BookingsManager {
 		this.renderBookingsTable();
 	}
 
+	setupAutoSync() {
+		if (this._syncTimer) return;
+		this.syncExternalBookings().catch(()=>{});
+		this._syncTimer = setInterval(() => this.syncExternalBookings().catch(()=>{}), 60000);
+	}
+
+	async syncExternalBookings() {
+		try {
+			if (!window.apiClient) return;
+			// Only sync if logged in
+			if (!window.authSystem?.isLoggedIn) return;
+			const since = this.lastSync || (await db.get('settings', 'externalBookingsLastSync'))?.value || '';
+			const res = await window.apiClient.get(`/api/bookings${since ? `?since=${encodeURIComponent(since)}` : ''}`);
+			if (!res.ok) return;
+			const { data } = await res.json();
+			if (Array.isArray(data)) {
+				for (const bk of data) {
+					const toSave = {
+						id: bk._id || bk.id || undefined,
+						source: bk.source || 'booking-site',
+						externalId: bk.externalId || null,
+						date: bk.startTime,
+						serviceId: bk.serviceId,
+						serviceName: bk.serviceName,
+						employeeId: bk.employeeId,
+						employeeName: bk.employeeName,
+						customerName: bk.customer?.name || '',
+						roomNumber: bk.roomNumber || '',
+						status: bk.status || 'pending',
+						storeId: bk.storeId || 'default',
+						partySize: bk.partySize || 1,
+						duration: bk.durationMins || 60,
+						modifiedAt: bk.updatedAt
+					};
+					// Upsert by externalId or id
+					if (toSave.id) {
+						await db.update('bookings', toSave);
+					} else if (toSave.externalId) {
+						const existing = (await db.getAll('bookings')).find(x => x.externalId === toSave.externalId);
+						if (existing) {
+							await db.update('bookings', { ...existing, ...toSave });
+						} else {
+							await db.add('bookings', toSave);
+						}
+					} else {
+						await db.add('bookings', toSave);
+					}
+				}
+				this.lastSync = new Date().toISOString();
+				await db.update('settings', { key: 'externalBookingsLastSync', value: this.lastSync });
+				await this.loadBookings();
+			}
+		} catch (e) {
+			console.warn('External bookings sync failed', e);
+		}
+	}
+
 	renderBookingsTable() {
 		const tbody = document.getElementById('bookingsTableBody');
 		if (!tbody) return;
 		if (this.bookings.length === 0) {
-			tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:1rem;">No bookings yet</td></tr>';
+			tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:1rem;">No bookings yet</td></tr>';
 			return;
 		}
 		tbody.innerHTML = this.bookings
@@ -41,6 +100,7 @@ class BookingsManager {
 					<td>${b.roomNumber || '-'}</td>
 					<td><span class="badge badge-${b.status==='confirmed'?'success':b.status==='cancelled'?'danger':'warning'}">${b.status||'pending'}</span></td>
 					<td>
+						<button class="btn-icon" title="Accept" onclick="bookingsManager.accept(${b.id})"><i class="fas fa-check"></i></button>
 						<button class="btn-icon" title="Edit" onclick="bookingsManager.edit(${b.id})"><i class="fas fa-edit"></i></button>
 						<button class="btn-icon" title="Cancel" onclick="bookingsManager.cancel(${b.id})"><i class="fas fa-ban"></i></button>
 					</td>
@@ -95,6 +155,17 @@ class BookingsManager {
 			b.status = document.getElementById('bookingStatus').value || 'confirmed';
 			b.modifiedAt = new Date().toISOString();
 			await db.update('bookings', b);
+			// Push status/assignment to backend if exists
+			try {
+				if (window.apiClient && b.id) {
+					await window.apiClient.put(`/api/bookings/${b.id}/status`, {
+						status: b.status,
+						employeeId: b.employeeId || null,
+						employeeName: b.employeeName || null,
+						roomNumber: b.roomNumber || null
+					});
+				}
+			} catch (err) { console.warn('Booking status push failed', err); }
 			modal.classList.remove('active');
 			await this.loadBookings();
 		};
@@ -108,6 +179,36 @@ class BookingsManager {
 		b.status = 'cancelled';
 		b.modifiedAt = new Date().toISOString();
 		await db.update('bookings', b);
+		try {
+			if (window.apiClient && b.id) {
+				await window.apiClient.put(`/api/bookings/${b.id}/status`, { status: 'cancelled' });
+			}
+		} catch (e) { console.warn('Cancel push failed', e); }
+		await this.loadBookings();
+	}
+
+	async accept(id) {
+		const b = await db.get('bookings', id);
+		if (!b) return;
+		// Auto-assign therapist via rotation if none
+		if (!b.employeeId && window.assignTherapistByRotation) {
+			try {
+				const assignedId = await window.assignTherapistByRotation({ bookingId: id });
+				if (assignedId) {
+					b.employeeId = assignedId;
+					const emp = await db.get('employees', assignedId);
+					b.employeeName = emp?.name || b.employeeName || '';
+				}
+			} catch(e){ console.warn('Rotation assignment failed', e); }
+		}
+		b.status = 'confirmed';
+		b.modifiedAt = new Date().toISOString();
+		await db.update('bookings', b);
+		try {
+			if (window.apiClient && b.id) {
+				await window.apiClient.put(`/api/bookings/${b.id}/status`, { status: 'confirmed', employeeId: b.employeeId, employeeName: b.employeeName });
+			}
+		} catch (e) { console.warn('Accept push failed', e); }
 		await this.loadBookings();
 	}
 }

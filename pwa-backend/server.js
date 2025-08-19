@@ -11,6 +11,7 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/auth.js';
 import syncRoutes from './routes/sync.js';
 import userRoutes from './routes/user.js';
+import bookingRoutes from './routes/bookings.js';
 
 const app = express();
 
@@ -31,7 +32,7 @@ app.use('/api', limiter);
 
 // CORS - Allow PWA to connect from anywhere with comprehensive settings
 app.use(cors({ 
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8080', 'http://127.0.0.1:5500', 'http://localhost:4000', 'https://ava-solutions-marketing.netlify.app', 'https://ava-solutions-pwa.netlify.app'],
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:8080', 'http://127.0.0.1:5500', 'http://localhost:4000', 'https://ava-solutions-marketing.netlify.app', 'https://ava-solutions-pwa.netlify.app', 'https://ava-solutions-booking.netlify.app'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'Accept', 'Origin', 'X-Requested-With'],
@@ -63,6 +64,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api', syncRoutes); // products/inventory/employees/transactions sync
 app.use('/api/user', userRoutes);
+app.use('/api', bookingRoutes); // bookings & availability
 
 // Error handling middleware
 app.use((err, req, res, next) => {
