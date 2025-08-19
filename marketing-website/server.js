@@ -643,10 +643,7 @@ app.get('/business-dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/business-dashboard.html'));
 });
 
-// Owner bookings page
-app.get('/bookings', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/bookings.html'));
-});
+// Removed owner bookings page (bookings are viewed from the booking site)
 
 // Dashboard redirect (redirect to PWA for direct access)
 app.get('/dashboard', (req, res) => {

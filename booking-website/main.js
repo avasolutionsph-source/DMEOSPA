@@ -9,6 +9,15 @@
 		const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
 		loginBtn.style.display = token ? 'none' : 'inline-block';
 		logoutBtn.style.display = token ? 'inline-block' : 'none';
+		const ownerLink = document.getElementById('ownerBookingsLink');
+		if (ownerLink) {
+			ownerLink.style.display = token ? 'inline-block' : 'none';
+			ownerLink.onclick = (e) => {
+				e.preventDefault();
+				const businessId = localStorage.getItem('bookingBusinessId');
+				window.location.href = `/owner.html${businessId?`?businessId=${encodeURIComponent(businessId)}`:''}`;
+			};
+		}
 	}
 
 	async function ensureBackendUrl(){
