@@ -1077,6 +1077,18 @@
                 </div>
                 <div class="report-card month">
                     <div class="report-header">
+                        <i class="fas fa-calendar-week"></i>
+                        <h4>This Week</h4>
+                    </div>
+                    <div class="report-content">
+                        <div class="report-value" id="weekSales">₱0.00</div>
+                        <div class="report-details">
+                            <span id="weekTransactions">0</span> transactions
+                        </div>
+                    </div>
+                </div>
+                <div class="report-card month">
+                    <div class="report-header">
                         <i class="fas fa-calendar-alt"></i>
                         <h4>This Month</h4>
                     </div>
@@ -1274,8 +1286,10 @@
                 .then(r => r.json())
                 .then(j => {
                     const branches = j.data || [];
+                    // Only show Branch selector when logged in as MAIN owner (not a branch account)
+                    if (!j.isMainOwner) { select.style.display = 'none'; localStorage.removeItem('dashboardBranchId'); return; }
+                    select.style.display = branches.length ? 'block' : 'none';
                     if (!branches.length) return;
-                    select.style.display = 'block';
                     const options = [
                         `<option value="owner">Main Account</option>`,
                         ...branches.map(b => `<option value="${b.id}">${b.name || b.email}</option>`)
@@ -1285,7 +1299,6 @@
                     select.value = saved;
                     select.onchange = () => {
                         localStorage.setItem('dashboardBranchId', select.value);
-                        // reload sections with branch context
                         loadBusinessStats();
                         loadEmployeeData();
                         loadInventoryData();
@@ -1348,8 +1361,9 @@
 
                 // Fetch real business stats from API
                 const branchId = localStorage.getItem('dashboardBranchId');
-                const qs = branchId && branchId !== 'owner' ? `?branchId=${encodeURIComponent(branchId)}` : '';
-                const response = await fetch('/api/business/stats' + qs, {
+                const agg = (!branchId || branchId === 'owner') ? '&aggregate=branches' : '';
+                const qs = branchId && branchId !== 'owner' ? `?branchId=${encodeURIComponent(branchId)}` : `?owner=1`;
+                const response = await fetch('/api/business/stats' + qs + agg, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -1364,9 +1378,15 @@
                     document.getElementById('lastSync').textContent = stats.lastSyncDate ? 
                         new Date(stats.lastSyncDate).toLocaleString() : 'Never';
                     
-                    // Update detailed time-based reports
+                    // Update detailed time-based reports (supports week)
                     document.getElementById('todaySales').textContent = `₱${(stats.todaySales || 0).toLocaleString()}.00`;
                     document.getElementById('todayTransactions').textContent = stats.todayTransactions || 0;
+                    const weekSales = (stats.weekSales || 0);
+                    const weekTx = (stats.weekTransactions || 0);
+                    const weekSalesEl = document.getElementById('weekSales');
+                    const weekTxEl = document.getElementById('weekTransactions');
+                    if (weekSalesEl) weekSalesEl.textContent = `₱${weekSales.toLocaleString()}.00`;
+                    if (weekTxEl) weekTxEl.textContent = weekTx;
                     document.getElementById('monthSales').textContent = `₱${(stats.monthSales || 0).toLocaleString()}.00`;
                     document.getElementById('monthTransactions').textContent = stats.monthTransactions || 0;
                     document.getElementById('yearSales').textContent = `₱${(stats.yearSales || 0).toLocaleString()}.00`;
@@ -1950,6 +1970,7 @@ The PWA will open now...`;
             reportWindow.document.write('<table>');
             reportWindow.document.write('<tr><th>Period</th><th class="number">Sales</th><th class="number">Transactions</th><th class="number">Average Sale</th></tr>');
             reportWindow.document.write('<tr><td>Today</td><td class="number">₱' + (stats.todaySales?.toLocaleString() || '0') + '</td><td class="number">' + (stats.todayTransactions || 0) + '</td><td class="number">₱' + (stats.todayTransactions > 0 ? (stats.todaySales / stats.todayTransactions).toFixed(2) : '0.00') + '</td></tr>');
+            reportWindow.document.write('<tr><td>This Week</td><td class="number">₱' + (stats.weekSales?.toLocaleString() || '0') + '</td><td class="number">' + (stats.weekTransactions || 0) + '</td><td class="number">₱' + (stats.weekTransactions > 0 ? (stats.weekSales / stats.weekTransactions).toFixed(2) : '0.00') + '</td></tr>');
             reportWindow.document.write('<tr><td>This Month</td><td class="number">₱' + (stats.monthSales?.toLocaleString() || '0') + '</td><td class="number">' + (stats.monthTransactions || 0) + '</td><td class="number">₱' + (stats.monthTransactions > 0 ? (stats.monthSales / stats.monthTransactions).toFixed(2) : '0.00') + '</td></tr>');
             reportWindow.document.write('<tr><td>This Year</td><td class="number">₱' + (stats.yearSales?.toLocaleString() || '0') + '</td><td class="number">' + (stats.yearTransactions || 0) + '</td><td class="number">₱' + (stats.yearTransactions > 0 ? (stats.yearSales / stats.yearTransactions).toFixed(2) : '0.00') + '</td></tr>');
             reportWindow.document.write('</table>');

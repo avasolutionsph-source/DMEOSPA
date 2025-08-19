@@ -82,6 +82,8 @@ const userSchema = new mongoose.Schema({
     // Time-based sales metrics
     todaySales: { type: Number, default: 0 },
     todayTransactions: { type: Number, default: 0 },
+    weekSales: { type: Number, default: 0 },
+    weekTransactions: { type: Number, default: 0 },
     monthSales: { type: Number, default: 0 },
     monthTransactions: { type: Number, default: 0 },
     yearSales: { type: Number, default: 0 },

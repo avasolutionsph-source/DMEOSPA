@@ -258,10 +258,12 @@ app.get('/api/branches', async (req, res) => {
     const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     const ownerId = decoded.userId;
     const User = (await import('./models/User.js')).default;
+    const self = await User.findById(ownerId).select('ownerId businessName email').lean();
+    const isMainOwner = !self?.ownerId; // true when this account is the primary owner
     const branches = await User.find({ ownerId, role: 'owner' })
       .select('_id email businessName subscriptionPlan createdAt')
       .lean();
-    res.json({ success: true, data: branches.map(b => ({ id: String(b._id), email: b.email, name: b.businessName, plan: b.subscriptionPlan, createdAt: b.createdAt })) });
+    res.json({ success: true, isMainOwner, selfId: String(ownerId), data: branches.map(b => ({ id: String(b._id), email: b.email, name: b.businessName, plan: b.subscriptionPlan, createdAt: b.createdAt })) });
   } catch (e) {
     console.error('List branches error:', e.message);
     res.status(500).json({ error: 'Failed to list branches' });
@@ -690,6 +692,7 @@ app.get('/api/business/stats', async (req, res) => {
     const jwt = await import('jsonwebtoken');
     const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     const branchId = req.query.branchId;
+    const aggregate = req.query.aggregate === 'branches';
     // Import User model
     const User = (await import('./models/User.js')).default;
     let user = null;
@@ -706,15 +709,38 @@ app.get('/api/business/stats', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Return user's business metrics including time-based data
+    if (aggregate) {
+      // Sum metrics across all branches owned by this owner
+      const branches = await User.find({ ownerId: decoded.userId, role: 'owner' }).select('businessMetrics').lean();
+      const sum = (arr, field) => arr.reduce((acc, b) => acc + (b.businessMetrics?.[field] || 0), 0);
+      const result = {
+        totalSales: sum(branches, 'totalSales'),
+        totalTransactions: sum(branches, 'totalTransactions'),
+        totalProducts: sum(branches, 'totalProducts'),
+        totalEmployees: sum(branches, 'totalEmployees'),
+        todaySales: sum(branches, 'todaySales'),
+        todayTransactions: sum(branches, 'todayTransactions'),
+        weekSales: sum(branches, 'weekSales'),
+        weekTransactions: sum(branches, 'weekTransactions'),
+        monthSales: sum(branches, 'monthSales'),
+        monthTransactions: sum(branches, 'monthTransactions'),
+        yearSales: sum(branches, 'yearSales'),
+        yearTransactions: sum(branches, 'yearTransactions'),
+        lastSyncDate: new Date()
+      };
+      return res.json(result);
+    }
+
+    // Return single account/branch metrics
     res.json({
       totalSales: user.businessMetrics?.totalSales || 0,
       totalTransactions: user.businessMetrics?.totalTransactions || 0,
       totalProducts: user.businessMetrics?.totalProducts || 0,
       totalEmployees: user.businessMetrics?.totalEmployees || 0,
-      // Time-based sales data
       todaySales: user.businessMetrics?.todaySales || 0,
       todayTransactions: user.businessMetrics?.todayTransactions || 0,
+      weekSales: user.businessMetrics?.weekSales || 0,
+      weekTransactions: user.businessMetrics?.weekTransactions || 0,
       monthSales: user.businessMetrics?.monthSales || 0,
       monthTransactions: user.businessMetrics?.monthTransactions || 0,
       yearSales: user.businessMetrics?.yearSales || 0,
