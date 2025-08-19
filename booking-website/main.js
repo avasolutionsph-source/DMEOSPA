@@ -22,11 +22,14 @@
 	const submitBtn = qs('#submitBookingBtn');
 	const checkBtn = qs('#checkAvailabilityBtn');
 	const availabilityResult = qs('#availabilityResult');
+	const businessChips = qs('#businessChips');
 	const serviceChips = qs('#serviceChips');
 	const slotGrid = qs('#slotGrid');
 	const dateInput = qs('#dateInput');
 	const summaryService = qs('#summaryService');
 	const summaryTime = qs('#summaryTime');
+	const storeSection = qs('#storeSection');
+	const businessHint = qs('#businessHint');
 
 	let selectedService = null;
 	let selectedSlot = null;
@@ -45,7 +48,6 @@
 
 	function initAuth(){
 		try { if (!token && window.getMarketingAuthToken) setToken(window.getMarketingAuthToken()); } catch(e){}
-		// Public mode if we have businessId but no token
 		const publicMode = !!businessId && !token;
 		loginBtn.style.display = token ? 'none' : (publicMode ? 'none' : 'inline-block');
 		logoutBtn.style.display = token ? 'inline-block' : 'none';
@@ -74,6 +76,31 @@
 		initAuth();
 	}
 
+	async function loadBusinesses(){
+		try {
+			const r = await fetchJSON(`${defaultApiHost}/api/public/businesses`);
+			const list = r.data || [];
+			businessChips.innerHTML = list.map(b => `<button class="chip${businessId===b.id?' active':''}" data-biz="${b.id}">${b.name}</button>`).join('');
+			businessChips.querySelectorAll('.chip').forEach(btn => {
+				btn.addEventListener('click', async () => {
+					businessId = btn.dataset.biz;
+					localStorage.setItem('bookingBusinessId', businessId);
+					businessChips.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+					btn.classList.add('active');
+					storeSection.style.display = 'block';
+					businessHint.textContent = 'Loading services...';
+					await loadCatalog();
+					businessHint.textContent = 'Spa selected';
+					await checkAvailability();
+				});
+			});
+			// Auto-select first if none
+			if (!businessId && list[0]) {
+				businessChips.querySelector('.chip')?.click();
+			}
+		} catch(e){ console.warn('Failed to load businesses', e); }
+	}
+
 	async function loadStores(){
 		const stores = [ { id:'default', name:'Main Branch' } ];
 		storeSelect.innerHTML = stores.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
@@ -99,7 +126,6 @@
 			const services = (res.data||[]).filter(p=>p.category==='service' || p.category==='massage');
 			serviceSelect.innerHTML = services.map(s=>`<option value="${s._id||s.id}" data-name="${s.name}" data-duration="${s.duration||60}">${s.name}${s.duration?` (${s.duration}m)`:''}</option>`).join('');
 			renderServiceChips(services);
-			// Preselect first
 			if (services[0]) {
 				selectedService = { id: services[0]._id||services[0].id, name: services[0].name, duration: services[0].duration||60 };
 				serviceSelect.value = selectedService.id;
@@ -193,7 +219,8 @@
 
 	// init
 	initAuth();
-	loadStores();
 	dateInput.valueAsDate = new Date();
-	if (token || businessId) loadCatalog().then(checkAvailability);
+	await loadBusinesses();
+	await loadStores();
+	if (businessId) { await loadCatalog(); await checkAvailability(); }
 })();
