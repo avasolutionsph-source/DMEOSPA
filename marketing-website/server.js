@@ -632,10 +632,24 @@ app.use('/api/employees', async (req, res) => {
     };
     const response = await fetch(url, { method: req.method, headers });
     if (response.ok) {
+      // Parse JSON so we can merge fallback if empty
+      const ct = response.headers.get('content-type') || '';
       const text = await response.text();
-      return res.status(response.status).type(response.headers.get('content-type') || 'application/json').send(text);
+      if (ct.includes('application/json')) {
+        try {
+          const j = JSON.parse(text);
+          const list = (j.data || j.employees || []);
+          if (Array.isArray(list) && list.length > 0) {
+            return res.json({ success: true, data: list });
+          }
+          // Fall through to marketing DB if empty
+        } catch (_) {
+          // Fall through to marketing DB
+        }
+      }
+    } else {
+      console.warn('Employees proxy non-200:', response.status);
     }
-    console.warn('Employees proxy non-200:', response.status);
   } catch (err) {
     console.error('Employees proxy error:', err.message);
   }
