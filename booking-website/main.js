@@ -112,7 +112,7 @@
 				});
 			});
 			if (!businessId && list[0]) businessList.querySelector('.biz-card')?.click();
-		} catch(e){ console.warn('Failed to load businesses', e); }
+		} catch(e){ /* silent */ }
 	}
 
 	async function loadStores(){
@@ -157,31 +157,43 @@
 		updateSummary();
 	}
 
+	async function tryProducts(){
+		try { return await fetchJSON(`${apiBase()}/products`); }
+		catch (e) {
+			const pwa = localStorage.getItem('pwaApiUrl');
+			if (pwa && apiHost !== pwa) { apiHost = pwa; return await fetchJSON(`${apiBase()}/products`); }
+			return null;
+		}
+	}
+
 	async function loadCatalog(){
 		try {
-			let res = await fetchJSON(`${apiBase()}/products`);
+			const res = await tryProducts();
+			if (!res) { availabilityResult.textContent = 'Unable to load services. Please try again later.'; return; }
 			let services = (res.data||[]).filter(p=>p.category==='service' || p.category==='massage');
-			if ((!services || services.length===0) && apiHost === marketingApi) {
-				// fallback to direct PWA backend if proxy failed or empty
-				apiHost = localStorage.getItem('pwaApiUrl') || apiHost;
-				res = await fetchJSON(`${apiBase()}/products`);
-				services = (res.data||[]).filter(p=>p.category==='service' || p.category==='massage');
-			}
 			serviceSelect.innerHTML = services.map(s=>`<option value="${s._id||s.id}" data-name="${s.name}" data-duration="${s.duration||60}">${s.name}${s.duration?` (${s.duration}m)`:''}</option>`).join('');
 			renderServiceChips(services);
 			renderServiceCards(services);
 			if (services[0]) selectService({ id: services[0]._id||services[0].id, name: services[0].name, duration: services[0].duration||60 });
-			const empsRes = await fetchJSON(`${apiBase()}/employees`);
-			employeeSelect.innerHTML = '<option value="">Any available</option>' + (empsRes.data||[]).map(e=>`<option value="${e._id||e.id}" data-name="${e.name}">${e.name||e.email||'Employee'}</option>`).join('');
-		} catch(e){
-			console.warn('Catalog load failed', e);
-			availabilityResult.textContent = 'Availability check failed';
-		}
+			const empsRes = await fetchJSON(`${apiBase()}/employees`).catch(()=>null);
+			if (empsRes) {
+				employeeSelect.innerHTML = '<option value="">Any available</option>' + (empsRes.data||[]).map(e=>`<option value="${e._id||e.id}" data-name="${e.name}">${e.name||e.email||'Employee'}</option>`).join('');
+			}
+		} catch(e){ /* silent */ }
 	}
 
 	function updateSummary(){
 		summaryService.textContent = selectedService ? selectedService.name : 'Select a service';
 		summaryTime.textContent = selectedSlot ? new Date(selectedSlot).toLocaleString() : 'No time selected';
+	}
+
+	async function tryAvailability(dateStr){
+		try { return await fetchJSON(`${apiBase()}/availability?date=${encodeURIComponent(dateStr)}&serviceId=${encodeURIComponent(serviceSelect.value)}`); }
+		catch (e) {
+			const pwa = localStorage.getItem('pwaApiUrl');
+			if (pwa && apiHost !== pwa) { apiHost = pwa; return await fetchJSON(`${apiBase()}/availability?date=${encodeURIComponent(dateStr)}&serviceId=${encodeURIComponent(serviceSelect.value)}`); }
+			return null;
+		}
 	}
 
 	function buildSlots(slots){
@@ -202,13 +214,12 @@
 		try{
 			const dateStr = dateInput.value || new Date().toISOString().split('T')[0];
 			if (!serviceSelect.value) { availabilityResult.textContent = 'Select a service first'; return; }
-			const r = await fetchJSON(`${apiBase()}/availability?date=${encodeURIComponent(dateStr)}&serviceId=${encodeURIComponent(serviceSelect.value)}`);
+			const r = await tryAvailability(dateStr);
+			if (!r) { availabilityResult.textContent = 'Unable to load availability.'; return; }
 			const slots = r.data?.slots || [];
 			buildSlots(slots);
 			availabilityResult.textContent = slots.length ? 'Select a slot' : 'No slots available';
-		}catch(e){
-			availabilityResult.textContent = 'Availability check failed';
-		}
+		}catch(e){ availabilityResult.textContent = 'Availability check failed'; }
 	}
 
 	async function submitBooking(){
@@ -224,26 +235,16 @@
 				source: 'booking-site',
 				storeId: storeSelect.value,
 				storeName: storeSelect.options[storeSelect.selectedIndex]?.text || 'Main Branch',
-				customer: {
-					name: qs('#customerName').value,
-					phone: qs('#customerPhone').value,
-					email: qs('#customerEmail').value
-				},
-				serviceId,
-				serviceName,
-				durationMins,
+				customer: { name: qs('#customerName').value, phone: qs('#customerPhone').value, email: qs('#customerEmail').value },
+				serviceId, serviceName, durationMins,
 				partySize: parseInt(qs('#partySizeInput').value || '1', 10),
-				startTime,
-				status: 'pending',
-				employeeId: employeeId || undefined,
-				employeeName: employeeName || undefined,
+				startTime, status: 'pending',
+				employeeId: employeeId || undefined, employeeName: employeeName || undefined,
 				notes: qs('#notes').value || ''
 			};
 			await fetchJSON(`${apiBase()}/bookings`, { method:'POST', body: JSON.stringify(payload) });
 			alert('Booking submitted!');
-		} catch(e) {
-			alert('Booking failed');
-		}
+		} catch(e) { alert('Booking failed'); }
 	}
 
 	loginBtn?.addEventListener('click', login);
