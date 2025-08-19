@@ -376,7 +376,38 @@ class SettingsManager {
 
             // 2) Send to marketing API
             const marketingApi = 'https://ava-marketing-api.onrender.com';
-            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            // Try get token from local/session storage first
+            let token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            
+            // If absent, try SSO token bridge from marketing site via postMessage
+            if (!token) {
+                token = await new Promise((resolve) => {
+                    let resolved = false;
+                    const listener = (event) => {
+                        try {
+                            if (!event || !event.data) return;
+                            if (event.data.type === 'MARKETING_TOKEN_RESPONSE') {
+                                window.removeEventListener('message', listener);
+                                resolved = true;
+                                resolve(event.data.token || null);
+                            }
+                        } catch(_) {}
+                    };
+                    window.addEventListener('message', listener);
+                    // Open or focus marketing login in a hidden window to read existing token if logged in
+                    const w = window.open('https://ava-solutions-marketing.netlify.app/login','ava_marketing_login');
+                    try {
+                        w && w.postMessage({ type: 'REQUEST_MARKETING_TOKEN' }, 'https://ava-solutions-marketing.netlify.app');
+                    } catch(_){ }
+                    // Timeout after 3s
+                    setTimeout(() => { if (!resolved) { window.removeEventListener('message', listener); resolve(null); } }, 3000);
+                });
+                if (token) {
+                    // Cache for next time
+                    try { localStorage.setItem('authToken', token); } catch(_){ }
+                }
+            }
+
             if (!token) {
                 btn.disabled = false; btn.innerHTML = original;
                 showNotification('Please login on the marketing website first to obtain a token.', 'warning');

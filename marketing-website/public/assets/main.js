@@ -269,3 +269,33 @@ try {
         };
     }
 } catch (e) {}
+
+// Lightweight token bridge for the PWA via postMessage
+// Allows the PWA (different origin) to request the marketing auth token if user is already logged in here
+try {
+    if (!window.__tokenBridgeBound) {
+        window.__tokenBridgeBound = true;
+        window.addEventListener('message', function(event) {
+            try {
+                // Allow only our PWA and local dev origins
+                const allowedOrigins = [
+                    'https://ava-solutions-pwa.netlify.app',
+                    'http://localhost:5173',
+                    'http://localhost:3000',
+                    'http://127.0.0.1:5173',
+                    'http://127.0.0.1:3000'
+                ];
+                const isAllowed = allowedOrigins.includes(event.origin) || event.origin.endsWith('netlify.app');
+                if (!isAllowed) return;
+
+                const data = event.data || {};
+                if (data === 'REQUEST_MARKETING_TOKEN' || data.type === 'REQUEST_MARKETING_TOKEN') {
+                    const token = (typeof window.getMarketingAuthToken === 'function') ? window.getMarketingAuthToken() : null;
+                    if (event.source && typeof event.source.postMessage === 'function') {
+                        event.source.postMessage({ type: 'MARKETING_TOKEN_RESPONSE', token }, event.origin);
+                    }
+                }
+            } catch (_) {}
+        });
+    }
+} catch (_) {}
