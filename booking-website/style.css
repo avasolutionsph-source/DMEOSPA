@@ -73,3 +73,11 @@ textarea{min-height:40px}
 	header .row{padding:10px 12px}
 	.container{padding:12px}
 }
+
+.svc-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.svc-card{display:flex;gap:12px;border:1px solid var(--border);border-radius:14px;padding:10px;background:#fff;cursor:pointer;box-shadow:0 4px 12px rgba(2,6,23,.04)}
+.svc-thumb{width:64px;height:64px;border-radius:10px;background:#eef2f7;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--primary-700)}
+.svc-info{display:flex;flex-direction:column;gap:4px}
+.svc-name{font-weight:700}
+.svc-meta{font-size:12px;color:var(--muted)}
+.svc-card.active{border-color:rgba(0,177,79,.4);box-shadow:0 4px 16px rgba(0,177,79,.15)}
