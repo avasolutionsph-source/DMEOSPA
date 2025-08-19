@@ -538,7 +538,13 @@ class EmployeeManager {
                             ${['employee','receptionist','therapist','manager'].map(r => `<option value="${r}" ${u.role===r?'selected':''}>${r}</option>`).join('')}
                         </select>
                     </td>
-                    <td><button class="btn btn-secondary btn-sm reset-pw" data-userid="${u.id}">Reset PW</button></td>
+                    <td>
+                        <button class="btn btn-secondary btn-sm show-pw" data-userid="${u.id}">Show PW</button>
+                        <button class="btn btn-secondary btn-sm reset-pw" data-userid="${u.id}">Reset PW</button>
+                        <div class="pw-reveal" id="pw_${u.id}" style="display:none; margin-top:6px;">
+                            <input type="text" readonly class="form-input" style="max-width:220px;" value="">
+                        </div>
+                    </td>
                 </tr>`).join('');
             container.innerHTML = `
                 <div class="table-responsive">
@@ -559,7 +565,24 @@ class EmployeeManager {
                 btn.addEventListener('click', async () => {
                     const userId = btn.getAttribute('data-userid');
                     const temp = await this.resetEmployeePassword(userId);
-                    if (temp) alert('New temporary password: ' + temp);
+                    if (temp) {
+                        const box = document.getElementById('pw_'+userId);
+                        if (box) { box.style.display = 'block'; box.querySelector('input').value = temp; }
+                    }
+                });
+            });
+            container.querySelectorAll('.show-pw').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const userId = btn.getAttribute('data-userid');
+                    // Confirm as this will generate a new temp password
+                    const proceed = await window.app?.confirm('Generate Temporary Password','This will generate a new temporary password and invalidate previous ones. Continue?')
+                        .catch(()=>false);
+                    if (!proceed) return;
+                    const temp = await this.resetEmployeePassword(userId);
+                    if (temp) {
+                        const box = document.getElementById('pw_'+userId);
+                        if (box) { box.style.display = 'block'; box.querySelector('input').value = temp; }
+                    }
                 });
             });
         } catch (e) {
