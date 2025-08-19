@@ -1004,7 +1004,7 @@
     <header class="dashboard-header">
         <div class="dashboard-brand">
             <i class="fas fa-spa"></i>
-            <h1>Branch View</h1>
+            <h1 id="dashboardTitle">Business Dashboard</h1>
         </div>
         <div class="user-info">
             <select id="branchSelect" style="margin-right:1rem; padding:.45rem .6rem; border:1px solid var(--gray-300); border-radius:6px; font-size:.9rem; display:none;"></select>
@@ -1307,6 +1307,7 @@
                     select.value = saved;
                     select.onchange = () => {
                         localStorage.setItem('dashboardBranchId', select.value);
+                        applyOwnerView(true);
                         loadBusinessStats();
                         loadEmployeeData();
                         loadInventoryData();
@@ -2128,21 +2129,34 @@ The PWA will open now...`;
             }
         }
 
-        // Main owner: show only Detailed Reports + Branch Accounts
-        // Branch account: show everything EXCEPT Branch Accounts
+        // Owner sees only reports + branch accounts initially.
+        // When a specific branch is selected from dropdown, show full features for that branch.
         function applyOwnerView(isMainOwner){
-            const showForOwner = ['.detailed-reports-section', '.branch-section'];
-            const hideForOwner = ['.stats-grid', '.employees-section', '.inventory-section', '.actions-section', '.sync-status'];
-            const allSections = ['.detailed-reports-section', '.branch-section', '.stats-grid', '.employees-section', '.inventory-section', '.actions-section', '.sync-status'];
-            allSections.forEach(sel => { const el = document.querySelector(sel); if (el) el.style.display = ''; });
-            if (isMainOwner) {
-                // Hide everything except reports and branch accounts
-                hideForOwner.forEach(sel => { const el = document.querySelector(sel); if (el) el.style.display = 'none'; });
-                showForOwner.forEach(sel => { const el = document.querySelector(sel); if (el) el.style.display = ''; });
-            } else {
-                // Branch view: hide branch accounts only, show other features
-                const branchSection = document.querySelector('.branch-section');
+            const reports = document.querySelector('.detailed-reports-section');
+            const branchSection = document.querySelector('.branch-section');
+            const featureSelectors = ['.stats-grid', '.employees-section', '.inventory-section', '.actions-section', '.sync-status'];
+            const showFeatures = (show) => featureSelectors.forEach(sel => { const el = document.querySelector(sel); if (el) el.style.display = show ? '' : 'none'; });
+
+            const branchId = localStorage.getItem('dashboardBranchId');
+            const isViewingSpecificBranch = isMainOwner && branchId && branchId !== 'owner';
+
+            if (reports) reports.style.display = '';
+
+            if (isViewingSpecificBranch) {
+                showFeatures(true);
                 if (branchSection) branchSection.style.display = 'none';
+                const title = document.getElementById('dashboardTitle');
+                if (title) title.textContent = 'Branch Dashboard';
+            } else if (isMainOwner) {
+                showFeatures(false);
+                if (branchSection) branchSection.style.display = '';
+                const title = document.getElementById('dashboardTitle');
+                if (title) title.textContent = 'Business Dashboard';
+            } else {
+                showFeatures(true);
+                if (branchSection) branchSection.style.display = 'none';
+                const title = document.getElementById('dashboardTitle');
+                if (title) title.textContent = 'Branch Dashboard';
             }
         }
     </script>
