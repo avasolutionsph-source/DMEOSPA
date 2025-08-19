@@ -6,9 +6,12 @@ class BookingsManager {
 	}
 
 	async init() {
+		this.ensureTable();
 		await this.loadBookings();
 		this.setupEventListeners();
 		this.setupAutoSync();
+		// Force an immediate sync on first open to avoid blank state
+		this.syncExternalBookings().catch(()=>{});
 	}
 
 	setupEventListeners() {
@@ -24,11 +27,31 @@ class BookingsManager {
 		let allBookings = await db.getAll('bookings');
 		// Filter for therapist role - show only their own bookings
 		if (window.roleManager?.activeEmployee?.role === 'therapist') {
-			const therapistId = window.roleManager.activeEmployee.id;
-			allBookings = allBookings.filter(b => String(b.employeeId) === String(therapistId));
+			const therapistId = String(window.roleManager.activeEmployee.id);
+			allBookings = allBookings.filter(b => String(b.employeeId||'') === therapistId);
 		}
 		this.bookings = allBookings;
 		this.renderBookingsTable();
+	}
+
+	// If the table markup is missing (visual bug), rebuild a minimal table
+	ensureTable() {
+		const page = document.getElementById('bookings');
+		if (!page) return;
+		if (!document.getElementById('bookingsTableBody')) {
+			const container = document.createElement('div');
+			container.className = 'bookings-list-container';
+			container.innerHTML = `
+				<table class="data-table">
+					<thead>
+						<tr>
+							<th>Date/Time</th><th>Customer</th><th>Service</th><th>Therapist</th><th>Room</th><th>Status</th><th>Actions</th>
+						</tr>
+					</thead>
+					<tbody id="bookingsTableBody"><tr><td colspan="7" style="text-align:center;padding:1rem;color:var(--gray);">Loading…</td></tr></tbody>
+				</table>`;
+			page.appendChild(container);
+		}
 	}
 
 	setupAutoSync() {
