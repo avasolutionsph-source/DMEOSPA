@@ -202,7 +202,8 @@ app.post('/api/employees/invite', async (req, res) => {
       businessName: inviter.businessName,
       role,
       businessId: String(inviter._id),
-      ownerId: String(inviter._id)
+      ownerId: String(inviter._id),
+      ownerPasswordNote: tempPassword
     });
     await employee.save();
     res.json({ success: true, tempPassword, employeeId: employee._id });
@@ -334,9 +335,9 @@ app.get('/api/employees', async (req, res) => {
     const ownerId = decoded.userId;
     const User = (await import('./models/User.js')).default;
     const employees = await User.find({ ownerId, role: { $in: ['employee','receptionist','therapist','manager'] } })
-      .select('_id email role employeeId employeeName firstName lastName')
+      .select('_id email role employeeId employeeName firstName lastName ownerPasswordNote')
       .lean();
-    res.json({ success: true, data: employees.map(u => ({ id: String(u._id), email: u.email, role: u.role, employeeId: u.employeeId||null, employeeName: u.employeeName || `${u.firstName} ${u.lastName}`.trim() })) });
+    res.json({ success: true, data: employees.map(u => ({ id: String(u._id), email: u.email, role: u.role, employeeId: u.employeeId||null, employeeName: u.employeeName || `${u.firstName} ${u.lastName}`.trim(), ownerPasswordNote: u.ownerPasswordNote || '' })) });
   } catch (e) {
     console.error('List employees error:', e.message);
     res.status(500).json({ error: 'Failed to list employees' });

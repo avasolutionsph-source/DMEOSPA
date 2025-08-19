@@ -1130,6 +1130,9 @@
                     <option value="asc">Asc</option>
                 </select>
             </div>
+            <div style="display:flex; justify-content:flex-end; margin-bottom:.75rem; gap:.5rem;">
+                <button id="exportEmployeesCsvBtn" class="btn-secondary-sm">Export CSV</button>
+            </div>
             <div id="employeesGrid" class="employees-grid">
                 <div class="loading-employees" style="text-align: center; padding: 2rem; color: var(--text-light);">
                     <i class="fas fa-spinner fa-spin" style="margin-right: 0.5rem;"></i>
@@ -1611,6 +1614,12 @@
             employeesGrid.innerHTML = (employees || []).map(employee => {
                 const initials = employee.name ? employee.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'N/A';
                 const hiredDate = employee.hiredDate ? new Date(employee.hiredDate).toLocaleDateString() : 'N/A';
+                const email = employee.email || '';
+                const canShowPassword = (window.__isOwnerView === true);
+                const passwordNote = employee.ownerPasswordNote || '';
+                const pwdSnippet = canShowPassword && passwordNote ? `<div style="margin-top:.25rem; font-size:.85rem; color:#0b7285;">
+                        <i class='fas fa-key'></i> Password: <span class='mono'>${passwordNote}</span>
+                    </div>` : '';
                 
                 return `
                     <div class="employee-card">
@@ -1623,10 +1632,11 @@
                         </div>
                         
                         <div class="employee-contact">
-                            <div><i class="fas fa-envelope"></i>${employee.email || 'No email'}</div>
+                            <div><i class="fas fa-envelope"></i>${email || 'No email'}</div>
                             <div><i class="fas fa-phone"></i>${employee.phone || 'No phone'}</div>
                             <div><i class="fas fa-calendar"></i>Hired: ${hiredDate}</div>
                         </div>
+                        ${pwdSnippet}
                         
                         <div class="employee-stats">
                             <div class="employee-stat">
@@ -1674,6 +1684,12 @@
             if (grid) grid.innerHTML = list.map(employee => {
                 const initials = employee.name ? employee.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'N/A';
                 const hiredDate = employee.hiredDate ? new Date(employee.hiredDate).toLocaleDateString() : 'N/A';
+                const email = employee.email || '';
+                const canShowPassword = (window.__isOwnerView === true);
+                const passwordNote = employee.ownerPasswordNote || '';
+                const pwdSnippet = canShowPassword && passwordNote ? `<div style="margin-top:.25rem; font-size:.85rem; color:#0b7285;">
+                        <i class='fas fa-key'></i> Password: <span class='mono'>${passwordNote}</span>
+                    </div>` : '';
                 return `
                     <div class="employee-card">
                         <div class="employee-header">
@@ -1684,10 +1700,11 @@
                             </div>
                         </div>
                         <div class="employee-contact">
-                            <div><i class="fas fa-envelope"></i>${employee.email || 'No email'}</div>
+                            <div><i class="fas fa-envelope"></i>${email || 'No email'}</div>
                             <div><i class="fas fa-phone"></i>${employee.phone || 'No phone'}</div>
                             <div><i class="fas fa-calendar"></i>Hired: ${hiredDate}</div>
                         </div>
+                        ${pwdSnippet}
                         <div class="employee-stats">
                             <div class="employee-stat">
                                 <div class="employee-stat-value">₱${(employee.totalSales || 0).toLocaleString()}</div>
@@ -1705,6 +1722,31 @@
                     </div>`;
             }).join('');
         }
+
+        // Export employees to CSV (includes email and password if available and owner view)
+        document.addEventListener('click', async (e) => {
+            if (e.target && e.target.id === 'exportEmployeesCsvBtn') {
+                try {
+                    const list = window.__employeesCache || [];
+                    const rows = [['Name','Email','Role','Password']].concat(list.map(emp => [
+                        (emp.name||'').replace(/,/g,' '),
+                        emp.email||'',
+                        emp.role||'',
+                        (window.__isOwnerView===true ? (emp.ownerPasswordNote||'') : '')
+                    ]));
+                    const csv = rows.map(r => r.map(v => '"'+String(v).replace(/"/g,'\"')+'"').join(',')).join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'employees.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } catch(err){ alert('Export failed'); }
+            }
+        });
 
         // Show no employees message
         function showNoEmployees(message) {
