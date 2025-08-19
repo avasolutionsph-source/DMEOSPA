@@ -105,6 +105,14 @@ class SettingsManager {
                 <small class="form-hint">Until a manager is assigned, only Settings will be visible.</small>
             </div>
             <div class="form-group">
+                <label>Branch Accounts</label>
+                <div style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+                    <button class="btn btn-secondary" id="listBranchesBtn">List Branches</button>
+                    <button class="btn btn-secondary" id="createBranchBtn">Create Branch</button>
+                </div>
+                <small class="form-hint">Branches are separate logins. Log into a branch account to operate that specific store.</small>
+            </div>
+            <div class="form-group">
                 <label>Performance Mode</label>
                 <select id="perfModeSelect" class="form-select">
                     <option value="auto">Auto (recommended)</option>
@@ -168,6 +176,36 @@ class SettingsManager {
                 }
             };
         }
+
+        // Branch actions
+        const listBtn = document.getElementById('listBranchesBtn');
+        if (listBtn) listBtn.onclick = async () => {
+            try {
+                const token = localStorage.getItem('userToken') || localStorage.getItem('authToken');
+                if (!token) { showNotification('Login first', 'warning'); return; }
+                const api = 'https://ava-marketing-api.onrender.com';
+                const r = await fetch(`${api}/api/branches`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const j = await r.json();
+                if (!r.ok) throw new Error(j.error || 'Failed');
+                localStorage.setItem('branches', JSON.stringify(j.data || []));
+                alert('Branches saved locally. Log out and log in using a branch email to open that branch.');
+            } catch(e) { showNotification(e.message || 'Failed to list branches', 'error'); }
+        };
+        const createBtn = document.getElementById('createBranchBtn');
+        if (createBtn) createBtn.onclick = async () => {
+            try {
+                const token = localStorage.getItem('userToken') || localStorage.getItem('authToken');
+                if (!token) { showNotification('Login first', 'warning'); return; }
+                const name = prompt('Branch name'); if (!name) return;
+                const email = prompt('Branch email'); if (!email) return;
+                const password = prompt('Branch password (min 6 chars)'); if (!password) return;
+                const api = 'https://ava-marketing-api.onrender.com';
+                const r = await fetch(`${api}/api/branches/create`, { method:'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify({ branchName: name, email, password }) });
+                const j = await r.json();
+                if (!r.ok) throw new Error(j.error || 'Failed to create branch');
+                showNotification('Branch created. Use the new email/password to log into that branch.', 'success');
+            } catch(e) { showNotification(e.message || 'Failed to create branch', 'error'); }
+        };
     }
 
     async loadSettings() {

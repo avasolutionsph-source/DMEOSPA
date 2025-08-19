@@ -2,16 +2,19 @@
 document.addEventListener('DOMContentLoaded', () => {
     const bs = document.getElementById('branchSelect');
     if (bs) {
-        // Populate from localStorage branches [{id,name}]
         try {
             const branches = JSON.parse(localStorage.getItem('branches') || '[]');
-            bs.innerHTML = branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
-            const current = localStorage.getItem('activeBranchId') || (branches[0]?.id || 'default');
-            bs.value = current;
-        } catch(_){ }
+            if (branches.length) {
+                bs.innerHTML = branches.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+                const current = localStorage.getItem('activeBranchId') || branches[0].id;
+                bs.value = current;
+            } else {
+                // Branch accounts now handled via separate logins; hide the selector when none listed
+                bs.parentElement?.parentElement?.remove();
+            }
+        } catch(_){ bs.parentElement?.parentElement?.remove(); }
         bs.addEventListener('change', async () => {
             localStorage.setItem('activeBranchId', bs.value);
-            // Reload branch-specific data for employees/products
             if (window.loadPOS) await window.loadPOS();
         });
     }

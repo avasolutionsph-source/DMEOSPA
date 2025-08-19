@@ -212,6 +212,62 @@ app.post('/api/employees/invite', async (req, res) => {
   }
 });
 
+// Create a new Branch (separate login per branch) under current owner
+app.post('/api/branches/create', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const jwt = await import('jsonwebtoken');
+    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const ownerId = decoded.userId;
+
+    const { branchName, email, password, plan } = req.body || {};
+    if (!branchName || !email || !password) return res.status(400).json({ error: 'branchName, email and password required' });
+
+    const User = (await import('./models/User.js')).default;
+    const owner = await User.findById(ownerId);
+    if (!owner) return res.status(404).json({ error: 'Owner not found' });
+
+    const existing = await User.findOne({ email });
+    if (existing) return res.status(400).json({ error: 'Email already used' });
+
+    const branch = new User({
+      email,
+      password,
+      firstName: branchName,
+      lastName: 'Branch',
+      businessName: branchName,
+      subscriptionPlan: plan || 'unpaid',
+      role: 'owner',
+      ownerId: String(owner._id)
+    });
+    await branch.save();
+    res.json({ success: true, branchId: branch._id, email });
+  } catch (e) {
+    console.error('Create branch error:', e.message);
+    res.status(500).json({ error: 'Failed to create branch' });
+  }
+});
+
+// List branches owned by current owner
+app.get('/api/branches', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const jwt = await import('jsonwebtoken');
+    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const ownerId = decoded.userId;
+    const User = (await import('./models/User.js')).default;
+    const branches = await User.find({ ownerId, role: 'owner' })
+      .select('_id email businessName subscriptionPlan createdAt')
+      .lean();
+    res.json({ success: true, data: branches.map(b => ({ id: String(b._id), email: b.email, name: b.businessName, plan: b.subscriptionPlan, createdAt: b.createdAt })) });
+  } catch (e) {
+    console.error('List branches error:', e.message);
+    res.status(500).json({ error: 'Failed to list branches' });
+  }
+});
+
 // List invited employees for owner
 app.get('/api/employees', async (req, res) => {
   try {
