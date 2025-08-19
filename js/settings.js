@@ -61,6 +61,28 @@ class SettingsManager {
             });
             forceRefreshBtn.setAttribute('data-listener', 'true');
         }
+
+        // Employee role login controls (in-app login for employees)
+        const roleLoginBtn = document.getElementById('employeeRoleLoginBtn');
+        if (roleLoginBtn && !roleLoginBtn.hasAttribute('data-listener')) {
+            roleLoginBtn.addEventListener('click', () => {
+                if (window.roleManager && window.roleManager.showRoleLoginModal) {
+                    window.roleManager.showRoleLoginModal();
+                } else {
+                    alert('Role login module not available');
+                }
+            });
+            roleLoginBtn.setAttribute('data-listener', 'true');
+        }
+        const roleLogoutBtn = document.getElementById('employeeRoleLogoutBtn');
+        if (roleLogoutBtn && !roleLogoutBtn.hasAttribute('data-listener')) {
+            roleLogoutBtn.addEventListener('click', () => {
+                if (window.roleManager && window.roleManager.clearEmployeeSession) {
+                    window.roleManager.clearEmployeeSession();
+                }
+            });
+            roleLogoutBtn.setAttribute('data-listener', 'true');
+        }
     }
 
     addPerformanceSection() {
