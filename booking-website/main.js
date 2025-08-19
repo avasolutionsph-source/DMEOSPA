@@ -4,6 +4,7 @@
 	const businessList = qs('#businessList');
 	const loginBtn = qs('#loginBtn');
 	const logoutBtn = qs('#logoutBtn');
+	const loginModal = qs('#loginModal');
 
 	function initAuth(){
 		const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
@@ -23,17 +24,8 @@
 	function bindAuthButtons(){
 		if (loginBtn && !loginBtn._bound){
 			loginBtn.addEventListener('click', () => {
-				// Open marketing login in a new tab reliably via anchor click (avoids replacing current tab)
-				const a = document.createElement('a');
-				a.href = 'https://ava-solutions-marketing.netlify.app/login';
-				a.target = '_blank';
-				a.rel = 'noopener noreferrer';
-				document.body.appendChild(a);
-				a.click();
-				document.body.removeChild(a);
-				// Also broadcast a token request to any existing marketing tab
-				try { window.postMessage({ type: 'REQUEST_MARKETING_TOKEN' }, 'https://ava-solutions-marketing.netlify.app'); } catch(_){ }
-				alert('Login opened in a new tab. After signing in, return here — the button will change to Logout and Owner Bookings will appear.');
+				// Use in-app login modal for booking site
+				if (loginModal) loginModal.style.display = 'block';
 			});
 			loginBtn._bound = true;
 		}
@@ -61,6 +53,26 @@
 					}
 				} catch(_){ }
 			});
+		}
+	}
+
+	// Booking site login using marketing API directly
+	async function bookingSiteLogin(email, password){
+		try {
+			const res = await fetch(`${marketingApi}/api/auth/login`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email, password })
+			});
+			const data = await res.json();
+			if (!res.ok || !data.token) throw new Error(data.error || 'Login failed');
+			localStorage.setItem('authToken', data.token);
+			initAuth();
+			if (loginModal) loginModal.style.display = 'none';
+			return true;
+		} catch (e) {
+			alert(e.message || 'Login failed');
+			return false;
 		}
 	}
 
@@ -101,5 +113,24 @@
 
 	initAuth();
 	bindAuthButtons();
+
+	// Wire login modal form
+	(function(){
+		const form = document.getElementById('loginForm');
+		const closeBtn = document.getElementById('closeLogin');
+		if (form && !form._bound){
+			form.addEventListener('submit', async (e) => {
+				e.preventDefault();
+				const email = (document.getElementById('loginEmail')||{}).value || '';
+				const pass = (document.getElementById('loginPass')||{}).value || '';
+				await bookingSiteLogin(email, pass);
+			});
+			form._bound = true;
+		}
+		if (closeBtn && !closeBtn._bound){
+			closeBtn.addEventListener('click', () => { if (loginModal) loginModal.style.display = 'none'; });
+			closeBtn._bound = true;
+		}
+	})();
 	loadBusinesses();
 })();
