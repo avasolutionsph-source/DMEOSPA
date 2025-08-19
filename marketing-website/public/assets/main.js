@@ -265,7 +265,15 @@ document.head.appendChild(style);
 try {
     if (!window.getMarketingAuthToken) {
         window.getMarketingAuthToken = function() {
-            try { return localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || null; } catch(e){ return null; }
+            try {
+                return (
+                    localStorage.getItem('authToken') ||
+                    localStorage.getItem('userToken') ||
+                    sessionStorage.getItem('authToken') ||
+                    sessionStorage.getItem('userToken') ||
+                    null
+                );
+            } catch(e){ return null; }
         };
     }
 } catch (e) {}

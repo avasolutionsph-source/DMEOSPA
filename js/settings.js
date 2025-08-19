@@ -377,7 +377,7 @@ class SettingsManager {
             // 2) Send to marketing API
             const marketingApi = 'https://ava-marketing-api.onrender.com';
             // Try get token from local/session storage first
-            let token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            let token = localStorage.getItem('authToken') || localStorage.getItem('userToken') || sessionStorage.getItem('authToken') || sessionStorage.getItem('userToken');
             
             // If absent, try SSO token bridge from marketing site via postMessage
             if (!token) {
