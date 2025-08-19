@@ -1313,7 +1313,9 @@
                         loadEmployeeData();
                         loadInventoryData();
                     };
-                }).catch(() => {});
+                    // Apply owner view now that we know the login type
+                    applyOwnerView(true);
+                }).catch(() => { applyOwnerView(false); });
         }
 
         // Branch accounts UI bindings
@@ -2128,6 +2130,17 @@ The PWA will open now...`;
                 localStorage.removeItem('userData');
                 window.location.href = '/login';
             }
+        }
+
+        // Show only Reports + Branch Accounts for main owner; show full dashboard for branch accounts
+        function applyOwnerView(isMainOwner){
+            const hideForOwner = ['.welcome-section', '.stats-grid', '.employees-section', '.inventory-section', '.actions-section', '.sync-status'];
+            hideForOwner.forEach(sel => {
+                const el = document.querySelector(sel);
+                if (el) el.style.display = isMainOwner ? 'none' : '';
+            });
+            const branchSection = document.querySelector('.branch-section');
+            if (branchSection) branchSection.style.display = isMainOwner ? 'block' : 'none';
         }
     </script>
 </body>
