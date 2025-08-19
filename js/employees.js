@@ -519,13 +519,85 @@ class EmployeeManager {
             const marketingApi = 'https://ava-marketing-api.onrender.com';
             const res = await fetch(`${marketingApi}/api/employees`, { headers: { 'Authorization': `Bearer ${token}` } });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed to load invites');
             const container = document.getElementById('invitedEmployeesContainer');
             if (!container) return;
-            const rows = (data.data||[]).map(u => `<tr><td>${u.employeeName || u.email}</td><td>${u.role}</td></tr>`).join('');
-            container.innerHTML = `<table class="table"><thead><tr><th>Name</th><th>Role</th></tr></thead><tbody>${rows||'<tr><td colspan="2">No invited employees</td></tr>'}</tbody></table>`;
+            if (!res.ok) {
+                container.innerHTML = '<div class="subtle">Failed to load invited employees</div>';
+                return;
+            }
+            const rows = (data.data||[]).map(u => `
+                <tr>
+                    <td>${u.employeeName || ''}</td>
+                    <td>${u.email || ''}</td>
+                    <td>
+                        <select class="form-input role-select" data-userid="${u.id}">
+                            ${['employee','receptionist','therapist','manager'].map(r => `<option value="${r}" ${u.role===r?'selected':''}>${r}</option>`).join('')}
+                        </select>
+                    </td>
+                    <td><button class="btn btn-secondary btn-sm reset-pw" data-userid="${u.id}">Reset PW</button></td>
+                </tr>`).join('');
+            container.innerHTML = `
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Actions</th></tr></thead>
+                        <tbody>${rows || '<tr><td colspan="4">No invited employees</td></tr>'}</tbody>
+                    </table>
+                </div>`;
+            // Bind events
+            container.querySelectorAll('.role-select').forEach(sel => {
+                sel.addEventListener('change', async () => {
+                    const userId = sel.getAttribute('data-userid');
+                    const role = sel.value;
+                    await this.updateEmployeeRole(userId, role);
+                });
+            });
+            container.querySelectorAll('.reset-pw').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const userId = btn.getAttribute('data-userid');
+                    const temp = await this.resetEmployeePassword(userId);
+                    if (temp) alert('New temporary password: ' + temp);
+                });
+            });
         } catch (e) {
             console.warn('Invited employees load error:', e.message);
+        }
+    }
+
+    async updateEmployeeRole(userId, role) {
+        try {
+            const token = localStorage.getItem('userToken') || localStorage.getItem('authToken');
+            if (!token) { showNotification('Login first', 'warning'); return; }
+            const marketingApi = 'https://ava-marketing-api.onrender.com';
+            const res = await fetch(`${marketingApi}/api/employees/${userId}/role`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ role })
+            });
+            const data = await res.json().catch(()=>({}));
+            if (!res.ok) throw new Error(data.error || 'Failed to update role');
+            showNotification('Role updated', 'success');
+        } catch (e) {
+            showNotification(e.message || 'Failed to update role', 'error');
+        }
+    }
+
+    async resetEmployeePassword(userId) {
+        try {
+            const token = localStorage.getItem('userToken') || localStorage.getItem('authToken');
+            if (!token) { showNotification('Login first', 'warning'); return null; }
+            const marketingApi = 'https://ava-marketing-api.onrender.com';
+            const res = await fetch(`${marketingApi}/api/employees/reset-password`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to reset password');
+            showNotification('Temporary password generated', 'success');
+            return data.tempPassword;
+        } catch (e) {
+            showNotification(e.message || 'Failed to reset password', 'error');
+            return null;
         }
     }
 }
