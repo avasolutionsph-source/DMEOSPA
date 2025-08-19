@@ -258,6 +258,8 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    /* Hint the browser to prioritize scrolling over painting */
+    overscroll-behavior: contain;
 }
 
 /* Turn off shimmering, glows, pulses when perf-low */
@@ -278,11 +280,21 @@
 .perf-low .stat-card { box-shadow: none !important; }
 .perf-low .btn, .perf-low .btn-primary, .perf-low .btn-secondary { transition: none !important; }
 
+/* Reduce expensive effects during perf-low */
+.perf-low .glass, .perf-low [style*='backdrop-filter'], .perf-low .sidebar {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* Avoid sticky backgrounds that can trigger repaints on scroll */
+.perf-low [style*='background-attachment: fixed'] { background-attachment: scroll !important; }
+
 /* Ultra-Professional Body Styling */
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--gray-50);
-    background-attachment: fixed;
+    /* Avoid fixed backgrounds which hurt scroll perf on some Intel iGPUs */
+    background-attachment: scroll;
     color: var(--gray-900);
     line-height: var(--line-height-normal);
     overflow-x: hidden;
@@ -299,7 +311,8 @@ body {
 /* Modern App Container */
 .app-container {
     display: flex;
-    height: 100vh;
+    /* Use min-height to prevent forced compositing causing scroll jank */
+    min-height: 100vh;
     background: var(--gray-50);
     position: relative;
     overflow-x: hidden;
