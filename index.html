@@ -1075,7 +1075,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="authModalTitle">Welcome to Ava Solutions</h2>
-                <button class="modal-close" onclick="event.stopPropagation(); document.getElementById('loginForm')?.reset(); closeModal('authModal');">
+                <button class="modal-close" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('loginForm')?.reset(); closeModal('authModal');">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -1465,6 +1465,8 @@
                 modal.onclick = null;
                 const form = document.getElementById('loginForm');
                 if (form) form.removeAttribute('data-handler-attached');
+                // stop any bubbling that could re-open
+                try { event?.stopImmediatePropagation(); } catch(_) {}
             }
         }
         
