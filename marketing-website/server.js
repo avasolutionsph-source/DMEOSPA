@@ -215,6 +215,43 @@ app.use('/api/availability', async (req, res) => {
   }
 });
 
+// Proxy products and employees (GET) to PWA backend for booking site catalog
+app.use('/api/products', async (req, res) => {
+  try {
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';
+    const url = `${pwaBackendUrl}${req.originalUrl}`;
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(req.headers.authorization ? { 'Authorization': req.headers.authorization } : {}),
+      ...(req.headers['x-user-id'] ? { 'x-user-id': req.headers['x-user-id'] } : {})
+    };
+    const response = await fetch(url, { method: req.method, headers });
+    const text = await response.text();
+    res.status(response.status).type(response.headers.get('content-type') || 'application/json').send(text);
+  } catch (err) {
+    console.error('Products proxy error:', err);
+    res.status(500).json({ error: 'Failed to reach products backend' });
+  }
+});
+
+app.use('/api/employees', async (req, res) => {
+  try {
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';
+    const url = `${pwaBackendUrl}${req.originalUrl}`;
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(req.headers.authorization ? { 'Authorization': req.headers.authorization } : {}),
+      ...(req.headers['x-user-id'] ? { 'x-user-id': req.headers['x-user-id'] } : {})
+    };
+    const response = await fetch(url, { method: req.method, headers });
+    const text = await response.text();
+    res.status(response.status).type(response.headers.get('content-type') || 'application/json').send(text);
+  } catch (err) {
+    console.error('Employees proxy error:', err);
+    res.status(500).json({ error: 'Failed to reach employees backend' });
+  }
+});
+
 // Business employees endpoint
 app.get('/api/business/employees', async (req, res) => {
   try {
