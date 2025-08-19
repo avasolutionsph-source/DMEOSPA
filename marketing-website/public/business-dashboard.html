@@ -386,6 +386,29 @@
             margin-bottom: 2rem;
         }
 
+        /* Branch accounts */
+        .branch-section {
+            margin: 2rem 0;
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(16px) saturate(150%);
+            -webkit-backdrop-filter: blur(16px) saturate(150%);
+            border: 1px solid rgba(255,255,255,0.6);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+        }
+        .branch-grid { display: grid; grid-template-columns: 1.2fr 2fr; gap: 1rem; }
+        .branch-form label { font-size: var(--font-size-sm); color: var(--gray-700); display:block; margin-bottom: .35rem; }
+        .branch-form input { width: 100%; padding: .65rem .8rem; border:1px solid var(--gray-300); border-radius: 8px; font-size: 0.95rem; }
+        .branch-form .row { display:grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+        .branch-form .actions { margin-top: .75rem; display:flex; gap:.5rem; }
+        .btn-primary-sm { background: var(--primary-color); color: #fff; border:none; padding:.55rem .9rem; border-radius:8px; cursor:pointer; }
+        .btn-secondary-sm { background: #fff; color: var(--primary-color); border:1px solid var(--primary-color); padding:.55rem .9rem; border-radius:8px; cursor:pointer; }
+        .branches-table { width:100%; border-collapse: collapse; }
+        .branches-table th, .branches-table td { border-bottom:1px solid var(--gray-200); padding:.6rem .5rem; font-size: .9rem; text-align: left; }
+        .badge-plan { background: var(--primary-ultra-light); color: var(--primary-color); padding:.15rem .45rem; border-radius: 999px; font-size:.75rem; }
+        @media(max-width: 900px){ .branch-grid{ grid-template-columns: 1fr; } }
+
         .actions-section h3 {
             color: var(--gray-900);
             font-size: var(--font-size-xl);
@@ -1148,6 +1171,58 @@
             </div>
         </div>
 
+        <!-- Branch Accounts Management -->
+        <div class="branch-section">
+            <h3 style="margin-bottom: 1rem; display:flex; align-items:center; gap:.5rem;">
+                <i class="fas fa-code-branch" style="color: var(--primary-color);"></i>
+                Branch Accounts
+            </h3>
+            <div class="branch-grid">
+                <div class="branch-form">
+                    <div class="row">
+                        <div>
+                            <label>Branch Name</label>
+                            <input type="text" id="branchNameInput" placeholder="e.g., AVA Spa - SM North"/>
+                        </div>
+                        <div>
+                            <label>Branch Email</label>
+                            <input type="email" id="branchEmailInput" placeholder="branch@example.com"/>
+                        </div>
+                    </div>
+                    <div class="row" style="margin-top:.75rem;">
+                        <div>
+                            <label>Password</label>
+                            <input type="password" id="branchPasswordInput" placeholder="Min 6 characters"/>
+                        </div>
+                        <div>
+                            <label>Plan</label>
+                            <input type="text" id="branchPlanInput" placeholder="unpaid" value="unpaid"/>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn-primary-sm" id="createBranchBtn">Create Branch</button>
+                        <button class="btn-secondary-sm" id="refreshBranchesBtn">Refresh List</button>
+                    </div>
+                    <small style="color: var(--gray-600); display:block; margin-top:.5rem;">Each branch is a separate login. Use the branch email/password to access that store in the PWA and owner tools.</small>
+                </div>
+                <div>
+                    <table class="branches-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Plan</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="branchesTableBody">
+                            <tr><td colspan="4" style="color: var(--gray-600);">No branches loaded</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Sync Status -->
         <div class="sync-status">
             <div class="sync-info">
@@ -1172,6 +1247,7 @@
             loadBusinessStats();
             loadEmployeeData();
             loadInventoryData();
+            bindBranchControls();
         });
 
         // Load user data
@@ -1184,6 +1260,53 @@
             } else {
                 // Redirect to login if no user data
                 window.location.href = '/login';
+            }
+        }
+
+        // Branch accounts UI bindings
+        function bindBranchControls(){
+            const createBtn = document.getElementById('createBranchBtn');
+            const refreshBtn = document.getElementById('refreshBranchesBtn');
+            if (createBtn) createBtn.addEventListener('click', createBranchAccount);
+            if (refreshBtn) refreshBtn.addEventListener('click', listBranches);
+            // auto load on first visit
+            listBranches();
+        }
+
+        async function createBranchAccount(){
+            try {
+                const token = localStorage.getItem('userToken');
+                if (!token) { alert('Please login first'); return; }
+                const name = document.getElementById('branchNameInput').value.trim();
+                const email = document.getElementById('branchEmailInput').value.trim();
+                const password = document.getElementById('branchPasswordInput').value.trim();
+                const plan = document.getElementById('branchPlanInput').value.trim() || 'unpaid';
+                if (!name || !email || !password) { alert('Enter name, email, and password'); return; }
+                const res = await fetch('/api/branches/create', { method:'POST', headers:{ 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify({ branchName: name, email, password, plan }) });
+                const j = await res.json();
+                if (!res.ok) throw new Error(j.error || 'Failed to create branch');
+                alert('Branch created. Use the new credentials to login as that branch.');
+                // reload list
+                listBranches();
+            } catch(e) { alert(e.message || 'Failed to create branch'); }
+        }
+
+        async function listBranches(){
+            try {
+                const token = localStorage.getItem('userToken');
+                if (!token) return;
+                const res = await fetch('/api/branches', { headers: { 'Authorization': `Bearer ${token}` } });
+                const j = await res.json();
+                const tbody = document.getElementById('branchesTableBody');
+                if (!res.ok) { tbody.innerHTML = '<tr><td colspan="4" style="color:var(--danger-color);">Failed to load branches</td></tr>'; return; }
+                const rows = (j.data || []).map(b => {
+                    const created = b.createdAt ? new Date(b.createdAt).toLocaleDateString('en-PH') : '';
+                    return `<tr><td>${b.name || ''}</td><td>${b.email || ''}</td><td><span class="badge-plan">${b.plan || 'unpaid'}</span></td><td>${created}</td></tr>`;
+                }).join('');
+                tbody.innerHTML = rows || '<tr><td colspan="4" style="color: var(--gray-600);">No branches yet</td></tr>';
+            } catch(e) {
+                const tbody = document.getElementById('branchesTableBody');
+                tbody.innerHTML = '<tr><td colspan="4" style="color:var(--danger-color);">Error loading branches</td></tr>';
             }
         }
 
