@@ -9,3 +9,8 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "no-referrer-when-downgrade"
     Cache-Control = "public, max-age=60"
+
+[[redirects]]
+  from = "/spa"
+  to = "/spa.html"
+  status = 200

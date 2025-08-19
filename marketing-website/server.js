@@ -181,6 +181,52 @@ app.get('/api/config', (req, res) => {
   res.json({ pwaBackendUrl });
 });
 
+// Publish catalog (services/products + employees) for booking site consumption
+app.post('/api/public/publish-catalog', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'No token provided' });
+    const jwt = await import('jsonwebtoken');
+    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const userId = decoded.userId;
+
+    const User = (await import('./models/User.js')).default;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const { products = [], employees = [] } = req.body || {};
+
+    // Sanitize and store minimal fields only
+    const sanitizedProducts = (Array.isArray(products) ? products : [])
+      .map(p => ({
+        id: String(p.id || p._id || ''),
+        name: String(p.name || ''),
+        category: String(p.category || 'service'),
+        duration: Number(p.duration || 0),
+        price: Number(p.price || 0),
+        isActive: p.isActive !== false
+      }));
+
+    const sanitizedEmployees = (Array.isArray(employees) ? employees : [])
+      .map(e => ({
+        id: String(e.id || e._id || ''),
+        name: String(e.name || ''),
+        position: String(e.position || ''),
+        email: String(e.email || ''),
+        phone: String(e.phone || '')
+      }));
+
+    user.products = sanitizedProducts;
+    user.employees = sanitizedEmployees;
+    await user.save();
+
+    res.json({ success: true, products: sanitizedProducts.length, employees: sanitizedEmployees.length });
+  } catch (error) {
+    console.error('Publish catalog error:', error);
+    res.status(500).json({ error: 'Failed to publish catalog' });
+  }
+});
+
 // Public: list businesses for booking directory
 app.get('/api/public/businesses', async (req, res) => {
   try {
