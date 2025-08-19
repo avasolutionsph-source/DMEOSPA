@@ -316,6 +316,7 @@ app.get('/api/branches/:id/password', async (req, res) => {
     const branch = await User.findById(branchId).select('ownerId ownerPasswordNote');
     if (!branch) return res.status(404).json({ error: 'Branch not found' });
     if (String(branch.ownerId) !== String(ownerId)) return res.status(403).json({ error: 'Not your branch' });
+    // Always return JSON
     return res.json({ success: true, password: branch.ownerPasswordNote || '' });
   } catch (e) {
     console.error('Show branch password error:', e.message);

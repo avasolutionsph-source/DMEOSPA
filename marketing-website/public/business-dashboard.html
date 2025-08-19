@@ -1351,6 +1351,8 @@
                 const j = await res.json();
                 const tbody = document.getElementById('branchesTableBody');
                 if (!res.ok) { tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger-color);">Failed to load branches</td></tr>'; return; }
+                // cache for Show button without extra network call
+                window.__branchesCache = j.data || [];
                 const rows = (j.data || []).map(b => {
                     const created = b.createdAt ? new Date(b.createdAt).toLocaleDateString('en-PH') : '';
                     return `<tr>
@@ -1386,6 +1388,17 @@
                                 method = 'POST';
                                 endpoint = `/api/branches/${id}/reset-password`;
                             }
+                            // If just showing, try cache first
+                            if (action === 'show') {
+                                const cached = (window.__branchesCache || []).find(b => String(b.id) === String(id));
+                                if (cached && cached.ownerPasswordNote) {
+                                    const span = document.getElementById(`temp-${id}`);
+                                    if (span) span.textContent = cached.ownerPasswordNote;
+                                    btn.textContent = 'Show';
+                                    btn.disabled = false;
+                                    return;
+                                }
+                            }
                             const headers = { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' };
                             if (method !== 'GET') headers['Content-Type'] = 'application/json';
                             let r = await fetch(endpoint, { method, headers, body });
@@ -1406,6 +1419,11 @@
                             if (!r.ok) throw new Error((j && j.error) || 'Failed');
                             const span = document.getElementById(`temp-${id}`);
                             if (span) span.textContent = j.password || '';
+                            // update cache if changed
+                            if (j.password && window.__branchesCache) {
+                                const idx = window.__branchesCache.findIndex(b => String(b.id) === String(id));
+                                if (idx >= 0) window.__branchesCache[idx].ownerPasswordNote = j.password;
+                            }
                             btn.textContent = (action === 'change') ? 'Change Password' : 'Show';
                             btn.disabled = false;
                         } catch(e) {
