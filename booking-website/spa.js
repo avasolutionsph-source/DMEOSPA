@@ -1,14 +1,21 @@
 (function(){
 	const isLocal = ['localhost','127.0.0.1'].some(h => location.hostname.startsWith(h));
 	const marketingApi = 'https://ava-marketing-api.onrender.com';
-	const storedPwa = localStorage.getItem('pwaApiUrl');
-	let apiHost = isLocal ? (storedPwa || 'http://localhost:4000') : (storedPwa || marketingApi);
+	// read ?pwa override
+	try { const qp = new URLSearchParams(location.search).get('pwa'); if (qp) localStorage.setItem('pwaApiUrl', qp); } catch(e){}
+	let apiHost = localStorage.getItem('pwaApiUrl') || (isLocal ? 'http://localhost:4000' : marketingApi);
 	let proxyFailedOnce = false;
 	const apiBase = () => `${apiHost}/api`;
 
 	const params = new URLSearchParams(location.search);
 	const businessId = params.get('businessId');
 	if (businessId) localStorage.setItem('bookingBusinessId', businessId);
+
+	async function ensureBackendUrl(){
+		const stored = localStorage.getItem('pwaApiUrl');
+		if (stored) { apiHost = stored; return stored; }
+		try { const r = await fetch(`${marketingApi}/api/config`); const j = await r.json(); if (j.pwaBackendUrl) { localStorage.setItem('pwaApiUrl', j.pwaBackendUrl); apiHost = j.pwaBackendUrl; } return j.pwaBackendUrl; } catch(e){ return null; }
+	}
 
 	const qs = sel => document.querySelector(sel);
 	const storeSelect = qs('#storeSelect');
@@ -44,13 +51,13 @@
 
 	function selectService(svc){ selectedService = svc; serviceSelect.value = svc.id; qs('#durationInput').value = svc.duration; updateSummary(); }
 
-	async function tryProducts(){ try { if (proxyFailedOnce && storedPwa) apiHost = storedPwa; return await fetchJSON(`${apiBase()}/products`); } catch (e) { proxyFailedOnce = true; if (storedPwa && apiHost !== storedPwa) { apiHost = storedPwa; try { return await fetchJSON(`${apiBase()}/products`); } catch(e2){ return null; } } return null; } }
+	async function tryProducts(){ try { if (proxyFailedOnce && localStorage.getItem('pwaApiUrl')) apiHost = localStorage.getItem('pwaApiUrl'); return await fetchJSON(`${apiBase()}/products`); } catch (e) { proxyFailedOnce = true; const pwa = localStorage.getItem('pwaApiUrl'); if (pwa && apiHost !== pwa) { apiHost = pwa; try { return await fetchJSON(`${apiBase()}/products`); } catch(e2){ return null; } } return null; } }
 
-	async function loadCatalog(){ const res = await tryProducts(); if (!res) { availabilityResult.textContent = 'Unable to load services.'; return; } const services = (res.data||[]).filter(p=>p.category==='service' || p.category==='massage'); serviceSelect.innerHTML = services.map(s=>`<option value="${s._id||s.id}" data-name="${s.name}" data-duration="${s.duration||60}">${s.name}${s.duration?` (${s.duration}m)`:''}</option>`).join(''); renderServiceChips(services); renderServiceCards(services); if (services[0]) selectService({ id: services[0]._id||services[0].id, name: services[0].name, duration: services[0].duration||60 }); const empsRes = await fetchJSON(`${apiBase()}/employees`).catch(()=>null); if (empsRes) { employeeSelect.innerHTML = '<option value="">Any available</option>' + (empsRes.data||[]).map(e=>`<option value="${e._id||e.id}" data-name="${e.name}">${e.name||e.email||'Employee'}</option>`).join(''); } }
+	async function loadCatalog(){ await ensureBackendUrl(); const res = await tryProducts(); if (!res) { availabilityResult.textContent = 'Unable to load services.'; return; } const services = (res.data||[]).filter(p=>p.category==='service' || p.category==='massage'); serviceSelect.innerHTML = services.map(s=>`<option value="${s._id||s.id}" data-name="${s.name}" data-duration="${s.duration||60}">${s.name}${s.duration?` (${s.duration}m)`:''}</option>`).join(''); renderServiceChips(services); renderServiceCards(services); if (services[0]) selectService({ id: services[0]._id||services[0].id, name: services[0].name, duration: services[0].duration||60 }); const empsRes = await fetchJSON(`${apiBase()}/employees`).catch(()=>null); if (empsRes) { employeeSelect.innerHTML = '<option value="">Any available</option>' + (empsRes.data||[]).map(e=>`<option value="${e._id||e.id}" data-name="${e.name}">${e.name||e.email||'Employee'}</option>`).join(''); } }
 
 	function updateSummary(){ summaryService.textContent = selectedService ? selectedService.name : 'Select a service'; summaryTime.textContent = selectedSlot ? new Date(selectedSlot).toLocaleString() : 'No time selected'; }
 
-	async function tryAvailability(dateStr){ try { if (proxyFailedOnce && storedPwa) apiHost = storedPwa; return await fetchJSON(`${apiBase()}/availability?date=${encodeURIComponent(dateStr)}&serviceId=${encodeURIComponent(serviceSelect.value)}`); } catch (e) { proxyFailedOnce = true; if (storedPwa && apiHost !== storedPwa) { apiHost = storedPwa; try { return await fetchJSON(`${apiBase()}/availability?date=${encodeURIComponent(dateStr)}&serviceId=${encodeURIComponent(serviceSelect.value)}`); } catch(e2){ return null; } } return null; } }
+	async function tryAvailability(dateStr){ try { if (proxyFailedOnce && localStorage.getItem('pwaApiUrl')) apiHost = localStorage.getItem('pwaApiUrl'); return await fetchJSON(`${apiBase()}/availability?date=${encodeURIComponent(dateStr)}&serviceId=${encodeURIComponent(serviceSelect.value)}`); } catch (e) { proxyFailedOnce = true; const pwa = localStorage.getItem('pwaApiUrl'); if (pwa && apiHost !== pwa) { apiHost = pwa; try { return await fetchJSON(`${apiBase()}/availability?date=${encodeURIComponent(dateStr)}&serviceId=${encodeURIComponent(serviceSelect.value)}`); } catch(e2){ return null; } } return null; } }
 
 	function buildSlots(slots){ slotGrid.innerHTML = slots.map(s=>`<button class="slot" data-ts="${s.startTime}" ${s.available===false?'disabled':''}>${new Date(s.startTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</button>`).join(''); slotGrid.querySelectorAll('.slot').forEach(btn => { if (btn.disabled) btn.classList.add('disabled'); btn.addEventListener('click', () => { slotGrid.querySelectorAll('.slot').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); selectedSlot = btn.dataset.ts; updateSummary(); }); }); }
 
@@ -60,7 +67,7 @@
 
 	dateInput.valueAsDate = new Date();
 	loadStores();
-	loadCatalog();
+	ensureBackendUrl().then(() => { loadCatalog(); });
 	checkBtn.addEventListener('click', checkAvailability);
 	submitBtn.addEventListener('click', submitBooking);
 	serviceSelect.addEventListener('change', () => { const opt = serviceSelect.options[serviceSelect.selectedIndex]; selectService({ id: opt.value, name: opt.dataset.name, duration: parseInt(opt.dataset.duration||'60',10) }); });
