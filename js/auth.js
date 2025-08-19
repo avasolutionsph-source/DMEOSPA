@@ -68,9 +68,11 @@ class AuthSystem {
     attachMainLoginButton() {
         const mainLoginBtn = document.getElementById('showLoginBtn');
         if (mainLoginBtn && !mainLoginBtn.hasAttribute('data-listener-attached')) {
+            console.log('Attaching login button handler');
             mainLoginBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                console.log('Login button clicked, showing modal');
                 this.showLoginModal();
             });
             mainLoginBtn.setAttribute('data-listener-attached', 'true');
@@ -645,37 +647,13 @@ class AuthSystem {
                 return;
             }
             
-            // Clear any blocking styles
-            modal.style.display = '';
-            modal.classList.remove('active');
-            
-            // Try to use the global openModal function
+            // Use the global openModal function
             if (typeof openModal === 'function') {
-                console.log('Using openModal function');
-                setTimeout(() => {
-                    openModal('authModal');
-                }, 10);
+                console.log('Opening auth modal');
+                openModal('authModal');
             } else {
-                console.log('Using fallback modal opening');
-                // Fallback: manually show modal
-                modal.style.display = 'flex';
-                modal.style.position = 'fixed';
-                modal.style.top = '0';
-                modal.style.left = '0';
-                modal.style.width = '100%';
-                modal.style.height = '100%';
-                modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-                modal.style.zIndex = '1000';
-                modal.style.alignItems = 'center';
-                modal.style.justifyContent = 'center';
-                
-                document.body.classList.add('modal-open');
-                
-                // Focus on email input
-                setTimeout(() => {
-                    const emailInput = document.getElementById('loginEmail');
-                    if (emailInput) emailInput.focus();
-                }, 100);
+                console.log('openModal function not available, using direct approach');
+                modal.classList.add('active');
             }
         } catch (error) {
             console.error('Error showing login modal:', error);

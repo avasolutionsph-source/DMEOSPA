@@ -1110,12 +1110,7 @@
                         <button type="submit" id="loginBtn" class="btn btn-primary btn-full">
                             <i class="fas fa-sign-in-alt"></i> Sign In
                         </button>
-                        <button type="button" onclick="testLogin()" class="btn btn-secondary btn-full" style="margin-top: 10px;">
-                            🧪 Test Super Admin Login
-                        </button>
-                        <button type="button" onclick="debugFormValues()" class="btn btn-outline btn-full" style="margin-top: 5px; font-size: 0.8rem;">
-                            🔍 Debug Form Values
-                        </button>
+
                     </form>
                     <div class="auth-footer">
                         <p>Don't have an account? <a href="#" id="showRegister">Create one here</a></p>
@@ -1910,30 +1905,7 @@
             showLoginModalDirect();
         }
 
-        // Test login function
-        function testLogin() {
-            console.log('🧪 TESTING SUPER ADMIN LOGIN - Automatic');
-            const modal = document.getElementById('authModal');
-            console.log('🧪 Test credentials: avasolutionsph@gmail.com / Ava12345');
-            performRealLogin('avasolutionsph@gmail.com', 'Ava12345', modal);
-        }
 
-        // Debug form values
-        function debugFormValues() {
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            console.log('🔍 FORM DEBUG:');
-            console.log('📧 Email field value:', `"${email}"`);
-            console.log('📧 Email length:', email.length);
-            console.log('📧 Email trimmed:', `"${email.trim()}"`);
-            console.log('🔑 Password field value:', `"${password}"`);
-            console.log('🔑 Password length:', password.length);
-            console.log('🔑 Password first char:', password.charAt(0));
-            console.log('🔑 Password last char:', password.charAt(password.length - 1));
-            
-            alert(`Email: "${email}"\nPassword: "${password}"\nEmail length: ${email.length}\nPassword length: ${password.length}`);
-        }
 
         // Add hover effects to login button
         document.addEventListener('DOMContentLoaded', function() {
