@@ -1288,15 +1288,14 @@
                 .then(j => {
                     const branches = j.data || [];
                     // Only show Branch selector when logged in as MAIN owner (not a branch account)
+                    // Always show full dashboard for main owner (controls everything)
+                    applyOwnerView();
                     if (!j.isMainOwner) {
-                        // Branch account → show full dashboard, hide branch management
-                        applyOwnerView(false);
+                        // Branch account: still show full dashboard; hide selector
                         select.style.display = 'none';
                         localStorage.removeItem('dashboardBranchId');
                         return;
                     }
-                    // Main owner → restricted view
-                    applyOwnerView(true);
                     select.style.display = branches.length ? 'block' : 'none';
                     if (!branches.length) return;
                     // Ensure the main owner label is correct and branches do not duplicate it
@@ -2132,15 +2131,10 @@ The PWA will open now...`;
             }
         }
 
-        // Show only Reports + Branch Accounts for main owner; show full dashboard for branch accounts
-        function applyOwnerView(isMainOwner){
-            const hideForOwner = ['.welcome-section', '.stats-grid', '.employees-section', '.inventory-section', '.actions-section', '.sync-status'];
-            hideForOwner.forEach(sel => {
-                const el = document.querySelector(sel);
-                if (el) el.style.display = isMainOwner ? 'none' : '';
-            });
-            const branchSection = document.querySelector('.branch-section');
-            if (branchSection) branchSection.style.display = isMainOwner ? 'block' : 'none';
+        // Main owner must see everything; branch also sees everything (owner controls branches here)
+        function applyOwnerView(){
+            const sections = ['.welcome-section', '.stats-grid', '.employees-section', '.inventory-section', '.actions-section', '.sync-status', '.branch-section'];
+            sections.forEach(sel => { const el = document.querySelector(sel); if (el) el.style.display = ''; });
         }
     </script>
 </body>
