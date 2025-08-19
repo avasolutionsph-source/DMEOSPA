@@ -535,8 +535,25 @@ app.use('/api/bookings', async (req, res) => {
       headers,
       body: ['POST','PUT','PATCH'].includes(req.method) ? JSON.stringify(req.body) : undefined
     });
+    // If backend is reachable and OK, return as-is
+    if (response.ok) {
+      const text = await response.text();
+      return res.status(response.status).type(response.headers.get('content-type') || 'application/json').send(text);
+    }
+    // Fallback for GET when backend returns non-200: serve from marketing DB
+    if (req.method === 'GET') {
+      try {
+        const User = (await import('./models/User.js')).default;
+        const userId = req.headers['x-user-id'];
+        if (!userId) return res.status(500).json({ error: 'Failed to reach bookings backend' });
+        const user = await User.findById(userId).lean();
+        return res.json({ success: true, data: user?.bookings || [] });
+      } catch (e) {
+        console.error('Bookings GET fallback error:', e.message);
+      }
+    }
     const text = await response.text();
-    res.status(response.status).type(response.headers.get('content-type') || 'application/json').send(text);
+    return res.status(response.status).type(response.headers.get('content-type') || 'application/json').send(text);
   } catch (err) {
     console.error('Bookings proxy error:', err.message);
     // Fallback: store booking directly in marketing DB so owners can still see it
@@ -570,7 +587,17 @@ app.use('/api/bookings', async (req, res) => {
     } catch (fallbackErr) {
       console.error('Bookings fallback error:', fallbackErr.message);
     }
-    res.status(500).json({ error: 'Failed to reach bookings backend' });
+    // GET fallback to marketing DB
+    try {
+      if (req.method === 'GET') {
+        const User = (await import('./models/User.js')).default;
+        const userId = req.headers['x-user-id'];
+        if (!userId) return res.status(500).json({ error: 'Failed to reach bookings backend' });
+        const user = await User.findById(userId).lean();
+        return res.json({ success: true, data: user?.bookings || [] });
+      }
+    } catch (_) {}
+    return res.status(500).json({ error: 'Failed to reach bookings backend' });
   }
 });
 
