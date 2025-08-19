@@ -49,6 +49,10 @@ class EmployeeManager {
         if (inviteBtn) {
             inviteBtn.addEventListener('click', () => this.showInviteModal());
         }
+        const assignBtn = document.getElementById('assignRolesBtn');
+        if (assignBtn) {
+            assignBtn.addEventListener('click', () => this.showAssignRolesModal());
+        }
 
         // Employee form submission with double-click protection
         const form = document.getElementById('employeeForm');
@@ -598,6 +602,63 @@ class EmployeeManager {
         } catch (e) {
             showNotification(e.message || 'Failed to reset password', 'error');
             return null;
+        }
+    }
+
+    async showAssignRolesModal() {
+        try {
+            // Build UI listing existing local employees to map roles
+            const employees = await db.getAll('employees');
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            const rows = employees.map(emp => `
+                <tr>
+                    <td>${emp.name}</td>
+                    <td>${emp.email || ''}</td>
+                    <td>
+                        <select class="form-input role-select-local" data-email="${emp.email || ''}" data-name="${emp.name}">
+                            ${['employee','receptionist','therapist','manager'].map(r => `<option value="${r}">${r}</option>`).join('')}
+                        </select>
+                    </td>
+                </tr>
+            `).join('');
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width:720px;">
+                    <div class="modal-header">
+                        <h2>Assign Employee Roles</h2>
+                        <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead>
+                                <tbody>${rows || '<tr><td colspan="3">No employees found. Add an employee first.</td></tr>'}</tbody>
+                            </table>
+                        </div>
+                        <small class="subtle">Selecting a role will create/update the employee account and set their role.</small>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Done</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+
+            // Hook change events
+            modal.querySelectorAll('.role-select-local').forEach(sel => {
+                sel.addEventListener('change', async () => {
+                    const email = sel.getAttribute('data-email');
+                    const name = sel.getAttribute('data-name');
+                    const role = sel.value;
+                    // If the marketing account doesn't exist, invite it; then update role
+                    await this.inviteEmployee(email, name, role);
+                    // load invites and try to find the user to set role
+                    await this.loadInvitedEmployees();
+                    showNotification(`Assigned ${role} to ${name}`, 'success');
+                });
+            });
+        } catch (e) {
+            console.error('Assign roles modal error:', e);
+            showNotification('Failed to open Assign Roles', 'error');
         }
     }
 }
