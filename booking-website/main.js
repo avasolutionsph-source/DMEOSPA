@@ -23,13 +23,17 @@
 	function bindAuthButtons(){
 		if (loginBtn && !loginBtn._bound){
 			loginBtn.addEventListener('click', () => {
-				// Open marketing login in a named window
-				let w;
-				try { w = window.open('https://ava-solutions-marketing.netlify.app/login', 'ava_marketing_login'); } catch(_) {}
-				// Request token via postMessage in case already logged in
-				try { w && w.postMessage({ type: 'REQUEST_MARKETING_TOKEN' }, 'https://ava-solutions-marketing.netlify.app'); } catch(_){ }
-				// Fallback: navigate current tab if pop-up blocked
-				if (!w || w.closed) { window.location.href = 'https://ava-solutions-marketing.netlify.app/login'; }
+				// Open marketing login in a new tab reliably via anchor click (avoids replacing current tab)
+				const a = document.createElement('a');
+				a.href = 'https://ava-solutions-marketing.netlify.app/login';
+				a.target = '_blank';
+				a.rel = 'noopener noreferrer';
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+				// Also broadcast a token request to any existing marketing tab
+				try { window.postMessage({ type: 'REQUEST_MARKETING_TOKEN' }, 'https://ava-solutions-marketing.netlify.app'); } catch(_){ }
+				alert('Login opened in a new tab. After signing in, return here — the button will change to Logout and Owner Bookings will appear.');
 			});
 			loginBtn._bound = true;
 		}
