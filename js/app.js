@@ -177,6 +177,11 @@ class App {
                     await window.loadPOS();
                 }
                 break;
+            case 'expenses':
+                if (window.loadExpenses) {
+                    await window.loadExpenses();
+                }
+                break;
             case 'bookings':
                 if (window.loadBookings) {
                     await window.loadBookings();

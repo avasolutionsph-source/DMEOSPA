@@ -382,20 +382,28 @@ class InventoryManager {
         item.modifiedAt = new Date().toISOString();
         item.syncStatus = 'pending';
 
-        // Log the adjustment for analytics
+        // Log the adjustment for analytics with employee audit trail
+        const employeeName = window.roleManager?.activeEmployee?.name || 'System';
+        const employeeRole = window.roleManager?.activeEmployee?.role || 'owner';
         if (item.adjustmentHistory) {
             item.adjustmentHistory.push({
                 date: new Date().toISOString(),
                 adjustment: adjustmentValue,
                 reason: quickAdjustment !== null ? 'Quick adjustment' : 'Manual adjustment',
-                newStock: currentStock + adjustmentValue
+                newStock: currentStock + adjustmentValue,
+                employeeName,
+                employeeRole,
+                actionType: 'stock_adjustment'
             });
         } else {
             item.adjustmentHistory = [{
                 date: new Date().toISOString(),
                 adjustment: adjustmentValue,
                 reason: quickAdjustment !== null ? 'Quick adjustment' : 'Manual adjustment',
-                newStock: currentStock + adjustmentValue
+                newStock: currentStock + adjustmentValue,
+                employeeName,
+                employeeRole,
+                actionType: 'stock_adjustment'
             }];
         }
 

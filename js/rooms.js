@@ -51,6 +51,8 @@ class RoomsManager {
 				<div class="room-actions">
 					<button id="startBtn_${r.id}" class="btn btn-secondary" onclick="roomsManager.startTimer(${r.id})" ${r.status==='occupied' ? 'disabled' : ''}>Start</button>
 					<button id="finishBtn_${r.id}" class="btn btn-primary" onclick="roomsManager.finishTimer(${r.id})" ${r.status!=='occupied' ? 'disabled' : ''}>Finish</button>
+					<button id="cleanBtn_${r.id}" class="btn btn-warning" onclick="roomsManager.markCleaning(${r.id})" ${r.status==='cleaning' ? 'disabled' : ''} style="font-size:.8rem;">Clean</button>
+					<button id="readyBtn_${r.id}" class="btn btn-success" onclick="roomsManager.markReady(${r.id})" ${r.status!=='cleaning' ? 'disabled' : ''} style="font-size:.8rem;">Ready</button>
 				</div>
 			</div>
 		`).join('');
@@ -333,6 +335,27 @@ class RoomsManager {
 			} catch(_) {}
 		}
 		await this.startTimer(room.id, true, { employeeId, serviceName, serviceDuration: duration });
+	}
+
+	async markCleaning(roomId) {
+		const room = await db.get('rooms', roomId);
+		if (!room) return;
+		if (room.status === 'occupied') { showNotification('Cannot clean occupied room', 'warning'); return; }
+		room.status = 'cleaning';
+		room.cleaningStartTime = new Date().toISOString();
+		await db.update('rooms', room);
+		showNotification(`Room ${room.number} marked for cleaning`, 'info');
+		await this.loadRooms();
+	}
+
+	async markReady(roomId) {
+		const room = await db.get('rooms', roomId);
+		if (!room) return;
+		room.status = 'available';
+		delete room.cleaningStartTime;
+		await db.update('rooms', room);
+		showNotification(`Room ${room.number} is ready`, 'success');
+		await this.loadRooms();
 	}
 
 	tickTimer(roomId, startTimeISO, expectedMinutes = null) {

@@ -29,6 +29,10 @@
                     <i class="fas fa-cash-register"></i>
                     <span>POS System</span>
                 </a>
+                <a href="#" class="nav-item" data-page="expenses">
+                    <i class="fas fa-receipt"></i>
+                    <span>Sales & Expenses</span>
+                </a>
                 <a href="#" class="nav-item" data-page="bookings">
                     <i class="fas fa-calendar-check"></i>
                     <span>Bookings</span>
@@ -153,6 +157,64 @@
                 <div class="low-stock-alert">
                     <h3><i class="fas fa-exclamation-circle"></i> Low Stock Alert</h3>
                     <div id="lowStockList"></div>
+                </div>
+            </div>
+
+            <!-- Daily Sales & Expenses Page -->
+            <div id="expenses" class="page">
+                <div class="page-header">
+                    <h1>Daily Sales & Expenses</h1>
+                    <div class="header-actions">
+                        <input type="date" id="expensesDateFilter" class="form-input" style="margin-right:.5rem;">
+                        <button class="btn btn-primary" id="addExpenseBtn">
+                            <i class="fas fa-plus"></i> Add Expense
+                        </button>
+                    </div>
+                </div>
+                <div class="stats-grid" style="margin-bottom:1.5rem;">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:var(--success-color);">
+                            <i class="fas fa-peso-sign"></i>
+                        </div>
+                        <div class="stat-value" id="dailySalesTotal">₱0.00</div>
+                        <div class="stat-label">Sales Today</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:var(--danger-color);">
+                            <i class="fas fa-receipt"></i>
+                        </div>
+                        <div class="stat-value" id="dailyExpensesTotal">₱0.00</div>
+                        <div class="stat-label">Expenses Today</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:var(--primary-color);">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-value" id="dailyNetProfit">₱0.00</div>
+                        <div class="stat-label">Net Profit</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background:var(--secondary-color);">
+                            <i class="fas fa-list"></i>
+                        </div>
+                        <div class="stat-value" id="dailyExpensesCount">0</div>
+                        <div class="stat-label">Expense Items</div>
+                    </div>
+                </div>
+                <div class="expenses-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Description</th>
+                                <th>Receipt</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expensesTableBody"></tbody>
+                    </table>
                 </div>
             </div>
 
@@ -401,6 +463,8 @@
                 <div class="tabbar">
                     <button class="tab-btn active" data-tab="rosterTab">Roster</button>
                     <button class="tab-btn" data-tab="attendanceTab">Attendance</button>
+                    <button class="tab-btn" data-tab="requestsTab">Requests</button>
+                    <button class="tab-btn" data-tab="scheduleTab">Schedule</button>
                     <button class="tab-btn" data-tab="payrollTab">Payroll</button>
                 </div>
                 <div id="rosterTab" class="tab-panel active">
@@ -432,6 +496,54 @@
                                 </thead>
                                 <tbody id="attendanceTableBody"></tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+                <div id="requestsTab" class="tab-panel">
+                    <div class="card">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                            <h3>Payroll Requests</h3>
+                            <button class="btn btn-primary" id="addPayrollRequestBtn">
+                                <i class="fas fa-plus"></i> New Request
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Employee</th>
+                                        <th>Type</th>
+                                        <th>Amount/Details</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="payrollRequestsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div id="scheduleTab" class="tab-panel">
+                    <div class="card">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                            <h3>Weekly Schedule</h3>
+                            <button class="btn btn-primary" id="addScheduleRequestBtn">
+                                <i class="fas fa-calendar-plus"></i> Request Schedule
+                            </button>
+                        </div>
+                        <div id="scheduleGrid" class="schedule-grid">
+                            <div class="schedule-header">
+                                <div>Employee</div>
+                                <div>Mon</div>
+                                <div>Tue</div>
+                                <div>Wed</div>
+                                <div>Thu</div>
+                                <div>Fri</div>
+                                <div>Sat</div>
+                                <div>Sun</div>
+                            </div>
+                            <div id="scheduleRows"></div>
                         </div>
                     </div>
                 </div>
@@ -930,6 +1042,7 @@
                         </div>
                     </div>
                 </div>
+                <div id="checkoutExtras"></div>
                 <div class="payment-section">
                     <h3>Payment Method</h3>
                     <div class="payment-options">
@@ -1948,6 +2061,9 @@
     <script src="js/inventory.js"></script>
     <script src="js/inventory-migration.js"></script>
     <script src="js/employees.js"></script>
+    <script src="js/expenses.js"></script>
+    <script src="js/payroll-requests.js"></script>
+    <script src="js/scheduling.js"></script>
     <script src="js/chatbot.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/settings.js"></script>

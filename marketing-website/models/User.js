@@ -57,7 +57,7 @@ const userSchema = new mongoose.Schema({
   // Role (for super admin)
   role: {
     type: String,
-    enum: ['owner','employee','receptionist','therapist','manager','customer','admin','superAdmin'],
+    enum: ['owner','employee','receptionist','therapist','manager','admin','customer','superAdmin'],
     default: 'customer'
   },
 

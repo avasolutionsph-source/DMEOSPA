@@ -414,7 +414,44 @@ class POSSystem {
         // Calculate totals
         const total = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-        checkoutTotal.textContent = app.formatCurrency(total);
+        // Render GC/discount fields for receptionist workflow
+        const extras = document.getElementById('checkoutExtras');
+        if (extras) {
+            extras.innerHTML = `
+              <div class="form-row">
+                <label>Gift Certificate Control #<input id="gcControlNo" class="form-input" placeholder="e.g., GC-001234"></label>
+                <button class="btn btn-secondary" id="validateGCBtn" type="button">Validate</button>
+                <span id="gcStatus" class="subtle"></span>
+              </div>
+              <div class="form-row">
+                <label>Senior/PWD Cardholder Name<input id="discName" class="form-input"></label>
+                <label>ID Number<input id="discId" class="form-input"></label>
+                <label>Card Type<select id="discType" class="form-input"><option value="none">None</option><option value="senior">Senior</option><option value="pwd">PWD</option></select></label>
+                <label>Other Promo Discount %<input id="otherDisc" type="number" min="0" max="100" step="1" class="form-input" value="0"></label>
+              </div>`;
+            // Bind validate GC
+            document.getElementById('validateGCBtn').onclick = async () => {
+                const code = document.getElementById('gcControlNo').value.trim();
+                const status = document.getElementById('gcStatus');
+                if (!code) { status.textContent = 'Enter control #'; return; }
+                try {
+                    const gcs = await db.getAll('giftCertificates');
+                    const gc = (gcs||[]).find(g => (g.code||'').toLowerCase() === code.toLowerCase());
+                    if (!gc) { status.textContent = 'Not found'; status.style.color = '#dc2626'; return; }
+                    if (gc.status === 'redeemed') { status.textContent = 'Already redeemed'; status.style.color = '#dc2626'; return; }
+                    status.textContent = 'Valid'; status.style.color = '#16a34a';
+                } catch(_) { status.textContent = 'Validation error'; status.style.color = '#dc2626'; }
+            };
+        }
+
+        // Apply discounts preview
+        const otherDisc = parseFloat(document.getElementById('otherDisc')?.value || '0') || 0;
+        let discountedTotal = total;
+        if (otherDisc > 0) discountedTotal = discountedTotal * (1 - otherDisc/100);
+        const discType = document.getElementById('discType')?.value || 'none';
+        if (discType !== 'none') discountedTotal = discountedTotal * 0.8; // 20% mandated discount placeholder
+
+        checkoutTotal.textContent = app.formatCurrency(discountedTotal);
 
         openModal('checkoutModal');
     }
@@ -494,7 +531,22 @@ class POSSystem {
                 items: [...this.cart],
                 subtotal: total,
                 tax: 0,
-                total: total,
+                // Persist discounts/gc metadata
+                gcControlNo: document.getElementById('gcControlNo')?.value?.trim() || '',
+                discountInfo: {
+                    otherPercent: parseFloat(document.getElementById('otherDisc')?.value || '0') || 0,
+                    type: document.getElementById('discType')?.value || 'none',
+                    name: document.getElementById('discName')?.value || '',
+                    id: document.getElementById('discId')?.value || ''
+                },
+                total: (() => {
+                    let t = total;
+                    const other = parseFloat(document.getElementById('otherDisc')?.value || '0') || 0;
+                    if (other > 0) t = t * (1 - other/100);
+                    const dtype = document.getElementById('discType')?.value || 'none';
+                    if (dtype !== 'none') t = t * 0.8; // 20% placeholder
+                    return t;
+                })(),
                 paymentMethod: paymentMethod,
                 employeeId: this.selectedEmployee || null,
                 syncStatus: 'pending'
@@ -511,6 +563,15 @@ class POSSystem {
 
             // Save transaction
             const transactionId = await db.add('transactions', transaction);
+            // If GC used, mark as redeemed
+            try {
+                const code = transaction.gcControlNo;
+                if (code) {
+                    const gcs = await db.getAll('giftCertificates');
+                    const gc = (gcs||[]).find(g => (g.code||'').toLowerCase() === code.toLowerCase());
+                    if (gc) { gc.status = 'redeemed'; await db.update('giftCertificates', gc); }
+                }
+            } catch(_){}
 
             // Update inventory stock and track service usage
             for (const item of this.cart) {

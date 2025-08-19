@@ -744,8 +744,8 @@ class RoleManager {
 		this.activeEmployee = null; // {id, name, role}
 		this.roles = {
 			receptionist: {
-				allowPages: ['pos','bookings','rooms','dashboard','settings'],
-				denyPages: ['inventory','employees','chatbot','products']
+				allowPages: ['pos','bookings','rooms','dashboard','settings','inventory'],
+				denyPages: ['employees','chatbot','products']
 			},
 			manager: {
 				allowPages: ['dashboard','pos','bookings','rooms','inventory','employees','settings'],
@@ -754,6 +754,11 @@ class RoleManager {
 			therapist: {
 				allowPages: ['rooms','bookings','dashboard'],
 				denyPages: ['pos','inventory','employees','products','chatbot','settings']
+			}
+			,
+			admin: {
+				allowPages: ['dashboard','pos','bookings','rooms','inventory','employees','settings','products'],
+				denyPages: []
 			}
 		};
 	}

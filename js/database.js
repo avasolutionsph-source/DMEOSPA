@@ -2,7 +2,7 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 4; // Bump when schema changes
+        this.version = 5; // Bump when schema changes
         this.db = null;
         this.userId = null;
     }
@@ -216,6 +216,23 @@ class Database {
                     rot.createIndex('date', 'date', { unique: false });
                     rot.createIndex('employeeId', 'employeeId', { unique: false });
                     rot.createIndex('bookingId', 'bookingId', { unique: false });
+                }
+
+                // Expenses store (for Daily Sales & Expenses)
+                if (!this.db.objectStoreNames.contains('expenses')) {
+                    const expenses = this.db.createObjectStore('expenses', { keyPath: 'id', autoIncrement: true });
+                    expenses.createIndex('date', 'date', { unique: false });
+                    expenses.createIndex('category', 'category', { unique: false });
+                    expenses.createIndex('employeeId', 'employeeId', { unique: false });
+                }
+
+                // Payroll Requests store
+                if (!this.db.objectStoreNames.contains('payrollRequests')) {
+                    const requests = this.db.createObjectStore('payrollRequests', { keyPath: 'id', autoIncrement: true });
+                    requests.createIndex('employeeId', 'employeeId', { unique: false });
+                    requests.createIndex('type', 'type', { unique: false }); // cash_advance, leave, other
+                    requests.createIndex('status', 'status', { unique: false }); // submitted, approved, denied
+                    requests.createIndex('date', 'date', { unique: false });
                 }
 
                 console.log('Database setup complete');

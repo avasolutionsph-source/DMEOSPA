@@ -102,7 +102,12 @@ class BookingsManager {
 					<td>
 						<button class="btn-icon" title="Accept" onclick="bookingsManager.accept(${b.id})"><i class="fas fa-check"></i></button>
 						<button class="btn-icon" title="Edit" onclick="bookingsManager.edit(${b.id})"><i class="fas fa-edit"></i></button>
-						<button class="btn-icon" title="Cancel" onclick="bookingsManager.cancel(${b.id})"><i class="fas fa-ban"></i></button>
+						${b.status === 'pending_cancel' ? `
+							<button class="btn-icon" title="Approve Cancel" onclick="bookingsManager.approveCancellation(${b.id})" style="color:var(--success-color);"><i class="fas fa-check-circle"></i></button>
+							<button class="btn-icon" title="Deny Cancel" onclick="bookingsManager.denyCancellation(${b.id})" style="color:var(--danger-color);"><i class="fas fa-times-circle"></i></button>
+						` : `
+							<button class="btn-icon" title="Cancel" onclick="bookingsManager.cancel(${b.id})"><i class="fas fa-ban"></i></button>
+						`}
 					</td>
 				</tr>
 			`).join('');
@@ -174,14 +179,21 @@ class BookingsManager {
 	async cancel(id) {
 		const b = await db.get('bookings', id);
 		if (!b) return;
-		const ok = await app.confirm('Cancel Booking', 'Cancel this booking?');
+		// If receptionist, require manager/admin approval
+		const isReceptionist = !!(window.roleManager?.activeEmployee && window.roleManager.activeEmployee.role === 'receptionist');
+		const ok = await app.confirm('Cancel Booking', isReceptionist ? 'Submit cancellation request for manager/admin approval?' : 'Cancel this booking?');
 		if (!ok) return;
-		b.status = 'cancelled';
+		if (isReceptionist) {
+			b.status = 'pending_cancel';
+			showNotification('Cancellation submitted for approval', 'info');
+		} else {
+			b.status = 'cancelled';
+		}
 		b.modifiedAt = new Date().toISOString();
 		await db.update('bookings', b);
 		try {
 			if (window.apiClient && b.id) {
-				await window.apiClient.put(`/api/bookings/${b.id}/status`, { status: 'cancelled' });
+				await window.apiClient.put(`/api/bookings/${b.id}/status`, { status: b.status });
 			}
 		} catch (e) { console.warn('Cancel push failed', e); }
 		await this.loadBookings();
@@ -209,6 +221,42 @@ class BookingsManager {
 				await window.apiClient.put(`/api/bookings/${b.id}/status`, { status: 'confirmed', employeeId: b.employeeId, employeeName: b.employeeName });
 			}
 		} catch (e) { console.warn('Accept push failed', e); }
+		await this.loadBookings();
+	}
+
+	async approveCancellation(id) {
+		const b = await db.get('bookings', id);
+		if (!b) return;
+		const ok = await app.confirm('Approve Cancellation', 'Approve this cancellation request?');
+		if (!ok) return;
+		b.status = 'cancelled';
+		b.cancelledAt = new Date().toISOString();
+		b.cancelledBy = window.roleManager?.activeEmployee?.name || 'Manager';
+		await db.update('bookings', b);
+		try {
+			if (window.apiClient && b.id) {
+				await window.apiClient.put(`/api/bookings/${b.id}/status`, { status: 'cancelled' });
+			}
+		} catch (e) { console.warn('Cancel approval push failed', e); }
+		showNotification('Cancellation approved', 'success');
+		await this.loadBookings();
+	}
+
+	async denyCancellation(id) {
+		const b = await db.get('bookings', id);
+		if (!b) return;
+		const ok = await app.confirm('Deny Cancellation', 'Deny this cancellation request?');
+		if (!ok) return;
+		b.status = 'confirmed'; // revert to confirmed
+		b.cancelDeniedAt = new Date().toISOString();
+		b.cancelDeniedBy = window.roleManager?.activeEmployee?.name || 'Manager';
+		await db.update('bookings', b);
+		try {
+			if (window.apiClient && b.id) {
+				await window.apiClient.put(`/api/bookings/${b.id}/status`, { status: 'confirmed' });
+			}
+		} catch (e) { console.warn('Cancel denial push failed', e); }
+		showNotification('Cancellation denied - booking restored', 'info');
 		await this.loadBookings();
 	}
 }

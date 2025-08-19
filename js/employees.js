@@ -65,7 +65,7 @@ class EmployeeManager {
             });
         }
 
-        // Tabs (Roster / Attendance / Payroll)
+        // Tabs (Roster / Attendance / Requests / Schedule / Payroll)
         document.querySelectorAll('#employees .tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('#employees .tab-btn').forEach(b => b.classList.remove('active'));
@@ -75,6 +75,8 @@ class EmployeeManager {
                 const panel = document.getElementById(id);
                 if (panel) panel.classList.add('active');
                 if (id === 'attendanceTab') this.loadAttendance();
+                if (id === 'requestsTab' && window.loadPayrollRequests) window.loadPayrollRequests();
+                if (id === 'scheduleTab' && window.loadScheduling) window.loadScheduling();
             });
         });
 
@@ -118,7 +120,7 @@ class EmployeeManager {
             const totalSales = transactions.reduce((sum, t) => sum + t.total, 0);
             const totalCommission = totalSales * (emp.commissionRate / 100);
             const transactionCount = transactions.length;
-
+            
             const mySessions = sessions.filter(s => s.employeeId === String(emp.id) && s.status === 'completed');
             const hours = mySessions.reduce((sum, s) => {
                 if (!s.startTime || !s.endTime) return sum;
@@ -499,6 +501,7 @@ class EmployeeManager {
                         <option value="receptionist">Receptionist</option>
                         <option value="therapist">Therapist</option>
                         <option value="manager">Manager</option>
+                        <option value="admin">Admin</option>
                     </select></label>
                 </div>
                 <div class="modal-actions">
@@ -537,7 +540,7 @@ class EmployeeManager {
                     <td>${u.email || ''}</td>
                     <td>
                         <select class="form-input role-select" data-userid="${u.id}">
-                            ${['employee','receptionist','therapist','manager'].map(r => `<option value="${r}" ${u.role===r?'selected':''}>${r}</option>`).join('')}
+                            ${['employee','receptionist','therapist','manager','admin'].map(r => `<option value="${r}" ${u.role===r?'selected':''}>${r}</option>`).join('')}
                         </select>
                     </td>
                     <td>
@@ -642,7 +645,7 @@ class EmployeeManager {
                     <td>${emp.email || ''}</td>
                     <td>
                         <select class="form-input role-select-local" data-email="${emp.email || ''}" data-name="${emp.name}">
-                            ${['employee','receptionist','therapist','manager'].map(r => `<option value="${r}">${r}</option>`).join('')}
+                            ${['employee','receptionist','therapist','manager','admin'].map(r => `<option value="${r}">${r}</option>`).join('')}
                         </select>
                     </td>
                 </tr>
