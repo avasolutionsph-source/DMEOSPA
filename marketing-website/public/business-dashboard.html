@@ -1289,12 +1289,14 @@
                     const branches = j.data || [];
                     // Only show Branch selector when logged in as MAIN owner (not a branch account)
                     if (!j.isMainOwner) {
+                        // Branch account → show full dashboard, hide branch management
+                        applyOwnerView(false);
                         select.style.display = 'none';
                         localStorage.removeItem('dashboardBranchId');
-                        const branchSection = document.querySelector('.branch-section');
-                        if (branchSection) branchSection.style.display = 'none';
                         return;
                     }
+                    // Main owner → restricted view
+                    applyOwnerView(true);
                     select.style.display = branches.length ? 'block' : 'none';
                     if (!branches.length) return;
                     // Ensure the main owner label is correct and branches do not duplicate it
@@ -1313,9 +1315,7 @@
                         loadEmployeeData();
                         loadInventoryData();
                     };
-                    // Apply owner view now that we know the login type
-                    applyOwnerView(true);
-                }).catch(() => { applyOwnerView(false); });
+                }).catch(() => { /* default to full dashboard for safety */ applyOwnerView(false); });
         }
 
         // Branch accounts UI bindings
