@@ -598,9 +598,17 @@ app.get('/api/business/employees', async (req, res) => {
 
     const jwt = await import('jsonwebtoken');
     const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    
+    const branchId = req.query.branchId;
     const User = (await import('./models/User.js')).default;
-    const user = await User.findById(decoded.userId);
+    let user = null;
+    if (branchId && String(branchId) !== String(decoded.userId)) {
+      const branch = await User.findById(branchId);
+      if (!branch) return res.status(404).json({ error: 'Branch not found' });
+      if (String(branch.ownerId) !== String(decoded.userId)) return res.status(403).json({ error: 'Not your branch' });
+      user = branch;
+    } else {
+      user = await User.findById(decoded.userId);
+    }
     
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -633,9 +641,17 @@ app.get('/api/business/inventory', async (req, res) => {
 
     const jwt = await import('jsonwebtoken');
     const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    
+    const branchId = req.query.branchId;
     const User = (await import('./models/User.js')).default;
-    const user = await User.findById(decoded.userId);
+    let user = null;
+    if (branchId && String(branchId) !== String(decoded.userId)) {
+      const branch = await User.findById(branchId);
+      if (!branch) return res.status(404).json({ error: 'Branch not found' });
+      if (String(branch.ownerId) !== String(decoded.userId)) return res.status(403).json({ error: 'Not your branch' });
+      user = branch;
+    } else {
+      user = await User.findById(decoded.userId);
+    }
     
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -673,10 +689,18 @@ app.get('/api/business/stats', async (req, res) => {
 
     const jwt = await import('jsonwebtoken');
     const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    
+    const branchId = req.query.branchId;
     // Import User model
     const User = (await import('./models/User.js')).default;
-    const user = await User.findById(decoded.userId);
+    let user = null;
+    if (branchId && String(branchId) !== String(decoded.userId)) {
+      const branch = await User.findById(branchId);
+      if (!branch) return res.status(404).json({ error: 'Branch not found' });
+      if (String(branch.ownerId) !== String(decoded.userId)) return res.status(403).json({ error: 'Not your branch' });
+      user = branch;
+    } else {
+      user = await User.findById(decoded.userId);
+    }
     
     if (!user) {
       return res.status(404).json({ error: 'User not found' });

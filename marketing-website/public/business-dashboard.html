@@ -1007,6 +1007,7 @@
             <h1>Business Dashboard</h1>
         </div>
         <div class="user-info">
+            <select id="branchSelect" style="margin-right:1rem; padding:.45rem .6rem; border:1px solid var(--gray-300); border-radius:6px; font-size:.9rem; display:none;"></select>
             <div class="user-avatar" id="userAvatar">B</div>
             <div>
                 <div id="businessName">Loading...</div>
@@ -1248,6 +1249,7 @@
             loadEmployeeData();
             loadInventoryData();
             bindBranchControls();
+            initBranchSelector();
         });
 
         // Load user data
@@ -1261,6 +1263,34 @@
                 // Redirect to login if no user data
                 window.location.href = '/login';
             }
+        }
+
+        function initBranchSelector(){
+            const select = document.getElementById('branchSelect');
+            const token = localStorage.getItem('userToken');
+            if (!select || !token) return;
+            // Load owner branches and populate
+            fetch('/api/branches', { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(r => r.json())
+                .then(j => {
+                    const branches = j.data || [];
+                    if (!branches.length) return;
+                    select.style.display = 'block';
+                    const options = [
+                        `<option value="owner">Main Account</option>`,
+                        ...branches.map(b => `<option value="${b.id}">${b.name || b.email}</option>`)
+                    ];
+                    select.innerHTML = options.join('');
+                    const saved = localStorage.getItem('dashboardBranchId') || 'owner';
+                    select.value = saved;
+                    select.onchange = () => {
+                        localStorage.setItem('dashboardBranchId', select.value);
+                        // reload sections with branch context
+                        loadBusinessStats();
+                        loadEmployeeData();
+                        loadInventoryData();
+                    };
+                }).catch(() => {});
         }
 
         // Branch accounts UI bindings
@@ -1317,7 +1347,9 @@
                 if (!token) return;
 
                 // Fetch real business stats from API
-                const response = await fetch('/api/business/stats', {
+                const branchId = localStorage.getItem('dashboardBranchId');
+                const qs = branchId && branchId !== 'owner' ? `?branchId=${encodeURIComponent(branchId)}` : '';
+                const response = await fetch('/api/business/stats' + qs, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -1382,7 +1414,9 @@
                     return;
                 }
 
-                const response = await fetch('/api/business/employees', {
+                const branchId = localStorage.getItem('dashboardBranchId');
+                const qs = branchId && branchId !== 'owner' ? `?branchId=${encodeURIComponent(branchId)}` : '';
+                const response = await fetch('/api/business/employees' + qs, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -1490,7 +1524,9 @@
                     return;
                 }
 
-                const response = await fetch('/api/business/inventory', {
+                const branchId = localStorage.getItem('dashboardBranchId');
+                const qs = branchId && branchId !== 'owner' ? `?branchId=${encodeURIComponent(branchId)}` : '';
+                const response = await fetch('/api/business/inventory' + qs, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
