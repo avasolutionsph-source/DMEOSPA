@@ -13,25 +13,15 @@
 		<div class="row">
 			<div class="brand"><span class="dot"></span> Ava Booking</div>
 			<div id="authArea">
-				<button id="loginBtn" class="btn">Login</button>
-				<a id="ownerBookingsLink" class="btn" style="display:none" href="#">Owner Bookings</a>
+				<a id="loginBtn" class="btn" href="/login.html">Login</a>
+				<a id="ownerBookingsLink" class="btn" style="display:none" href="/owner.html">Owner Dashboard</a>
 				<button id="logoutBtn" class="btn" style="display:none">Logout</button>
 			</div>
 		</div>
 	</header>
 	<main class="container">
 		<!-- Embedded login modal for booking site -->
-		<div id="loginModal" class="card" style="display:none; max-width:520px; margin:20px auto; padding:20px;">
-			<div class="section-title"><h2>Login</h2><small class="sub">Sign in to manage bookings</small></div>
-			<form id="loginForm">
-				<label>Email<input id="loginEmail" type="email" class="form-input" required placeholder="you@email.com"/></label>
-				<label>Password<input id="loginPass" type="password" class="form-input" required/></label>
-				<div style="display:flex; gap:8px; margin-top:10px;">
-					<button type="submit" class="btn primary">Sign In</button>
-					<button type="button" id="closeLogin" class="btn secondary">Cancel</button>
-				</div>
-			</form>
-		</div>
+		<!-- Login now lives on /login.html -->
 		<section id="businessSection" class="card">
 			<div class="section-title"><h2>Choose a Spa</h2><small class="sub">Select a spa to book.</small></div>
 			<div id="businessList" class="biz-list"></div>

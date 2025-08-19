@@ -11,22 +11,12 @@
 		if (loginBtn) loginBtn.style.display = token ? 'none' : 'inline-block';
 		if (logoutBtn) logoutBtn.style.display = token ? 'inline-block' : 'none';
 		const ownerLink = document.getElementById('ownerBookingsLink');
-		if (ownerLink) {
-			ownerLink.style.display = token ? 'inline-block' : 'none';
-			ownerLink.onclick = (e) => {
-				e.preventDefault();
-				const businessId = localStorage.getItem('bookingBusinessId');
-				window.location.href = `/owner.html${businessId?`?businessId=${encodeURIComponent(businessId)}`:''}`;
-			};
-		}
+		if (ownerLink) ownerLink.style.display = token ? 'inline-block' : 'none';
 	}
 
 	function bindAuthButtons(){
 		if (loginBtn && !loginBtn._bound){
-			loginBtn.addEventListener('click', () => {
-				// Use in-app login modal for booking site
-				if (loginModal) loginModal.style.display = 'block';
-			});
+			// link navigates to /login.html
 			loginBtn._bound = true;
 		}
 		if (logoutBtn && !logoutBtn._bound){
@@ -37,7 +27,7 @@
 			});
 			logoutBtn._bound = true;
 		}
-		// Listen for token from marketing site
+		// Listen for token from marketing site (kept for SSO compatibility)
 		if (!window.__authBridgeBound){
 			window.__authBridgeBound = true;
 			window.addEventListener('message', (event) => {
@@ -56,7 +46,7 @@
 		}
 	}
 
-	// Booking site login using marketing API directly
+	// Booking site login using marketing API directly (used by /login.html, kept here for reuse)
 	async function bookingSiteLogin(email, password){
 		try {
 			const res = await fetch(`${marketingApi}/api/auth/login`, {
@@ -113,24 +103,8 @@
 
 	initAuth();
 	bindAuthButtons();
-
-	// Wire login modal form
-	(function(){
-		const form = document.getElementById('loginForm');
-		const closeBtn = document.getElementById('closeLogin');
-		if (form && !form._bound){
-			form.addEventListener('submit', async (e) => {
-				e.preventDefault();
-				const email = (document.getElementById('loginEmail')||{}).value || '';
-				const pass = (document.getElementById('loginPass')||{}).value || '';
-				await bookingSiteLogin(email, pass);
-			});
-			form._bound = true;
-		}
-		if (closeBtn && !closeBtn._bound){
-			closeBtn.addEventListener('click', () => { if (loginModal) loginModal.style.display = 'none'; });
-			closeBtn._bound = true;
-		}
-	})();
 	loadBusinesses();
+
+	// Expose login function for /login.html reuse if script is shared
+	window.bookingSiteLogin = bookingSiteLogin;
 })();

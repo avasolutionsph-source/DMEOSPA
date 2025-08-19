@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login • Ava Booking</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header>
+    <div class="row">
+      <div class="brand"><span class="dot"></span> Ava Booking</div>
+      <a class="btn" href="/">Back</a>
+    </div>
+  </header>
+  <main class="container">
+    <section class="card" style="max-width:560px; margin:24px auto;">
+      <div class="section-title"><h2>Login</h2><small class="sub">Sign in to continue</small></div>
+      <form id="loginForm">
+        <label>Email<input id="loginEmail" type="email" class="form-input" required placeholder="you@email.com"/></label>
+        <label>Password<input id="loginPass" type="password" class="form-input" required/></label>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button type="submit" class="btn primary">Sign In</button>
+          <a class="btn secondary" href="/">Cancel</a>
+        </div>
+      </form>
+      <p class="sub" style="margin-top:12px">Don’t have an account? <a href="https://ava-solutions-marketing.netlify.app/register" target="_blank">Register your business</a></p>
+    </section>
+  </main>
+  <script>
+  (function(){
+    const marketingApi = 'https://ava-marketing-api.onrender.com';
+    async function bookingSiteLogin(email, password){
+      const res = await fetch(`${marketingApi}/api/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email, password })});
+      const data = await res.json();
+      if (!res.ok || !data.token) throw new Error(data.error || 'Login failed');
+      localStorage.setItem('authToken', data.token);
+      // Decide destination by role
+      const role = (data.user && data.user.role) || 'customer';
+      if (role === 'customer') {
+        // Customers go to business directory
+        window.location.href = '/';
+      } else {
+        // Business owners and admins go to owner dashboard
+        window.location.href = '/owner.html';
+      }
+    }
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const pass = document.getElementById('loginPass').value;
+      try { await bookingSiteLogin(email, pass); } catch(err){ alert(err.message || 'Login failed'); }
+    });
+  })();
+  </script>
+</body>
+</html>
+
+
