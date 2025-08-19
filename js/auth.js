@@ -35,29 +35,32 @@ class AuthSystem {
 
         // Register form
         const registerForm = document.getElementById('registerForm');
-        if (registerForm) {
+        if (registerForm && !registerForm.hasAttribute('data-listener-attached')) {
             registerForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 this.handleRegister();
             });
+            registerForm.setAttribute('data-listener-attached', 'true');
         }
 
         // Switch between login/register
         const showRegisterBtn = document.getElementById('showRegister');
         const showLoginBtn = document.getElementById('showLogin');
         
-        if (showRegisterBtn) {
+        if (showRegisterBtn && !showRegisterBtn.hasAttribute('data-listener-attached')) {
             showRegisterBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.showRegisterForm();
             });
+            showRegisterBtn.setAttribute('data-listener-attached', 'true');
         }
         
-        if (showLoginBtn) {
+        if (showLoginBtn && !showLoginBtn.hasAttribute('data-listener-attached')) {
             showLoginBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.showLoginForm();
             });
+            showLoginBtn.setAttribute('data-listener-attached', 'true');
         }
 
         // Main login button (in sidebar)
