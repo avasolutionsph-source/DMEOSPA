@@ -1,6 +1,17 @@
 (function(){
-	const apiBase = (localStorage.getItem('pwaApiUrl') || 'http://localhost:4000') + '/api';
+	const isLocal = ['localhost','127.0.0.1'].some(h => location.hostname.startsWith(h));
+	const defaultApiHost = isLocal ? 'http://localhost:4000' : 'https://ava-marketing-api.onrender.com';
+	const apiBase = (localStorage.getItem('pwaApiUrl') || defaultApiHost) + '/api';
 	let token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || null;
+	let businessId = null;
+
+	// Read businessId from query (?businessId=xxx) for public booking and persist
+	try {
+		const params = new URLSearchParams(location.search);
+		const qBiz = params.get('businessId') || params.get('userId');
+		if (qBiz) localStorage.setItem('bookingBusinessId', qBiz);
+		businessId = localStorage.getItem('bookingBusinessId') || null;
+	} catch(e) {}
 
 	const qs = sel => document.querySelector(sel);
 	const storeSelect = qs('#storeSelect');
@@ -15,27 +26,27 @@
 	function setToken(t){ token = t; if(t){ localStorage.setItem('authToken', t); } }
 
 	async function fetchJSON(url, opts={}){
-		const headers = { 'Content-Type':'application/json', ...(token?{Authorization:`Bearer ${token}`}:{}) };
+		const headers = { 'Content-Type':'application/json' };
+		if (token) headers['Authorization'] = `Bearer ${token}`;
+		else if (businessId) headers['x-user-id'] = businessId;
 		const res = await fetch(url, { ...opts, headers });
 		if (!res.ok) throw new Error(await res.text());
-		return res.json();
+		const ct = res.headers.get('content-type') || '';
+		return ct.includes('application/json') ? res.json() : { raw: await res.text() };
 	}
 
 	function initAuth(){
-		// Try to reuse marketing token if available in top window
-		try {
-			if (!token && window.getMarketingAuthToken) setToken(window.getMarketingAuthToken());
-		} catch(e){}
-		loginBtn.style.display = token ? 'none' : 'inline-block';
+		try { if (!token && window.getMarketingAuthToken) setToken(window.getMarketingAuthToken()); } catch(e){}
+		// Public mode if we have businessId but no token
+		const publicMode = !!businessId && !token;
+		loginBtn.style.display = token ? 'none' : (publicMode ? 'none' : 'inline-block');
 		logoutBtn.style.display = token ? 'inline-block' : 'none';
 	}
 
 	async function login() {
 		const email = prompt('Email'); if(!email) return;
 		const password = prompt('Password'); if(!password) return;
-		// Use marketing API login (proxied through marketing site if different origin). Here we assume same JWT as backend.
 		try {
-			// As a simplification in this prototype, accept any email/password by calling PWA backend /api/auth/login
 			const res = await fetch(`${apiBase}/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email, password }) });
 			const data = await res.json();
 			if (!res.ok) throw new Error(data.error || 'Login failed');
@@ -56,18 +67,16 @@
 	}
 
 	async function loadStores(){
-		// Placeholder stores; can be fetched from marketing user profile later
+		// Placeholder stores; can be enhanced later via user profile
 		const stores = [ { id:'default', name:'Main Branch' } ];
 		storeSelect.innerHTML = stores.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
 	}
 
 	async function loadCatalog(){
-		// Load services from PWA backend products (category service)
 		try {
 			const res = await fetchJSON(`${apiBase}/products`);
 			const services = (res.data||[]).filter(p=>p.category==='service' || p.category==='massage');
 			serviceSelect.innerHTML = services.map(s=>`<option value="${s._id||s.id}" data-name="${s.name}" data-duration="${s.duration||60}">${s.name}${s.duration?` (${s.duration}m)`:''}</option>`).join('');
-			// Load employees
 			const empsRes = await fetchJSON(`${apiBase}/employees`);
 			employeeSelect.innerHTML = '<option value="">Any available</option>' + (empsRes.data||[]).map(e=>`<option value="${e._id||e.id}" data-name="${e.name}">${e.name||e.email||'Employee'}</option>`).join('');
 		} catch(e){
@@ -123,12 +132,13 @@
 		}
 	}
 
-	loginBtn.addEventListener('click', login);
-	logoutBtn.addEventListener('click', logout);
-	checkBtn.addEventListener('click', checkAvailability);
-	submitBtn.addEventListener('click', submitBooking);
+	loginBtn?.addEventListener('click', login);
+	logoutBtn?.addEventListener('click', logout);
+	checkBtn?.addEventListener('click', checkAvailability);
+	submitBtn?.addEventListener('click', submitBooking);
 
 	initAuth();
 	loadStores();
-	if (token) loadCatalog();
+	// Load catalog if we have auth or public business id
+	if (token || businessId) loadCatalog();
 })();
