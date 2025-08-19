@@ -77,6 +77,7 @@ class EmployeeManager {
                 if (id === 'attendanceTab') this.loadAttendance();
                 if (id === 'requestsTab' && window.loadPayrollRequests) window.loadPayrollRequests();
                 if (id === 'scheduleTab' && window.loadScheduling) window.loadScheduling();
+                if (id === 'payrollTab') this.loadPayrollTab();
             });
         });
 
@@ -84,6 +85,24 @@ class EmployeeManager {
         if (savePayrollBtn) savePayrollBtn.addEventListener('click', () => this.savePayrollSettings());
         const generatePayrollBtn = document.getElementById('generatePayrollBtn');
         if (generatePayrollBtn) generatePayrollBtn.addEventListener('click', () => this.generatePayroll());
+    }
+
+    // Load appropriate payroll view based on role
+    async loadPayrollTab() {
+        const isTherapist = window.roleManager?.activeEmployee?.role === 'therapist';
+        const therapistContainer = document.getElementById('therapistPayrollContainer');
+        const managerContainer = document.getElementById('managerPayrollContainer');
+        
+        if (isTherapist) {
+            if (therapistContainer) therapistContainer.style.display = 'block';
+            if (managerContainer) managerContainer.style.display = 'none';
+            if (window.loadTherapistPayroll) await window.loadTherapistPayroll();
+        } else {
+            if (therapistContainer) therapistContainer.style.display = 'none';
+            if (managerContainer) managerContainer.style.display = 'block';
+            // Load payroll settings for managers
+            this.loadPayrollSettings();
+        }
     }
 
     async loadEmployees() {

@@ -548,20 +548,25 @@
                     </div>
                 </div>
                 <div id="payrollTab" class="tab-panel">
-                    <div class="card" style="margin-bottom:1rem;">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Period Start</label>
-                                <input type="date" id="payrollStart" class="form-input">
+                    <!-- Therapist-specific payroll view -->
+                    <div id="therapistPayrollContainer" style="display:none;"></div>
+                    
+                    <!-- Manager/Admin payroll generation -->
+                    <div id="managerPayrollContainer">
+                        <div class="card" style="margin-bottom:1rem;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Period Start</label>
+                                    <input type="date" id="payrollStart" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label>Period End</label>
+                                    <input type="date" id="payrollEnd" class="form-input">
+                                </div>
+                                <div class="form-group" style="align-self:flex-end;">
+                                    <button class="btn btn-primary" id="generatePayrollBtn"><i class="fas fa-calculator"></i> Generate</button>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label>Period End</label>
-                                <input type="date" id="payrollEnd" class="form-input">
-                            </div>
-                            <div class="form-group" style="align-self:flex-end;">
-                                <button class="btn btn-primary" id="generatePayrollBtn"><i class="fas fa-calculator"></i> Generate</button>
-                            </div>
-                        </div>
                         <div class="table-responsive">
                             <table class="data-table">
                                 <thead>
@@ -2064,6 +2069,8 @@
     <script src="js/expenses.js"></script>
     <script src="js/payroll-requests.js"></script>
     <script src="js/scheduling.js"></script>
+    <script src="js/therapist-payroll.js"></script>
+    <script src="js/dashboard-roles.js"></script>
     <script src="js/chatbot.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/settings.js"></script>

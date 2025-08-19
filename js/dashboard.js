@@ -17,6 +17,16 @@ class DashboardManager {
             return;
         }
 
+        // Role-specific dashboard initialization
+        const role = window.roleManager?.activeEmployee?.role;
+        if (role === 'therapist') {
+            if (window.loadTherapistDashboard) await window.loadTherapistDashboard();
+            return;
+        } else if (role === 'rider') {
+            if (window.loadRiderDashboard) await window.loadRiderDashboard();
+            return;
+        }
+
         await this.loadDashboardData();
 
         const perf = window.performanceProfile || 'balanced';
