@@ -196,7 +196,12 @@ class EmployeeManager {
             
             // Fill form
             document.getElementById('employeeName').value = employee.name;
-            document.getElementById('employeePosition').value = employee.position;
+            const posEl = document.getElementById('employeePosition');
+            if (posEl && posEl.tagName === 'SELECT') {
+                posEl.value = (employee.position || '').toLowerCase();
+            } else {
+                document.getElementById('employeePosition').value = employee.position;
+            }
             document.getElementById('employeeEmail').value = employee.email || '';
             document.getElementById('employeePhone').value = employee.phone || '';
             document.getElementById('employeeCommission').value = employee.commissionRate || '';
