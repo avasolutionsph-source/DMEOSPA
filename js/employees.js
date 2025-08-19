@@ -44,6 +44,12 @@ class EmployeeManager {
             });
         }
 
+        // Invite employee button (if present)
+        const inviteBtn = document.getElementById('inviteEmployeeBtn');
+        if (inviteBtn) {
+            inviteBtn.addEventListener('click', () => this.showInviteModal());
+        }
+
         // Employee form submission with double-click protection
         const form = document.getElementById('employeeForm');
         if (form) {
@@ -92,8 +98,12 @@ class EmployeeManager {
                 <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
                     <i class="fas fa-users" style="font-size: 3rem; color: var(--gray-light); margin-bottom: 1rem;"></i>
                     <p>No employees found. Click "Add Employee" to create one.</p>
+                    <button id="inviteEmployeeBtn" class="btn btn-primary" style="margin-top:1rem">Invite Employee</button>
                 </div>
             `;
+            // Attach invite handler if empty state
+            const btn = document.getElementById('inviteEmployeeBtn');
+            if (btn) btn.addEventListener('click', () => this.showInviteModal());
             return;
         }
 
@@ -444,6 +454,60 @@ class EmployeeManager {
         }));
         if (tbody) tbody.innerHTML = rows.join('');
         showNotification('Payroll generated (preview)', 'info');
+    }
+
+    async inviteEmployee(email, name, role) {
+        try {
+            const token = localStorage.getItem('userToken') || localStorage.getItem('authToken');
+            if (!token) { showNotification('Login first', 'warning'); return; }
+            const marketingApi = 'https://ava-marketing-api.onrender.com';
+            const res = await fetch(`${marketingApi}/api/employees/invite`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, name, role })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Invite failed');
+            showNotification(`Invited ${name || email}. Temp password: ${data.tempPassword}`, 'success');
+        } catch (e) {
+            console.error('Invite employee error:', e);
+            showNotification(e.message || 'Invite failed', 'error');
+        }
+    }
+
+    showInviteModal() {
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Invite Employee</h2>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <label>Email<input id="inviteEmail" class="form-input" type="email" required></label>
+                    <label>Name<input id="inviteName" class="form-input" type="text"></label>
+                    <label>Role<select id="inviteRole" class="form-input">
+                        <option value="employee">Employee</option>
+                        <option value="receptionist">Receptionist</option>
+                        <option value="therapist">Therapist</option>
+                        <option value="manager">Manager</option>
+                    </select></label>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+                    <button class="btn btn-primary" id="confirmInviteBtn">Invite</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        modal.querySelector('#confirmInviteBtn').onclick = async () => {
+            const email = modal.querySelector('#inviteEmail').value.trim();
+            const name = modal.querySelector('#inviteName').value.trim();
+            const role = modal.querySelector('#inviteRole').value;
+            if (!email) { showNotification('Email required', 'warning'); return; }
+            await this.inviteEmployee(email, name, role);
+            modal.remove();
+        };
     }
 }
 

@@ -175,6 +175,43 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api', syncRoutes); // Mount sync routes under /api
 
+// Invite employee (owner creates employee account)
+app.post('/api/employees/invite', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'No token' });
+    const jwt = await import('jsonwebtoken');
+    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const inviterId = decoded.userId;
+    const role = (req.body.role || 'employee');
+    const email = req.body.email;
+    const name = req.body.name || '';
+    const tempPassword = req.body.password || Math.random().toString(36).slice(-10);
+    if (!email) return res.status(400).json({ error: 'Email required' });
+    const User = (await import('./models/User.js')).default;
+    const inviter = await User.findById(inviterId);
+    if (!inviter) return res.status(404).json({ error: 'Owner not found' });
+    let existing = await User.findOne({ email });
+    if (existing) return res.status(400).json({ error: 'Email already in use' });
+    const [firstName, ...rest] = name.split(' ');
+    const employee = new User({
+      email,
+      password: tempPassword,
+      firstName: firstName || 'Employee',
+      lastName: rest.join(' ') || 'Account',
+      businessName: inviter.businessName,
+      role,
+      businessId: String(inviter._id),
+      ownerId: String(inviter._id)
+    });
+    await employee.save();
+    res.json({ success: true, tempPassword, employeeId: employee._id });
+  } catch (e) {
+    console.error('Invite employee error:', e.message);
+    res.status(500).json({ error: 'Failed to invite employee' });
+  }
+});
+
 // Public config for clients (e.g., booking site)
 app.get('/api/config', (req, res) => {
   const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';

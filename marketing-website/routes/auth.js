@@ -35,7 +35,8 @@ router.post('/register', [
       lastName,
       businessName,
       phone,
-      subscriptionPlan: plan || 'unpaid'
+      subscriptionPlan: plan || 'unpaid',
+      role: 'owner'
     });
 
     await user.save();

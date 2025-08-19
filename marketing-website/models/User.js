@@ -57,9 +57,15 @@ const userSchema = new mongoose.Schema({
   // Role (for super admin)
   role: {
     type: String,
-    enum: ['customer', 'admin', 'superAdmin'],
+    enum: ['owner','employee','receptionist','therapist','manager','customer','admin','superAdmin'],
     default: 'customer'
   },
+
+  // Business ownership/affiliation
+  businessId: { type: String }, // for owners: equals _id; for employees: owner's _id
+  ownerId: { type: String },
+  employeeId: { type: String }, // link to PWA employee record id
+  employeeName: { type: String },
   
   // PWA connection
   pwaUserId: {
