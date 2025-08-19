@@ -913,7 +913,8 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Email</label>
-                            <input type="email" id="employeeEmail" class="form-input">
+                            <input type="email" id="employeeEmail" class="form-input" onblur="validateEmployeeEmail(this)">
+                            <small id="employeeEmailError" class="subtle" style="color:#b91c1c; display:none;">Email already in use</small>
                         </div>
                         <div class="form-group">
                             <label>Phone</label>
@@ -1420,6 +1421,17 @@
 
     <script>window.ChartShim=class{constructor(){}};</script>
     <script>
+        async function validateEmployeeEmail(input){
+            const email = (input?.value||'').trim();
+            const err = document.getElementById('employeeEmailError');
+            if (!email) { if(err) err.style.display='none'; return; }
+            try{
+                const res = await fetch('https://ava-marketing-api.onrender.com/api/auth/check-email?email=' + encodeURIComponent(email));
+                const data = await res.json();
+                if (data.exists) { if(err){ err.style.display='block'; err.textContent='Email already in use'; } }
+                else { if(err) err.style.display='none'; }
+            }catch(_){ if(err) err.style.display='none'; }
+        }
         (function(){
             var perf=(window.performanceProfile||'balanced');
             var lazyLoadCharts=function(){

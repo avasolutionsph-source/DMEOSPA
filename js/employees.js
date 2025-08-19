@@ -244,10 +244,30 @@ class EmployeeManager {
         showLoading('Saving Employee...');
         
         try {
+            // Validate email uniqueness (client-side) before saving
+            const email = document.getElementById('employeeEmail').value.trim();
+            if (email) {
+                try {
+                    const res = await fetch('https://ava-marketing-api.onrender.com/api/auth/check-email?email=' + encodeURIComponent(email));
+                    const data = await res.json();
+                    if (data.exists) {
+                        const err = document.getElementById('employeeEmailError');
+                        if (err) { err.style.display = 'block'; err.textContent = 'Email already in use'; }
+                        hideLoading();
+                        saveBtn.classList.remove('loading');
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = originalText;
+                        showNotification('Email already in use. Use a different email.', 'error');
+                        this.isSaving = false;
+                        return;
+                    }
+                } catch(_) {}
+            }
+
             const employeeData = {
                 name: document.getElementById('employeeName').value,
                 position: document.getElementById('employeePosition').value,
-                email: document.getElementById('employeeEmail').value,
+                email,
                 phone: document.getElementById('employeePhone').value,
                 commissionRate: parseFloat(document.getElementById('employeeCommission').value || '0') || 0,
                 hireDate: document.getElementById('employeeHireDate').value,

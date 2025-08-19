@@ -22,10 +22,10 @@ router.post('/register', [
 
     const { email, password, firstName, lastName, businessName, phone, plan } = req.body;
 
-    // Check if user exists
+    // Check if user exists (owner, branch, employee)
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ error: 'User already exists with this email' });
+      return res.status(400).json({ error: 'Email already in use' });
     }
 
     // Create user
@@ -148,6 +148,18 @@ router.post('/login', [
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// Check if an email is already used anywhere (owner, branch, employee)
+router.get('/check-email', async (req, res) => {
+  try {
+    const email = String(req.query.email || '').trim().toLowerCase();
+    if (!email) return res.status(400).json({ error: 'Email required' });
+    const existing = await User.findOne({ email }).select('_id role').lean();
+    res.json({ exists: !!existing, role: existing?.role || null });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to check email' });
   }
 });
 
