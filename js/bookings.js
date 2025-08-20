@@ -55,7 +55,17 @@ class BookingsManager {
 		}
 		console.log('📄 Found bookings page element, replacing content...');
 		page.innerHTML = `
-			<div class="page-header"><h1>My Bookings</h1></div>
+			<div class="page-header">
+				<h1>My Bookings</h1>
+				<div class="header-actions">
+					<button class="btn btn-secondary" onclick="window.syncBookingsFromBookingSite()" style="margin-right: 0.5rem;">
+						<i class="fas fa-sync"></i> Check Booking Website
+					</button>
+					<button class="btn btn-primary" onclick="window.createTestBookings()">
+						<i class="fas fa-plus"></i> Create Test Bookings
+					</button>
+				</div>
+			</div>
 			<div class="bookings-list-container">
 				<table class="data-table">
 					<thead>
