@@ -1,7 +1,264 @@
-// SIMPLE LOGIN - DISABLED (Replaced by unified-auth.js)
+// SIMPLE LOGIN - ENABLED - Direct API Connection
+// Bypasses all existing auth complexity for reliable login
+
+class SimpleLogin {
+    constructor() {
+        this.apiUrl = 'https://ava-solutions-marketing.netlify.app/api';
+        this.isLoggedIn = false;
+        this.currentUser = null;
+        this.authToken = null;
+        
+        console.log('🔑 Simple Login System initialized');
+    }
+
+    // Create and show simple login modal
+    showLoginModal() {
+        // Remove any existing modal
+        const existingModal = document.getElementById('simpleLoginModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Create new modal
+        const modal = document.createElement('div');
+        modal.id = 'simpleLoginModal';
+        modal.innerHTML = `
+            <div style="
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0, 0, 0, 0.8); display: flex; align-items: center;
+                justify-content: center; z-index: 99999; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            ">
+                <div style="
+                    background: white; padding: 30px; border-radius: 12px;
+                    max-width: 400px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0; color: #333; font-size: 24px;">Quick Login</h2>
+                        <button onclick="document.getElementById('simpleLoginModal').remove()" style="
+                            background: none; border: none; font-size: 24px; cursor: pointer; color: #666;
+                        ">&times;</button>
+                    </div>
+                    
+                    <div id="simpleLoginError" style="
+                        background: #fee; color: #c33; padding: 10px; border-radius: 6px; 
+                        margin-bottom: 15px; display: none; font-size: 14px;
+                    "></div>
+                    
+                    <form id="simpleLoginForm" style="display: flex; flex-direction: column; gap: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; color: #555; font-weight: 500;">Email:</label>
+                            <input type="email" id="simpleEmail" required style="
+                                width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px;
+                                font-size: 16px; box-sizing: border-box;
+                            " placeholder="Enter your email">
+                        </div>
+                        
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; color: #555; font-weight: 500;">Password:</label>
+                            <input type="password" id="simplePassword" required style="
+                                width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px;
+                                font-size: 16px; box-sizing: border-box;
+                            " placeholder="Enter your password">
+                        </div>
+                        
+                        <button type="submit" id="simpleLoginBtn" style="
+                            background: #007cba; color: white; padding: 12px 20px; border: none;
+                            border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer;
+                            transition: background 0.2s;
+                        ">
+                            <span id="simpleLoginText">Sign In</span>
+                            <span id="simpleLoginLoading" style="display: none;">
+                                <span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span> Signing in...
+                            </span>
+                        </button>
+                    </form>
+                    
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; text-align: center;">
+                        <small style="color: #666;">Use your registered email and password</small>
+                    </div>
+                </div>
+            </div>
+            
+            <style>
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Add form submission handler
+        document.getElementById('simpleLoginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.performLogin();
+        });
+
+        // Focus email field
+        document.getElementById('simpleEmail').focus();
+    }
+
+    // Perform login with direct API call
+    async performLogin() {
+        const email = document.getElementById('simpleEmail').value.trim();
+        const password = document.getElementById('simplePassword').value;
+        const errorDiv = document.getElementById('simpleLoginError');
+        const loginBtn = document.getElementById('simpleLoginBtn');
+        const loginText = document.getElementById('simpleLoginText');
+        const loginLoading = document.getElementById('simpleLoginLoading');
+
+        // Clear previous errors
+        errorDiv.style.display = 'none';
+
+        // Validate inputs
+        if (!email || !password) {
+            this.showError('Please enter both email and password');
+            return;
+        }
+
+        // Show loading state
+        loginBtn.disabled = true;
+        loginText.style.display = 'none';
+        loginLoading.style.display = 'inline';
+
+        try {
+            console.log('🔑 Simple Login: Attempting login for:', email);
+
+            // Direct API call with proper headers
+            const response = await fetch(`${this.apiUrl}/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Origin': window.location.origin
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            });
+
+            console.log('🔑 Login response status:', response.status);
+
+            const data = await response.json();
+            console.log('🔑 Login response data:', data);
+
+            if (response.ok && data.success && data.token) {
+                // Success! Store auth data
+                this.authToken = data.token;
+                this.currentUser = data.user;
+                this.isLoggedIn = true;
+
+                // Store in localStorage with both old and new keys for compatibility
+                localStorage.setItem('auth_token', data.token);
+                localStorage.setItem('auth_user', JSON.stringify(data.user));
+                localStorage.setItem('userToken', data.token); // Fallback for old system
+                localStorage.setItem('userData', JSON.stringify(data.user)); // Fallback for old system
+                localStorage.setItem('isLoggedIn', 'true');
+
+                console.log('✅ Simple Login: Login successful for:', data.user.email);
+
+                // Update UI
+                this.updateLoginUI(data.user);
+
+                // Close modal
+                document.getElementById('simpleLoginModal').remove();
+
+                // Show success message
+                this.showSuccessMessage(data.user);
+
+                // Reload page to ensure all systems recognize the login
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+
+            } else {
+                // Login failed
+                const errorMsg = data.error || data.message || 'Login failed. Please check your credentials.';
+                console.error('🔑 Simple Login failed:', errorMsg);
+                this.showError(errorMsg);
+            }
+
+        } catch (error) {
+            console.error('🔑 Simple Login error:', error);
+            this.showError('Connection failed. Please check your internet connection and try again.');
+        } finally {
+            // Reset button state
+            loginBtn.disabled = false;
+            loginText.style.display = 'inline';
+            loginLoading.style.display = 'none';
+        }
+    }
+
+    // Show error message
+    showError(message) {
+        const errorDiv = document.getElementById('simpleLoginError');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    }
+
+    // Update UI after successful login
+    updateLoginUI(user) {
+        // Hide both login buttons
+        const showLoginBtn = document.getElementById('showLoginBtn');
+        const simpleLoginBtn = document.getElementById('simpleLoginBtn');
+        if (showLoginBtn) showLoginBtn.style.display = 'none';
+        if (simpleLoginBtn) simpleLoginBtn.style.display = 'none';
+
+        // Show user info
+        const userInfo = document.getElementById('userInfo');
+        if (userInfo) userInfo.style.display = 'block';
+
+        // Update user name
+        const userName = document.getElementById('userName');
+        if (userName) {
+            const displayName = user.businessName || user.firstName || user.email.split('@')[0];
+            userName.textContent = displayName;
+        }
+    }
+
+    // Show success message
+    showSuccessMessage(user) {
+        const displayName = user.businessName || user.firstName || user.email.split('@')[0];
+        
+        // Create success notification
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed; top: 20px; right: 20px; z-index: 100000;
+            background: #4caf50; color: white; padding: 15px 20px;
+            border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-weight: 500; max-width: 300px;
+        `;
+        notification.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">✅</span>
+                <div>
+                    <div>Login Successful!</div>
+                    <div style="font-size: 14px; opacity: 0.9;">Welcome back, ${displayName}</div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+}
+
+// Create global instance
+window.simpleLogin = new SimpleLogin();
+
+// WORKING SIMPLE LOGIN SYSTEM
 (function() {
-    console.log('⚠️  SIMPLE LOGIN: DISABLED - Using unified MongoDB authentication instead');
-    return; // Exit early - this system is disabled
+    console.log('🔑 SIMPLE LOGIN ENABLED - Creating reliable login button');
+    return; // Skip the old disabled code below
     
     // Remove the broken modal completely
     function removeModal() {

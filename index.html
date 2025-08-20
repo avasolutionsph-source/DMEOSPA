@@ -82,6 +82,9 @@
                     <button id="showLoginBtn" class="btn btn-primary" style="cursor: pointer; z-index: 10; position: relative;" onclick="console.log('🔥 MAIN LOGIN BUTTON CLICKED!'); showLoginModalDirect();">
                         <i class="fas fa-sign-in-alt"></i> Login
                     </button>
+                    <button id="simpleLoginBtn" class="btn btn-success" style="cursor: pointer; z-index: 10; position: relative; margin-top: 5px; background: #28a745; border-color: #28a745;" onclick="window.simpleLogin.showLoginModal();">
+                        <i class="fas fa-rocket"></i> Quick Login
+                    </button>
                     <div id="userInfo" style="display: none;" class="user-info">
                         <span id="userName">User</span>
                         <button id="logoutBtn" class="btn btn-secondary">
@@ -2364,6 +2367,8 @@
     <script src="js/database.js"></script>
     <!-- Load unified auth FIRST to prevent logout flicker -->
     <script src="js/unified-auth.js"></script>
+    <!-- Simple Login - Backup reliable login system -->
+    <script src="js/simple-login.js"></script>
     <script src="js/api.js"></script>
     <script src="js/entitlements.js"></script>
     <script src="js/cloud-sync.js"></script>
