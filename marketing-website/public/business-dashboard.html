@@ -1246,7 +1246,12 @@
                         </div>
                     </div>
                     <div class="actions">
-                        <button class="btn-primary-sm" id="createBranchBtn">Create Branch</button>
+                        <button class="btn-primary-sm" id="createBranchBtn">
+                            <span id="createBranchText">Create Branch</span>
+                            <span id="createBranchLoading" style="display: none;">
+                                <i class="fas fa-spinner fa-spin"></i> Creating...
+                            </span>
+                        </button>
                         <button class="btn-secondary-sm" id="refreshBranchesBtn">Refresh List</button>
                     </div>
                     <small style="color: var(--gray-600); display:block; margin-top:.5rem;">Each branch is a separate login. Use the branch email/password to access that store in the PWA and owner tools.</small>
@@ -1365,6 +1370,11 @@
         }
 
         async function createBranchAccount(){
+            const btn = document.getElementById('createBranchBtn');
+            const btnText = document.getElementById('createBranchText');
+            const btnLoading = document.getElementById('createBranchLoading');
+            const inputs = document.querySelectorAll('#branchNameInput, #branchEmailInput, #branchPasswordInput, #branchPlanInput');
+            
             try {
                 const token = localStorage.getItem('userToken');
                 if (!token) { alert('Please login first'); return; }
@@ -1373,13 +1383,47 @@
                 const password = document.getElementById('branchPasswordInput').value.trim();
                 const plan = document.getElementById('branchPlanInput').value.trim() || 'unpaid';
                 if (!name || !email || !password) { alert('Enter name, email, and password'); return; }
+                
+                // Start loading state
+                btn.disabled = true;
+                btnText.style.display = 'none';
+                btnLoading.style.display = 'inline-block';
+                inputs.forEach(input => {
+                    input.disabled = true;
+                    input.style.opacity = '0.6';
+                });
+                
                 const res = await fetch('/api/branches/create', { method:'POST', headers:{ 'Authorization': `Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify({ branchName: name, email, password, plan }) });
                 const j = await res.json();
                 if (!res.ok) throw new Error(j.error || 'Failed to create branch');
+                
+                // Success state
+                btnLoading.innerHTML = '<i class="fas fa-check"></i> Created!';
                 alert('Branch created. Use the new credentials to login as that branch.');
+                
+                // Clear form inputs
+                document.getElementById('branchNameInput').value = '';
+                document.getElementById('branchEmailInput').value = '';
+                document.getElementById('branchPasswordInput').value = '';
+                
                 // reload list
                 listBranches();
-            } catch(e) { alert(e.message || 'Failed to create branch'); }
+                
+            } catch(e) { 
+                alert(e.message || 'Failed to create branch'); 
+            } finally {
+                // Reset loading state
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btnText.style.display = 'inline-block';
+                    btnLoading.style.display = 'none';
+                    btnLoading.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+                    inputs.forEach(input => {
+                        input.disabled = false;
+                        input.style.opacity = '1';
+                    });
+                }, 1000);
+            }
         }
 
         async function listBranches(){

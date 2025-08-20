@@ -50,6 +50,33 @@ router.post('/register', [
 
     await user.save();
 
+    // Sync user to PWA backend for seamless login experience
+    try {
+      const pwaApiUrl = process.env.PWA_BACKEND_URL || 'https://ava-pwa-backend.onrender.com/api';
+      await fetch(`${pwaApiUrl}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: user.email,
+          password: password, // Use plain password before hashing
+          firstName: user.firstName,
+          lastName: user.lastName,
+          businessName: user.businessName,
+          phone: user.phone,
+          role: user.role,
+          businessType: user.businessType,
+          franchiseSize: user.franchiseSize,
+          isMainOwner: user.isMainOwner
+        })
+      });
+      console.log(`✅ User synced to PWA backend: ${user.email}`);
+    } catch (error) {
+      console.warn(`⚠️ Failed to sync user to PWA backend: ${error.message}`);
+      // Don't fail registration if PWA sync fails - just log it
+    }
+
     // Generate JWT including business type and franchise owner privileges
     const token = jwt.sign(
       { 
