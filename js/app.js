@@ -183,8 +183,13 @@ class App {
                 }
                 break;
             case 'bookings':
+                console.log('🔄 Loading bookings page...');
                 if (window.loadBookings) {
+                    console.log('✅ window.loadBookings found, calling it...');
                     await window.loadBookings();
+                    console.log('✅ window.loadBookings completed');
+                } else {
+                    console.error('❌ window.loadBookings not found!');
                 }
                 break;
             case 'rooms':

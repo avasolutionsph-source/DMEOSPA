@@ -7,21 +7,30 @@ class BookingsManager {
 	}
 
 	async init() {
-		if (this.isTherapistView()) {
-			this.buildTherapistPage();
-			await this.syncTherapistOnly();
-			if (!this._therapistSyncTimer) {
-				this._therapistSyncTimer = setInterval(() => this.syncTherapistOnly().catch(()=>{}), 60000);
+		console.log('🚀 BookingsManager.init() called');
+		try {
+			if (this.isTherapistView()) {
+				console.log('👨‍⚕️ Therapist view detected, building therapist page');
+				this.buildTherapistPage();
+				await this.syncTherapistOnly();
+				if (!this._therapistSyncTimer) {
+					this._therapistSyncTimer = setInterval(() => this.syncTherapistOnly().catch(()=>{}), 60000);
+				}
+				console.log('✅ Therapist view initialized successfully');
+				return;
 			}
-			return;
-		}
 
-		this.ensureTable();
-		await this.loadBookings();
-		this.setupEventListeners();
-		this.setupAutoSync();
-		// Force an immediate sync on first open to avoid blank state
-		this.syncExternalBookings().catch(()=>{});
+			console.log('👔 Owner/Manager view detected, building regular bookings page');
+			this.ensureTable();
+			await this.loadBookings();
+			this.setupEventListeners();
+			this.setupAutoSync();
+			// Force an immediate sync on first open to avoid blank state
+			this.syncExternalBookings().catch(()=>{});
+			console.log('✅ Regular bookings view initialized successfully');
+		} catch (error) {
+			console.error('❌ Error initializing bookings:', error);
+		}
 	}
 
 	isTherapistView() {
@@ -37,8 +46,13 @@ class BookingsManager {
 	}
 
 	buildTherapistPage() {
+		console.log('🏗️ Building therapist page...');
 		const page = document.getElementById('bookings');
-		if (!page) return;
+		if (!page) {
+			console.error('❌ Bookings page element not found!');
+			return;
+		}
+		console.log('📄 Found bookings page element, replacing content...');
 		page.innerHTML = `
 			<div class="page-header"><h1>My Bookings</h1></div>
 			<div class="bookings-list-container">
@@ -56,6 +70,7 @@ class BookingsManager {
 				</table>
 			</div>
 		`;
+		console.log('✅ Therapist page HTML built successfully');
 	}
 
 	async getTherapistIdentifiers() {
@@ -459,7 +474,15 @@ class BookingsManager {
 }
 
 const bookingsManager = new BookingsManager();
-window.loadBookings = async function() { await bookingsManager.init(); };
+window.loadBookings = async function() { 
+	console.log('📞 window.loadBookings() called');
+	try {
+		await bookingsManager.init(); 
+		console.log('✅ window.loadBookings() completed successfully');
+	} catch (error) {
+		console.error('❌ window.loadBookings() failed:', error);
+	}
+};
 
 // Debug function to test therapist view
 window.testTherapistView = function() {
