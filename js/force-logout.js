@@ -112,12 +112,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // Override the logout button to use force logout
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
-        logoutBtn.onclick = function(e) {
+        // Remove any existing click handlers first
+        const newLogoutBtn = logoutBtn.cloneNode(true);
+        logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
+        
+        // Add our force logout handler
+        newLogoutBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             console.log('Logout button clicked - using FORCE LOGOUT');
-            forceLogout();
-        };
+            
+            // Confirm logout
+            if (confirm('Are you sure you want to logout?')) {
+                forceLogout();
+            }
+        });
     }
 });
 

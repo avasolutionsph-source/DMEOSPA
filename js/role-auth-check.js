@@ -9,6 +9,9 @@
         return;
     }
     
+    // Flag to prevent multiple redirects
+    let isRedirecting = false;
+    
     function getRoleFromPage() {
         const pathname = window.location.pathname;
         if (pathname.includes('owner.html')) return 'owner';
@@ -38,7 +41,12 @@
                         sessionStorage.getItem('userData');
         
         if (!authToken || !userData) {
+            // Don't redirect if we're already redirecting
+            if (isRedirecting) return false;
+            
             console.log('🔒 No authentication found, redirecting to login...');
+            isRedirecting = true;
+            
             // Clear any partial auth data
             const authKeys = [
                 'auth_token', 'auth_user', 'authToken', 'userData', 
@@ -70,6 +78,10 @@
                     
                     console.log(`🔒 Wrong role. User is ${userRole}, but page requires ${requiredRole}`);
                     
+                    // Don't redirect if we're already redirecting
+                    if (isRedirecting) return false;
+                    isRedirecting = true;
+                    
                     // Redirect to correct page based on user's actual role
                     const rolePages = {
                         'owner': 'owner.html',
@@ -94,8 +106,11 @@
         return true;
     }
     
-    // Check authentication immediately
-    checkAuthentication();
+    // Check authentication after a small delay to allow auth to be set
+    // This prevents immediate logout after login
+    setTimeout(() => {
+        checkAuthentication();
+    }, 1000);
     
     // Also check on visibility change (when user returns to tab)
     document.addEventListener('visibilitychange', () => {
@@ -104,10 +119,14 @@
         }
     });
     
-    // Check auth status periodically (every 5 seconds)
+    // Check auth status periodically (every 30 seconds instead of 5)
+    // Reduced frequency to prevent false logouts
     setInterval(() => {
-        checkAuthentication();
-    }, 5000);
+        // Only check if document is visible to avoid issues
+        if (!document.hidden) {
+            checkAuthentication();
+        }
+    }, 30000);
     
     // Also expose function globally for other scripts to use
     window.checkAuthenticationStatus = checkAuthentication;

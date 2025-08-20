@@ -55,10 +55,14 @@
         }
     });
     
-    // Check auth status periodically (every 5 seconds)
+    // Check auth status periodically (every 30 seconds instead of 5)
+    // Reduced frequency to prevent false logouts
     setInterval(() => {
-        checkAuthentication();
-    }, 5000);
+        // Only check if document is visible
+        if (!document.hidden) {
+            checkAuthentication();
+        }
+    }, 30000);
     
     // Also expose function globally for other scripts to use
     window.checkAuthenticationStatus = checkAuthentication;
