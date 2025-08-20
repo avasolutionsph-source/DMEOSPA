@@ -2,7 +2,7 @@
 (function() {
     const isLocal = ['localhost','127.0.0.1'].some(h => location.hostname.startsWith(h));
     const pwaBackendApi = 'http://localhost:4000/api'; // MongoDB-enabled PWA Backend
-    const marketingApi = 'https://ava-marketing-api.onrender.com'; // Fallback
+    const marketingApi = 'https://marketing-website-sz2b.onrender.com'; // Deployed Marketing API
     const apiBase = () => isLocal ? pwaBackendApi : `${marketingApi}/api`;
 
     let currentTherapist = null;

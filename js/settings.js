@@ -548,7 +548,7 @@ class SettingsManager {
             // 2) Send to MongoDB via unified auth system
             const isLocal = ['localhost','127.0.0.1'].some(h => location.hostname.startsWith(h));
             const pwaBackendApi = 'http://localhost:4000/api';
-            const marketingApi = isLocal ? 'http://localhost:3000' : 'https://ava-marketing-api.onrender.com';
+            const marketingApi = isLocal ? 'http://localhost:3000' : 'https://marketing-website-sz2b.onrender.com';
             
             // Get token from unified auth system
             let token = null;

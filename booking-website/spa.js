@@ -1,6 +1,6 @@
 (function(){
 	const isLocal = ['localhost','127.0.0.1'].some(h => location.hostname.startsWith(h));
-	const marketingApi = 'https://ava-marketing-api.onrender.com';
+	const marketingApi = 'https://marketing-website-sz2b.onrender.com';
 	// read ?pwa override
 	try { const qp = new URLSearchParams(location.search).get('pwa'); if (qp) localStorage.setItem('pwaApiUrl', qp); } catch(e){}
 	// Always prefer marketing proxy first; only fall back to direct PWA if we have a valid HTTPS URL

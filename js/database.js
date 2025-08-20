@@ -539,7 +539,7 @@ class Database {
                 return;
             }
 
-            const marketingApi = 'https://ava-marketing-api.onrender.com';
+            const marketingApi = 'https://marketing-website-sz2b.onrender.com';
             
             // Fetch business stats (includes sales data)
             console.log('📊 Fetching business stats from MongoDB...');
