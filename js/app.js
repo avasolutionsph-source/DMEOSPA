@@ -232,6 +232,11 @@ class App {
             case 'chatbot':
                 // Chatbot is loaded on demand
                 break;
+            case 'timer':
+                if (window.loadTimer) {
+                    await window.loadTimer();
+                }
+                break;
             case 'settings':
                 if (window.loadSettings) {
                     await window.loadSettings();

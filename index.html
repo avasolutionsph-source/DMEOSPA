@@ -57,6 +57,10 @@
                     <i class="fas fa-robot"></i>
                     <span>AI Assistant</span>
                 </a>
+                <a href="#" class="nav-item" data-page="timer">
+                    <i class="fas fa-stopwatch"></i>
+                    <span>Timer</span>
+                </a>
                 <a href="#" class="nav-item" data-page="settings">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
@@ -628,6 +632,44 @@
                         <button class="btn btn-primary" id="sendChatBtn">
                             <i class="fas fa-paper-plane"></i>
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timer Page (for therapists) -->
+            <div id="timer" class="page">
+                <div class="page-header">
+                    <h1>Service Timer</h1>
+                </div>
+                <div class="timer-container">
+                    <div class="timer-main">
+                        <div class="timer-display-large" id="timerDisplayLarge">00:00:00</div>
+                        <div class="timer-service-info" id="timerServiceInfo">No active service</div>
+                        <div class="timer-progress" id="timerProgress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+                            </div>
+                            <div class="progress-text" id="progressText">Ready to start</div>
+                        </div>
+                    </div>
+                    
+                    <div class="timer-controls-section">
+                        <button class="btn btn-success btn-large" id="startTimerMainBtn" onclick="therapistTimer.start()">
+                            <i class="fas fa-play"></i> Start Service
+                        </button>
+                        <button class="btn btn-danger btn-large" id="stopTimerMainBtn" onclick="therapistTimer.stop()" style="display: none;">
+                            <i class="fas fa-stop"></i> Finish Service
+                        </button>
+                        <button class="btn btn-secondary" id="pauseTimerMainBtn" onclick="therapistTimer.pause()" style="display: none;">
+                            <i class="fas fa-pause"></i> Pause
+                        </button>
+                    </div>
+                    
+                    <div class="timer-alerts-section" id="timerAlertsMain"></div>
+                    
+                    <div class="active-bookings">
+                        <h3>Today's Bookings</h3>
+                        <div id="timerBookingsList">Loading...</div>
                     </div>
                 </div>
             </div>
