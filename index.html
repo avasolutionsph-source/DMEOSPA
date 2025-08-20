@@ -1740,6 +1740,10 @@
                             }
                             console.log('Logout button clicked');
                             
+                            // Get UI elements fresh each time
+                            const showLoginBtn = document.getElementById('showLoginBtn');
+                            const userInfo = document.getElementById('userInfo');
+                            
                             // Use unified auth system for logout (correct method name is 'logout' not 'signOut')
                             if (window.authSystem && window.authSystem.logout) {
                                 console.log('Using unified auth logout');
@@ -1944,6 +1948,10 @@
                                 e.stopPropagation();
                             }
                             console.log('Logout button clicked');
+                            
+                            // Get UI elements fresh each time
+                            const showLoginBtn = document.getElementById('showLoginBtn');
+                            const userInfo = document.getElementById('userInfo');
                             
                             // Use unified auth system for logout (correct method name is 'logout' not 'signOut')
                             if (window.authSystem && window.authSystem.logout) {

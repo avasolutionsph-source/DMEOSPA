@@ -87,20 +87,8 @@
 		}
 	}
 
-	async function ensureBackendUrl(){
-		const existing = localStorage.getItem('pwaApiUrl');
-		if (existing) return existing;
-		try{
-			const r = await fetch(`${marketingApi}/api/config`);
-			const j = await r.json();
-			if (j.pwaBackendUrl) localStorage.setItem('pwaApiUrl', j.pwaBackendUrl);
-			return j.pwaBackendUrl;
-		}catch(e){ return null; }
-	}
-
 	async function loadBusinesses(){
 		console.log('📋 Loading businesses...');
-		await ensureBackendUrl();
 		
 		if (!businessList) {
 			console.warn('❌ Business list element not found');
@@ -114,9 +102,14 @@
 			
 			if (!response.ok) {
 				// Fallback: Try local PWA backend
-				console.log('⚠️ Remote PWA failed, trying local PWA backend fallback');
+				console.log('⚠️ Remote PWA failed (status:', response.status, '), trying local PWA backend fallback');
 				const pwaBackendEndpoint = `${pwaBackendApi}/auth/public/businesses`;
-				response = await fetch(pwaBackendEndpoint);
+				try {
+					response = await fetch(pwaBackendEndpoint);
+				} catch (e) {
+					console.log('⚠️ Local PWA backend also failed:', e.message);
+					response = { ok: false };
+				}
 			}
 			
 			if (!response.ok) {
@@ -157,7 +150,9 @@
 			
 		} catch(error) {
 			console.error('❌ Error loading businesses:', error);
-			showEmptyBusinessState();
+			// Always show demo businesses on error instead of empty state
+			console.log('📋 Showing demo businesses as fallback');
+			showDemoBusinesses();
 		}
 	}
 	

@@ -11,12 +11,7 @@
 
 	function isHttps(url){ try { return typeof url === 'string' && url.startsWith('https://'); } catch(_) { return false; } }
 
-	async function ensureBackendUrl(){
-		// Always use PWA backend - no need for config endpoint
-		const pwaUrl = 'https://ava-pwa-backend.onrender.com';
-		localStorage.setItem('pwaApiUrl', pwaUrl);
-		return pwaUrl;
-	}
+	// No need for ensureBackendUrl - PWA backend URL is hardcoded
 
 	const qs = sel => document.querySelector(sel);
 	const storeSelect = qs('#storeSelect');
@@ -137,7 +132,6 @@
 	}
 
 	async function loadCatalog(){
-		await ensureBackendUrl();
 		const res = await tryProducts();
 		
 		if (!res || !res.success) { 
@@ -328,7 +322,7 @@
 	
 	dateInput.valueAsDate = new Date();
 	loadStores();
-	ensureBackendUrl().then(() => { loadCatalog(); });
+	loadCatalog();
 	checkBtn.addEventListener('click', checkAvailability);
 	submitBtn.addEventListener('click', submitBooking);
 	serviceSelect.addEventListener('change', () => { const opt = serviceSelect.options[serviceSelect.selectedIndex]; selectService({ id: opt.value, name: opt.dataset.name, duration: parseInt(opt.dataset.duration||'60',10) }); });
