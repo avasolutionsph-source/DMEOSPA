@@ -770,7 +770,6 @@ app.use('/api/products', async (req, res) => {
   // Fallback: minimal products from marketing DB if available
   try {
     const User = (await import('./models/User.js')).default;
-    const userId = req.headers['x-user-id'];
     const userId = req.headers['x-user-id'] || req.query.userId;
     if (!userId) return res.json({ success: true, data: [] });
     const user = await User.findById(userId).lean();
