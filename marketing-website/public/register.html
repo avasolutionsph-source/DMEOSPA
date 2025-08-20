@@ -176,15 +176,46 @@
     </footer>
 
     <script>
+        // Show/hide franchise size dropdown based on business type
+        document.getElementById('businessTypeSelect').addEventListener('change', function() {
+            const franchiseSizeGroup = document.getElementById('franchiseSizeGroup');
+            const franchiseSizeSelect = document.getElementById('franchiseSizeSelect');
+            
+            if (this.value === 'franchise_owner') {
+                franchiseSizeGroup.style.display = 'block';
+                franchiseSizeSelect.required = true;
+            } else {
+                franchiseSizeGroup.style.display = 'none';
+                franchiseSizeSelect.required = false;
+                franchiseSizeSelect.value = '';
+            }
+        });
+
+        // Single form submission handler with all validations
         document.getElementById('registerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const formData = new FormData(e.target);
             const password = formData.get('password');
             const confirmPassword = formData.get('confirmPassword');
+            const businessType = formData.get('businessType');
+            const franchiseSize = formData.get('franchiseSize');
             
+            // Validate passwords match
             if (password !== confirmPassword) {
                 showError('Passwords do not match');
+                return;
+            }
+            
+            // Validate franchise size if franchise owner is selected
+            if (businessType === 'franchise_owner' && !franchiseSize) {
+                showError('Please select your franchise size');
+                return;
+            }
+            
+            // Validate business type is selected
+            if (!businessType) {
+                showError('Please select your business type');
                 return;
             }
             
@@ -196,9 +227,11 @@
                 phone: formData.get('phone'),
                 password: password,
                 plan: formData.get('plan'),
-                businessType: formData.get('businessType'),
-                franchiseSize: formData.get('franchiseSize')
+                businessType: businessType,
+                franchiseSize: franchiseSize
             };
+            
+            console.log('Submitting registration data:', userData); // Debug log
             
             try {
                 const response = await fetch('/api/auth/register', {
@@ -210,6 +243,7 @@
                 });
                 
                 const data = await response.json();
+                console.log('Registration response:', data); // Debug log
                 
                 if (data.success) {
                     showSuccess('Account created successfully! Redirecting to your dashboard...');
@@ -243,34 +277,6 @@
             successElement.style.display = 'block';
             document.getElementById('registerError').style.display = 'none';
         }
-
-        // Show/hide franchise size dropdown based on business type
-        document.getElementById('businessTypeSelect').addEventListener('change', function() {
-            const franchiseSizeGroup = document.getElementById('franchiseSizeGroup');
-            const franchiseSizeSelect = document.getElementById('franchiseSizeSelect');
-            
-            if (this.value === 'franchise_owner') {
-                franchiseSizeGroup.style.display = 'block';
-                franchiseSizeSelect.required = true;
-            } else {
-                franchiseSizeGroup.style.display = 'none';
-                franchiseSizeSelect.required = false;
-                franchiseSizeSelect.value = '';
-            }
-        });
-
-        // Additional validation for franchise size
-        document.getElementById('registerForm').addEventListener('submit', function(e) {
-            const businessType = document.getElementById('businessTypeSelect').value;
-            const franchiseSize = document.getElementById('franchiseSizeSelect').value;
-            
-            // Validate franchise size if franchise owner is selected
-            if (businessType === 'franchise_owner' && !franchiseSize) {
-                e.preventDefault();
-                showError('Please select your franchise size');
-                return false;
-            }
-        });
     </script>
     <script src="/assets/main.js"></script>
 </body>
