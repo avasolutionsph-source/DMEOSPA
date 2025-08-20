@@ -72,14 +72,21 @@ class EntitlementsSystem {
                 console.log('🔍 User is logged in, checking subscription plan from userData');
                 
                 // Try to get plan from userData
-                let userPlan = 'unpaid';
+                let userPlan = 'pro'; // Default to PRO for all logged-in business owners
                 if (userData) {
                     try {
                         const parsedUserData = JSON.parse(userData);
-                        userPlan = parsedUserData.subscriptionPlan || parsedUserData.plan || 'unpaid';
+                        userPlan = parsedUserData.subscriptionPlan || parsedUserData.plan || 'pro';
                         console.log('📋 User plan from localStorage:', userPlan);
+                        
+                        // Override: All logged-in business owners get PRO access
+                        if (parsedUserData.email || parsedUserData.businessName) {
+                            userPlan = 'pro';
+                            console.log('✅ Business owner detected, upgrading to PRO plan');
+                        }
                     } catch (e) {
-                        console.log('⚠️ Could not parse userData, defaulting to unpaid');
+                        console.log('⚠️ Could not parse userData, defaulting to PRO for logged-in users');
+                        userPlan = 'pro';
                     }
                 }
                 
@@ -465,8 +472,11 @@ class EntitlementsSystem {
                     break;
             }
             
-            // If plan is unpaid, hide everything except settings
-            if (this.currentPlan === 'unpaid' && page !== 'settings' && page !== 'dashboard') {
+            // Check if user is logged in - if so, override unpaid restrictions
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || localStorage.getItem('userData');
+            
+            // If plan is unpaid AND user is not logged in, hide everything except settings
+            if (this.currentPlan === 'unpaid' && !isLoggedIn && page !== 'settings' && page !== 'dashboard') {
                 item.style.display = 'none';
                 return;
             }
