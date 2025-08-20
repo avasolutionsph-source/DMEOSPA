@@ -522,6 +522,50 @@ app.get('/api/public/businesses', async (req, res) => {
 
 // Proxy bookings and availability to PWA backend so PWA/webapp can use one base URL
 app.use('/api/bookings', async (req, res) => {
+  console.log(`📡 Bookings ${req.method} request:`, req.originalUrl, req.headers['x-user-id']);
+  
+  // FOR TESTING: Skip PWA backend and go directly to fallback storage for POST requests
+  if (req.method === 'POST') {
+    console.log('🔄 TESTING MODE: Skipping PWA backend, using direct storage');
+    try {
+      const User = (await import('./models/User.js')).default;
+      const userId = req.headers['x-user-id'];
+      console.log('🆔 Looking for user ID:', userId);
+      if (!userId) return res.status(500).json({ error: 'No user ID provided' });
+      const user = await User.findById(userId);
+      if (!user) {
+        console.log('❌ User not found:', userId);
+        return res.status(404).json({ error: 'User not found' });
+      }
+      console.log('✅ Found user:', user.businessName || user.email);
+      const payload = req.body || {};
+      user.bookings = user.bookings || [];
+      const newBooking = {
+        source: payload.source || 'booking-site',
+        storeId: payload.storeId,
+        storeName: payload.storeName,
+        customer: payload.customer,
+        serviceId: payload.serviceId,
+        serviceName: payload.serviceName,
+        durationMins: payload.durationMins || 60,
+        partySize: payload.partySize || 1,
+        employeeId: payload.employeeId,
+        employeeName: payload.employeeName,
+        startTime: payload.startTime ? new Date(payload.startTime) : new Date(),
+        status: payload.status || 'pending',
+        notes: payload.notes || '',
+        createdAt: new Date()
+      };
+      user.bookings.push(newBooking);
+      await user.save();
+      console.log('✅ Booking stored directly in marketing DB:', newBooking);
+      return res.status(201).json({ success: true, data: { id: user.bookings[user.bookings.length-1]._id } });
+    } catch (e) {
+      console.error('❌ Direct booking storage failed:', e.message);
+      return res.status(500).json({ error: 'Failed to store booking' });
+    }
+  }
+  
   try {
     const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';
     const url = `${pwaBackendUrl}${req.originalUrl}`; // preserve /api/bookings... path
