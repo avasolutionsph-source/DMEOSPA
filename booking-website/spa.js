@@ -1,10 +1,8 @@
 (function(){
 	const isLocal = ['localhost','127.0.0.1'].some(h => location.hostname.startsWith(h));
-	const marketingApi = 'https://marketing-website-sz2b.onrender.com';
-	// read ?pwa override
-	try { const qp = new URLSearchParams(location.search).get('pwa'); if (qp) localStorage.setItem('pwaApiUrl', qp); } catch(e){}
-	// Always prefer marketing proxy first; only fall back to direct PWA if we have a valid HTTPS URL
-	let apiHost = marketingApi;
+	const pwaBackendApi = 'https://ava-pwa-backend.onrender.com'; // Use existing PWA backend
+	// Use PWA backend for everything - no more marketing API needed
+	let apiHost = pwaBackendApi;
 	const apiBase = () => `${apiHost}/api`;
 
 	const params = new URLSearchParams(location.search);
@@ -14,17 +12,10 @@
 	function isHttps(url){ try { return typeof url === 'string' && url.startsWith('https://'); } catch(_) { return false; } }
 
 	async function ensureBackendUrl(){
-		const stored = localStorage.getItem('pwaApiUrl');
-		if (stored && isHttps(stored)) { return stored; }
-		try {
-			const r = await fetch(`${marketingApi}/api/config`);
-			const j = await r.json();
-			if (j.pwaBackendUrl && isHttps(j.pwaBackendUrl)) {
-				localStorage.setItem('pwaApiUrl', j.pwaBackendUrl);
-				return j.pwaBackendUrl;
-			}
-			return null;
-		} catch(e){ return null; }
+		// Always use PWA backend - no need for config endpoint
+		const pwaUrl = 'https://ava-pwa-backend.onrender.com';
+		localStorage.setItem('pwaApiUrl', pwaUrl);
+		return pwaUrl;
 	}
 
 	const qs = sel => document.querySelector(sel);
@@ -82,7 +73,7 @@
 			// Method 1: Try new business catalog endpoint
 			try {
 				console.log('🔍 Method 1: Trying business catalog endpoint...');
-				const catalogResponse = await fetch(`${marketingApi}/api/public/business-catalog/${businessId}`);
+				const catalogResponse = await fetch(`${pwaBackendApi}/api/auth/public/business-catalog/${businessId}`);
 				if (catalogResponse.ok) {
 					catalogData = await catalogResponse.json();
 					console.log('✅ Business catalog loaded:', catalogData);
@@ -97,7 +88,7 @@
 			// Method 2: Try products endpoint with business ID header
 			try {
 				console.log('🔍 Method 2: Trying products endpoint with business ID header...');
-				const productsResponse = await fetch(`${marketingApi}/api/products`, {
+				const productsResponse = await fetch(`${pwaBackendApi}/api/products`, {
 					headers: {
 						'x-user-id': businessId,
 						'Content-Type': 'application/json'
@@ -139,9 +130,9 @@
 		} catch (e) {
 			console.warn('❌ Published catalog failed, trying marketing API products endpoint:', e);
 			
-			// Fallback to marketing API products endpoint
+			// Fallback to PWA backend products endpoint
 			try {
-				apiHost = marketingApi;
+				apiHost = pwaBackendApi;
 				const fallbackData = await fetchJSON(`${apiBase()}/products`);
 				console.log('✅ Fallback products loaded:', fallbackData);
 				return fallbackData;
@@ -184,7 +175,7 @@
 			if (businessId) {
 				// Try the business catalog endpoint first
 				try {
-					const catalogResponse = await fetch(`${marketingApi}/api/public/business-catalog/${businessId}`);
+					const catalogResponse = await fetch(`${pwaBackendApi}/api/auth/public/business-catalog/${businessId}`);
 					if (catalogResponse.ok) {
 						const catalogData = await catalogResponse.json();
 						console.log('✅ Business catalog loaded for employees:', catalogData);
@@ -225,13 +216,10 @@
 
 	async function tryAvailability(dateStr){
 		try {
-			apiHost = marketingApi;
+			apiHost = pwaBackendApi;
 			return await fetchJSON(`${apiBase()}/availability?date=${encodeURIComponent(dateStr)}&serviceId=${encodeURIComponent(serviceSelect.value)}`);
 		} catch (e) {
-			const pwa = localStorage.getItem('pwaApiUrl');
-			if (isHttps(pwa)) {
-				try { return await fetchJSON(`${pwa}/api/availability?date=${encodeURIComponent(dateStr)}&serviceId=${encodeURIComponent(serviceSelect.value)}`); } catch(e2){}
-			}
+			console.error('❌ Availability check failed:', e);
 			return null;
 		}
 	}
