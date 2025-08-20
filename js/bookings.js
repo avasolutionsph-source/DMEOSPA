@@ -113,11 +113,12 @@ class BookingsManager {
 			try {
 				const bid = (await db.get('settings','businessConfig'))?.value?.userId;
 				if (bid) {
-					const resp = await fetch('https://ava-marketing-api.onrender.com/api/public/bookings', { headers: { 'x-user-id': String(bid) } });
-					if (resp.ok) {
+					const resp = await fetch('https://ava-marketing-api.onrender.com/api/business/bookings', { headers: { 'Authorization': `Bearer ${localStorage.getItem('userToken')||''}` } }).catch(()=>null);
+					if (resp && resp.ok) {
 						const j = await resp.json();
-						if (Array.isArray(j.data)) {
-							for (const bk of j.data) {
+						const list = j.bookings || j.data || [];
+						if (Array.isArray(list)) {
+							for (const bk of list) {
 								const toSave = {
 									id: bk._id || bk.id || undefined,
 									date: bk.startTime,

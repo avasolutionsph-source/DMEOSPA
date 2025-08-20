@@ -773,7 +773,13 @@ app.get('/api/business/bookings', async (req, res) => {
     const jwt = await import('jsonwebtoken');
     const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     const User = (await import('./models/User.js')).default;
-    const user = await User.findById(decoded.userId).lean();
+    let user = await User.findById(decoded.userId).lean();
+    // If this is an employee account, return bookings from the owner account
+    const role = (decoded.role || '').toLowerCase();
+    if (user && role && role !== 'owner' && decoded.ownerId) {
+      const owner = await User.findById(decoded.ownerId).lean();
+      if (owner) user = owner;
+    }
     return res.json({ bookings: user?.bookings || [] });
   } catch (e) {
     console.error('Business bookings fetch error:', e.message);
