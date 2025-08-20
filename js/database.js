@@ -5,9 +5,15 @@ class Database {
         this.version = 6; // Bump when schema changes
         this.db = null;
         this.userId = null;
+        this.businessId = null; // For branch account data sharing
+        this.isInitialized = false;
     }
 
     async init() {
+        if (this.isInitialized) {
+            return this.db;
+        }
+        
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.version);
 
@@ -18,6 +24,7 @@ class Database {
 
             request.onsuccess = () => {
                 this.db = request.result;
+                this.isInitialized = true;
                 console.log('Database opened successfully');
                 resolve(this.db);
             };
@@ -504,6 +511,179 @@ class Database {
         } catch (error) {
             console.error('Import failed:', error);
             return false;
+        }
+    }
+
+    // Sync business data for branch accounts from MongoDB
+    async syncBranchAccountData(user) {
+        if (!user || user.role === 'owner' || !user.businessId) {
+            console.log('⏭️  No branch data sync needed - user is owner or missing businessId');
+            return;
+        }
+
+        console.log('🔄 Syncing business data for branch account:', user.email, 'Business ID:', user.businessId);
+
+        try {
+            // Get token from unified auth
+            let token = null;
+            if (window.unifiedAuth && window.unifiedAuth.getAuthToken) {
+                token = window.unifiedAuth.getAuthToken();
+            }
+            
+            if (!token) {
+                token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+            }
+
+            if (!token) {
+                console.warn('⚠️ No auth token available for sync');
+                return;
+            }
+
+            const marketingApi = 'https://ava-marketing-api.onrender.com';
+            
+            // Fetch business stats (includes sales data)
+            console.log('📊 Fetching business stats from MongoDB...');
+            const statsResponse = await fetch(`${marketingApi}/api/business/stats?branchId=${user.businessId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (statsResponse.ok) {
+                const stats = await statsResponse.json();
+                console.log('📊 Business stats received:', stats);
+
+                // Create synthetic transactions from business stats
+                const today = new Date().toISOString().split('T')[0];
+                
+                if (stats.todaySales && stats.todaySales > 0) {
+                    const syntheticTransaction = {
+                        id: `sync_sales_${today}`,
+                        total: stats.todaySales,
+                        items: [{ 
+                            name: `Today's Sales (Synced)`, 
+                            quantity: stats.todayTransactions || 1, 
+                            price: stats.todaySales / (stats.todayTransactions || 1)
+                        }],
+                        date: today,
+                        timestamp: new Date().toISOString(),
+                        paymentMethod: 'Mixed',
+                        employeeId: 'system',
+                        syncStatus: 'synced',
+                        isSyncedData: true,
+                        source: 'mongodb_sync'
+                    };
+
+                    try {
+                        await this.add('transactions', syntheticTransaction);
+                        console.log('✅ Added synced sales data:', stats.todaySales);
+                    } catch (e) {
+                        // Update existing if it already exists
+                        try {
+                            await this.update('transactions', syntheticTransaction);
+                            console.log('✅ Updated synced sales data:', stats.todaySales);
+                        } catch (updateError) {
+                            console.warn('Could not add/update synced transaction:', e);
+                        }
+                    }
+                }
+
+                // Sync weekly and monthly data
+                if (stats.weekSales && stats.weekSales > 0) {
+                    const weekStart = new Date();
+                    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                    const weekSyncTransaction = {
+                        id: `sync_week_${weekStart.toISOString().split('T')[0]}`,
+                        total: stats.weekSales,
+                        items: [{ 
+                            name: `This Week's Sales (Synced)`, 
+                            quantity: stats.weekTransactions || 1, 
+                            price: stats.weekSales / (stats.weekTransactions || 1)
+                        }],
+                        date: weekStart.toISOString().split('T')[0],
+                        timestamp: weekStart.toISOString(),
+                        paymentMethod: 'Mixed',
+                        employeeId: 'system',
+                        syncStatus: 'synced',
+                        isSyncedData: true,
+                        source: 'mongodb_weekly_sync'
+                    };
+
+                    try {
+                        await this.add('transactions', weekSyncTransaction);
+                        console.log('✅ Added synced weekly sales:', stats.weekSales);
+                    } catch (e) {
+                        try {
+                            await this.update('transactions', weekSyncTransaction);
+                        } catch (updateError) {
+                            console.warn('Could not sync weekly data');
+                        }
+                    }
+                }
+            }
+
+            // Fetch employees data
+            console.log('👥 Fetching employees from MongoDB...');
+            const employeesResponse = await fetch(`${marketingApi}/api/business/employees?branchId=${user.businessId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (employeesResponse.ok) {
+                const employeesData = await employeesResponse.json();
+                const employees = employeesData.employees || [];
+                console.log('👥 Employees received:', employees.length);
+
+                // Add employees to IndexedDB
+                for (const emp of employees) {
+                    try {
+                        const employeeData = {
+                            id: emp.id || `sync_emp_${Date.now()}_${Math.random()}`,
+                            name: emp.name,
+                            position: emp.position || 'Employee',
+                            email: emp.email || '',
+                            phone: emp.phone || '',
+                            hireDate: emp.lastUpdated || new Date().toISOString(),
+                            commissionRate: 0,
+                            syncStatus: 'synced',
+                            isSyncedData: true,
+                            totalSales: emp.totalSales || 0,
+                            totalCommission: emp.totalCommission || 0,
+                            transactions: emp.transactions || 0,
+                            avgSale: emp.avgSale || 0
+                        };
+                        
+                        await this.add('employees', employeeData);
+                        console.log('✅ Added synced employee:', emp.name);
+                    } catch (e) {
+                        // Update existing if it already exists
+                        try {
+                            const employeeData = {
+                                id: emp.id || `sync_emp_${emp.name}_${Date.now()}`,
+                                name: emp.name,
+                                position: emp.position || 'Employee',
+                                email: emp.email || '',
+                                phone: emp.phone || '',
+                                hireDate: emp.lastUpdated || new Date().toISOString(),
+                                commissionRate: 0,
+                                syncStatus: 'synced',
+                                isSyncedData: true,
+                                totalSales: emp.totalSales || 0,
+                                totalCommission: emp.totalCommission || 0,
+                                transactions: emp.transactions || 0,
+                                avgSale: emp.avgSale || 0
+                            };
+                            await this.update('employees', employeeData);
+                            console.log('✅ Updated synced employee:', emp.name);
+                        } catch (updateError) {
+                            console.warn('Could not sync employee:', emp.name);
+                        }
+                    }
+                }
+            }
+
+            console.log('✅ Branch account data sync completed successfully');
+            
+        } catch (error) {
+            console.error('❌ Branch data sync failed:', error);
+            // Don't throw - let the app continue even if sync fails
         }
     }
 }

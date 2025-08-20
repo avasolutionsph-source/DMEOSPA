@@ -5,6 +5,7 @@ class UnifiedAuth {
         this.authToken = null;
         this.isLoggedIn = false;
         this.apiBaseUrl = 'http://localhost:4000/api'; // PWA Backend
+        this.marketingApiUrl = 'https://ava-marketing-api.onrender.com/api'; // Marketing API
         this.onAuthChange = null; // Callback for auth state changes
         
         console.log('🔐 Unified Auth System initialized');
@@ -39,6 +40,15 @@ class UnifiedAuth {
                     
                     console.log('✅ Existing session restored:', this.currentUser.email);
                     this.updateUI();
+                    
+                    // Sync business data for branch accounts (in background)
+                    if (this.currentUser.role !== 'owner' && this.currentUser.businessId) {
+                        console.log('🔄 Branch account session restored, syncing latest data...');
+                        db.syncBranchAccountData(this.currentUser).catch(error => {
+                            console.warn('⚠️ Background sync failed (non-critical):', error);
+                        });
+                    }
+                    
                     return true;
                 }
             }
@@ -53,8 +63,26 @@ class UnifiedAuth {
         return false;
     }
 
-    // Validate token with backend
+    // Validate token with backend (with offline support and multiple endpoints)
     async validateToken(token) {
+        // First try local token expiry check (fastest)
+        try {
+            const tokenData = JSON.parse(atob(token.split('.')[1]));
+            const now = Math.floor(Date.now() / 1000);
+            const isExpired = tokenData.exp && tokenData.exp < now;
+            
+            if (isExpired) {
+                console.log('❌ Token expired locally');
+                return false;
+            }
+            
+            console.log('✅ Token not expired locally, checking with backend...');
+        } catch (parseError) {
+            console.error('Failed to parse token locally:', parseError);
+            // Continue to backend validation if local parsing fails
+        }
+
+        // Try PWA backend first
         try {
             const response = await fetch(`${this.apiBaseUrl}/auth/validate`, {
                 method: 'GET',
@@ -64,12 +92,54 @@ class UnifiedAuth {
                 }
             });
             
-            const data = await response.json();
-            return response.ok && data.success && data.valid;
-        } catch (error) {
-            console.error('Token validation failed:', error);
-            return false;
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.valid) {
+                    console.log('✅ Token validated with PWA backend');
+                    return true;
+                }
+            }
+        } catch (pwaError) {
+            console.warn('⚠️ PWA backend unavailable:', pwaError.message);
         }
+
+        // Try marketing API as fallback
+        try {
+            const response = await fetch(`${this.marketingApiUrl}/auth/validate`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.valid) {
+                    console.log('✅ Token validated with Marketing API');
+                    return true;
+                }
+            }
+        } catch (marketingError) {
+            console.warn('⚠️ Marketing API unavailable:', marketingError.message);
+        }
+
+        // If both backends are unavailable, keep session if token hasn't expired locally
+        try {
+            const tokenData = JSON.parse(atob(token.split('.')[1]));
+            const now = Math.floor(Date.now() / 1000);
+            const isExpired = tokenData.exp && tokenData.exp < now;
+            
+            if (!isExpired) {
+                console.log('⚠️ All backends unavailable but token not expired - maintaining session (offline mode)');
+                return true; // Keep session for offline use
+            }
+        } catch (parseError) {
+            console.error('Failed to parse token for offline validation:', parseError);
+        }
+
+        console.log('❌ Token validation failed on all endpoints');
+        return false;
     }
 
     // Set up event listeners
@@ -266,6 +336,17 @@ class UnifiedAuth {
         
         // Update UI
         this.updateUI();
+        
+        // Sync business data for branch accounts
+        if (user.role !== 'owner' && user.businessId) {
+            console.log('🔄 Branch account detected, syncing business data...');
+            try {
+                await db.syncBranchAccountData(user);
+                console.log('✅ Branch data sync completed');
+            } catch (syncError) {
+                console.warn('⚠️ Branch data sync failed (non-critical):', syncError);
+            }
+        }
         
         // Notify other systems
         if (this.onAuthChange) {

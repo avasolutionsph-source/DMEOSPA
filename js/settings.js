@@ -414,6 +414,79 @@ class SettingsManager {
         document.getElementById('debugEmployeesBtn').addEventListener('click', async () => {
             await this.debugEmployees();
         });
+
+        // Add branch data sync button if user is not owner
+        const currentUser = window.unifiedAuth?.getCurrentUser();
+        if (currentUser && currentUser.role !== 'owner' && currentUser.businessId) {
+            this.addBranchSyncButton();
+        }
+    }
+
+    // Add branch data sync button for non-owner accounts
+    addBranchSyncButton() {
+        const dataSection = document.querySelectorAll('.settings-section')[1];
+        if (!dataSection) return;
+
+        if (document.getElementById('branchSyncBtn')) return; // Already added
+
+        const wrap = document.createElement('div');
+        wrap.className = 'dynamic-content';
+        wrap.innerHTML = `
+            <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem; color: #6366f1;">🏢 Branch Account Data</h3>
+            <p style="color: var(--gray); margin-bottom: 0.5rem;">
+                Sync the latest business data from your main account including sales, employees, and business metrics.
+            </p>
+            <button class="btn btn-primary" id="branchSyncBtn">
+                <i class="fas fa-sync-alt"></i> Sync Business Data
+            </button>
+            <div id="branchSyncStatus" style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--gray);"></div>
+        `;
+        dataSection.appendChild(wrap);
+
+        document.getElementById('branchSyncBtn').addEventListener('click', async () => {
+            await this.syncBranchData();
+        });
+    }
+
+    async syncBranchData() {
+        const btn = document.getElementById('branchSyncBtn');
+        const statusDiv = document.getElementById('branchSyncStatus');
+        const originalText = btn.innerHTML;
+        
+        try {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+            statusDiv.textContent = 'Syncing business data from MongoDB...';
+
+            const currentUser = window.unifiedAuth?.getCurrentUser();
+            if (!currentUser) {
+                throw new Error('No user logged in');
+            }
+
+            // Trigger branch data sync
+            await db.syncBranchAccountData(currentUser);
+            
+            // Refresh UI components
+            if (window.expensesManager) {
+                await window.expensesManager.loadExpenses();
+                await window.expensesManager.loadDailySummary();
+            }
+            
+            if (window.loadDashboard) {
+                await window.loadDashboard();
+            }
+
+            statusDiv.textContent = 'Last synced: ' + new Date().toLocaleString();
+            showNotification('✅ Business data synced successfully!', 'success');
+            
+        } catch (error) {
+            console.error('Branch sync error:', error);
+            statusDiv.textContent = 'Sync failed: ' + error.message;
+            showNotification('❌ Failed to sync business data', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
     }
 
     // Publish booking catalog (services + employees) to marketing API
