@@ -101,13 +101,39 @@ class App {
     }
 
     applyPerformanceTuning() {
-        // SIMPLIFIED: No performance restrictions for testing
-        console.log('✅ SIMPLIFIED: Performance tuning disabled for testing');
+        if (this.performanceProfile === 'low') {
+            document.documentElement.classList.add('perf-low');
+            // TESTING MODE: Keep console logs enabled
+            console.log('⚡ TESTING MODE: Console logs remain enabled for debugging');
+            // Extra scroll/paint optimizations for low-power Intel CPUs
+            try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch(_){ }
+            // Ensure any global scroll listeners are passive and cheap
+            try {
+                if (this._passiveScrollHandler) window.removeEventListener('scroll', this._passiveScrollHandler);
+                this._passiveScrollHandler = () => {};
+                window.addEventListener('scroll', this._passiveScrollHandler, { passive: true });
+            } catch(_){ }
+        }
     }
 
     autotunePerformance() {
-        // SIMPLIFIED: No auto-tuning for testing
-        console.log('✅ SIMPLIFIED: Auto-tuning disabled for testing');
+        try {
+            let frames = 0; let last = performance.now(); let total = 0; let stop = false;
+            const sample = (t) => {
+                if (stop) return;
+                total += (t - last); last = t; frames++;
+                if (frames < 60) { requestAnimationFrame(sample); } else {
+                    const avg = total / frames;
+                    if (avg > 24 && this.performanceProfile !== 'low') {
+                        this.performanceProfile = 'low';
+                        window.performanceProfile = 'low';
+                        this.applyPerformanceTuning();
+                    }
+                }
+            };
+            requestAnimationFrame(sample);
+            setTimeout(() => { stop = true; }, 3000);
+        } catch(_e) {}
     }
 
     defer(fn) {
