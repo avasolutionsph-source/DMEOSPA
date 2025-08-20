@@ -409,8 +409,33 @@
                             localStorage.getItem('token');
                             
                 if (token) {
-                    // Already logged in, redirect to dashboard
-                    window.location.href = 'index.html';
+                    // Already logged in, redirect based on role
+                    const userData = localStorage.getItem('auth_user') || 
+                                   localStorage.getItem('userData') || 
+                                   localStorage.getItem('user');
+                    
+                    if (userData) {
+                        try {
+                            const user = JSON.parse(userData);
+                            const userRole = user.role || 'employee';
+                            const rolePages = {
+                                'owner': 'owner.html',
+                                'admin': 'admin.html',
+                                'manager': 'manager.html',
+                                'employee': 'employee.html',
+                                'therapist': 'therapist.html',
+                                'receptionist': 'receptionist.html',
+                                'rider': 'employee.html',
+                                'utility': 'employee.html'
+                            };
+                            const targetPage = rolePages[userRole] || 'employee.html';
+                            window.location.href = targetPage;
+                        } catch (e) {
+                            window.location.href = 'employee.html';
+                        }
+                    } else {
+                        window.location.href = 'employee.html';
+                    }
                 }
             }
             
@@ -541,9 +566,21 @@
                 
                 this.showAlert('success', 'Login successful! Redirecting to dashboard...');
                 
-                // Redirect to main app
+                // Redirect based on user role
                 setTimeout(() => {
-                    window.location.href = 'index.html';
+                    const userRole = data.user.role || 'employee';
+                    const rolePages = {
+                        'owner': 'owner.html',
+                        'admin': 'admin.html',
+                        'manager': 'manager.html',
+                        'employee': 'employee.html',
+                        'therapist': 'therapist.html',
+                        'receptionist': 'receptionist.html',
+                        'rider': 'employee.html',
+                        'utility': 'employee.html'
+                    };
+                    const targetPage = rolePages[userRole] || 'employee.html';
+                    window.location.href = targetPage;
                 }, 1000);
             }
         }
