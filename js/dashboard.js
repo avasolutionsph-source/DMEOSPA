@@ -49,13 +49,13 @@ class DashboardManager {
         try {
             // Check if logged in as employee with therapist role
             const currentUser = window.authSystem?.currentUser;
-            const isEmployeeAccount = currentUser?.role && currentUser?.role !== 'owner' && currentUser?.ownerId;
             const isTherapistRole = (currentUser?.role || '').toLowerCase() === 'therapist';
             
             // Also check role manager for role switching
             const activeRole = (window.roleManager?.activeEmployee?.role || '').toLowerCase();
             
-            return (isEmployeeAccount && isTherapistRole) || activeRole === 'therapist';
+            // Return true if either the current user is a therapist OR role switching is active with therapist role
+            return isTherapistRole || activeRole === 'therapist';
         } catch(_) {
             return false;
         }
@@ -79,7 +79,11 @@ class DashboardManager {
                     <div class="therapist-welcome">
                         <h1>Welcome, ${therapistName}!</h1>
                         <p>Working at ${workplaceName}</p>
-                        <button class="btn btn-sm btn-warning" onclick="window.applyRoleRestrictions()" style="margin-top: 0.5rem;">
+                        <a href="/booking-website/therapist.html?token=${encodeURIComponent(window.authSystem?.authToken || '')}&therapistId=${encodeURIComponent(currentUser?.id || '')}&name=${encodeURIComponent(therapistName)}&email=${encodeURIComponent(currentUser?.email || '')}" 
+                           class="btn btn-sm btn-primary" target="_blank" style="margin-top: 0.5rem;">
+                            <i class="fas fa-external-link-alt"></i> Open Therapist Portal
+                        </a>
+                        <button class="btn btn-sm btn-warning" onclick="window.applyRoleRestrictions()" style="margin-top: 0.5rem; margin-left: 0.5rem;">
                             <i class="fas fa-lock"></i> Apply Role Restrictions
                         </button>
                     </div>

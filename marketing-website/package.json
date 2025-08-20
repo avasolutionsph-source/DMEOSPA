@@ -3,13 +3,19 @@
   "version": "1.0.0",
   "description": "Ava Solutions Professional Marketing Website",
   "main": "server.js",
-  "type": "module",
+
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
+    "build": "echo 'Static files ready for deployment'",
     "seed": "node scripts/seed.js",
     "cleanup": "node scripts/cleanup-sample-users.js",
+    "verify": "node build-verify.js",
     "test": "echo \"No tests specified\" && exit 0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   },
   "dependencies": {
     "express": "^4.19.2",

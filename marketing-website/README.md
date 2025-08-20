@@ -1,62 +1,67 @@
 # Ava Solutions Marketing Website
 
-Professional marketing website with subscription management for Ava Solutions business management system.
+Professional marketing website with user authentication and business management features.
 
-## Setup Instructions
+## Architecture
 
-1. **Install Dependencies**
-   ```bash
-   cd marketing-website
-   npm install
-   ```
+- **Frontend**: Static HTML/CSS/JS files in `public/` directory
+- **Backend**: Node.js/Express API server (`server.js`)
+- **Database**: MongoDB (hosted separately)
+- **Deployment**: 
+  - Static files → Netlify
+  - API server → Render.com
 
-2. **Environment Configuration**
-   ```bash
-   cp .env.example .env
-   ```
-   Edit `.env` file with your configuration:
-   - Set your MongoDB connection string
-   - Configure JWT secret
-   - Set admin credentials
-   - Configure Stripe keys (for subscriptions)
+## Local Development
 
-3. **Seed Admin User**
-   ```bash
-   npm run seed
-   ```
+```bash
+# Install dependencies
+npm install
 
-4. **Start MongoDB**
-   Make sure MongoDB is running on your system or use MongoDB Atlas.
+# Start development server
+npm run dev
 
-5. **Run the Website**
-   ```bash
-   # Development mode
-   npm run dev
-   
-   # Production mode
-   npm start
-   ```
+# Verify build setup
+npm run verify
+```
 
-6. **Access the Website**
-   - Homepage: http://localhost:3000
-   - Admin Panel: http://localhost:3000/admin
-   - Pricing: http://localhost:3000/pricing
+## Deployment
 
-## Features
+### Frontend (Netlify)
+- Deploys static files from `public/` directory
+- API calls are proxied to Render backend via `_redirects`
+- Build command: `npm run build`
 
-- Professional landing page
-- Subscription management with Stripe
-- Admin dashboard for user management
-- PWA download page
-- Contact and support pages
+### Backend (Render.com)
+- Deploys the Express server
+- Handles `/api/*` routes
+- Start command: `npm start`
 
-## Admin Access
+## Build Configuration
 
-Use the credentials you set in the `.env` file to access the admin panel at `/admin`.
+- `netlify.toml`: Netlify deployment settings
+- `public/_redirects`: URL redirects and API proxy
+- `public/_headers`: Security headers and caching
+- `.nvmrc`: Node.js version for builds
 
-## Integration with PWA
+## Files Structure
 
-The PWA can redirect users to this website for:
-- Account upgrades: `/upgrade?plan=basic&email=user@example.com`
-- Support: `/contact`
-- Feature information: `/features`
+```
+marketing-website/
+├── public/              # Static website files (deployed to Netlify)
+│   ├── index.html       # Homepage
+│   ├── _redirects       # Netlify redirects
+│   ├── _headers         # Netlify headers
+│   └── assets/          # CSS, JS, images
+├── routes/              # API routes (deployed to Render)
+├── models/              # Database models
+├── config/              # Configuration files
+├── server.js            # Express server
+└── netlify.toml         # Netlify configuration
+```
+
+## Environment Variables
+
+Required for backend deployment:
+- `MONGODB_URI`: MongoDB connection string
+- `JWT_SECRET`: JWT token secret
+- `NODE_ENV`: Environment (production/development)

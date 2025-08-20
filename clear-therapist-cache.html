@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Therapist Cache</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <h1>Clear Therapist Cache</h1>
+    <p>This page will clear all cached data and force refresh therapist permissions.</p>
+    
+    <button onclick="clearCache()" style="padding: 10px 20px; font-size: 16px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">
+        Clear Cache & Reload
+    </button>
+    
+    <div id="status" style="margin-top: 20px; padding: 10px; border-radius: 5px; display: none;"></div>
+    
+    <script>
+        async function clearCache() {
+            const status = document.getElementById('status');
+            status.style.display = 'block';
+            status.style.background = '#ffc107';
+            status.textContent = 'Clearing cache...';
+            
+            try {
+                // Clear all localStorage items
+                const keysToRemove = [
+                    'userToken', 'userData', 'isLoggedIn', 'authToken', 
+                    'currentUser', 'subscriptionPlan', 'activeEmployeeRole',
+                    'businessName', 'businessConfig', 'lastSync'
+                ];
+                
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                });
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                
+                // Clear IndexedDB if available
+                if ('indexedDB' in window) {
+                    try {
+                        const databases = await indexedDB.databases();
+                        databases.forEach(db => {
+                            indexedDB.deleteDatabase(db.name);
+                        });
+                    } catch (e) {
+                        console.log('Could not clear IndexedDB:', e);
+                    }
+                }
+                
+                // Clear service worker cache
+                if ('serviceWorker' in navigator && 'caches' in window) {
+                    try {
+                        const cacheNames = await caches.keys();
+                        await Promise.all(
+                            cacheNames.map(cacheName => caches.delete(cacheName))
+                        );
+                    } catch (e) {
+                        console.log('Could not clear service worker cache:', e);
+                    }
+                }
+                
+                status.style.background = '#28a745';
+                status.textContent = 'Cache cleared! Redirecting to login...';
+                
+                // Redirect to main app after 2 seconds
+                setTimeout(() => {
+                    window.location.href = '/index.html';
+                }, 2000);
+                
+            } catch (error) {
+                status.style.background = '#dc3545';
+                status.style.color = 'white';
+                status.textContent = 'Error clearing cache: ' + error.message;
+            }
+        }
+        
+        // Auto-clear on mobile if URL contains 'auto=true'
+        if (window.location.search.includes('auto=true')) {
+            clearCache();
+        }
+    </script>
+</body>
+</html>

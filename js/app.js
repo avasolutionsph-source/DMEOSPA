@@ -162,6 +162,14 @@ class App {
 
     showPage(pageName) {
         console.log('📄 showPage called with:', pageName);
+        
+        // Check if user has permission to access this page
+        if (!this.canAccessPage(pageName)) {
+            console.log('🚫 Access denied for page:', pageName);
+            showNotification('You do not have permission to access this page', 'error');
+            return;
+        }
+        
         // Hide all pages
         document.querySelectorAll('.page').forEach(page => {
             page.classList.remove('active');
@@ -174,11 +182,59 @@ class App {
             selectedPage.classList.add('active');
             this.currentPage = pageName;
             
+            // Apply role restrictions every time we change pages (mobile fix)
+            setTimeout(() => {
+                if (window.roleManager && typeof window.roleManager.gateNavigationByRole === 'function') {
+                    console.log('📱 Applying role restrictions for mobile compatibility');
+                    window.roleManager.gateNavigationByRole();
+                }
+            }, 10);
+            
             // Load page-specific data
             console.log('📊 Loading page data for:', pageName);
             this.loadPageData(pageName);
         } else {
             console.error('❌ Page element not found for:', pageName);
+        }
+    }
+    
+    canAccessPage(pageName) {
+        // Get current user and role
+        const currentUser = window.authSystem?.currentUser;
+        const activeEmployee = window.roleManager?.activeEmployee;
+        const role = (activeEmployee?.role || currentUser?.role || '').toLowerCase();
+        
+        console.log('🔍 Checking page access:', {
+            page: pageName,
+            role: role,
+            currentUser: currentUser?.email,
+            activeEmployee: activeEmployee?.name
+        });
+        
+        // Owner can access everything
+        if (role === 'owner' || !role) {
+            return true;
+        }
+        
+        // Check against role configuration
+        const roleConfig = window.roleManager?.roles?.[role];
+        if (!roleConfig) {
+            console.log('⚠️ No role config found for:', role);
+            return true; // Default allow if no config
+        }
+        
+        // For therapists, strict allow-list
+        if (role === 'therapist') {
+            const hasAccess = roleConfig.allowPages?.includes(pageName) || false;
+            console.log(`🩺 Therapist access to ${pageName}:`, hasAccess);
+            return hasAccess;
+        }
+        
+        // For other roles, check allow/deny lists
+        if (roleConfig.allowPages?.length > 0) {
+            return roleConfig.allowPages.includes(pageName);
+        } else {
+            return !roleConfig.denyPages?.includes(pageName);
         }
     }
 

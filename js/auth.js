@@ -390,8 +390,16 @@ class AuthSystem {
             if (window.app && typeof window.app.onUserLoggedIn === 'function') {
                 window.app.onUserLoggedIn();
             }
-            // Auto refresh to ensure menus, caches, and SW pick up session immediately
-            setTimeout(() => { try { window.location.reload(true); } catch(_) { window.location.reload(); } }, 300);
+                            // Apply role restrictions immediately after login
+                setTimeout(() => {
+                    if (window.roleManager && this.currentUser?.role && this.currentUser.role !== 'owner') {
+                        console.log('🔒 Post-login: Applying role restrictions for:', this.currentUser.role);
+                        window.roleManager.gateNavigationByRole();
+                    }
+                }, 50);
+                
+                // Auto refresh to ensure menus, caches, and SW pick up session immediately  
+                setTimeout(() => { try { window.location.reload(true); } catch(_) { window.location.reload(); } }, 1000);
         } catch(_) {}
     }
 
@@ -470,11 +478,20 @@ class AuthSystem {
                 
                 // Force role-based navigation gating after auth state is loaded
                 setTimeout(() => {
-                    if (this.isEmployeeAccount()) {
-                        console.log('🔒 Employee account detected, applying role restrictions');
-                        this.gateNavigationByRole();
+                    if (this.currentUser?.role && this.currentUser.role !== 'owner') {
+                        console.log('🔒 Employee account detected, applying role restrictions for:', this.currentUser.role);
+                        // Fix: Call the method on roleManager, not this
+                        if (window.roleManager && typeof window.roleManager.gateNavigationByRole === 'function') {
+                            window.roleManager.gateNavigationByRole();
+                            
+                            // Double-check on mobile devices after a brief delay
+                            setTimeout(() => {
+                                console.log('📱 Double-checking role restrictions for mobile');
+                                window.roleManager.gateNavigationByRole();
+                            }, 500);
+                        }
                     }
-                }, 500);
+                }, 50); // Even faster application
                 
                 return true;
             } catch (error) {
@@ -793,10 +810,10 @@ class RoleManager {
 				allowPages: ['dashboard','pos','bookings','rooms','inventory','employees','settings'],
 				denyPages: ['chatbot']
 			},
-			therapist: {
-				allowPages: ['dashboard','bookings','settings','timer'],
-				denyPages: ['pos','inventory','employees','products','chatbot','rooms']
-			},
+					therapist: {
+			allowPages: ['dashboard','bookings','settings','timer','therapist-portal'],
+			denyPages: ['pos','inventory','employees','products','chatbot','rooms']
+		},
 			admin: {
 				allowPages: ['dashboard','pos','bookings','rooms','inventory','employees','settings','products'],
 				denyPages: []
@@ -834,63 +851,94 @@ class RoleManager {
 	}
 
 	gateNavigationByRole() {
+		console.log('🔒 Starting role-based navigation gating...');
 		const navItems = document.querySelectorAll('.nav-item');
 		
-		// Check if this is an employee account or role session
-		const isEmployeeAccount = this.isEmployeeAccount();
-		const hasActiveRole = !!this.activeEmployee;
+		// Get current user and role information
+		const currentUser = window.authSystem?.currentUser;
+		const activeEmployee = this.activeEmployee;
 		
-		if (!hasActiveRole && !isEmployeeAccount) {
-			// Show all for owners (plan gating still applies)
+		// Determine if this is an employee account or role session
+		const isEmployeeAccount = this.isEmployeeAccount();
+		const hasActiveRole = !!activeEmployee;
+		
+		// Get the role (priority: active employee role > current user role)
+		const role = (activeEmployee?.role || currentUser?.role || '').toLowerCase();
+		
+		console.log('🔍 Role analysis:', {
+			currentUser: currentUser?.email || 'none',
+			userRole: currentUser?.role || 'none',
+			activeEmployee: activeEmployee?.name || 'none',
+			activeRole: activeEmployee?.role || 'none',
+			finalRole: role,
+			isEmployeeAccount,
+			hasActiveRole
+		});
+		
+		// If no role or owner role, show everything (subject to plan gating)
+		if (!role || (role === 'owner' && !hasActiveRole)) {
 			console.log('👑 Owner account - showing all navigation');
-			navItems.forEach(i => i.style.display = '');
+			navItems.forEach(i => {
+				i.style.display = '';
+				i.style.visibility = 'visible';
+			});
 			return;
 		}
 		
-		// Get the role (either from active employee or current user)
-		const role = this.activeEmployee?.role || window.authSystem?.currentUser?.role || '';
-		console.log('🔒 Applying role-based navigation for role:', role, {
-			isEmployeeAccount,
-			hasActiveRole,
-			activeEmployee: this.activeEmployee,
-			currentUser: window.authSystem?.currentUser
-		});
+		// Get role configuration
+		const roleCfg = this.roles[role] || {allowPages: [], denyPages: []};
+		console.log('📋 Using role configuration:', roleCfg, 'for role:', role);
 		
-		const roleCfg = this.roles[role.toLowerCase()] || {allowPages: [], denyPages: []};
-		console.log('📋 Role configuration:', roleCfg);
-		
+		// Apply restrictions to each nav item
 		navItems.forEach(item => {
 			const page = item.dataset.page;
+			let shouldShow = false;
 			
-			// For therapists, only show allowed pages
-			if (role.toLowerCase() === 'therapist') {
-				if (roleCfg.allowPages.includes(page)) {
-					item.style.display = '';
-					console.log(`✅ Showing ${page} for therapist`);
-				} else {
-					item.style.display = 'none';
-					console.log(`🚫 Hiding ${page} for therapist`);
-				}
+			// Special handling for therapists - strict allow-list only
+			if (role === 'therapist') {
+				shouldShow = roleCfg.allowPages.includes(page);
+				console.log(`🩺 Therapist - ${page}: ${shouldShow ? 'ALLOW' : 'DENY'}`);
 			} else {
-				// For other roles, use the original logic
-				if (roleCfg.allowPages.length && !roleCfg.allowPages.includes(page)) {
-					item.style.display = 'none';
-					console.log(`🚫 Hiding ${page} for role ${role}`);
-				} else if (roleCfg.denyPages.includes(page)) {
-					item.style.display = 'none';
-					console.log(`🚫 Hiding ${page} for role ${role}`);
+				// For other employee roles
+				if (roleCfg.allowPages.length > 0) {
+					// If allowPages is specified, only show those
+					shouldShow = roleCfg.allowPages.includes(page);
 				} else {
-					item.style.display = '';
-					console.log(`✅ Showing ${page} for role ${role}`);
+					// Otherwise, show everything except denied pages
+					shouldShow = !roleCfg.denyPages.includes(page);
 				}
+				console.log(`👤 ${role} - ${page}: ${shouldShow ? 'ALLOW' : 'DENY'}`);
+			}
+			
+			// Apply visibility
+			if (shouldShow) {
+				item.style.display = '';
+				item.style.visibility = 'visible';
+				item.removeAttribute('aria-hidden');
+			} else {
+				item.style.display = 'none';
+				item.style.visibility = 'hidden';
+				item.setAttribute('aria-hidden', 'true');
 			}
 		});
+		
+		console.log('🔒 Role gating complete');
+		
+		// Force a reflow to ensure changes take effect on mobile
+		if (navItems.length > 0) {
+			navItems[0].offsetHeight;
+		}
 	}
 
 	isEmployeeAccount() {
 		try {
 			const currentUser = window.authSystem?.currentUser;
-			return currentUser?.role && currentUser?.role !== 'owner' && currentUser?.ownerId;
+			const hasEmployeeRole = currentUser?.role && currentUser?.role !== 'owner';
+			const hasOwnerId = currentUser?.ownerId;
+			const isTherapist = (currentUser?.role || '').toLowerCase() === 'therapist';
+			
+			// Employee account if it has a role other than owner AND either has ownerId OR is specifically a therapist
+			return hasEmployeeRole && (hasOwnerId || isTherapist);
 		} catch(_) {
 			return false;
 		}
@@ -958,14 +1006,17 @@ window.applyRoleRestrictions = () => {
     }
 };
 
-// Force role gating when page loads
+        // Force role gating when page loads
 window.addEventListener('load', () => {
     setTimeout(() => {
-        if (window.roleManager && window.authSystem?.currentUser?.role === 'therapist') {
-            console.log('🔒 Page loaded - applying therapist restrictions');
-            window.roleManager.gateNavigationByRole();
+        if (window.roleManager && window.authSystem?.currentUser) {
+            const userRole = (window.authSystem.currentUser.role || '').toLowerCase();
+            if (userRole === 'therapist' || userRole === 'manager' || userRole === 'receptionist' || userRole === 'admin') {
+                console.log('🔒 Page loaded - applying role restrictions for:', userRole);
+                window.roleManager.gateNavigationByRole();
+            }
         }
-    }, 1000);
+    }, 500); // Reduced timeout to apply faster
 });
 
 // Initialize auth system

@@ -1,0 +1,15 @@
+# API redirects - proxy to backend
+/api/*  https://ava-marketing-api.onrender.com/api/:splat  200
+
+# App download redirects
+/download/*  /download.html  200
+/app  /download.html  200
+
+# Dashboard redirect
+/dashboard  /business-dashboard.html  200
+
+# Admin routes
+/admin  /admin-login.html  200
+
+# Catch-all for 404s
+/*  /404.html  404

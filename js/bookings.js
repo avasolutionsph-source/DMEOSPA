@@ -200,6 +200,15 @@ class BookingsManager {
 		async syncTherapistOnly() {
 		console.log('🔄 Starting therapist bookings sync...');
 		
+		// Get therapist identifiers first
+		const me = await this.getTherapistIdentifiers();
+		console.log('👤 Therapist identifiers:', me);
+		
+		if (me.ids.length === 0 && !me.name && !me.email) {
+			console.log('⚠️ No therapist identifiers found - this may cause booking loading issues');
+			showNotification('Therapist profile not properly configured. Please check your login details.', 'warning');
+		}
+		
 		// ALWAYS check local bookings first (includes test bookings and cached data)
 		let localBookings = [];
 		try {
@@ -209,6 +218,7 @@ class BookingsManager {
 			if (localBookings.length > 0) {
 				console.log('💾 Local bookings details:');
 				localBookings.forEach((booking, index) => {
+					const match = this.isBookingForTherapist(booking, me);
 					console.log(`Local Booking ${index + 1}:`, {
 						id: booking._id || booking.id,
 						employeeId: booking.employeeId,
@@ -220,7 +230,7 @@ class BookingsManager {
 						startTime: booking.startTime,
 						status: booking.status,
 						source: booking.source,
-						fullBooking: booking
+						matchesTherapist: match
 					});
 				});
 			}
@@ -231,7 +241,7 @@ class BookingsManager {
 		// Then try to get remote bookings and merge
 		let remoteBookings = [];
 		try {
-			if (window.apiClient) {
+			if (window.apiClient && navigator.onLine) {
 				console.log('📡 Fetching from /api/business/bookings...');
 				const resp = await window.apiClient.get('/api/business/bookings');
 				console.log('📡 Response status:', resp.status, resp.ok);
@@ -242,7 +252,7 @@ class BookingsManager {
 				console.log('📋 Remote bookings count:', remoteBookings.length);
 			}
 		} catch (e) {
-			console.warn('❌ Failed to fetch remote bookings:', e);
+			console.warn('❌ Failed to fetch remote bookings (offline or error):', e);
 		}
 		
 		// Combine local and remote bookings
