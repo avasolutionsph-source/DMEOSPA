@@ -457,19 +457,29 @@ class PermanentAuthSystem {
         const hasUsers = Object.keys(this.userDatabase).length > 0;
         
         if (!hasUsers) {
-            // Show setup wizard for first user
-            this.showFirstTimeSetup();
-        } else {
-            // Try to restore existing session
-            const isValid = await this.validateSession();
-            if (isValid) {
-                console.log('✅ Existing session restored');
-                this.updateAuthUI();
-                this.applyRoleRestrictions();
-            } else {
-                console.log('❌ No valid session, showing login');
-                this.showLoginModal();
+            // Check if migration already handled this
+            if (window.accountMigrator && window.accountMigrator.migratedAccounts.length > 0) {
+                console.log('✅ Users migrated, reloading database...');
+                this.userDatabase = this.initializeUserDatabase();
             }
+            
+            // Check again after potential migration
+            if (Object.keys(this.userDatabase).length === 0) {
+                // Show setup wizard for first user
+                this.showFirstTimeSetup();
+                return;
+            }
+        }
+        
+        // Try to restore existing session
+        const isValid = await this.validateSession();
+        if (isValid) {
+            console.log('✅ Existing session restored');
+            this.updateAuthUI();
+            this.applyRoleRestrictions();
+        } else {
+            console.log('❌ No valid session, showing login');
+            this.showLoginModal();
         }
     }
 
