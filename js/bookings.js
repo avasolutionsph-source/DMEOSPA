@@ -155,6 +155,24 @@ class BookingsManager {
 			console.log('📦 Raw bookings data:', json);
 			const all = json?.bookings || json?.data || [];
 			console.log('📋 All bookings count:', all.length);
+			
+			// Log each booking for debugging
+			if (all.length > 0) {
+				console.log('📋 All bookings details:');
+				all.forEach((booking, index) => {
+					console.log(`Booking ${index + 1}:`, {
+						id: booking._id || booking.id,
+						employeeId: booking.employeeId,
+						employeeName: booking.employeeName,
+						employeeEmail: booking.employeeEmail,
+						customer: booking.customer,
+						serviceName: booking.serviceName,
+						startTime: booking.startTime,
+						status: booking.status,
+						fullBooking: booking
+					});
+				});
+			}
 			const me = await this.getTherapistIdentifiers();
 			console.log('👤 Therapist identifiers:', me);
 			const norm = (s) => (s||'').trim().toLowerCase();
@@ -195,12 +213,55 @@ class BookingsManager {
 			// Fallback to locally cached bookings filtered by therapist
 			let local = await db.getAll('bookings');
 			console.log('💾 Local bookings count:', local.length);
+			
+			// Log local bookings for debugging
+			if (local.length > 0) {
+				console.log('💾 Local bookings details:');
+				local.forEach((booking, index) => {
+					console.log(`Local Booking ${index + 1}:`, {
+						id: booking._id || booking.id,
+						employeeId: booking.employeeId,
+						employeeName: booking.employeeName,
+						employeeEmail: booking.employeeEmail,
+						customerName: booking.customerName,
+						serviceName: booking.serviceName,
+						date: booking.date,
+						startTime: booking.startTime,
+						status: booking.status,
+						source: booking.source,
+						fullBooking: booking
+					});
+				});
+			}
+			
 			const me = await this.getTherapistIdentifiers();
 			console.log('👤 Therapist identifiers (fallback):', me);
 			const norm = (s) => (s||'').trim().toLowerCase();
-			local = local.filter(b => me.ids.includes(String(b.employeeId||'')) || (!!me.name && norm(b.employeeName) === norm(me.name)));
-			console.log('🎯 Local filtered bookings for therapist:', local.length);
-			this.therapistBookings = local.sort((a,b) => new Date(a.date) - new Date(b.date));
+			
+			const filteredLocal = local.filter(b => {
+				const bid = String(b.employeeId || '');
+				const bname = norm(b.employeeName || '');
+				const bemail = norm(b.employeeEmail || '');
+				
+				const matchById = me.ids.includes(bid);
+				const matchByName = !!me.name && bname === norm(me.name);
+				const matchByEmail = !!me.email && bemail === me.email;
+				
+				const match = matchById || matchByName || matchByEmail;
+				
+				console.log('🔍 Checking local booking:', {
+					booking: b,
+					matchById,
+					matchByName,
+					matchByEmail,
+					finalMatch: match
+				});
+				
+				return match;
+			});
+			
+			console.log('🎯 Local filtered bookings for therapist:', filteredLocal.length);
+			this.therapistBookings = filteredLocal.sort((a,b) => new Date(a.date||a.startTime) - new Date(b.date||b.startTime));
 			this.renderTherapistBookings();
 		}
 	}
@@ -560,6 +621,46 @@ window.testTherapistView = function() {
 	console.log('Is therapist view?', bookingsManager.isTherapistView());
 	bookingsManager.buildTherapistPage();
 	bookingsManager.syncTherapistOnly();
+};
+
+// Debug function to manually sync bookings from the booking website
+window.syncBookingsFromBookingSite = async function() {
+	console.log('🔄 Manually syncing bookings from booking website...');
+	try {
+		// Try to fetch bookings from different endpoints
+		const endpoints = [
+			'/api/business/bookings',
+			'/api/bookings',
+			'/api/public/bookings'
+		];
+		
+		for (const endpoint of endpoints) {
+			console.log(`📡 Trying endpoint: ${endpoint}`);
+			try {
+				const resp = await fetch(`https://ava-marketing-api.onrender.com${endpoint}`, {
+					headers: {
+						'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('authToken') || ''}`,
+						'x-user-id': window.authSystem?.currentUser?.ownerId || window.authSystem?.currentUser?.id || ''
+					}
+				});
+				console.log(`📡 ${endpoint} response:`, resp.status, resp.statusText);
+				if (resp.ok) {
+					const data = await resp.json();
+					console.log(`📦 ${endpoint} data:`, data);
+				} else {
+					console.warn(`❌ ${endpoint} failed:`, await resp.text());
+				}
+			} catch (e) {
+				console.warn(`❌ ${endpoint} error:`, e);
+			}
+		}
+		
+		// Reload bookings after manual sync
+		await bookingsManager.syncTherapistOnly();
+		console.log('✅ Manual sync completed');
+	} catch (error) {
+		console.error('❌ Manual sync failed:', error);
+	}
 };
 
 // Debug function to create test bookings for the current therapist
