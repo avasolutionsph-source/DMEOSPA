@@ -496,22 +496,44 @@ router.post('/publish-catalog', async (req, res) => {
 router.get('/public/business-catalog/:businessId', async (req, res) => {
   try {
     const { businessId } = req.params;
+    let catalog = null;
+    let services = [];
+    let employees = [];
+    let businessName = 'Spa Business';
     
-    const BusinessCatalog = (await import('../models/BusinessCatalog.js')).default;
-    const catalog = await BusinessCatalog.findOne({ userId: businessId });
-    
-    if (!catalog || !catalog.isPublished) {
-      return res.status(404).json({ success: false, error: 'Business catalog not found or not published' });
+    // Try BusinessCatalog first
+    try {
+      const BusinessCatalog = (await import('../models/BusinessCatalog.js')).default;
+      catalog = await BusinessCatalog.findOne({ userId: businessId });
+      
+      if (catalog && catalog.isPublished) {
+        services = (catalog.services || []).filter(service => service.isActive !== false);
+        employees = (catalog.employees || []).filter(employee => employee.isActive !== false);
+        businessName = catalog.businessName;
+      }
+    } catch (catalogError) {
+      console.warn('BusinessCatalog query failed, trying User model:', catalogError.message);
     }
-
-    const services = (catalog.services || []).filter(service => service.isActive !== false);
-    const employees = (catalog.employees || []).filter(employee => employee.isActive !== false);
     
-    console.log(`📋 Business catalog requested for ${catalog.businessName}: ${services.length} services, ${employees.length} employees`);
+    // Fallback to User model if no catalog found
+    if (!catalog) {
+      const User = (await import('../models/User.js')).default;
+      const user = await User.findById(businessId);
+      
+      if (user) {
+        services = (user.products || []).filter(p => p.isActive !== false);
+        employees = (user.employees || []).filter(e => e.isActive !== false);
+        businessName = user.businessName || 'Spa Business';
+      } else {
+        return res.status(404).json({ success: false, error: 'Business not found' });
+      }
+    }
+    
+    console.log(`📋 Business catalog requested for ${businessName}: ${services.length} services, ${employees.length} employees`);
 
     res.json({ 
       success: true, 
-      businessName: catalog.businessName,
+      businessName: businessName,
       services: services,
       employees: employees,
       servicesCount: services.length,
@@ -526,25 +548,62 @@ router.get('/public/business-catalog/:businessId', async (req, res) => {
 // Public: Get all businesses with published catalogs (for booking directory)
 router.get('/public/businesses', async (req, res) => {
   try {
-    const BusinessCatalog = (await import('../models/BusinessCatalog.js')).default;
+    let formattedBusinesses = [];
     
-    // Find businesses that have published catalogs
-    const catalogs = await BusinessCatalog.find({
-      isPublished: true
-    }).select('userId businessName businessType services employees publishedAt').lean();
+    // Try BusinessCatalog collection first
+    try {
+      const BusinessCatalog = (await import('../models/BusinessCatalog.js')).default;
+      
+      // Find businesses that have published catalogs
+      const catalogs = await BusinessCatalog.find({
+        isPublished: true
+      }).select('userId businessName businessType services employees publishedAt').lean();
 
-    const formattedBusinesses = catalogs.map(catalog => ({
-      id: String(catalog.userId),
-      businessName: catalog.businessName,
-      name: catalog.businessName, // Alias for compatibility
-      businessType: catalog.businessType || 'spa',
-      servicesCount: (catalog.services || []).length,
-      employeesCount: (catalog.employees || []).length,
-      hasServices: (catalog.services || []).length > 0,
-      hasEmployees: (catalog.employees || []).length > 0,
-      publishedAt: catalog.publishedAt
-    }));
+      if (catalogs && catalogs.length > 0) {
+        formattedBusinesses = catalogs.map(catalog => ({
+          id: String(catalog.userId),
+          businessName: catalog.businessName,
+          name: catalog.businessName, // Alias for compatibility
+          businessType: catalog.businessType || 'spa',
+          servicesCount: (catalog.services || []).length,
+          employeesCount: (catalog.employees || []).length,
+          hasServices: (catalog.services || []).length > 0,
+          hasEmployees: (catalog.employees || []).length > 0,
+          publishedAt: catalog.publishedAt
+        }));
+      }
+    } catch (catalogError) {
+      console.warn('BusinessCatalog query failed, trying User model:', catalogError.message);
+    }
+    
+    // If no catalogs found, fallback to User model
+    if (formattedBusinesses.length === 0) {
+      const User = (await import('../models/User.js')).default;
+      
+      // Find users with products or employees (published businesses)
+      const businesses = await User.find({
+        isActive: true,
+        $or: [
+          { 'products.0': { $exists: true } },  // Has at least one product
+          { 'employees.0': { $exists: true } }  // Has at least one employee
+        ]
+      }).select('_id businessName products employees createdAt').lean();
 
+      formattedBusinesses = businesses.map(business => ({
+        id: String(business._id),
+        businessName: business.businessName || 'Spa Business',
+        name: business.businessName || 'Spa Business', // Alias for compatibility
+        businessType: 'spa',
+        servicesCount: (business.products || []).length,
+        employeesCount: (business.employees || []).length,
+        hasServices: (business.products || []).length > 0,
+        hasEmployees: (business.employees || []).length > 0,
+        publishedAt: business.createdAt
+      }));
+    }
+
+    console.log(`📋 Public businesses endpoint: returning ${formattedBusinesses.length} businesses`);
+    
     res.json({ 
       success: true, 
       data: formattedBusinesses,
