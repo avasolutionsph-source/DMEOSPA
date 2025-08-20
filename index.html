@@ -79,22 +79,12 @@
                     </div>
                 </div>
                 <div class="auth-indicator" id="authIndicator">
-                    <button id="showLoginBtn" class="btn btn-primary" style="cursor: pointer; z-index: 10; position: relative;" onclick="console.log('🔥 MAIN LOGIN BUTTON CLICKED!'); showLoginModalDirect();">
-                        <i class="fas fa-sign-in-alt"></i> Login
-                    </button>
-                    <button id="simpleLoginBtn" class="btn btn-success" style="cursor: pointer; z-index: 10; position: relative; margin-top: 5px; background: #28a745; border-color: #28a745;" onclick="window.simpleLogin.showLoginModal();">
-                        <i class="fas fa-rocket"></i> Quick Login
-                    </button>
-                    <button id="directLoginBtn" class="btn btn-warning" style="cursor: pointer; z-index: 10; position: relative; margin-top: 5px; background: #ffc107; border-color: #ffc107; color: #212529;" onclick="window.directAuth.showLoginModal();">
-                        <i class="fas fa-bolt"></i> Direct Login
-                    </button>
-                    <div id="userInfo" style="display: none;" class="user-info">
+                    <div id="userInfo" class="user-info">
                         <span id="userName">User</span>
                         <button id="logoutBtn" class="btn btn-secondary">
                             <i class="fas fa-sign-out-alt"></i> Logout
                         </button>
                     </div>
-
                 </div>
             </div>
         </aside>
@@ -1725,11 +1715,9 @@
                     console.log('👤 Restoring user session:', user.email);
                     
                     // Update UI to show logged in state
-                    const showLoginBtn = document.getElementById('showLoginBtn');
                     const userInfo = document.getElementById('userInfo');
                     const userName = document.getElementById('userName');
                     
-                    if (showLoginBtn) showLoginBtn.style.display = 'none';
                     if (userInfo) userInfo.style.display = 'block';
                     // Prioritize business name, fallback to email-based name
                     let displayName = user.businessName;
@@ -1775,7 +1763,6 @@
                             console.log('Logout button clicked');
                             
                             // Get UI elements fresh each time
-                            const showLoginBtn = document.getElementById('showLoginBtn');
                             const userInfo = document.getElementById('userInfo');
                             
                             // Use unified auth system for logout
@@ -1797,9 +1784,8 @@
                                     sessionStorage.removeItem(key);
                                 });
                                 
-                                // Update UI back to logged out state
-                                if (showLoginBtn) showLoginBtn.style.display = 'block';
-                                if (userInfo) userInfo.style.display = 'none';
+                                // Redirect to login page on logout
+                                window.location.href = 'login.html';
                                 
                                 // Notify app about logout
                                 if (window.app && typeof window.app.onUserLoggedOut === 'function') {
@@ -1943,11 +1929,9 @@
                         console.log('Login successful for:', userData.email);
                     
                     // Update UI to show logged in state
-                    const showLoginBtn = document.getElementById('showLoginBtn');
                     const userInfo = document.getElementById('userInfo');
                     const userName = document.getElementById('userName');
                     
-                    if (showLoginBtn) showLoginBtn.style.display = 'none';
                     if (userInfo) userInfo.style.display = 'block';
                     
                     // Create display name from user data
@@ -1969,7 +1953,6 @@
                             console.log('Logout button clicked');
                             
                             // Get UI elements fresh each time
-                            const showLoginBtn = document.getElementById('showLoginBtn');
                             const userInfo = document.getElementById('userInfo');
                             
                             // Use unified auth system for logout
@@ -1991,9 +1974,8 @@
                                     sessionStorage.removeItem(key);
                                 });
                                 
-                                // Update UI back to logged out state
-                                if (showLoginBtn) showLoginBtn.style.display = 'block';
-                                if (userInfo) userInfo.style.display = 'none';
+                                // Redirect to login page on logout
+                                window.location.href = 'login.html';
                                 
                                 // Notify app about logout
                                 if (window.app && typeof window.app.onUserLoggedOut === 'function') {
@@ -2087,11 +2069,9 @@
                     localStorage.setItem('isLoggedIn', 'true');
                     
                     // Update UI
-                    const showLoginBtn = document.getElementById('showLoginBtn');
                     const userInfo = document.getElementById('userInfo');
                     const userName = document.getElementById('userName');
                     
-                    if (showLoginBtn) showLoginBtn.style.display = 'none';
                     if (userInfo) userInfo.style.display = 'block';
                     
                     let displayName = data.user.businessName;
