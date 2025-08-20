@@ -1213,11 +1213,103 @@ window.addEventListener('load', () => {
     }, 500); // Reduced timeout to apply faster
 });
 
-// Initialize auth system
-const authSystem = new AuthSystem();
+// DISABLED: Old auth system - using permanent auth instead
+// const authSystem = new AuthSystem();
 
-// Export for use in other modules immediately
-window.authSystem = authSystem;
+// Create minimal auth system wrapper for compatibility
+class AuthSystemWrapper {
+    constructor() {
+        this.currentUser = null;
+        this.authToken = null;
+        this.isLoggedIn = false;
+    }
+
+    async init() {
+        // Delegate to permanent auth
+        if (window.permanentAuth) {
+            return await window.permanentAuth.initializeWithSetup();
+        }
+    }
+
+    async handleLogin() {
+        console.log('🔄 Auth wrapper: handleLogin called, delegating to permanent auth');
+        // This should be handled by permanent auth override
+        return;
+    }
+
+    updateAuthUI() {
+        // Sync with permanent auth state
+        if (window.permanentAuth) {
+            this.currentUser = window.permanentAuth.currentUser;
+            this.authToken = window.permanentAuth.authToken;
+            this.isLoggedIn = window.permanentAuth.isLoggedIn;
+        }
+        
+        // Force UI update
+        this.forceAuthUIUpdate();
+    }
+
+    forceAuthUIUpdate() {
+        console.log('🎨 Force updating auth UI...');
+        
+        const showLoginBtn = document.getElementById('showLoginBtn');
+        const userInfo = document.getElementById('userInfo');
+        const userName = document.getElementById('userName');
+        const businessName = document.getElementById('businessName');
+
+        if (this.isLoggedIn && this.currentUser) {
+            // Show logged in state
+            if (showLoginBtn) showLoginBtn.style.display = 'none';
+            if (userInfo) userInfo.style.display = 'block';
+            if (userName) userName.textContent = this.currentUser.firstName || this.currentUser.email?.split('@')[0] || 'User';
+            if (businessName) businessName.textContent = this.currentUser.businessName || 'Your Business';
+        } else {
+            // Show logged out state
+            if (showLoginBtn) showLoginBtn.style.display = 'block';
+            if (userInfo) userInfo.style.display = 'none';
+            if (businessName) businessName.textContent = 'Ava Solutions';
+        }
+    }
+
+    showLoginModal() {
+        console.log('🔄 Showing login modal...');
+        
+        const modal = document.getElementById('authModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            modal.style.zIndex = '1000';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            
+            // Show login form
+            const loginForm = document.getElementById('authLoginForm');
+            const registerForm = document.getElementById('authRegisterForm');
+            if (loginForm) loginForm.style.display = 'block';
+            if (registerForm) registerForm.style.display = 'none';
+        }
+    }
+
+    async loadAuthState() {
+        // Delegate to permanent auth
+        if (window.permanentAuth) {
+            const restored = await window.permanentAuth.validateSession();
+            if (restored) {
+                this.updateAuthUI();
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+// Export minimal wrapper for compatibility
+window.authSystem = new AuthSystemWrapper();
 
 // Global function for HTML onclick backup
 window.showLoginModal = function() {
