@@ -110,15 +110,7 @@ class DashboardManager {
                     </div>
                 </div>
                 
-                <div class="timer-quick-access">
-                    <h3>Quick Timer Access</h3>
-                    <div class="timer-status-card">
-                        <div class="timer-status" id="timerStatusDashboard">No active timer</div>
-                        <button class="btn btn-primary" onclick="window.app.showPage('timer')">
-                            <i class="fas fa-stopwatch"></i> Go to Timer
-                        </button>
-                    </div>
-                </div>
+
                 
                 <div class="upcoming-bookings">
                     <h3>Today's Schedule</h3>
