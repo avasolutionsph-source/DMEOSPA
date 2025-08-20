@@ -151,7 +151,7 @@ class PermanentAuthSystem {
         };
         storage.setItem('avas_session_info', JSON.stringify(sessionInfo));
 
-        // Update auth system references
+        // Update auth system references immediately
         if (window.authSystem) {
             window.authSystem.currentUser = user;
             window.authSystem.authToken = token;
@@ -159,17 +159,124 @@ class PermanentAuthSystem {
             window.authSystem.updateAuthUI();
         }
 
-        // Set role manager data
-        if (window.roleManager && user.role !== 'owner') {
-            window.roleManager.activeEmployee = {
-                id: user.id,
-                name: user.firstName + ' ' + user.lastName || user.email.split('@')[0],
-                role: user.role
-            };
-            localStorage.setItem('activeEmployeeRole', JSON.stringify(window.roleManager.activeEmployee));
+        // Set role manager data immediately
+        if (window.roleManager) {
+            if (user.role !== 'owner') {
+                window.roleManager.activeEmployee = {
+                    id: user.id,
+                    name: user.firstName + ' ' + user.lastName || user.email.split('@')[0],
+                    role: user.role
+                };
+                localStorage.setItem('activeEmployeeRole', JSON.stringify(window.roleManager.activeEmployee));
+            } else {
+                // Clear role data for owners
+                window.roleManager.activeEmployee = null;
+                localStorage.removeItem('activeEmployeeRole');
+            }
+            
+            // Apply role restrictions immediately (NO delay)
+            console.log('🔒 Applying role restrictions immediately after login...');
+            window.roleManager.gateNavigationByRole();
         }
 
+        // Force immediate UI update
+        this.forceUIUpdate(user);
+
         console.log('✅ Authentication state set successfully');
+    }
+
+    // Force immediate UI update after login
+    forceUIUpdate(user) {
+        console.log('🎨 Forcing immediate UI update for role:', user.role);
+        
+        // Update business name immediately
+        const businessNameEl = document.getElementById('businessName');
+        if (businessNameEl) {
+            businessNameEl.textContent = user.businessName || 'Your Business';
+        }
+
+        // Update user name immediately  
+        const userNameEl = document.getElementById('userName');
+        if (userNameEl) {
+            userNameEl.textContent = user.firstName || user.email.split('@')[0];
+        }
+
+        // Show/hide login/logout buttons immediately
+        const showLoginBtn = document.getElementById('showLoginBtn');
+        const userInfo = document.getElementById('userInfo');
+        
+        if (showLoginBtn) showLoginBtn.style.display = 'none';
+        if (userInfo) userInfo.style.display = 'block';
+
+        // Force navigation update based on role
+        this.updateNavigationForRole(user.role);
+        
+        // Update any feature indicators
+        this.updateFeatureIndicators(user);
+        
+        console.log('✅ UI update complete');
+    }
+
+    // Update navigation based on role
+    updateNavigationForRole(role) {
+        const navItems = document.querySelectorAll('.nav-item');
+        
+        const rolePermissions = {
+            owner: ['dashboard', 'pos', 'expenses', 'bookings', 'products', 'inventory', 'employees', 'rooms', 'chatbot', 'settings'],
+            manager: ['dashboard', 'pos', 'expenses', 'bookings', 'products', 'inventory', 'employees', 'rooms', 'settings'],
+            therapist: ['dashboard', 'bookings', 'settings', 'timer', 'therapist-portal'],
+            receptionist: ['dashboard', 'pos', 'bookings', 'rooms', 'settings', 'inventory']
+        };
+
+        const allowedPages = rolePermissions[role] || rolePermissions.owner;
+        
+        navItems.forEach(item => {
+            const page = item.dataset.page;
+            
+            if (allowedPages.includes(page)) {
+                item.style.display = '';
+                item.style.visibility = 'visible';
+                item.removeAttribute('aria-hidden');
+                console.log(`✅ Showing ${page} for ${role}`);
+            } else {
+                item.style.display = 'none';
+                item.style.visibility = 'hidden';
+                item.setAttribute('aria-hidden', 'true');
+                console.log(`🚫 Hiding ${page} for ${role}`);
+            }
+        });
+
+        // Show therapist portal nav for therapists
+        if (role === 'therapist') {
+            const therapistPortalNav = document.getElementById('therapistPortalNav');
+            if (therapistPortalNav) {
+                therapistPortalNav.style.display = '';
+            }
+        }
+    }
+
+    // Update feature indicators
+    updateFeatureIndicators(user) {
+        // Update any role-specific indicators
+        document.querySelectorAll('.role-indicator').forEach(indicator => {
+            indicator.textContent = user.role;
+            indicator.className = `role-indicator role-${user.role}`;
+        });
+
+        // Update feature availability indicators
+        const features = user.features || this.getFeaturesForRole(user.role);
+        Object.keys(features).forEach(feature => {
+            const indicator = document.querySelector(`[data-feature="${feature}"]`);
+            if (indicator) {
+                if (features[feature]) {
+                    indicator.classList.add('feature-available');
+                    indicator.classList.remove('feature-locked');
+                } else {
+                    indicator.classList.add('feature-locked');
+                    indicator.classList.remove('feature-available');
+                }
+            }
+        });
     }
 
     // Validate session
@@ -193,12 +300,12 @@ class PermanentAuthSystem {
                 return false;
             }
 
-            // Check if token is expired (24 hours)
+            // Check if token is expired (7 days for better UX)
             const tokenAge = Date.now() - sessionInfo.tokenCreated;
-            const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+            const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
             
             if (tokenAge > maxAge) {
-                console.log('❌ Token expired');
+                console.log('❌ Token expired after 7 days');
                 await this.clearSession();
                 return false;
             }
@@ -221,6 +328,26 @@ class PermanentAuthSystem {
                 window.authSystem.currentUser = user;
                 window.authSystem.authToken = token;
                 window.authSystem.isLoggedIn = true;
+                window.authSystem.updateAuthUI();
+            }
+
+            // Restore role manager state
+            if (window.roleManager) {
+                if (user.role !== 'owner') {
+                    window.roleManager.activeEmployee = {
+                        id: user.id,
+                        name: user.firstName + ' ' + user.lastName || user.email.split('@')[0],
+                        role: user.role
+                    };
+                } else {
+                    window.roleManager.activeEmployee = null;
+                }
+                
+                // Apply role restrictions on session restore
+                setTimeout(() => {
+                    console.log('🔒 Restoring role restrictions for:', user.role);
+                    window.roleManager.gateNavigationByRole();
+                }, 50);
             }
 
             console.log('✅ Session validated for user:', user.email, 'Role:', user.role);
@@ -474,9 +601,14 @@ class PermanentAuthSystem {
         // Try to restore existing session
         const isValid = await this.validateSession();
         if (isValid) {
-            console.log('✅ Existing session restored');
+            console.log('✅ Existing session restored for:', this.currentUser?.email);
             this.updateAuthUI();
             this.applyRoleRestrictions();
+            
+            // Force immediate UI update on session restore
+            if (this.currentUser) {
+                this.forceUIUpdate(this.currentUser);
+            }
         } else {
             console.log('❌ No valid session, showing login');
             this.showLoginModal();
@@ -683,10 +815,16 @@ window.addEventListener('DOMContentLoaded', () => {
                     
                     showNotification(`Welcome back, ${result.user.businessName}!`, 'success');
                     
-                    // Apply role restrictions immediately
-                    setTimeout(() => {
-                        window.permanentAuth.applyRoleRestrictions();
-                    }, 100);
+                    // Apply role restrictions and UI updates IMMEDIATELY (no delay)
+                    console.log('🎨 Applying immediate post-login updates...');
+                    window.permanentAuth.applyRoleRestrictions();
+                    
+                    // Force complete UI update without refresh
+                    if (window.sessionPersistence) {
+                        window.sessionPersistence.forceCompleteUIRestore(result.user);
+                    } else if (window.permanentAuth) {
+                        window.permanentAuth.forceUIUpdate(result.user);
+                    }
                     
                 } else {
                     throw new Error(result.message);
