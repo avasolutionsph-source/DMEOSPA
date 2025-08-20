@@ -1,14 +1,7 @@
 [build]
   publish = "public"
-  command = "npm install && echo 'Dependencies installed and static site ready'"
+  command = "echo 'Static site ready - no build needed'"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- server.js routes/ models/ middleware/ config/ scripts/"
   
 [build.environment]
   NODE_VERSION = "18"
-
-# Build settings for faster deploys
-[build.processing]
-  skip_processing = false
-
-# Ignore server files during build (they're for the API, not the static site)
-[build.ignore]
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- server.js routes/ models/ middleware/ config/ scripts/"
