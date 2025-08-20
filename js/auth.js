@@ -785,7 +785,7 @@ class RoleManager {
 				denyPages: ['chatbot']
 			},
 			therapist: {
-				allowPages: ['dashboard','bookings','settings'],
+				allowPages: ['dashboard','bookings','settings','timer'],
 				denyPages: ['pos','inventory','employees','products','chatbot','rooms']
 			},
 			admin: {
@@ -826,28 +826,54 @@ class RoleManager {
 
 	gateNavigationByRole() {
 		const navItems = document.querySelectorAll('.nav-item');
-		if (!this.activeEmployee && !this.isEmployeeAccount()) {
+		
+		// Check if this is an employee account or role session
+		const isEmployeeAccount = this.isEmployeeAccount();
+		const hasActiveRole = !!this.activeEmployee;
+		
+		if (!hasActiveRole && !isEmployeeAccount) {
 			// Show all for owners (plan gating still applies)
+			console.log('👑 Owner account - showing all navigation');
 			navItems.forEach(i => i.style.display = '');
 			return;
 		}
 		
 		// Get the role (either from active employee or current user)
 		const role = this.activeEmployee?.role || window.authSystem?.currentUser?.role || '';
-		console.log('🔒 Applying role-based navigation for role:', role);
+		console.log('🔒 Applying role-based navigation for role:', role, {
+			isEmployeeAccount,
+			hasActiveRole,
+			activeEmployee: this.activeEmployee,
+			currentUser: window.authSystem?.currentUser
+		});
 		
 		const roleCfg = this.roles[role.toLowerCase()] || {allowPages: [], denyPages: []};
+		console.log('📋 Role configuration:', roleCfg);
+		
 		navItems.forEach(item => {
 			const page = item.dataset.page;
-			if (roleCfg.allowPages.length && !roleCfg.allowPages.includes(page)) {
-				item.style.display = 'none';
-				console.log(`🚫 Hiding ${page} for role ${role}`);
-			} else if (roleCfg.denyPages.includes(page)) {
-				item.style.display = 'none';
-				console.log(`🚫 Hiding ${page} for role ${role}`);
+			
+			// For therapists, only show allowed pages
+			if (role.toLowerCase() === 'therapist') {
+				if (roleCfg.allowPages.includes(page)) {
+					item.style.display = '';
+					console.log(`✅ Showing ${page} for therapist`);
+				} else {
+					item.style.display = 'none';
+					console.log(`🚫 Hiding ${page} for therapist`);
+				}
 			} else {
-				item.style.display = '';
-				console.log(`✅ Showing ${page} for role ${role}`);
+				// For other roles, use the original logic
+				if (roleCfg.allowPages.length && !roleCfg.allowPages.includes(page)) {
+					item.style.display = 'none';
+					console.log(`🚫 Hiding ${page} for role ${role}`);
+				} else if (roleCfg.denyPages.includes(page)) {
+					item.style.display = 'none';
+					console.log(`🚫 Hiding ${page} for role ${role}`);
+				} else {
+					item.style.display = '';
+					console.log(`✅ Showing ${page} for role ${role}`);
+				}
 			}
 		});
 	}

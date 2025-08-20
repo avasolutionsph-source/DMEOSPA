@@ -418,26 +418,73 @@ class EntitlementsSystem {
         };
     }
 
-    // Apply feature gates to UI elements - COMPLETELY DISABLED
+    // Apply feature gates to UI elements
     applyFeatureGates() {
-        // COMPLETELY DISABLED FOR TESTING - NO FEATURE GATES AT ALL
-        console.log('🚀 TESTING MODE: ALL FEATURE GATING COMPLETELY DISABLED');
+        // Hide/show navigation items based on entitlements
+        this.gateNavigationItems();
         
-        // Only keep subscription status update
+        // Gate dashboard features
+        this.gateDashboardFeatures();
+        
+        // Gate specific feature sections
+        this.gateFeatureSections();
+        
+        // Add subscription status to UI
         this.updateSubscriptionStatus();
+
+        // Apply role-based gating for employee accounts
+        if (window.roleManager && typeof window.roleManager.gateNavigationByRole === 'function') {
+            console.log('🔒 Applying role-based navigation gating');
+            window.roleManager.gateNavigationByRole();
+        }
     }
 
-    // Gate navigation items - COMPLETELY DISABLED
+    // Gate navigation items
     gateNavigationItems() {
-        // COMPLETELY DISABLED - NO GATING AT ALL
-        console.log('🔓 TESTING MODE: Navigation gating completely disabled');
+        const navItems = document.querySelectorAll('.nav-item');
+        
+        navItems.forEach(item => {
+            const page = item.dataset.page;
+            let canAccess = true;
+            
+            switch (page) {
+                case 'inventory':
+                    canAccess = this.can('inventory');
+                    break;
+                case 'employees':
+                    canAccess = this.can('employees');
+                    break;
+                case 'chatbot':
+                    canAccess = this.can('chatbot');
+                    break;
+                // POS, Dashboard, Settings, Timer, Bookings are always accessible (role gating will handle restrictions)
+                case 'pos':
+                case 'dashboard':
+                case 'products':
+                case 'settings':
+                case 'timer':
+                case 'bookings':
+                case 'rooms':
+                case 'expenses':
+                    canAccess = true;
+                    break;
+            }
+            
+            if (!canAccess) {
+                item.style.display = 'none';
+            } else {
+                item.style.opacity = '1';
+                item.style.pointerEvents = 'auto';
+                item.style.display = '';
+            }
+        });
     }
 
     // Gate dashboard features
     gateDashboardFeatures() {
-        // COMPLETELY DISABLED - NO DASHBOARD GATING
-        console.log('🔓 TESTING MODE: Dashboard gating completely disabled');
-        return;
+        // Allow dashboard features for all users
+        console.log('✅ Dashboard features enabled');
+    }
         
         if (dashboardLevel === 'lite') {
             // Hide advanced analytics
@@ -460,11 +507,11 @@ class EntitlementsSystem {
         }
     }
 
-    // Gate specific feature sections - COMPLETELY DISABLED
+    // Gate specific feature sections
     gateFeatureSections() {
-        // COMPLETELY DISABLED - NO FEATURE SECTION GATING
-        console.log('🔓 TESTING MODE: Feature section gating completely disabled');
-        return;
+        // Allow all feature sections for now
+        console.log('✅ Feature sections enabled');
+    }
 
         // Gate inventory features in POS
         if (!this.can('inventory')) {
