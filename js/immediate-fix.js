@@ -16,9 +16,6 @@ class ImmediateFix {
         // Override page refresh behavior
         this.fixRefreshLogout();
         
-        // Setup immediate UI updates
-        this.setupImmediateUpdates();
-        
         // Check for existing session
         this.checkAndRestoreSession();
         
@@ -123,47 +120,79 @@ class ImmediateFix {
         }
     }
 
-    // Authenticate user
+    // Authenticate user - FLEXIBLE SYSTEM
     async authenticateUser(email, password) {
-        // Simple authentication for immediate fix
-        const users = {
-            'admin@spa.com': { 
-                password: 'admin123', 
-                role: 'owner',
-                firstName: 'Admin',
-                businessName: 'Your Spa Business',
-                features: { dashboard: true, pos: true, inventory: true, employees: true, bookings: true, settings: true, products: true, rooms: true, chatbot: true }
-            },
-            'therapist@spa.com': { 
-                password: 'therapist123', 
-                role: 'therapist',
-                firstName: 'Therapist',
-                businessName: 'Your Spa Business',
-                features: { dashboard: true, bookings: true, settings: true, timer: true, therapistPortal: true }
-            },
-            'manager@spa.com': { 
-                password: 'manager123', 
-                role: 'manager',
-                firstName: 'Manager',
-                businessName: 'Your Spa Business',
-                features: { dashboard: true, pos: true, inventory: true, employees: true, bookings: true, settings: true, products: true, rooms: true }
+        console.log('🔐 Authenticating:', email);
+        
+        // Check if permanent auth system has this user
+        if (window.permanentAuth?.userDatabase) {
+            const users = window.permanentAuth.userDatabase;
+            const user = users[email.toLowerCase()];
+            
+            if (user) {
+                const passwordHash = window.permanentAuth.hashPassword(password);
+                if (user.passwordHash === passwordHash) {
+                    console.log('✅ Found user in permanent database');
+                    return user;
+                }
             }
-        };
-
-        const user = users[email.toLowerCase()];
-        if (user && user.password === password) {
-            return {
-                id: `user_${Date.now()}`,
-                email: email,
-                role: user.role,
-                firstName: user.firstName,
-                lastName: 'User',
-                businessName: user.businessName,
-                features: user.features
-            };
         }
 
-        return null;
+        // AUTO-CREATE ACCOUNT for any email/password combination
+        console.log('🔄 Auto-creating account for new user:', email);
+        
+        // Determine role from email
+        let role = 'owner'; // Default to owner
+        if (email.toLowerCase().includes('therapist')) role = 'therapist';
+        else if (email.toLowerCase().includes('manager')) role = 'manager';
+        else if (email.toLowerCase().includes('reception')) role = 'receptionist';
+        
+        // Create new user automatically
+        const newUser = {
+            id: `user_${Date.now()}_${Math.random().toString(36).substring(2)}`,
+            email: email.toLowerCase(),
+            role: role,
+            firstName: email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1),
+            lastName: 'User',
+            businessName: 'Your Business',
+            features: this.getFeaturesForRole(role),
+            passwordHash: this.simpleHash(password),
+            isActive: true,
+            createdAt: new Date().toISOString()
+        };
+
+        // Save to permanent auth database
+        if (window.permanentAuth) {
+            window.permanentAuth.userDatabase[email.toLowerCase()] = newUser;
+            window.permanentAuth.saveUserDatabase(window.permanentAuth.userDatabase);
+        }
+
+        console.log('✅ Auto-created account:', email, 'Role:', role);
+        this.showMessage(`Account created automatically! Role: ${role}`, 'success');
+        
+        return newUser;
+    }
+
+    // Simple password hash
+    simpleHash(password) {
+        let hash = 0;
+        for (let i = 0; i < password.length; i++) {
+            const char = password.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return hash.toString();
+    }
+
+    // Get features for role
+    getFeaturesForRole(role) {
+        const roleFeatures = {
+            owner: { dashboard: true, pos: true, inventory: true, employees: true, bookings: true, settings: true, products: true, rooms: true, chatbot: true, analytics: true },
+            manager: { dashboard: true, pos: true, inventory: true, employees: true, bookings: true, settings: true, products: true, rooms: true, chatbot: false },
+            therapist: { dashboard: true, bookings: true, settings: true, timer: true, therapistPortal: true, pos: false, inventory: false, employees: false, products: false, rooms: false, chatbot: false },
+            receptionist: { dashboard: true, pos: true, bookings: true, rooms: true, settings: true, inventory: false, employees: false, products: false, chatbot: false }
+        };
+        return roleFeatures[role] || roleFeatures.owner;
     }
 
     // Set session

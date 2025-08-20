@@ -260,8 +260,8 @@ class BookingsManager {
 		console.log('📋 Total bookings (local + remote):', allBookings.length);
 		
 		// Filter for this therapist
-		const me = await this.getTherapistIdentifiers();
-		console.log('👤 Therapist identifiers:', me);
+		const therapistIds = await this.getTherapistIdentifiers();
+		console.log('👤 Therapist identifiers:', therapistIds);
 		const norm = (s) => (s||'').trim().toLowerCase();
 		
 		const filtered = allBookings.filter(b => {
