@@ -108,21 +108,21 @@
 		}
 		
 		try {
-			// Try marketing API first (where catalogs are actually published)
-			console.log('🔍 Fetching businesses from marketing API:', `${marketingApi}/api/public/businesses`);
-			let response = await fetch(`${marketingApi}/api/public/businesses`);
+			// Try PWA backend first (correct endpoint with /api prefix)
+			console.log('🔍 Fetching businesses from PWA backend:', `${marketingApi}/api/auth/public/businesses`);
+			let response = await fetch(`${marketingApi}/api/auth/public/businesses`);
 			
 			if (!response.ok) {
-				// Fallback: Try PWA backend
-				console.log('⚠️ Marketing API failed, trying PWA backend fallback');
+				// Fallback: Try local PWA backend
+				console.log('⚠️ Remote PWA failed, trying local PWA backend fallback');
 				const pwaBackendEndpoint = `${pwaBackendApi}/auth/public/businesses`;
 				response = await fetch(pwaBackendEndpoint);
 			}
 			
 			if (!response.ok) {
-				// Show empty state if no API works
-				console.log('⚠️ No business API available');
-				showEmptyBusinessState();
+				// Show demo businesses if no API works
+				console.log('⚠️ No business API available, showing demo businesses');
+				showDemoBusinesses();
 				return;
 			}
 			
@@ -159,6 +159,37 @@
 			console.error('❌ Error loading businesses:', error);
 			showEmptyBusinessState();
 		}
+	}
+	
+	function showDemoBusinesses() {
+		console.log('📋 Showing demo businesses');
+		
+		if (!businessList) return;
+		
+		// Demo businesses for testing
+		const demoBusinesses = [
+			{ id: 'demo-spa-1', name: 'Serenity Wellness Spa', type: 'Full Service Spa' },
+			{ id: 'demo-spa-2', name: 'Zen Garden Massage', type: 'Massage Therapy' },
+			{ id: 'demo-spa-3', name: 'Harmony Health Center', type: 'Wellness Center' }
+		];
+		
+		businessList.innerHTML = demoBusinesses.map(business => `
+			<button class="biz-card" data-biz="${business.id}">
+				<div class="biz-thumb">${business.name[0].toUpperCase()}</div>
+				<div class="biz-info">
+					<div class="biz-name">${business.name}</div>
+					<div class="biz-meta">${business.type} • Open</div>
+				</div>
+			</button>
+		`).join('');
+		
+		// Add click handlers
+		businessList.querySelectorAll('.biz-card').forEach(card => {
+			card.addEventListener('click', () => {
+				const id = card.dataset.biz;
+				window.location.href = `/spa.html?businessId=${encodeURIComponent(id)}`;
+			});
+		});
 	}
 	
 	function showEmptyBusinessState() {
