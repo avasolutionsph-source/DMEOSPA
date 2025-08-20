@@ -1578,6 +1578,34 @@
         window.hideLoading = hideLoading;
         window.closeModal = closeModal;
         
+        // Global logout function for debugging
+        window.forceLogout = async function() {
+            console.log('Force logout initiated');
+            
+            // Try unified auth first
+            if (window.authSystem && window.authSystem.logout) {
+                await window.authSystem.logout();
+                return;
+            }
+            
+            // Fallback: Clear everything
+            const authKeys = [
+                'auth_token', 'auth_user',
+                'userToken', 'userData', 'isLoggedIn',
+                'authToken', 'currentUser',
+                'universal_token', 'universal_user',
+                'simple_token', 'simple_user'
+            ];
+            
+            authKeys.forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
+            
+            alert('Force logout complete');
+            window.location.reload();
+        };
+        
         // Fix for modal close button - ensure it's always clickable
         document.addEventListener('DOMContentLoaded', function() {
             // Add fallback event listener for auth modal close button
@@ -1705,12 +1733,17 @@
                     // Add logout functionality
                     const logoutBtn = document.getElementById('logoutBtn');
                     if (logoutBtn) {
-                        logoutBtn.onclick = async function() {
+                        logoutBtn.onclick = async function(e) {
+                            if (e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }
                             console.log('Logout button clicked');
                             
-                            // Use unified auth system for logout
-                            if (window.authSystem && window.authSystem.signOut) {
-                                await window.authSystem.signOut();
+                            // Use unified auth system for logout (correct method name is 'logout' not 'signOut')
+                            if (window.authSystem && window.authSystem.logout) {
+                                console.log('Using unified auth logout');
+                                await window.authSystem.logout();
                             } else {
                                 // Fallback: Clear all auth-related storage
                                 const authKeys = [
@@ -1905,12 +1938,17 @@
                     // Add logout functionality
                     const logoutBtn = document.getElementById('logoutBtn');
                     if (logoutBtn) {
-                        logoutBtn.onclick = async function() {
+                        logoutBtn.onclick = async function(e) {
+                            if (e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }
                             console.log('Logout button clicked');
                             
-                            // Use unified auth system for logout
-                            if (window.authSystem && window.authSystem.signOut) {
-                                await window.authSystem.signOut();
+                            // Use unified auth system for logout (correct method name is 'logout' not 'signOut')
+                            if (window.authSystem && window.authSystem.logout) {
+                                console.log('Using unified auth logout');
+                                await window.authSystem.logout();
                             } else {
                                 // Fallback: Clear all auth-related storage
                                 const authKeys = [
