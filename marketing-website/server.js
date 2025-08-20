@@ -706,6 +706,20 @@ app.get('/api/public/employees', async (req, res) => {
   }
 });
 
+// Public bookings listing (no auth) for therapist/branch UI – uses x-user-id
+app.get('/api/public/bookings', async (req, res) => {
+  try {
+    const User = (await import('./models/User.js')).default;
+    const userId = req.headers['x-user-id'] || req.query.userId;
+    if (!userId) return res.json({ success: true, data: [] });
+    const user = await User.findById(userId).lean();
+    return res.json({ success: true, data: user?.bookings || [] });
+  } catch (e) {
+    console.error('Public bookings error:', e.message);
+    return res.status(500).json({ error: 'Failed to load bookings' });
+  }
+});
+
 app.use('/api/employees', async (req, res) => {
   try {
     const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';

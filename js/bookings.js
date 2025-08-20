@@ -67,7 +67,7 @@ class BookingsManager {
 			if (!window.authSystem?.isLoggedIn) return;
 			const since = this.lastSync || (await db.get('settings', 'externalBookingsLastSync'))?.value || '';
 			// Always include x-user-id via apiClient if no token; apiClient injects it now
-			const res = await window.apiClient.get(`/api/bookings${since ? `?since=${encodeURIComponent(since)}` : ''}`);
+			let res = await window.apiClient.get(`/api/bookings${since ? `?since=${encodeURIComponent(since)}` : ''}`);
 			if (!res.ok) return;
 			const { data } = await res.json();
 			if (Array.isArray(data)) {
@@ -109,6 +109,37 @@ class BookingsManager {
 			}
 		} catch (e) {
 			console.warn('External bookings sync failed', e);
+			// As a fallback, fetch public bookings from marketing DB using x-user-id
+			try {
+				const bid = (await db.get('settings','businessConfig'))?.value?.userId;
+				if (bid) {
+					const resp = await fetch('https://ava-marketing-api.onrender.com/api/public/bookings', { headers: { 'x-user-id': String(bid) } });
+					if (resp.ok) {
+						const j = await resp.json();
+						if (Array.isArray(j.data)) {
+							for (const bk of j.data) {
+								const toSave = {
+									id: bk._id || bk.id || undefined,
+									date: bk.startTime,
+									serviceId: bk.serviceId,
+									serviceName: bk.serviceName,
+									employeeId: bk.employeeId,
+									employeeName: bk.employeeName,
+									customerName: bk.customer?.name || '',
+									roomNumber: bk.roomNumber || '',
+									status: bk.status || 'pending',
+									storeId: bk.storeId || 'default',
+									partySize: bk.partySize || 1,
+									duration: bk.durationMins || 60,
+									modifiedAt: bk.updatedAt
+								};
+								if (toSave.id) await db.update('bookings', toSave); else await db.add('bookings', toSave);
+							}
+							await this.loadBookings();
+						}
+					}
+				}
+			} catch(_){}
 		}
 	}
 
