@@ -40,8 +40,23 @@ class UnifiedAuth {
     // Check for existing valid session
     async checkExistingSession() {
         try {
-            const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
-            const userData = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
+            // Prefer unified keys
+            let token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+            let userData = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
+
+            // Legacy fallbacks (for users logged in before the update)
+            if (!token) {
+                token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') ||
+                        localStorage.getItem('userToken') || sessionStorage.getItem('userToken') ||
+                        localStorage.getItem('universal_token') || sessionStorage.getItem('universal_token') ||
+                        localStorage.getItem('simple_token') || sessionStorage.getItem('simple_token');
+            }
+            if (!userData) {
+                userData = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser') ||
+                           localStorage.getItem('userData') || sessionStorage.getItem('userData') ||
+                           localStorage.getItem('universal_user') || sessionStorage.getItem('universal_user') ||
+                           localStorage.getItem('simple_user') || sessionStorage.getItem('simple_user');
+            }
             
             if (token && userData) {
                 // Validate token with backend
@@ -62,6 +77,12 @@ class UnifiedAuth {
                         });
                     }
                     
+                    // Normalize storage to unified keys
+                    try {
+                        localStorage.setItem('auth_token', token);
+                        localStorage.setItem('auth_user', JSON.stringify(this.currentUser));
+                    } catch (_) {}
+
                     return true;
                 }
             }

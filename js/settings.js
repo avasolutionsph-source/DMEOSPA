@@ -559,7 +559,10 @@ class SettingsManager {
             // Fallback to localStorage/sessionStorage  
             if (!token) {
                 token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') ||
-                       localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+                       localStorage.getItem('authToken') || sessionStorage.getItem('authToken') ||
+                       localStorage.getItem('userToken') || sessionStorage.getItem('userToken') ||
+                       localStorage.getItem('universal_token') || sessionStorage.getItem('universal_token') ||
+                       localStorage.getItem('simple_token') || sessionStorage.getItem('simple_token');
             }
 
             if (!token) {
