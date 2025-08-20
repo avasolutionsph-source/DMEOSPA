@@ -484,7 +484,6 @@ class EntitlementsSystem {
     gateDashboardFeatures() {
         // Allow dashboard features for all users
         console.log('✅ Dashboard features enabled');
-    }
         
         if (dashboardLevel === 'lite') {
             // Hide advanced analytics
