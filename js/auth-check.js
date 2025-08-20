@@ -2,8 +2,10 @@
 (function() {
     'use strict';
     
-    // Don't run on login page
-    if (window.location.pathname.includes('login.html')) {
+    // Don't run on login page or service worker
+    if (window.location.pathname.includes('login.html') || 
+        window.location.pathname.includes('sw.js') ||
+        window.location.pathname.includes('service-worker')) {
         return;
     }
     
@@ -43,10 +45,8 @@
         return true;
     }
     
-    // Check authentication immediately (but allow a brief moment for auth to be restored)
-    setTimeout(() => {
-        checkAuthentication();
-    }, 100);
+    // Check authentication immediately
+    checkAuthentication();
     
     // Also check on visibility change (when user returns to tab)
     document.addEventListener('visibilitychange', () => {
@@ -54,6 +54,11 @@
             checkAuthentication();
         }
     });
+    
+    // Check auth status periodically (every 5 seconds)
+    setInterval(() => {
+        checkAuthentication();
+    }, 5000);
     
     // Also expose function globally for other scripts to use
     window.checkAuthenticationStatus = checkAuthentication;

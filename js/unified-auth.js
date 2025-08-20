@@ -553,11 +553,19 @@ class UnifiedAuth {
             this.showNotification('Logged out successfully', 'info');
             console.log('✅ Logout complete');
             
+            // Redirect to login page
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 500);
+            
         } catch (error) {
             console.error('Logout error:', error);
             // Force logout even if backend call fails
             this.clearSession();
             this.updateUI();
+            
+            // Still redirect to login page
+            window.location.href = 'login.html';
         }
     }
 
