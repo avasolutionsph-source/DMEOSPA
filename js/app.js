@@ -8,27 +8,33 @@ class App {
     }
 
     async init() {
+        console.log('🚀 App.init() starting...');
         // Wait for database to be ready before proceeding
         try {
+            console.log('💾 Initializing database...');
             await ensureDBInit();
+            console.log('✅ Database initialized');
         } catch (error) {
-            console.error('Failed to initialize database:', error);
+            console.error('❌ Failed to initialize database:', error);
             return;
         }
         
         // Detect performance profile (optimize for laptops with different CPU/thermal limits)
+        console.log('⚡ Setting up performance profile...');
         const savedMode = localStorage.getItem('perfMode');
         this.performanceProfile = (savedMode && savedMode !== 'auto') ? savedMode : this.detectPerformanceProfile();
         window.performanceProfile = this.performanceProfile;
         this.applyPerformanceTuning();
         this.autotunePerformance();
+        console.log('✅ Performance profile set to:', this.performanceProfile);
         
         // Check if user is already logged in before showing setup wizard
+        console.log('🔐 Checking login state...');
         const isUserLoggedIn = this.checkIfUserLoggedIn();
         
         // If user is logged in, restore their UI state first
         if (isUserLoggedIn) {
-            console.log('User is logged in, restoring UI state');
+            console.log('✅ User is logged in, restoring UI state');
             // Call the checkLoginState function from index.html to restore UI
             if (typeof window.checkLoginState === 'function') {
                 window.checkLoginState();
@@ -36,12 +42,15 @@ class App {
         }
         
         // REMOVED: Automatic setup wizard - now manual only
-        console.log('Setup wizard is now manual only - accessible from dashboard');
+        console.log('📋 Setup wizard is now manual only - accessible from dashboard');
         
         // Load business configuration first
+        console.log('🏢 Loading business configuration...');
         await this.loadBusinessConfig();
+        console.log('✅ Business configuration loaded');
         
         // Set up navigation
+        console.log('🧭 Setting up navigation...');
         this.setupNavigation();
         
         // Set up date/time display (throttle on low/balanced devices)
@@ -94,9 +103,8 @@ class App {
     applyPerformanceTuning() {
         if (this.performanceProfile === 'low') {
             document.documentElement.classList.add('perf-low');
-            if (!localStorage.getItem('debugLogs')) {
-                try { console.log = () => {}; console.info = () => {}; console.debug = () => {}; } catch(_){ }
-            }
+            // TESTING MODE: Keep console logs enabled
+            console.log('⚡ TESTING MODE: Console logs remain enabled for debugging');
             // Extra scroll/paint optimizations for low-power Intel CPUs
             try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch(_){ }
             // Ensure any global scroll listeners are passive and cheap
@@ -879,7 +887,10 @@ window.refreshCurrentPage = async function() {
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('📱 DOM loaded, creating App instance...');
     window.app = new App();
+    console.log('✅ App instance created, starting initialization...');
     // Immediate initialization for better performance since DB is pre-initialized
     await window.app.init();
+    console.log('🎉 App initialization completed!');
 });
