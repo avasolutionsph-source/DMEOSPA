@@ -785,8 +785,8 @@ class RoleManager {
 				denyPages: ['chatbot']
 			},
 			therapist: {
-				allowPages: ['rooms','bookings','dashboard'],
-				denyPages: ['pos','inventory','employees','products','chatbot','settings']
+				allowPages: ['dashboard','bookings','settings'],
+				denyPages: ['pos','inventory','employees','products','chatbot','rooms']
 			},
 			admin: {
 				allowPages: ['dashboard','pos','bookings','rooms','inventory','employees','settings','products'],
@@ -825,8 +825,40 @@ class RoleManager {
 	}
 
 	gateNavigationByRole() {
-		// COMPLETELY DISABLED FOR TESTING - No role restrictions at all
-		console.log('🚀 TESTING MODE: Role-based navigation gating completely disabled');
+		const navItems = document.querySelectorAll('.nav-item');
+		if (!this.activeEmployee && !this.isEmployeeAccount()) {
+			// Show all for owners (plan gating still applies)
+			navItems.forEach(i => i.style.display = '');
+			return;
+		}
+		
+		// Get the role (either from active employee or current user)
+		const role = this.activeEmployee?.role || window.authSystem?.currentUser?.role || '';
+		console.log('🔒 Applying role-based navigation for role:', role);
+		
+		const roleCfg = this.roles[role.toLowerCase()] || {allowPages: [], denyPages: []};
+		navItems.forEach(item => {
+			const page = item.dataset.page;
+			if (roleCfg.allowPages.length && !roleCfg.allowPages.includes(page)) {
+				item.style.display = 'none';
+				console.log(`🚫 Hiding ${page} for role ${role}`);
+			} else if (roleCfg.denyPages.includes(page)) {
+				item.style.display = 'none';
+				console.log(`🚫 Hiding ${page} for role ${role}`);
+			} else {
+				item.style.display = '';
+				console.log(`✅ Showing ${page} for role ${role}`);
+			}
+		});
+	}
+
+	isEmployeeAccount() {
+		try {
+			const currentUser = window.authSystem?.currentUser;
+			return currentUser?.role && currentUser?.role !== 'owner' && currentUser?.ownerId;
+		} catch(_) {
+			return false;
+		}
 	}
 
 	showRoleLoginModal() {

@@ -11,6 +11,12 @@ class DashboardManager {
     }
 
     async init() {
+        // Check if this is a therapist account and show therapist dashboard
+        if (this.isTherapistAccount()) {
+            this.showTherapistDashboard();
+            return;
+        }
+        
         // Check if user is on unpaid plan and show registration prompt
         if (window.entitlementsSystem?.currentPlan === 'unpaid') {
             this.showUnpaidDashboard();
@@ -37,6 +43,252 @@ class DashboardManager {
         }
         await this.loadRecentTransactions();
         await this.loadLowStockAlerts();
+    }
+
+    isTherapistAccount() {
+        try {
+            // Check if logged in as employee with therapist role
+            const currentUser = window.authSystem?.currentUser;
+            const isEmployeeAccount = currentUser?.role && currentUser?.role !== 'owner' && currentUser?.ownerId;
+            const isTherapistRole = (currentUser?.role || '').toLowerCase() === 'therapist';
+            
+            // Also check role manager for role switching
+            const activeRole = (window.roleManager?.activeEmployee?.role || '').toLowerCase();
+            
+            return (isEmployeeAccount && isTherapistRole) || activeRole === 'therapist';
+        } catch(_) {
+            return false;
+        }
+    }
+
+    showTherapistDashboard() {
+        console.log('👨‍⚕️ Showing therapist dashboard');
+        const dashboardElement = document.getElementById('dashboard');
+        if (!dashboardElement) return;
+        
+        // Get therapist info
+        const currentUser = window.authSystem?.currentUser;
+        const activeEmployee = window.roleManager?.activeEmployee;
+        
+        const therapistName = activeEmployee?.name || currentUser?.employeeName || currentUser?.name || 'Therapist';
+        const workplaceName = currentUser?.businessName || 'Spa';
+        
+        dashboardElement.innerHTML = `
+            <div class="therapist-dashboard">
+                <div class="therapist-header">
+                    <div class="therapist-welcome">
+                        <h1>Welcome, ${therapistName}!</h1>
+                        <p>Working at ${workplaceName}</p>
+                    </div>
+                    <div class="current-time" id="currentTime"></div>
+                </div>
+                
+                <div class="therapist-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: var(--primary-color);">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="stat-value" id="todayBookings">0</div>
+                        <div class="stat-label">Today's Bookings</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: var(--success-color);">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-value" id="totalHours">0h</div>
+                        <div class="stat-label">Hours Today</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: var(--warning-color);">
+                            <i class="fas fa-hourglass-half"></i>
+                        </div>
+                        <div class="stat-value" id="nextBooking">--</div>
+                        <div class="stat-label">Next Booking</div>
+                    </div>
+                </div>
+                
+                <div class="service-timer-section">
+                    <h3>Service Timer</h3>
+                    <div class="timer-card">
+                        <div class="timer-display" id="timerDisplay">00:00:00</div>
+                        <div class="timer-service" id="timerService">No active service</div>
+                        <div class="timer-controls">
+                            <button class="btn btn-success" id="startTimerBtn" onclick="therapistTimer.start()">
+                                <i class="fas fa-play"></i> Start Service
+                            </button>
+                            <button class="btn btn-danger" id="stopTimerBtn" onclick="therapistTimer.stop()" style="display: none;">
+                                <i class="fas fa-stop"></i> Finish Service
+                            </button>
+                            <button class="btn btn-secondary" id="pauseTimerBtn" onclick="therapistTimer.pause()" style="display: none;">
+                                <i class="fas fa-pause"></i> Pause
+                            </button>
+                        </div>
+                        <div class="timer-alerts" id="timerAlerts"></div>
+                    </div>
+                </div>
+                
+                <div class="upcoming-bookings">
+                    <h3>Today's Schedule</h3>
+                    <div class="bookings-preview" id="therapistBookingsPreview">
+                        Loading schedule...
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Initialize therapist-specific features
+        this.updateTherapistTime();
+        this.loadTherapistStats();
+        this.loadTherapistSchedule();
+        
+        // Update time every minute
+        setInterval(() => this.updateTherapistTime(), 60000);
+        
+        // Initialize the service timer
+        if (!window.therapistTimer) {
+            window.therapistTimer = new TherapistTimer();
+        }
+    }
+
+    updateTherapistTime() {
+        const timeElement = document.getElementById('currentTime');
+        if (timeElement) {
+            const now = new Date();
+            timeElement.textContent = now.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+    }
+
+    async loadTherapistStats() {
+        try {
+            // Get today's bookings for this therapist
+            const bookings = await db.getAll('bookings');
+            const today = new Date().toDateString();
+            
+            // Get therapist identifiers
+            const identifiers = await this.getTherapistIdentifiers();
+            
+            const todayBookings = bookings.filter(b => {
+                const bookingDate = new Date(b.date || b.startTime).toDateString();
+                const isToday = bookingDate === today;
+                const isForThisTherapist = this.isBookingForTherapist(b, identifiers);
+                return isToday && isForThisTherapist;
+            });
+            
+            // Calculate stats
+            const totalBookings = todayBookings.length;
+            const totalMinutes = todayBookings.reduce((sum, b) => sum + (b.duration || 60), 0);
+            const totalHours = Math.floor(totalMinutes / 60);
+            const remainingMinutes = totalMinutes % 60;
+            
+            // Find next booking
+            const upcoming = bookings
+                .filter(b => {
+                    const bookingTime = new Date(b.date || b.startTime);
+                    return bookingTime > new Date() && this.isBookingForTherapist(b, identifiers);
+                })
+                .sort((a, b) => new Date(a.date || a.startTime) - new Date(b.date || b.startTime));
+            
+            // Update UI
+            const todayBookingsEl = document.getElementById('todayBookings');
+            const totalHoursEl = document.getElementById('totalHours');
+            const nextBookingEl = document.getElementById('nextBooking');
+            
+            if (todayBookingsEl) todayBookingsEl.textContent = totalBookings;
+            if (totalHoursEl) totalHoursEl.textContent = `${totalHours}h${remainingMinutes > 0 ? ` ${remainingMinutes}m` : ''}`;
+            if (nextBookingEl) {
+                if (upcoming.length > 0) {
+                    const nextTime = new Date(upcoming[0].date || upcoming[0].startTime);
+                    nextBookingEl.textContent = nextTime.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                } else {
+                    nextBookingEl.textContent = 'None';
+                }
+            }
+            
+        } catch (error) {
+            console.error('Failed to load therapist stats:', error);
+        }
+    }
+
+    async getTherapistIdentifiers() {
+        const identifiers = { ids: [], name: '', email: '' };
+        
+        // Get from current user (employee account)
+        try {
+            const currentUser = window.authSystem?.currentUser;
+            if (currentUser) {
+                if (currentUser.email) identifiers.email = currentUser.email.toLowerCase();
+                if (currentUser.employeeName || currentUser.name) {
+                    identifiers.name = currentUser.employeeName || currentUser.name;
+                }
+                if (currentUser.employeeId || currentUser.id) {
+                    identifiers.ids.push(String(currentUser.employeeId || currentUser.id));
+                }
+            }
+        } catch(_) {}
+        
+        // Get from role manager
+        try {
+            if (window.roleManager?.activeEmployee) {
+                const emp = window.roleManager.activeEmployee;
+                if (emp.name && !identifiers.name) identifiers.name = emp.name;
+                if (emp.id) identifiers.ids.push(String(emp.id));
+            }
+        } catch(_) {}
+        
+        return identifiers;
+    }
+
+    isBookingForTherapist(booking, identifiers) {
+        const bid = String(booking.employeeId || '');
+        const bname = (booking.employeeName || '').toLowerCase();
+        const bemail = (booking.employeeEmail || '').toLowerCase();
+        
+        const matchById = identifiers.ids.includes(bid);
+        const matchByName = identifiers.name && bname === identifiers.name.toLowerCase();
+        const matchByEmail = identifiers.email && bemail === identifiers.email;
+        
+        return matchById || matchByName || matchByEmail;
+    }
+
+    async loadTherapistSchedule() {
+        try {
+            const bookings = await db.getAll('bookings');
+            const today = new Date().toDateString();
+            
+            const identifiers = await this.getTherapistIdentifiers();
+            
+            const todaySchedule = bookings
+                .filter(b => {
+                    const bookingDate = new Date(b.date || b.startTime).toDateString();
+                    return bookingDate === today && this.isBookingForTherapist(b, identifiers);
+                })
+                .sort((a, b) => new Date(a.date || a.startTime) - new Date(b.date || b.startTime));
+            
+            const previewEl = document.getElementById('therapistBookingsPreview');
+            if (previewEl) {
+                if (todaySchedule.length === 0) {
+                    previewEl.innerHTML = '<p style="color: var(--gray); text-align: center; padding: 1rem;">No bookings scheduled for today</p>';
+                } else {
+                    previewEl.innerHTML = todaySchedule.map(b => `
+                        <div class="booking-preview-item">
+                            <div class="booking-time">${new Date(b.date || b.startTime).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</div>
+                            <div class="booking-details">
+                                <div class="booking-service">${b.serviceName}</div>
+                                <div class="booking-customer">${b.customerName}</div>
+                            </div>
+                            <div class="booking-duration">${b.duration || 60}min</div>
+                        </div>
+                    `).join('');
+                }
+            }
+            
+        } catch (error) {
+            console.error('Failed to load therapist schedule:', error);
+        }
     }
 
     showUnpaidDashboard() {
@@ -540,6 +792,257 @@ class DashboardManager {
 const dashboardManager = new DashboardManager();
 
 // Load dashboard when page is shown
+// Therapist Service Timer Class
+class TherapistTimer {
+    constructor() {
+        this.isRunning = false;
+        this.isPaused = false;
+        this.startTime = null;
+        this.pausedTime = 0;
+        this.serviceDuration = 60; // Default 60 minutes
+        this.interval = null;
+        this.warningAlerted = false;
+        this.completionAlerted = false;
+    }
+
+    start() {
+        // Show modal to select service and duration
+        this.showServiceSelectionModal();
+    }
+
+    showServiceSelectionModal() {
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-play-circle"></i> Start Service Timer</h2>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Service</label>
+                        <select id="timerServiceSelect" class="form-input">
+                            <option value="">Select service...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Duration (minutes)</label>
+                        <input type="number" id="timerDurationInput" class="form-input" value="60" min="1" max="300">
+                    </div>
+                    <div class="form-group">
+                        <label>Customer (optional)</label>
+                        <input type="text" id="timerCustomerInput" class="form-input" placeholder="Customer name">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+                    <button class="btn btn-success" id="confirmStartTimer">Start Timer</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Load services
+        this.loadServicesForTimer(modal);
+        
+        // Handle start
+        modal.querySelector('#confirmStartTimer').onclick = () => {
+            const serviceSelect = modal.querySelector('#timerServiceSelect');
+            const durationInput = modal.querySelector('#timerDurationInput');
+            const customerInput = modal.querySelector('#timerCustomerInput');
+            
+            const serviceName = serviceSelect.options[serviceSelect.selectedIndex]?.text || 'Service';
+            const duration = parseInt(durationInput.value) || 60;
+            const customer = customerInput.value || '';
+            
+            this.startTimer(serviceName, duration, customer);
+            modal.remove();
+        };
+    }
+
+    async loadServicesForTimer(modal) {
+        try {
+            const products = await db.getAll('products');
+            const services = products.filter(p => p.category === 'service' || p.category === 'massage');
+            
+            const select = modal.querySelector('#timerServiceSelect');
+            select.innerHTML = '<option value="">Select service...</option>' + 
+                services.map(s => `<option value="${s.id}" data-duration="${s.duration || 60}">${s.name}</option>`).join('');
+            
+            // Auto-fill duration when service is selected
+            select.addEventListener('change', () => {
+                const selectedOption = select.options[select.selectedIndex];
+                if (selectedOption && selectedOption.dataset.duration) {
+                    modal.querySelector('#timerDurationInput').value = selectedOption.dataset.duration;
+                }
+            });
+            
+        } catch (error) {
+            console.error('Failed to load services for timer:', error);
+        }
+    }
+
+    startTimer(serviceName, duration, customer = '') {
+        this.serviceDuration = duration;
+        this.startTime = new Date();
+        this.pausedTime = 0;
+        this.isRunning = true;
+        this.isPaused = false;
+        this.warningAlerted = false;
+        this.completionAlerted = false;
+        
+        // Update UI
+        const serviceEl = document.getElementById('timerService');
+        const startBtn = document.getElementById('startTimerBtn');
+        const stopBtn = document.getElementById('stopTimerBtn');
+        const pauseBtn = document.getElementById('pauseTimerBtn');
+        
+        if (serviceEl) serviceEl.textContent = `${serviceName}${customer ? ` - ${customer}` : ''} (${duration} min)`;
+        if (startBtn) startBtn.style.display = 'none';
+        if (stopBtn) stopBtn.style.display = 'inline-block';
+        if (pauseBtn) pauseBtn.style.display = 'inline-block';
+        
+        // Start the timer interval
+        this.interval = setInterval(() => this.updateTimer(), 1000);
+        
+        console.log(`⏰ Timer started: ${serviceName} for ${duration} minutes`);
+    }
+
+    updateTimer() {
+        if (!this.isRunning || this.isPaused) return;
+        
+        const now = new Date();
+        const elapsed = Math.floor((now - this.startTime - this.pausedTime) / 1000);
+        const totalSeconds = this.serviceDuration * 60;
+        const remaining = Math.max(0, totalSeconds - elapsed);
+        
+        // Update display
+        const hours = Math.floor(elapsed / 3600);
+        const minutes = Math.floor((elapsed % 3600) / 60);
+        const seconds = elapsed % 60;
+        
+        const display = document.getElementById('timerDisplay');
+        if (display) {
+            display.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Change color based on time remaining
+            if (remaining <= 300 && !this.warningAlerted) {
+                // 5 minutes warning
+                display.style.color = 'var(--warning-color)';
+                this.showAlert('⚠️ 5 minutes remaining!', 'warning');
+                this.warningAlerted = true;
+            }
+            
+            if (remaining <= 0 && !this.completionAlerted) {
+                // Time's up
+                display.style.color = 'var(--danger-color)';
+                this.showAlert('🔔 Service time completed!', 'danger');
+                this.completionAlerted = true;
+            }
+        }
+    }
+
+    showAlert(message, type) {
+        // Visual alert
+        const alertsEl = document.getElementById('timerAlerts');
+        if (alertsEl) {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.style.cssText = 'margin: 0.5rem 0; padding: 0.75rem; border-radius: 8px; font-weight: 500;';
+            alert.innerHTML = `<i class="fas fa-bell"></i> ${message}`;
+            alertsEl.appendChild(alert);
+            
+            // Remove alert after 5 seconds
+            setTimeout(() => alert.remove(), 5000);
+        }
+        
+        // Audio alert (simple beep)
+        try {
+            // Create a simple beep sound
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800; // 800 Hz tone
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        } catch(_) {
+            // Fallback: try to play a simple audio file or use system beep
+            console.log('🔔 BEEP:', message);
+        }
+        
+        // Show notification
+        if (window.showNotification) {
+            window.showNotification(message, type);
+        }
+    }
+
+    pause() {
+        if (!this.isRunning) return;
+        
+        this.isPaused = !this.isPaused;
+        const pauseBtn = document.getElementById('pauseTimerBtn');
+        
+        if (this.isPaused) {
+            this.pauseStartTime = new Date();
+            if (pauseBtn) {
+                pauseBtn.innerHTML = '<i class="fas fa-play"></i> Resume';
+            }
+            console.log('⏸️ Timer paused');
+        } else {
+            this.pausedTime += new Date() - this.pauseStartTime;
+            if (pauseBtn) {
+                pauseBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+            }
+            console.log('▶️ Timer resumed');
+        }
+    }
+
+    stop() {
+        this.isRunning = false;
+        this.isPaused = false;
+        
+        if (this.interval) {
+            clearInterval(this.interval);
+            this.interval = null;
+        }
+        
+        // Reset UI
+        const display = document.getElementById('timerDisplay');
+        const serviceEl = document.getElementById('timerService');
+        const startBtn = document.getElementById('startTimerBtn');
+        const stopBtn = document.getElementById('stopTimerBtn');
+        const pauseBtn = document.getElementById('pauseTimerBtn');
+        const alertsEl = document.getElementById('timerAlerts');
+        
+        if (display) {
+            display.textContent = '00:00:00';
+            display.style.color = '';
+        }
+        if (serviceEl) serviceEl.textContent = 'No active service';
+        if (startBtn) startBtn.style.display = 'inline-block';
+        if (stopBtn) stopBtn.style.display = 'none';
+        if (pauseBtn) pauseBtn.style.display = 'none';
+        if (alertsEl) alertsEl.innerHTML = '';
+        
+        console.log('⏹️ Timer stopped');
+        
+        if (window.showNotification) {
+            window.showNotification('Service completed!', 'success');
+        }
+    }
+}
+
 window.loadDashboard = async function() {
     await dashboardManager.init();
 };

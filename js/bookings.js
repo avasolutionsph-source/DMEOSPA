@@ -14,9 +14,7 @@ class BookingsManager {
 				console.log('👨‍⚕️ Therapist view detected, building therapist page');
 				this.buildTherapistPage();
 				await this.syncTherapistOnly();
-				if (!this._therapistSyncTimer) {
-					this._therapistSyncTimer = setInterval(() => this.syncTherapistOnly().catch(()=>{}), 60000);
-				}
+				// REMOVED: Automatic periodic sync - now only syncs on demand or when new booking received
 				console.log('✅ Therapist view initialized successfully');
 				return;
 			}
@@ -25,8 +23,8 @@ class BookingsManager {
 			this.ensureTable();
 			await this.loadBookings();
 			this.setupEventListeners();
-			this.setupAutoSync();
-			// Force an immediate sync on first open to avoid blank state
+			// REMOVED: setupAutoSync - now only syncs on demand
+			// Only do initial sync on first open
 			this.syncExternalBookings().catch(()=>{});
 			console.log('✅ Regular bookings view initialized successfully');
 		} catch (error) {
@@ -355,11 +353,11 @@ class BookingsManager {
 		}
 	}
 
-	setupAutoSync() {
-		if (this._syncTimer) return;
-		this.syncExternalBookings().catch(()=>{});
-		this._syncTimer = setInterval(() => this.syncExternalBookings().catch(()=>{}), 60000);
-	}
+	// REMOVED: setupAutoSync - now using event-driven sync only
+	// Sync is triggered only when:
+	// 1. Page first loads (initial sync)
+	// 2. New booking received via postMessage
+	// 3. Manual sync button clicked
 
 	async syncExternalBookings() {
 		try {
@@ -680,9 +678,23 @@ window.addEventListener('message', async (event) => {
 			await db.add('bookings', bookingToStore);
 			console.log('✅ Booking stored in PWA database:', bookingToStore);
 			
+			// EVENT-DRIVEN SYNC: Only refresh when new booking is received
+			console.log('🔄 New booking received - triggering refresh');
+			
 			// Refresh bookings if on bookings page
 			if (window.app?.currentPage === 'bookings') {
 				await bookingsManager.init();
+			}
+			
+			// Also refresh dashboard if therapist is on dashboard (to update stats)
+			if (window.app?.currentPage === 'dashboard' && window.dashboardManager?.isTherapistAccount()) {
+				await window.dashboardManager.loadTherapistStats();
+				await window.dashboardManager.loadTherapistSchedule();
+			}
+			
+			// Show notification about new booking
+			if (window.showNotification) {
+				window.showNotification(`New booking received: ${bookingToStore.serviceName} for ${bookingToStore.customerName}`, 'success');
 			}
 			
 			// Send success response back to booking website
