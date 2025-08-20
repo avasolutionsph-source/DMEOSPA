@@ -61,8 +61,8 @@ class BookingsManager {
 					<button class="btn btn-info" onclick="window.findAllBookings()" style="margin-right: 0.5rem;">
 						<i class="fas fa-search"></i> Find All Bookings
 					</button>
-					<button class="btn btn-secondary" onclick="window.syncBookingsFromBookingSite()" style="margin-right: 0.5rem;">
-						<i class="fas fa-sync"></i> Check Booking Website
+					<button class="btn btn-warning" onclick="window.testDirectBooking()" style="margin-right: 0.5rem;">
+						<i class="fas fa-bolt"></i> Test Direct Connection
 					</button>
 					<button class="btn btn-primary" onclick="window.createTestBookings()">
 						<i class="fas fa-plus"></i> Create Test Bookings
@@ -97,6 +97,9 @@ class BookingsManager {
 		try {
 			if (window.roleManager?.activeEmployee?.name) {
 				identifiers.name = window.roleManager.activeEmployee.name;
+			}
+			if (window.roleManager?.activeEmployee?.id) {
+				identifiers.ids.push(String(window.roleManager.activeEmployee.id));
 			}
 		} catch(_) {}
 		
@@ -807,6 +810,87 @@ window.findAllBookings = async function() {
 	}
 	
 	console.log('🎯 Search complete! Check logs above for all bookings.');
+};
+
+// Test direct booking connection (simulates booking website submission)
+window.testDirectBooking = async function() {
+	console.log('🧪 Testing direct booking connection...');
+	
+	// Simulate a booking submission from the booking website
+	const testBooking = {
+		source: 'booking-website',
+		businessId: window.authSystem?.currentUser?.ownerId || window.authSystem?.currentUser?.id || '',
+		storeId: 'default',
+		storeName: 'Main Branch',
+		customer: {
+			name: 'Test Customer',
+			phone: '123-456-7890',
+			email: 'test@example.com'
+		},
+		serviceId: 'test_service',
+		serviceName: 'Test Massage',
+		durationMins: 60,
+		partySize: 1,
+		startTime: new Date().toISOString(),
+		status: 'confirmed',
+		employeeId: window.roleManager?.activeEmployee?.id || '6',
+		employeeName: window.roleManager?.activeEmployee?.name || 'ronaldo',
+		notes: 'Direct connection test booking'
+	};
+	
+	console.log('📝 Simulating booking submission:', testBooking);
+	
+	// Trigger the same handler that would receive the postMessage
+	const fakeEvent = {
+		data: {
+			type: 'SUBMIT_BOOKING',
+			booking: testBooking
+		},
+		source: {
+			postMessage: (msg, origin) => console.log('📤 Would send back to booking website:', msg)
+		},
+		origin: 'https://avaphbooking.netlify.app'
+	};
+	
+	// Manually trigger the message handler
+	try {
+		const booking = fakeEvent.data.booking;
+		console.log('📝 Processing direct booking from website:', booking);
+		
+		// Store booking directly in PWA database
+		const bookingToStore = {
+			source: booking.source || 'booking-website',
+			externalId: 'direct_test_' + Date.now(),
+			date: booking.startTime,
+			serviceId: booking.serviceId,
+			serviceName: booking.serviceName,
+			employeeId: booking.employeeId,
+			employeeName: booking.employeeName,
+			customerName: booking.customer?.name || '',
+			customerPhone: booking.customer?.phone || '',
+			customerEmail: booking.customer?.email || '',
+			roomNumber: '',
+			status: booking.status || 'confirmed',
+			storeId: booking.storeId || 'default',
+			partySize: booking.partySize || 1,
+			duration: booking.durationMins || 60,
+			notes: booking.notes || '',
+			createdAt: new Date().toISOString(),
+			modifiedAt: new Date().toISOString()
+		};
+		
+		await db.add('bookings', bookingToStore);
+		console.log('✅ Test booking stored in PWA database:', bookingToStore);
+		
+		// Refresh bookings page
+		await bookingsManager.init();
+		
+		alert('✅ Direct connection test successful! Check the bookings table.');
+		
+	} catch (error) {
+		console.error('❌ Direct connection test failed:', error);
+		alert('❌ Direct connection test failed: ' + error.message);
+	}
 };
 
 // Debug function to create test bookings for the current therapist
