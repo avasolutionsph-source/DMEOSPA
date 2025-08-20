@@ -111,38 +111,33 @@ class EntitlementsSystem {
 
     // Set entitlements based on subscription plan
     setEntitlementsForPlan(plan) {
-        console.log(`🔍 ENTITLEMENTS DEBUG: Setting plan for "${plan}"`);
-        this.currentPlan = plan;
+        console.log(`🔍 ENTITLEMENTS DEBUG: Setting plan for "${plan}" - TESTING MODE: ALL ACCESS`);
+        this.currentPlan = 'pro'; // Force PRO for testing
         
-        switch (plan) {
-            case 'pro':
-                // PRO plan - all features available
-                this.entitlements = {
-                    pos: true,
-                    inventory: true,
-                    employees: true,
-                    dashboard: 'full',
-                    chatbot: true,
-                    cloudBackup: true,
-                    analytics: true,
-                    multiUser: true,
-                    support: 'priority'
-                };
-                console.log('✅ PRO PLAN ACTIVATED - All features enabled!');
-                console.log('📋 PRO Features:', this.entitlements);
-                
-                // Force update UI immediately
-                setTimeout(() => this.updateUI(), 500);
-                break;
-            case 'unpaid':
-            case 'free':
-            default:
-                // UNPAID plan - no features available
-                console.log('❌ UNPAID/FREE PLAN - No features available');
-                this.setUnpaidPlanEntitlements();
-                return;
-        }
-        console.log(`✅ Set ${plan} plan entitlements successfully`);
+        // TESTING MODE: Give everyone full access to everything
+        this.entitlements = {
+            pos: true,
+            inventory: true,
+            employees: true,
+            dashboard: 'full',
+            chatbot: true,
+            cloudBackup: true,
+            analytics: true,
+            multiUser: true,
+            support: 'priority',
+            bookings: true,
+            rooms: true,
+            services: true,
+            giftcerts: true,
+            payroll: true
+        };
+        
+        console.log('🚀 TESTING MODE: ALL FEATURES UNLOCKED FOR EVERYONE!');
+        console.log('📋 All Features Enabled:', this.entitlements);
+        
+        // Force update UI immediately
+        setTimeout(() => this.updateUI(), 500);
+        console.log(`✅ Set FULL ACCESS entitlements for testing`);
     }
 
     // Set unpaid plan entitlements (very limited features)
@@ -410,7 +405,9 @@ class EntitlementsSystem {
         }
         
         // Direct value check
-        return entitlement === level;
+        // TESTING MODE: Allow everything
+        console.log(`🔓 TESTING MODE: Access granted for feature "${feature}"`);
+        return true;
     }
 
     // Get current plan info
@@ -445,53 +442,15 @@ class EntitlementsSystem {
     gateNavigationItems() {
         const navItems = document.querySelectorAll('.nav-item');
         
+        // TESTING MODE: Show all navigation items for everyone
         navItems.forEach(item => {
-            const page = item.dataset.page;
-            let canAccess = true;
-            let showUpgrade = false;
-            
-            switch (page) {
-                case 'inventory':
-                    canAccess = this.can('inventory');
-                    showUpgrade = !canAccess;
-                    break;
-                case 'employees':
-                    canAccess = this.can('employees');
-                    showUpgrade = !canAccess;
-                    break;
-                case 'chatbot':
-                    canAccess = this.can('chatbot');
-                    showUpgrade = !canAccess;
-                    break;
-                // POS and Dashboard are always accessible but with limitations
-                case 'pos':
-                case 'dashboard':
-                case 'products':
-                case 'settings':
-                    canAccess = true;
-                    break;
-            }
-            
-            // Check if user is logged in - if so, override unpaid restrictions
-            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true' || localStorage.getItem('userData');
-            
-            // If plan is unpaid AND user is not logged in, hide everything except settings
-            if (this.currentPlan === 'unpaid' && !isLoggedIn && page !== 'settings' && page !== 'dashboard') {
-                item.style.display = 'none';
-                return;
-            }
-
-            if (!canAccess) {
-                // For paid but not entitled features, hide items entirely
-                item.style.display = 'none';
-            } else {
-                item.style.opacity = '1';
-                item.style.pointerEvents = 'auto';
-                
-                // Ensure it is visible when allowed
-                item.style.display = '';
-            }
+            console.log('🔓 TESTING MODE: Unlocking nav item:', item.dataset.page);
+            item.style.display = '';
+            item.style.opacity = '1';
+            item.style.pointerEvents = 'auto';
         });
+        
+        console.log('🚀 TESTING MODE: All navigation items unlocked');
     }
 
     // Gate dashboard features

@@ -826,22 +826,12 @@ class RoleManager {
 
 	gateNavigationByRole() {
 		const navItems = document.querySelectorAll('.nav-item');
-		if (!this.activeEmployee) {
-			// Show all (plan gating still applies)
-			navItems.forEach(i => i.style.display = '');
-			return;
-		}
-		const roleCfg = this.roles[this.activeEmployee.role] || {allowPages: [], denyPages: []};
+		// TESTING MODE: Show all navigation items for all roles
 		navItems.forEach(item => {
-			const page = item.dataset.page;
-			if (roleCfg.allowPages.length && !roleCfg.allowPages.includes(page)) {
-				item.style.display = 'none';
-			} else if (roleCfg.denyPages.includes(page)) {
-				item.style.display = 'none';
-			} else {
-				item.style.display = '';
-			}
+			console.log('🔓 TESTING MODE: Role gating disabled, showing nav item:', item.dataset.page);
+			item.style.display = '';
 		});
+		console.log('🚀 TESTING MODE: Role-based navigation gating disabled');
 	}
 
 	showRoleLoginModal() {
