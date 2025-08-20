@@ -76,25 +76,67 @@ class BookingsManager {
 
 	async getTherapistIdentifiers() {
 		const identifiers = { ids: [], name: '', email: '' };
+		
+		// Get email from current user
 		try { identifiers.email = (window.authSystem?.currentUser?.email || '').toLowerCase(); } catch(_) {}
+		
+		// Get name from role manager (active employee session)
 		try {
-			// Try to resolve employee id and name from local employees by email
-			const emps = await db.getAll('employees');
-			if (Array.isArray(emps) && identifiers.email) {
-				const match = emps.find(e => (e.email||'').toLowerCase() === identifiers.email);
-				if (match) {
-					if (match.id) identifiers.ids.push(String(match.id));
-					if (match._id) identifiers.ids.push(String(match._id));
-					if (match.name) identifiers.name = match.name;
-				}
+			if (window.roleManager?.activeEmployee?.name) {
+				identifiers.name = window.roleManager.activeEmployee.name;
 			}
 		} catch(_) {}
-		// Fallback name from role manager or user profile
+		
+		// Try to resolve employee id and name from local employees database
+		try {
+			const emps = await db.getAll('employees');
+			console.log('📋 Local employees found:', emps?.length || 0);
+			
+			if (Array.isArray(emps)) {
+				// Try to match by email first
+				if (identifiers.email) {
+					const emailMatch = emps.find(e => (e.email||'').toLowerCase() === identifiers.email);
+					if (emailMatch) {
+						console.log('✅ Found employee by email:', emailMatch);
+						if (emailMatch.id) identifiers.ids.push(String(emailMatch.id));
+						if (emailMatch._id) identifiers.ids.push(String(emailMatch._id));
+						if (emailMatch.name && !identifiers.name) identifiers.name = emailMatch.name;
+					}
+				}
+				
+				// Try to match by name if we have one
+				if (identifiers.name) {
+					const nameMatch = emps.find(e => (e.name||'').toLowerCase() === identifiers.name.toLowerCase());
+					if (nameMatch && nameMatch !== identifiers.email) {
+						console.log('✅ Found employee by name:', nameMatch);
+						if (nameMatch.id) identifiers.ids.push(String(nameMatch.id));
+						if (nameMatch._id) identifiers.ids.push(String(nameMatch._id));
+					}
+				}
+				
+				// If still no matches, try all employees with "therapist" role
+				if (identifiers.ids.length === 0) {
+					const therapists = emps.filter(e => (e.position||e.role||'').toLowerCase().includes('therapist'));
+					console.log('🔍 Found therapists by role:', therapists);
+					therapists.forEach(t => {
+						if (t.id) identifiers.ids.push(String(t.id));
+						if (t._id) identifiers.ids.push(String(t._id));
+					});
+				}
+			}
+		} catch(e) {
+			console.warn('Error loading local employees:', e);
+		}
+		
+		// Fallback name sources
 		if (!identifiers.name) {
-			identifiers.name = window.roleManager?.activeEmployee?.name 
-				|| window.authSystem?.currentUser?.employeeName 
+			identifiers.name = window.authSystem?.currentUser?.employeeName 
+				|| window.authSystem?.currentUser?.name
+				|| window.authSystem?.currentUser?.businessName
 				|| '';
 		}
+		
+		console.log('🆔 Final therapist identifiers:', identifiers);
 		return identifiers;
 	}
 
@@ -118,8 +160,30 @@ class BookingsManager {
 			const norm = (s) => (s||'').trim().toLowerCase();
 			const filtered = all.filter(b => {
 				const bid = String(b.employeeId || '');
-				const bname = norm(b.employeeName);
-				const match = (me.ids.includes(bid)) || (!!me.name && bname === norm(me.name));
+ 			const bname = norm(b.employeeName || '');
+				const bemail = norm(b.employeeEmail || '');
+				
+				// Check multiple matching criteria
+				const matchById = me.ids.includes(bid);
+				const matchByName = !!me.name && bname === norm(me.name);
+				const matchByEmail = !!me.email && bemail === me.email;
+				
+				const match = matchById || matchByName || matchByEmail;
+				
+				console.log('🔍 Checking booking:', {
+					booking: b,
+					therapistIds: me.ids,
+					therapistName: me.name,
+					therapistEmail: me.email,
+					bookingEmployeeId: bid,
+					bookingEmployeeName: bname,
+					bookingEmployeeEmail: bemail,
+					matchById,
+					matchByName,
+					matchByEmail,
+					finalMatch: match
+				});
+				
 				if (match) console.log('✅ Booking matches therapist:', b);
 				return match;
 			});
@@ -496,6 +560,53 @@ window.testTherapistView = function() {
 	console.log('Is therapist view?', bookingsManager.isTherapistView());
 	bookingsManager.buildTherapistPage();
 	bookingsManager.syncTherapistOnly();
+};
+
+// Debug function to create test bookings for the current therapist
+window.createTestBookings = async function() {
+	console.log('🧪 Creating test bookings...');
+	const me = await bookingsManager.getTherapistIdentifiers();
+	console.log('👤 Creating bookings for therapist:', me);
+	
+	// Create test bookings with the therapist's identifiers
+	const testBookings = [
+		{
+			id: 'test_' + Date.now() + '_1',
+			customerName: 'John Doe',
+			serviceName: 'Swedish Massage',
+			employeeId: me.ids[0] || 'test_therapist_id',
+			employeeName: me.name || 'Test Therapist',
+			employeeEmail: me.email || 'test@example.com',
+			startTime: new Date().toISOString(),
+			date: new Date().toISOString(),
+			status: 'confirmed',
+			roomNumber: 'Room 1',
+			duration: 60
+		},
+		{
+			id: 'test_' + Date.now() + '_2',
+			customerName: 'Jane Smith',
+			serviceName: 'Deep Tissue Massage',
+			employeeId: me.ids[0] || 'test_therapist_id',
+			employeeName: me.name || 'Test Therapist',
+			employeeEmail: me.email || 'test@example.com',
+			startTime: new Date(Date.now() + 3600000).toISOString(), // +1 hour
+			date: new Date(Date.now() + 3600000).toISOString(),
+			status: 'pending',
+			roomNumber: 'Room 2',
+			duration: 90
+		}
+	];
+	
+	// Store test bookings locally
+	for (const booking of testBookings) {
+		await db.add('bookings', booking);
+		console.log('✅ Created test booking:', booking);
+	}
+	
+	// Reload bookings
+	await bookingsManager.init();
+	console.log('🎉 Test bookings created and page reloaded!');
 };
 
 // Hook: when a new booking is created (example function)
