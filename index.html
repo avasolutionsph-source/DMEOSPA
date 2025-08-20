@@ -2283,6 +2283,14 @@
         }
     </script>
     
+    <!-- Architecture Layer Scripts - Load First -->
+    <script src="js/config.js"></script>
+    <script src="js/constants.js"></script>
+    <script src="js/services/eventBus.js"></script>
+    <script src="js/services/dataService.js"></script>
+    <script src="js/repositories/BusinessRepository.js"></script>
+    
+    <!-- Core Scripts -->
     <script src="js/database.js"></script>
     <!-- Load unified auth FIRST to prevent logout flicker -->
     <script src="js/unified-auth.js"></script>
@@ -2311,6 +2319,10 @@
     <script src="js/settings.js"></script>
     <script src="js/privacy.js"></script>
     <script src="js/bookings.js"></script>
+    
+    <!-- Architecture Integration - Load Last -->
+    <script src="js/appIntegration.js"></script>
+    
     <script>
         // Custom Dropdown Handler
         function handleDropdownChange(selectElement, customInputId) {
