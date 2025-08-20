@@ -453,6 +453,21 @@ class UnifiedAuth {
         
         // Update role-specific elements
         this.updateRoleElements();
+        
+        // Emit event to reinitialize handlers
+        if (window.eventBus) {
+            window.eventBus.emit('auth:login', this.currentUser);
+        }
+        
+        // Dispatch custom event for compatibility
+        window.dispatchEvent(new CustomEvent('auth:ready', { detail: this.currentUser }));
+        
+        // Reinitialize handlers after a short delay
+        setTimeout(() => {
+            if (window.eventHandlerFix && window.eventHandlerFix.reinitialize) {
+                window.eventHandlerFix.reinitialize();
+            }
+        }, 100);
     }
 
     // Update UI for logged out state

@@ -128,7 +128,7 @@ router.post('/login', [
     }
 
     const { email, password } = req.body;
-
+    
     // Find user by email
     const user = await User.findOne({ email }).populate('ownerId');
     if (!user) {
@@ -416,7 +416,7 @@ router.post('/publish-catalog', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) return res.status(401).json({ success: false, error: 'No token provided' });
-    
+
     const jwt = await import('jsonwebtoken');
     const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     
@@ -531,9 +531,9 @@ router.get('/public/business-catalog/:businessId', async (req, res) => {
     
     console.log(`📋 Business catalog requested for ${businessName}: ${services.length} services, ${employees.length} employees`);
 
-    res.json({ 
-      success: true, 
-      businessName: businessName,
+    res.json({
+      success: true,
+        businessName: businessName,
       services: services,
       employees: employees,
       servicesCount: services.length,
