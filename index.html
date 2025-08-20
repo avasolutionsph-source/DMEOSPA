@@ -1924,36 +1924,17 @@
                 console.log('Attempting real API login for:', email);
                 console.log('Password length:', password.length);
                 
-                // Call marketing website login API
-                // Use unified auth login instead of direct API calls
-                const apiUrl = window.appConfig?.getApiUrl('pwa') || 'https://ava-solutions-marketing.netlify.app/api';
-                const response = await fetch(`${apiUrl}/auth/login`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-device-name': (window.__deviceName || navigator.userAgent || 'webapp')
-                    },
-                    credentials: 'omit',
-                    body: JSON.stringify({
-                        email: email,
-                        password: password
-                    })
-                });
-                
-                const data = await response.json();
-                console.log('Login response:', response.status, data);
-                
-                if (response.ok && data.success) {
-                    // Successful login
-                    const userData = data.user;
-                    const token = data.token;
+                // Use unified auth system for login
+                if (window.unifiedAuth && window.unifiedAuth.login) {
+                    console.log('🔐 Using unified auth system for login');
+                    const loginResult = await window.unifiedAuth.login(email, password);
                     
-                    console.log('Login successful for:', userData.email);
-                    
-                    // Store in localStorage
-                    localStorage.setItem('userToken', token);
-                    localStorage.setItem('userData', JSON.stringify(userData));
-                    localStorage.setItem('isLoggedIn', 'true');
+                    if (loginResult.success) {
+                        // Successful login - unified auth handles token storage
+                        const userData = loginResult.user;
+                        const token = loginResult.token;
+                        
+                        console.log('Login successful for:', userData.email);
                     
                     // Update UI to show logged in state
                     const showLoginBtn = document.getElementById('showLoginBtn');
@@ -2067,11 +2048,63 @@
                     }
                     
                 } else {
-                    // Login failed
-                    console.error('Login failed:', data.error || data.message);
-                    console.error('Full response:', data);
+                    // Login failed with unified auth
+                    console.error('Unified auth login failed:', loginResult.error || loginResult.message);
+                    alert(loginResult.error || loginResult.message || 'Login failed. Please check your credentials.');
+                }
+                
+            } else {
+                // Fallback: Direct API call if unified auth not available
+                console.log('⚠️ Unified auth not available, using direct API call');
+                
+                const apiUrl = window.appConfig?.getApiUrl('pwa') || 'https://ava-solutions-marketing.netlify.app/api';
+                const response = await fetch(`${apiUrl}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-device-name': (window.__deviceName || navigator.userAgent || 'webapp')
+                    },
+                    credentials: 'omit',
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('Fallback login response:', response.status, data);
+                
+                if (response.ok && data.success) {
+                    // Store auth data using unified keys
+                    localStorage.setItem('auth_token', data.token);
+                    localStorage.setItem('auth_user', JSON.stringify(data.user));
+                    localStorage.setItem('isLoggedIn', 'true');
+                    
+                    // Update UI
+                    const showLoginBtn = document.getElementById('showLoginBtn');
+                    const userInfo = document.getElementById('userInfo');
+                    const userName = document.getElementById('userName');
+                    
+                    if (showLoginBtn) showLoginBtn.style.display = 'none';
+                    if (userInfo) userInfo.style.display = 'block';
+                    
+                    let displayName = data.user.businessName;
+                    if (!displayName || displayName === 'Ava Solutions' || displayName.includes(' Business')) {
+                        displayName = data.user.firstName || data.user.email.split('@')[0];
+                    }
+                    
+                    if (userName) userName.textContent = displayName;
+                    
+                    // Fetch real business name from database  
+                    await fetchAndUpdateBusinessName(data.token);
+                    
+                    modal.style.display = 'none';
+                    alert(`Welcome back, ${displayName}!`);
+                } else {
+                    console.error('Fallback login failed:', data.error || data.message);
                     alert(data.error || data.message || 'Login failed. Please check your credentials.');
                 }
+            }
                 
             } catch (error) {
                 console.error('Login error:', error);
@@ -2536,6 +2569,25 @@
         // You can test by running these in the console:
         // testConnectionStatus(false); // Test offline state
         // testConnectionStatus(true);  // Test online state
+        
+        // Initialize Unified Auth System
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Initializing PWA with Unified Auth...');
+            
+            // Force clear cache before initializing
+            if (window.forceClearCache) {
+                window.forceClearCache();
+            }
+            
+            // Initialize unified auth system
+            if (window.UnifiedAuth) {
+                window.unifiedAuth = new UnifiedAuth();
+                await window.unifiedAuth.init();
+                console.log('✅ Unified Auth system initialized');
+            } else {
+                console.warn('⚠️ UnifiedAuth class not found - using fallback auth');
+            }
+        });
     </script>
 </body>
 </html>
