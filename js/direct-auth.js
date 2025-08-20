@@ -55,14 +55,20 @@
                     this.currentUser = data.user;
                     this.isAuthenticated = true;
                     
-                    // Store in localStorage
+                    // Store in ALL possible formats to ensure persistence
+                    localStorage.setItem('auth_token', this.authToken);
+                    localStorage.setItem('auth_user', JSON.stringify(this.currentUser));
                     localStorage.setItem('authToken', this.authToken);
                     localStorage.setItem('userData', JSON.stringify(this.currentUser));
                     localStorage.setItem('isLoggedIn', 'true');
-                    
-                    // Also store in PWA's expected format
                     localStorage.setItem('token', this.authToken);
                     localStorage.setItem('user', JSON.stringify(this.currentUser));
+                    localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+                    localStorage.setItem('userToken', this.authToken);
+                    
+                    // Also set in sessionStorage for extra persistence
+                    sessionStorage.setItem('auth_token', this.authToken);
+                    sessionStorage.setItem('auth_user', JSON.stringify(this.currentUser));
                     
                     console.log('✅ Direct Auth: Login successful via PWA Backend');
                     return { success: true, user: this.currentUser, token: this.authToken };
@@ -90,12 +96,20 @@
                 this.currentUser = fallbackUser;
                 this.isAuthenticated = true;
                 
-                // Store in localStorage
+                // Store in ALL possible formats to ensure persistence
+                localStorage.setItem('auth_token', this.authToken);
+                localStorage.setItem('auth_user', JSON.stringify(this.currentUser));
                 localStorage.setItem('authToken', this.authToken);
                 localStorage.setItem('userData', JSON.stringify(this.currentUser));
                 localStorage.setItem('isLoggedIn', 'true');
                 localStorage.setItem('token', this.authToken);
                 localStorage.setItem('user', JSON.stringify(this.currentUser));
+                localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+                localStorage.setItem('userToken', this.authToken);
+                
+                // Also set in sessionStorage for extra persistence
+                sessionStorage.setItem('auth_token', this.authToken);
+                sessionStorage.setItem('auth_user', JSON.stringify(this.currentUser));
                 
                 console.log('✅ Fallback login successful');
                 return { success: true, user: this.currentUser, token: this.authToken };
@@ -107,12 +121,17 @@
             this.currentUser = null;
             this.authToken = null;
             
-            // Clear all auth data
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('userData');
-            localStorage.removeItem('isLoggedIn');
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            // Clear all auth data from all possible keys
+            const authKeys = [
+                'auth_token', 'auth_user', 'authToken', 'userData', 
+                'isLoggedIn', 'token', 'user', 'currentUser', 'userToken',
+                'universal_token', 'universal_user', 'simple_token', 'simple_user'
+            ];
+            
+            authKeys.forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
         }
         
         logout() {

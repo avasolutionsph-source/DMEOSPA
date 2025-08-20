@@ -374,8 +374,8 @@ class LogoutManager {
             // Wait for animation to complete
             await this.wait(2000);
 
-            // Redirect or reload
-            window.location.reload();
+            // Redirect to login page
+            window.location.href = 'login.html';
 
         } catch (error) {
             console.error('Logout error:', error);
