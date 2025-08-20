@@ -131,8 +131,13 @@
                             </label>
                         </div>
                         
-                        <button type="submit" class="btn-primary btn-full">
-                            <i class="fas fa-user-plus"></i> Create Account
+                        <button type="submit" class="btn-primary btn-full" id="submitBtn">
+                            <span id="submitBtnText">
+                                <i class="fas fa-user-plus"></i> Create Account
+                            </span>
+                            <span id="submitBtnLoading" style="display: none;">
+                                <i class="fas fa-spinner fa-spin"></i> Creating Account...
+                            </span>
                         </button>
                     </form>
                     
@@ -201,6 +206,12 @@
             const businessType = formData.get('businessType');
             const franchiseSize = formData.get('franchiseSize');
             
+            // Get loading elements
+            const submitBtn = document.getElementById('submitBtn');
+            const submitBtnText = document.getElementById('submitBtnText');
+            const submitBtnLoading = document.getElementById('submitBtnLoading');
+            const formInputs = document.querySelectorAll('#registerForm input, #registerForm select, #registerForm button');
+            
             // Validate passwords match
             if (password !== confirmPassword) {
                 showError('Passwords do not match');
@@ -218,6 +229,9 @@
                 showError('Please select your business type');
                 return;
             }
+            
+            // Start loading state
+            setLoadingState(true);
             
             const userData = {
                 firstName: formData.get('firstName'),
@@ -249,17 +263,56 @@
                     showSuccess('Account created successfully! Redirecting to your dashboard...');
                     localStorage.setItem('userToken', data.token);
                     localStorage.setItem('userData', JSON.stringify(data.user));
+                    
+                    // Keep loading state active during redirect
+                    submitBtnText.style.display = 'none';
+                    submitBtnLoading.innerHTML = '<i class="fas fa-check"></i> Success! Redirecting...';
+                    submitBtnLoading.style.display = 'inline-block';
+                    
                     setTimeout(() => {
                         window.location.href = '/business-dashboard';
                     }, 2000);
                 } else {
+                    setLoadingState(false);
                     showError(data.error || 'Registration failed');
                 }
             } catch (error) {
+                setLoadingState(false);
                 console.error('Registration error:', error);
                 showError('Network error. Please try again.');
             }
         });
+        
+        function setLoadingState(isLoading) {
+            const submitBtn = document.getElementById('submitBtn');
+            const submitBtnText = document.getElementById('submitBtnText');
+            const submitBtnLoading = document.getElementById('submitBtnLoading');
+            const formInputs = document.querySelectorAll('#registerForm input, #registerForm select');
+            
+            if (isLoading) {
+                // Show loading state
+                submitBtnText.style.display = 'none';
+                submitBtnLoading.style.display = 'inline-block';
+                submitBtn.disabled = true;
+                
+                // Disable all form inputs
+                formInputs.forEach(input => {
+                    input.disabled = true;
+                    input.style.opacity = '0.6';
+                });
+            } else {
+                // Hide loading state
+                submitBtnText.style.display = 'inline-block';
+                submitBtnLoading.style.display = 'none';
+                submitBtn.disabled = false;
+                
+                // Re-enable all form inputs
+                formInputs.forEach(input => {
+                    input.disabled = false;
+                    input.style.opacity = '1';
+                });
+            }
+        }
         
         function showError(message) {
             const errorElement = document.getElementById('registerError');
