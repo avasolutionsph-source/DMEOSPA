@@ -1288,4 +1288,5 @@ app.listen(port, () => {
   console.log(`👑 Super Admin: http://localhost:${port}/admin`);
   console.log(`📱 PWA Download: http://localhost:${port}/download`);
   console.log(`💾 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`✅ Server started successfully with franchise registration`);
 });
