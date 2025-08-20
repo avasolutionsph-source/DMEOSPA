@@ -1162,7 +1162,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="authModalTitle">Welcome to Ava Solutions</h2>
-                <button class="modal-close" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('loginForm')?.reset(); closeModal('authModal');">
+                <button type="button" class="modal-close" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('loginForm')?.reset(); closeModal('authModal'); return false;">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -1578,6 +1578,24 @@
         window.hideLoading = hideLoading;
         window.closeModal = closeModal;
         
+        // Fix for modal close button - ensure it's always clickable
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add fallback event listener for auth modal close button
+            const authModalCloseBtn = document.querySelector('#authModal .modal-close');
+            if (authModalCloseBtn) {
+                authModalCloseBtn.style.pointerEvents = 'all';
+                authModalCloseBtn.style.zIndex = '10002';
+                authModalCloseBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Close button clicked');
+                    document.getElementById('loginForm')?.reset();
+                    closeModal('authModal');
+                    return false;
+                });
+            }
+        });
+        
         // Global flag to prevent setup wizard from ever showing again
         window.setupWizardDisabled = false;
         
@@ -1687,22 +1705,41 @@
                     // Add logout functionality
                     const logoutBtn = document.getElementById('logoutBtn');
                     if (logoutBtn) {
-                        logoutBtn.onclick = function() {
-                            // Clear login state
-                            localStorage.removeItem('userToken');
-                            localStorage.removeItem('userData');
-                            localStorage.removeItem('isLoggedIn');
+                        logoutBtn.onclick = async function() {
+                            console.log('Logout button clicked');
                             
-                            // Update UI back to logged out state
-                            if (showLoginBtn) showLoginBtn.style.display = 'block';
-                            if (userInfo) userInfo.style.display = 'none';
-                            
-                            // Notify app about logout
-                            if (window.app && typeof window.app.onUserLoggedOut === 'function') {
-                                window.app.onUserLoggedOut();
+                            // Use unified auth system for logout
+                            if (window.authSystem && window.authSystem.signOut) {
+                                await window.authSystem.signOut();
+                            } else {
+                                // Fallback: Clear all auth-related storage
+                                const authKeys = [
+                                    'auth_token', 'auth_user',
+                                    'userToken', 'userData', 'isLoggedIn',
+                                    'authToken', 'currentUser',
+                                    'universal_token', 'universal_user',
+                                    'simple_token', 'simple_user'
+                                ];
+                                
+                                authKeys.forEach(key => {
+                                    localStorage.removeItem(key);
+                                    sessionStorage.removeItem(key);
+                                });
+                                
+                                // Update UI back to logged out state
+                                if (showLoginBtn) showLoginBtn.style.display = 'block';
+                                if (userInfo) userInfo.style.display = 'none';
+                                
+                                // Notify app about logout
+                                if (window.app && typeof window.app.onUserLoggedOut === 'function') {
+                                    window.app.onUserLoggedOut();
+                                }
+                                
+                                alert('Logged out successfully!');
+                                
+                                // Reload to ensure clean state
+                                window.location.reload();
                             }
-                            
-                            alert('Logged out successfully!');
                         };
                     }
                     
@@ -1868,22 +1905,41 @@
                     // Add logout functionality
                     const logoutBtn = document.getElementById('logoutBtn');
                     if (logoutBtn) {
-                        logoutBtn.onclick = function() {
-                            // Clear login state
-                            localStorage.removeItem('userToken');
-                            localStorage.removeItem('userData');
-                            localStorage.removeItem('isLoggedIn');
+                        logoutBtn.onclick = async function() {
+                            console.log('Logout button clicked');
                             
-                            // Update UI back to logged out state
-                            if (showLoginBtn) showLoginBtn.style.display = 'block';
-                            if (userInfo) userInfo.style.display = 'none';
-                            
-                            // Notify app about logout
-                            if (window.app && typeof window.app.onUserLoggedOut === 'function') {
-                                window.app.onUserLoggedOut();
+                            // Use unified auth system for logout
+                            if (window.authSystem && window.authSystem.signOut) {
+                                await window.authSystem.signOut();
+                            } else {
+                                // Fallback: Clear all auth-related storage
+                                const authKeys = [
+                                    'auth_token', 'auth_user',
+                                    'userToken', 'userData', 'isLoggedIn',
+                                    'authToken', 'currentUser',
+                                    'universal_token', 'universal_user',
+                                    'simple_token', 'simple_user'
+                                ];
+                                
+                                authKeys.forEach(key => {
+                                    localStorage.removeItem(key);
+                                    sessionStorage.removeItem(key);
+                                });
+                                
+                                // Update UI back to logged out state
+                                if (showLoginBtn) showLoginBtn.style.display = 'block';
+                                if (userInfo) userInfo.style.display = 'none';
+                                
+                                // Notify app about logout
+                                if (window.app && typeof window.app.onUserLoggedOut === 'function') {
+                                    window.app.onUserLoggedOut();
+                                }
+                                
+                                alert('Logged out successfully!');
+                                
+                                // Reload to ensure clean state
+                                window.location.reload();
                             }
-                            
-                            alert('Logged out successfully!');
                         };
                     }
                     

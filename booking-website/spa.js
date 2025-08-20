@@ -240,60 +240,92 @@
 				notes: qs('#notes').value || '' 
 			};
 			
-			console.log('📝 Submitting booking directly to PWA:', payload);
+			console.log('📝 Submitting booking to PWA backend:', payload);
 			console.log('🏢 Business ID:', payload.businessId);
 			
-			// NEW: Submit directly to PWA backend via postMessage
-			const pwaUrl = 'https://ava-solutions-pwa.netlify.app';
-			const pwaWindow = window.open(pwaUrl, 'pwa_booking_submit', 'width=1,height=1,left=-1000,top=-1000');
-			
-			// Wait for PWA to load and send booking data
-			const submitPromise = new Promise((resolve, reject) => {
-				const timeout = setTimeout(() => {
-					pwaWindow.close();
-					reject(new Error('PWA booking timeout'));
-				}, 10000);
+			// Submit directly to PWA backend API
+			try {
+				const response = await fetchJSON(`${apiBase()}/bookings`, {
+					method: 'POST',
+					body: JSON.stringify(payload)
+				});
 				
-				const messageHandler = (event) => {
-					if (event.origin !== pwaUrl) return;
-					
-					if (event.data.type === 'PWA_READY') {
-						console.log('🔗 PWA ready, sending booking...');
-						pwaWindow.postMessage({
-							type: 'SUBMIT_BOOKING',
-							booking: payload
-						}, pwaUrl);
-					}
-					
-					if (event.data.type === 'BOOKING_SUCCESS') {
-						console.log('✅ Booking submitted successfully via PWA:', event.data);
-						clearTimeout(timeout);
-						pwaWindow.close();
-						window.removeEventListener('message', messageHandler);
-						resolve(event.data);
-					}
-					
-					if (event.data.type === 'BOOKING_ERROR') {
-						console.warn('❌ PWA booking failed:', event.data.error);
-						clearTimeout(timeout);
-						pwaWindow.close();
-						window.removeEventListener('message', messageHandler);
-						reject(new Error(event.data.error));
-					}
+				console.log('✅ Booking submitted successfully to backend:', response);
+				
+				// Store booking locally as well for offline access
+				const localBooking = {
+					...payload,
+					id: 'booking_' + Date.now(),
+					createdAt: new Date().toISOString(),
+					syncStatus: 'synced'
 				};
 				
-				window.addEventListener('message', messageHandler);
-			});
-			
-			await submitPromise;
-			alert('Booking submitted successfully! The therapist will see it in their PWA.');
+				// Store in localStorage for reference
+				const existingBookings = JSON.parse(localStorage.getItem('submitted_bookings') || '[]');
+				existingBookings.push(localBooking);
+				localStorage.setItem('submitted_bookings', JSON.stringify(existingBookings));
+				
+				alert('Booking confirmed! Reference: ' + localBooking.id);
+				
+				// Reset form
+				qs('#customerName').value = '';
+				qs('#customerPhone').value = '';
+				qs('#customerEmail').value = '';
+				qs('#notes').value = '';
+				selectedSlot = null;
+				updateSummary();
+				
+			} catch (apiError) {
+				console.warn('⚠️ Backend API failed, storing locally:', apiError);
+				
+				// If API fails, store locally for later sync
+				const localBooking = {
+					...payload,
+					id: 'booking_' + Date.now(),
+					createdAt: new Date().toISOString(),
+					syncStatus: 'pending'
+				};
+				
+				const existingBookings = JSON.parse(localStorage.getItem('submitted_bookings') || '[]');
+				existingBookings.push(localBooking);
+				localStorage.setItem('submitted_bookings', JSON.stringify(existingBookings));
+				
+				alert('Booking saved! (Will sync when online) Reference: ' + localBooking.id);
+			}
 			
 		} catch(e){
-			console.error('❌ Direct PWA booking failed:', e);
+			console.error('❌ Booking submission failed:', e);
 			alert('Booking failed - please try again or contact support');
 		}
 	}
 
+	// Test connection function
+	window.testBookingConnection = async function() {
+		console.log('🧪 Testing booking connection to PWA backend...');
+		console.log('📡 Backend URL:', pwaBackendApi);
+		console.log('🏢 Business ID:', businessId || localStorage.getItem('bookingBusinessId'));
+		
+		try {
+			// Test 1: Health check
+			const healthRes = await fetch(`${pwaBackendApi}/api/health`);
+			const health = await healthRes.json();
+			console.log('✅ Health check:', health);
+			
+			// Test 2: Try to fetch bookings
+			const bookingsRes = await fetchJSON(`${apiBase()}/bookings`);
+			console.log('📋 Bookings fetch result:', bookingsRes);
+			
+			// Test 3: Check if we can load catalog
+			const catalogRes = await tryProducts();
+			console.log('📦 Catalog load result:', catalogRes);
+			
+			alert('Connection test successful! Check console for details.');
+		} catch (error) {
+			console.error('❌ Connection test failed:', error);
+			alert('Connection test failed! Check console for details.');
+		}
+	};
+	
 	dateInput.valueAsDate = new Date();
 	loadStores();
 	ensureBackendUrl().then(() => { loadCatalog(); });

@@ -3367,6 +3367,9 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
     align-items: center;
     justify-content: center;
     box-shadow: var(--shadow-sm);
+    position: relative;
+    z-index: 10001;
+    pointer-events: all;
 }
 
 .modal-close:hover {
