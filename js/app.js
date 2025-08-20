@@ -682,22 +682,34 @@ class App {
     }
 
     setupOfflineDetection() {
-        // Show offline status
-        window.addEventListener('online', () => {
-            this.hideOfflineNotification();
-            showNotification('Back online! Syncing data...', 'success');
+        // MODIFIED: Now uses eventBus for online/offline events to prevent duplicates
+        if (window.eventBus) {
+            window.eventBus.on('network:online', () => {
+                this.hideOfflineNotification();
+                showNotification('Back online! Syncing data...', 'success');
+                
+                // Trigger background sync
+                if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.sync.register('sync-data');
+                    });
+                }
+            });
             
-            // Trigger background sync
-            if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
-                navigator.serviceWorker.ready.then(registration => {
-                    registration.sync.register('sync-data');
-                });
-            }
-        });
-        
-        window.addEventListener('offline', () => {
-            this.showOfflineNotification();
-        });
+            window.eventBus.on('network:offline', () => {
+                this.showOfflineNotification();
+            });
+        } else {
+            // Fallback to direct listeners if eventBus not available
+            window.addEventListener('online', () => {
+                this.hideOfflineNotification();
+                showNotification('Back online! Syncing data...', 'success');
+            });
+            
+            window.addEventListener('offline', () => {
+                this.showOfflineNotification();
+            });
+        }
         
         // Check initial status
         if (!navigator.onLine) {
