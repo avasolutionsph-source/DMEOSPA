@@ -131,7 +131,9 @@ class LogoutManager {
             this.showConfirmModal();
         });
 
-        console.log('✅ Enhanced logout button initialized');
+        // Mark button as enhanced
+        newLogoutBtn.setAttribute('data-enhanced-logout', 'true');
+        console.log('✅ Enhanced logout button initialized with modal and animation');
     }
 
     showConfirmModal() {
@@ -315,12 +317,21 @@ class LogoutManager {
     }
 }
 
+// Export the class globally
+window.LogoutManager = LogoutManager;
+
 // Initialize enhanced logout when DOM is ready
 let logoutManager;
 
 function initEnhancedLogout() {
-    logoutManager = new LogoutManager();
-    console.log('✨ Enhanced logout system initialized');
+    if (!window.logoutManager) {
+        logoutManager = new LogoutManager();
+        window.logoutManager = logoutManager;
+        console.log('✨ Enhanced logout system initialized');
+    } else {
+        console.log('✅ Logout manager already initialized');
+        window.logoutManager.setupLogoutButton();
+    }
 }
 
 if (document.readyState === 'loading') {
@@ -331,10 +342,18 @@ if (document.readyState === 'loading') {
 
 // Re-initialize when page becomes visible (for PWA)
 document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && logoutManager) {
-        logoutManager.setupLogoutButton();
+    if (!document.hidden) {
+        setTimeout(initEnhancedLogout, 100);
     }
 });
 
-// Export for debugging
-window.logoutManager = logoutManager;
+// Re-initialize on auth events
+window.addEventListener('auth:ready', () => {
+    setTimeout(initEnhancedLogout, 200);
+});
+
+if (window.eventBus) {
+    window.eventBus.on('auth:login', () => {
+        setTimeout(initEnhancedLogout, 200);
+    });
+}

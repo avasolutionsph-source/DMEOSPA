@@ -25,6 +25,12 @@
             return;
         }
         
+        // Don't replace if logout manager already initialized it
+        if (logoutBtn.hasAttribute('data-enhanced-logout')) {
+            console.log('✅ Logout button already has enhanced handler');
+            return;
+        }
+        
         // Remove all existing event listeners by cloning
         const newLogoutBtn = logoutBtn.cloneNode(true);
         logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
@@ -36,16 +42,25 @@
             
             console.log('🚪 Logout clicked - checking for logout manager...');
             
+            // Try to initialize logout manager if not available
+            if (!window.logoutManager && window.LogoutManager) {
+                console.log('Initializing LogoutManager...');
+                window.logoutManager = new LogoutManager();
+            }
+            
             // Use enhanced logout if available
             if (window.logoutManager && window.logoutManager.showConfirmModal) {
                 console.log('Using enhanced logout with confirmation');
                 window.logoutManager.showConfirmModal();
             } else {
-                console.log('Using direct logout');
-                performDirectLogout();
+                console.log('LogoutManager not available, showing basic confirmation');
+                if (confirm('Are you sure you want to log out?')) {
+                    performDirectLogout();
+                }
             }
         });
         
+        newLogoutBtn.setAttribute('data-enhanced-logout', 'true');
         console.log('✅ Logout button handler attached');
     }
     
@@ -181,12 +196,16 @@
     
     // Initialize on DOM ready
     function init() {
-        initializeAllHandlers();
-        
-        // Also re-initialize enhanced logout if needed
-        if (!window.logoutManager && window.LogoutManager) {
-            window.logoutManager = new LogoutManager();
-        }
+        // Wait a bit for LogoutManager to load
+        setTimeout(() => {
+            // Ensure LogoutManager is initialized first
+            if (!window.logoutManager && window.LogoutManager) {
+                console.log('🔄 Creating LogoutManager instance...');
+                window.logoutManager = new LogoutManager();
+            }
+            
+            initializeAllHandlers();
+        }, 100);
     }
     
     // Multiple initialization strategies to ensure it works
