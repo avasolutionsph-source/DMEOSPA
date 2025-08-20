@@ -15,9 +15,56 @@ class LogoutManager {
         this.setupLogoutButton();
     }
 
+    injectStyles() {
+        // Check if styles already injected
+        if (document.getElementById('logout-enhanced-styles')) return;
+
+        const style = document.createElement('style');
+        style.id = 'logout-enhanced-styles';
+        style.textContent = `
+            .logout-modal.show {
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+            
+            .logout-modal.show .logout-modal-content {
+                transform: scale(1) translateY(0) !important;
+            }
+            
+            .logout-cancel-btn:hover {
+                background: #e0e0e0 !important;
+            }
+            
+            .logout-confirm-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            }
+            
+            @keyframes pulse {
+                0% {
+                    box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4);
+                }
+                70% {
+                    box-shadow: 0 0 0 20px rgba(102, 126, 234, 0);
+                }
+                100% {
+                    box-shadow: 0 0 0 0 rgba(102, 126, 234, 0);
+                }
+            }
+            
+            .logout-icon {
+                animation: pulse 2s infinite;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
     createLogoutModal() {
         // Check if modal already exists
         if (document.getElementById('logoutConfirmModal')) return;
+
+        // Add styles directly if CSS isn't loaded
+        this.injectStyles();
 
         // Get user info for personalization
         const userInfo = this.getUserInfo();
@@ -27,16 +74,72 @@ class LogoutManager {
         const modal = document.createElement('div');
         modal.id = 'logoutConfirmModal';
         modal.className = 'logout-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            backdrop-filter: blur(5px);
+        `;
+        
         modal.innerHTML = `
-            <div class="logout-modal-content">
-                <div class="logout-icon">
-                    <i class="fas fa-sign-out-alt"></i>
+            <div class="logout-modal-content" style="
+                background: white;
+                border-radius: 20px;
+                padding: 2rem;
+                max-width: 400px;
+                width: 90%;
+                text-align: center;
+                transform: scale(0.8) translateY(20px);
+                transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            ">
+                <div class="logout-icon" style="
+                    width: 80px;
+                    height: 80px;
+                    margin: 0 auto 1.5rem;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">
+                    <i class="fas fa-sign-out-alt" style="font-size: 2rem; color: white;"></i>
                 </div>
-                <h3>Ready to Leave, ${userName}?</h3>
-                <p>Are you sure you want to log out of your account?</p>
-                <div class="logout-modal-buttons">
-                    <button class="logout-cancel-btn" id="logoutCancelBtn">Stay Logged In</button>
-                    <button class="logout-confirm-btn" id="logoutConfirmBtn">
+                <h3 style="color: #333; margin-bottom: 0.5rem; font-size: 1.5rem;">Ready to Leave, ${userName}?</h3>
+                <p style="color: #666; margin-bottom: 1.5rem; font-size: 1rem;">Are you sure you want to log out of your account?</p>
+                <div class="logout-modal-buttons" style="display: flex; gap: 1rem; justify-content: center;">
+                    <button class="logout-cancel-btn" id="logoutCancelBtn" style="
+                        padding: 0.75rem 2rem;
+                        border: none;
+                        border-radius: 50px;
+                        font-size: 1rem;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        font-weight: 600;
+                        background: #f0f0f0;
+                        color: #333;
+                    ">Stay Logged In</button>
+                    <button class="logout-confirm-btn" id="logoutConfirmBtn" style="
+                        padding: 0.75rem 2rem;
+                        border: none;
+                        border-radius: 50px;
+                        font-size: 1rem;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        font-weight: 600;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                    ">
                         <i class="fas fa-sign-out-alt"></i> Yes, Log Out
                     </button>
                 </div>
@@ -68,17 +171,90 @@ class LogoutManager {
         const overlay = document.createElement('div');
         overlay.id = 'logoutAnimationOverlay';
         overlay.className = 'logout-animation-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        `;
+        
         overlay.innerHTML = `
-            <div class="logout-animation-content">
-                <div class="logout-spinner" id="logoutSpinner"></div>
-                <div class="logout-success" id="logoutSuccess" style="display: none;">
-                    <div class="logout-success-circle"></div>
-                    <div class="logout-success-check"></div>
+            <div class="logout-animation-content" style="text-align: center; color: white;">
+                <div class="logout-spinner" id="logoutSpinner" style="
+                    width: 100px;
+                    height: 100px;
+                    margin: 0 auto 2rem;
+                    position: relative;
+                    border: 4px solid rgba(255, 255, 255, 0.2);
+                    border-radius: 50%;
+                    border-top-color: white;
+                    animation: spin 1s linear infinite;
+                "></div>
+                <div class="logout-success" id="logoutSuccess" style="
+                    display: none;
+                    width: 100px;
+                    height: 100px;
+                    margin: 0 auto 2rem;
+                    position: relative;
+                ">
+                    <div class="logout-success-circle" style="
+                        width: 100%;
+                        height: 100%;
+                        border: 4px solid white;
+                        border-radius: 50%;
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                    "></div>
+                    <div class="logout-success-check" style="
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        width: 40px;
+                        height: 20px;
+                        border-left: 4px solid white;
+                        border-bottom: 4px solid white;
+                        transform: translate(-50%, -60%) rotate(-45deg);
+                    "></div>
                 </div>
-                <div class="logout-message" id="logoutMessage">Logging you out...</div>
-                <div class="logout-submessage" id="logoutSubmessage">Saving your progress</div>
+                <div class="logout-message" id="logoutMessage" style="
+                    font-size: 1.5rem;
+                    margin-bottom: 0.5rem;
+                ">Logging you out...</div>
+                <div class="logout-submessage" id="logoutSubmessage" style="
+                    font-size: 1rem;
+                    opacity: 0.8;
+                ">Saving your progress</div>
             </div>
         `;
+        
+        // Add keyframe animation for spinner
+        if (!document.getElementById('logout-spinner-animation')) {
+            const spinStyle = document.createElement('style');
+            spinStyle.id = 'logout-spinner-animation';
+            spinStyle.textContent = `
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+                
+                .logout-animation-overlay.show {
+                    opacity: 1 !important;
+                    visibility: visible !important;
+                }
+            `;
+            document.head.appendChild(spinStyle);
+        }
+        
         document.body.appendChild(overlay);
     }
 
