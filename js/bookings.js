@@ -38,8 +38,21 @@ class BookingsManager {
 		try {
 			const roleA = (window.roleManager?.activeEmployee?.role || '').toLowerCase();
 			const roleB = (window.authSystem?.currentUser?.role || '').toLowerCase();
-			console.log('🔍 Therapist check:', { roleA, roleB, activeEmployee: window.roleManager?.activeEmployee, currentUser: window.authSystem?.currentUser });
-			return roleA === 'therapist' || roleB === 'therapist';
+			
+			// Also check if the current user is an employee account with therapist role
+			const isEmployeeAccount = window.authSystem?.currentUser?.ownerId && window.authSystem?.currentUser?.role !== 'owner';
+			const isTherapistEmployee = isEmployeeAccount && roleB === 'therapist';
+			
+			console.log('🔍 Therapist check:', { 
+				roleA, 
+				roleB, 
+				isEmployeeAccount,
+				isTherapistEmployee,
+				activeEmployee: window.roleManager?.activeEmployee, 
+				currentUser: window.authSystem?.currentUser 
+			});
+			
+			return roleA === 'therapist' || roleB === 'therapist' || isTherapistEmployee;
 		} catch(e) { 
 			console.warn('Therapist check error:', e);
 			return false; 
@@ -93,7 +106,25 @@ class BookingsManager {
 		// Get email from current user
 		try { identifiers.email = (window.authSystem?.currentUser?.email || '').toLowerCase(); } catch(_) {}
 		
-		// Get name from role manager (active employee session)
+		// For employee accounts, use the logged-in user's data directly
+		try {
+			const currentUser = window.authSystem?.currentUser;
+			if (currentUser) {
+				// If this is an employee account (has role and ownerId)
+				if (currentUser.role && currentUser.role !== 'owner' && currentUser.ownerId) {
+					console.log('👤 Using employee account data:', currentUser);
+					if (currentUser.email) identifiers.email = currentUser.email.toLowerCase();
+					if (currentUser.employeeName || currentUser.name) {
+						identifiers.name = currentUser.employeeName || currentUser.name;
+					}
+					if (currentUser.employeeId || currentUser.id) {
+						identifiers.ids.push(String(currentUser.employeeId || currentUser.id));
+					}
+				}
+			}
+		} catch(_) {}
+		
+		// Get name from role manager (active employee session) - for role switching
 		try {
 			if (window.roleManager?.activeEmployee?.name) {
 				identifiers.name = window.roleManager.activeEmployee.name;
