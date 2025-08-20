@@ -687,14 +687,13 @@ class UnifiedAuth {
 // Create global instance
 window.unifiedAuth = new UnifiedAuth();
 
+// Create alias for compatibility
+window.authSystem = window.unifiedAuth;
+
 // Disable old auth systems immediately
 window.disableOldAuthSystems = function() {
-    // Disable old auth systems that might conflict
-    if (window.authSystem) {
-        window.authSystem.isLoggedIn = false;
-        window.authSystem = null;
-        console.log('🚫 Disabled old authSystem');
-    }
+    // Keep window.authSystem as alias to unifiedAuth, don't null it
+    console.log('✅ Using unified auth system');
     if (window.permanentAuth) {
         window.permanentAuth = null;
         console.log('🚫 Disabled permanentAuth');
