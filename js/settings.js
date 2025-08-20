@@ -580,7 +580,7 @@ class SettingsManager {
 
             // Use PWA backend (both local and deployed)
             const isLocal = ['localhost','127.0.0.1'].some(h => location.hostname.startsWith(h));
-            const apiUrl = isLocal ? 'http://localhost:4000/api' : 'https://ava-pwa-backend.onrender.com/api';
+            const apiUrl = isLocal ? 'http://localhost:4000/api' : 'https://ava-solutions-marketing.netlify.app/api';
             
             const publishEndpoint = `${apiUrl}/auth/publish-catalog`;
             console.log('🔄 Publishing to PWA backend:', publishEndpoint);

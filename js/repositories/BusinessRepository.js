@@ -71,7 +71,7 @@ class BusinessRepository {
 
     async getPublishedBusinesses() {
         try {
-            const config = window.appConfig || { getApiUrl: () => 'https://ava-pwa-backend.onrender.com/api' };
+            const config = window.appConfig || { getApiUrl: () => 'https://ava-solutions-marketing.netlify.app/api' };
             const apiUrl = config.getApiUrl('pwa');
             
             // Try API first
@@ -122,7 +122,7 @@ class BusinessRepository {
             }
 
             // Direct API call
-            const config = window.appConfig || { getApiUrl: () => 'https://ava-pwa-backend.onrender.com/api' };
+            const config = window.appConfig || { getApiUrl: () => 'https://ava-solutions-marketing.netlify.app/api' };
             const apiUrl = config.getApiUrl('pwa');
             
             const response = await fetch(`${apiUrl}/auth/public/business-catalog/${businessId}`);
@@ -200,7 +200,7 @@ class BusinessRepository {
                 return { success: false, error: 'Authentication required' };
             }
 
-            const config = window.appConfig || { getApiUrl: () => 'https://ava-pwa-backend.onrender.com/api' };
+            const config = window.appConfig || { getApiUrl: () => 'https://ava-solutions-marketing.netlify.app/api' };
             const apiUrl = config.getApiUrl('pwa');
             
             const response = await fetch(`${apiUrl}/auth/publish-catalog`, {

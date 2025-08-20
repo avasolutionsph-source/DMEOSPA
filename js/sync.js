@@ -17,7 +17,7 @@ class SyncManager {
                 // Use PWA backend API instead of deprecated marketing API
                 this.apiUrl = window.appConfig ? 
                     window.appConfig.getApiUrl('pwa').replace('/api', '') : 
-                    'https://ava-pwa-backend.onrender.com';
+                    'https://ava-solutions-marketing.netlify.app';
                 console.log('🔄 Using PWA backend API URL:', this.apiUrl);
 
                 // Set up online/offline listeners

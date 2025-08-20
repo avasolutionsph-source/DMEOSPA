@@ -4,7 +4,7 @@ class UnifiedAuth {
         this.currentUser = null;
         this.authToken = null;
         this.isLoggedIn = false;
-        this.apiBaseUrl = (window.appConfig?.getApiUrl('pwa')) || 'https://ava-pwa-backend.onrender.com/api';
+        this.apiBaseUrl = (window.appConfig?.getApiUrl('pwa')) || 'https://ava-solutions-marketing.netlify.app/api';
         // Marketing API deprecated - now using PWA backend only
         this.onAuthChange = null; // Callback for auth state changes
         

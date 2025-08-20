@@ -1243,6 +1243,74 @@ app.get('/business-dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/business-dashboard.html'));
 });
 
+// Legacy PWA Backend Compatibility - matches the URL the PWA is currently calling
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // Try to authenticate using Marketing Website auth
+    const User = (await import('./models/User.js')).default;
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Invalid credentials' 
+      });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Invalid credentials' 
+      });
+    }
+
+    // Update last active
+    user.businessMetrics.lastActiveDate = new Date();
+    await user.save();
+
+    // Generate token for PWA usage
+    const jwt = (await import('jsonwebtoken')).default;
+    const token = jwt.sign(
+      { 
+        userId: user._id, 
+        email: user.email, 
+        role: user.role,
+        businessName: user.businessName,
+        businessType: user.businessType,
+        isMainOwner: user.isMainOwner
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        businessName: user.businessName,
+        role: user.role,
+        businessType: user.businessType,
+        isMainOwner: user.isMainOwner
+      }
+    });
+
+  } catch (error) {
+    console.error('PWA Auth Error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Authentication failed' 
+    });
+  }
+});
+
 // PWA Authentication Proxy - allows PWA to authenticate through Marketing Website
 app.post('/api/pwa-auth/login', async (req, res) => {
   try {
