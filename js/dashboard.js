@@ -110,23 +110,13 @@ class DashboardManager {
                     </div>
                 </div>
                 
-                <div class="service-timer-section">
-                    <h3>Service Timer</h3>
-                    <div class="timer-card">
-                        <div class="timer-display" id="timerDisplay">00:00:00</div>
-                        <div class="timer-service" id="timerService">No active service</div>
-                        <div class="timer-controls">
-                            <button class="btn btn-success" id="startTimerBtn" onclick="therapistTimer.start()">
-                                <i class="fas fa-play"></i> Start Service
-                            </button>
-                            <button class="btn btn-danger" id="stopTimerBtn" onclick="therapistTimer.stop()" style="display: none;">
-                                <i class="fas fa-stop"></i> Finish Service
-                            </button>
-                            <button class="btn btn-secondary" id="pauseTimerBtn" onclick="therapistTimer.pause()" style="display: none;">
-                                <i class="fas fa-pause"></i> Pause
-                            </button>
-                        </div>
-                        <div class="timer-alerts" id="timerAlerts"></div>
+                <div class="timer-quick-access">
+                    <h3>Quick Timer Access</h3>
+                    <div class="timer-status-card">
+                        <div class="timer-status" id="timerStatusDashboard">No active timer</div>
+                        <button class="btn btn-primary" onclick="window.app.showPage('timer')">
+                            <i class="fas fa-stopwatch"></i> Go to Timer
+                        </button>
                     </div>
                 </div>
                 
@@ -151,6 +141,9 @@ class DashboardManager {
         if (!window.therapistTimer) {
             window.therapistTimer = new TherapistTimer();
         }
+        
+        // Set up exit warnings for active timers
+        this.setupExitWarnings();
     }
 
     updateTherapistTime() {
@@ -292,6 +285,56 @@ class DashboardManager {
         } catch (error) {
             console.error('Failed to load therapist schedule:', error);
         }
+    }
+
+    setupExitWarnings() {
+        // Warn when trying to close tab/window with active timer
+        window.addEventListener('beforeunload', (event) => {
+            if (window.therapistTimer?.isRunning) {
+                const message = 'You have an active service timer running. If you close this app, the timer will be reset and you will lose your progress.';
+                event.preventDefault();
+                event.returnValue = message;
+                return message;
+            }
+        });
+
+        // Warn when trying to navigate away from timer page with active timer
+        const originalShowPage = window.app?.showPage;
+        if (originalShowPage && !window.app._exitWarningSetup) {
+            window.app._exitWarningSetup = true;
+            window.app.showPage = function(pageName) {
+                // If leaving timer page with active timer, warn user
+                if (window.app.currentPage === 'timer' && pageName !== 'timer' && window.therapistTimer?.isRunning) {
+                    const confirmed = confirm('⚠️ WARNING: You have an active service timer running.\n\nIf you leave the Timer page, the timer will continue running but you may miss alerts.\n\nDo you want to continue?');
+                    if (!confirmed) {
+                        return; // Stay on timer page
+                    }
+                }
+                
+                // Call original showPage method
+                originalShowPage.call(this, pageName);
+            };
+        }
+
+        // Mobile app visibility change warning
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && window.therapistTimer?.isRunning) {
+                console.log('⚠️ App hidden with active timer - timer continues in background');
+                
+                // Show notification when app becomes visible again
+                const handleVisibilityReturn = () => {
+                    if (!document.hidden && window.therapistTimer?.isRunning) {
+                        if (window.showNotification) {
+                            window.showNotification('Timer is still running in background', 'info');
+                        }
+                        document.removeEventListener('visibilitychange', handleVisibilityReturn);
+                    }
+                };
+                document.addEventListener('visibilitychange', handleVisibilityReturn);
+            }
+        });
+
+        console.log('⚠️ Exit warnings set up for active timers');
     }
 
     showUnpaidDashboard() {
@@ -912,6 +955,9 @@ class TherapistTimer {
         // Start the timer interval
         this.interval = setInterval(() => this.updateTimer(), 1000);
         
+        // Update dashboard status
+        this.updateDashboardStatus();
+        
         console.log(`⏰ Timer started: ${serviceName} for ${duration} minutes`);
     }
 
@@ -936,8 +982,10 @@ class TherapistTimer {
         const progressFill = document.getElementById('progressFill');
         const progressText = document.getElementById('progressText');
         
-        if (display) display.textContent = timeString;
         if (displayLarge) displayLarge.textContent = timeString;
+        
+        // Update dashboard status
+        this.updateDashboardStatus();
         
         // Update progress bar on timer page
         if (progressFill && progressText) {
@@ -1123,10 +1171,29 @@ class TherapistTimer {
         if (pauseBtn) pauseBtn.style.display = 'none';
         if (alertsEl) alertsEl.innerHTML = '';
         
+        // Update dashboard status
+        this.updateDashboardStatus();
+        
         console.log('⏹️ Timer stopped');
         
         if (window.showNotification) {
             window.showNotification('Service completed!', 'success');
+        }
+    }
+
+    updateDashboardStatus() {
+        // Update timer status on dashboard
+        const statusEl = document.getElementById('timerStatusDashboard');
+        if (statusEl) {
+            if (this.isRunning) {
+                const serviceEl = document.getElementById('timerService');
+                const currentService = serviceEl?.textContent || 'Active service';
+                statusEl.textContent = `🟢 ${currentService}`;
+                statusEl.style.color = 'var(--success-color)';
+            } else {
+                statusEl.textContent = 'No active timer';
+                statusEl.style.color = 'var(--gray)';
+            }
         }
     }
 
