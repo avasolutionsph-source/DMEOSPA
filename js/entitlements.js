@@ -418,42 +418,26 @@ class EntitlementsSystem {
         };
     }
 
-    // Apply feature gates to UI elements
+    // Apply feature gates to UI elements - COMPLETELY DISABLED
     applyFeatureGates() {
-        // Hide/show navigation items based on entitlements
-        this.gateNavigationItems();
+        // COMPLETELY DISABLED FOR TESTING - NO FEATURE GATES AT ALL
+        console.log('🚀 TESTING MODE: ALL FEATURE GATING COMPLETELY DISABLED');
         
-        // Gate dashboard features
-        this.gateDashboardFeatures();
-        
-        // Gate specific feature sections
-        this.gateFeatureSections();
-        
-        // Add subscription status to UI
+        // Only keep subscription status update
         this.updateSubscriptionStatus();
-
-        // TESTING MODE: Role-based gating completely disabled
-        console.log('🚀 TESTING MODE: Skipping role-based navigation gating');
     }
 
-    // Gate navigation items
+    // Gate navigation items - COMPLETELY DISABLED
     gateNavigationItems() {
-        const navItems = document.querySelectorAll('.nav-item');
-        
-        // TESTING MODE: Show all navigation items for everyone
-        navItems.forEach(item => {
-            console.log('🔓 TESTING MODE: Unlocking nav item:', item.dataset.page);
-            item.style.display = '';
-            item.style.opacity = '1';
-            item.style.pointerEvents = 'auto';
-        });
-        
-        console.log('🚀 TESTING MODE: All navigation items unlocked');
+        // COMPLETELY DISABLED - NO GATING AT ALL
+        console.log('🔓 TESTING MODE: Navigation gating completely disabled');
     }
 
     // Gate dashboard features
     gateDashboardFeatures() {
-        const dashboardLevel = this.entitlements?.dashboard || 'lite';
+        // COMPLETELY DISABLED - NO DASHBOARD GATING
+        console.log('🔓 TESTING MODE: Dashboard gating completely disabled');
+        return;
         
         if (dashboardLevel === 'lite') {
             // Hide advanced analytics
@@ -476,13 +460,11 @@ class EntitlementsSystem {
         }
     }
 
-    // Gate specific feature sections
+    // Gate specific feature sections - COMPLETELY DISABLED
     gateFeatureSections() {
-        // For unpaid users, hide restricted pages entirely (only settings and a minimal dashboard allowed)
-        if (this.currentPlan === 'unpaid') {
-            const pagesToHide = ['pos','inventory','employees','bookings','rooms','products','chatbot'];
-            pagesToHide.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-            this.hideSyncForUnpaidUsers();
+        // COMPLETELY DISABLED - NO FEATURE SECTION GATING
+        console.log('🔓 TESTING MODE: Feature section gating completely disabled');
+        return;
             return;
         }
 
@@ -747,6 +729,9 @@ class EntitlementsSystem {
     }
 
     hideSyncForUnpaidUsers() {
+        // COMPLETELY DISABLED - NO SYNC HIDING
+        console.log('🔓 TESTING MODE: Sync hiding completely disabled');
+        return;
         // Hide connection status and sync indicators for unpaid users
         const connectionStatus = document.getElementById('connectionStatus');
         if (connectionStatus) {
