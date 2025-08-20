@@ -583,6 +583,9 @@ class UnifiedAuth {
         
         // Clear legacy auth data
         this.clearLegacyAuthData();
+        
+        // Clear IndexedDB (this might be caching auth data)
+        this.clearIndexedDB();
     }
 
     // Clear legacy authentication data
@@ -593,7 +596,7 @@ class UnifiedAuth {
             'currentUser', 'authToken', 'isLoggedIn',
             'activeEmployeeRole', 'therapistAuth', 'userToken',
             'userData', 'avas_auth_token', 'avas_session_info',
-            'immediate_session', 'activeUserId'
+            'immediate_session', 'activeUserId', 'token', 'user'
         ];
         
         legacyKeys.forEach(key => {
@@ -602,6 +605,32 @@ class UnifiedAuth {
         });
         
         console.log('🧹 Legacy auth data cleared');
+    }
+    
+    // Clear IndexedDB data
+    async clearIndexedDB() {
+        try {
+            // Clear user-related data from IndexedDB
+            if (window.db && typeof window.db.clear === 'function') {
+                // Clear user session data from database
+                await window.db.clear('userSessions');
+                await window.db.clear('authCache');
+                console.log('🗄️ IndexedDB auth data cleared');
+            }
+            
+            // Also try to delete the entire database if logout is problematic
+            if ('indexedDB' in window) {
+                const databases = await indexedDB.databases();
+                for (const db of databases) {
+                    if (db.name && (db.name.includes('auth') || db.name.includes('user'))) {
+                        await indexedDB.deleteDatabase(db.name);
+                        console.log(`🗑️ Deleted database: ${db.name}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn('Could not clear IndexedDB:', error);
+        }
     }
 
     // Hide login modal

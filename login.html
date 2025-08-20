@@ -355,6 +355,24 @@
     </div>
     
     <script>
+        // Clear any stale auth data when arriving at login page
+        (function cleanupAuth() {
+            // Only clean up if we're at login page (not already logged in)
+            const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+            if (!token) {
+                // Clear any partial auth data
+                const authKeys = [
+                    'auth_token', 'auth_user', 'authToken', 'userData', 
+                    'isLoggedIn', 'token', 'user', 'currentUser', 'userToken'
+                ];
+                authKeys.forEach(key => {
+                    localStorage.removeItem(key);
+                    sessionStorage.removeItem(key);
+                });
+                console.log('🧹 Cleaned up stale auth data');
+            }
+        })();
+        
         // Login functionality
         class LoginPage {
             constructor() {
