@@ -472,63 +472,91 @@ class SettingsManager {
                     phone: String(e.phone || '')
                 }));
 
-            // 2) Send to marketing API
-            const marketingApi = 'https://ava-marketing-api.onrender.com';
-            // Try get token from local/session storage first
-            let token = localStorage.getItem('authToken') || localStorage.getItem('userToken') || sessionStorage.getItem('authToken') || sessionStorage.getItem('userToken');
+            // 2) Send to MongoDB via unified auth system
+            const isLocal = ['localhost','127.0.0.1'].some(h => location.hostname.startsWith(h));
+            const pwaBackendApi = 'http://localhost:4000/api';
+            const marketingApi = isLocal ? 'http://localhost:3000' : 'https://ava-marketing-api.onrender.com';
             
-            // If absent, try SSO token bridge from marketing site via postMessage
+            // Get token from unified auth system
+            let token = null;
+            if (window.unifiedAuth && window.unifiedAuth.getAuthToken) {
+                token = window.unifiedAuth.getAuthToken();
+            }
+            
+            // Fallback to localStorage/sessionStorage  
             if (!token) {
-                token = await new Promise((resolve) => {
-                    let resolved = false;
-                    const listener = (event) => {
-                        try {
-                            if (!event || !event.data) return;
-                            if (event.data.type === 'MARKETING_TOKEN_RESPONSE') {
-                                window.removeEventListener('message', listener);
-                                resolved = true;
-                                resolve(event.data.token || null);
-                            }
-                        } catch(_) {}
-                    };
-                    window.addEventListener('message', listener);
-                    // Open or focus marketing login in a hidden window to read existing token if logged in
-                    const w = window.open('https://ava-solutions-marketing.netlify.app/login','ava_marketing_login');
-                    try {
-                        w && w.postMessage({ type: 'REQUEST_MARKETING_TOKEN' }, 'https://ava-solutions-marketing.netlify.app');
-                    } catch(_){ }
-                    // Timeout after 3s
-                    setTimeout(() => { if (!resolved) { window.removeEventListener('message', listener); resolve(null); } }, 3000);
-                });
-                if (token) {
-                    // Cache for next time
-                    try { localStorage.setItem('authToken', token); } catch(_){ }
-                }
+                token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') ||
+                       localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
             }
 
             if (!token) {
                 btn.disabled = false; btn.innerHTML = original;
-                showNotification('Please login on the marketing website first to obtain a token.', 'warning');
-                window.open('https://ava-solutions-marketing.netlify.app/login', '_blank');
+                showNotification('Please login first to publish your catalog. Authentication token not found.', 'warning');
+                console.error('No auth token found. Make sure you are logged in through the unified auth system.');
                 return;
             }
 
-            const res = await fetch(`${marketingApi}/api/public/publish-catalog`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ products: services, employees })
+            console.log('📤 Publishing catalog:', { 
+                services: services.length, 
+                employees: employees.length,
+                tokenExists: !!token
             });
-            const data = await res.json();
+
+            let res, data;
+            let publishEndpoint = '';
+
+            // Try PWA backend first (for local development and unified auth)
+            try {
+                publishEndpoint = `${pwaBackendApi}/auth/publish-catalog`;
+                console.log('🔄 Trying PWA backend:', publishEndpoint);
+                
+                res = await fetch(publishEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ products: services, employees })
+                });
+                
+                if (res.ok) {
+                    data = await res.json();
+                    console.log('✅ PWA backend succeeded:', data);
+                } else {
+                    throw new Error(`PWA backend failed: ${res.status}`);
+                }
+            } catch (pwaError) {
+                console.warn('⚠️ PWA backend failed, trying marketing API:', pwaError.message);
+                
+                // Fallback to marketing API
+                try {
+                    publishEndpoint = `${marketingApi}/api/public/publish-catalog`;
+                    console.log('🔄 Trying marketing API:', publishEndpoint);
+                    
+                    res = await fetch(publishEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ products: services, employees })
+                    });
+                    
+                    data = await res.json();
+                    console.log('📥 Marketing API response:', { status: res.status, data });
+                } catch (marketingError) {
+                    throw new Error(`Both endpoints failed. PWA: ${pwaError.message}, Marketing: ${marketingError.message}`);
+                }
+            }
+            
             btn.disabled = false; btn.innerHTML = original;
 
-            if (res.ok) {
-                showNotification(`Published ${data.products || 0} services and ${data.employees || 0} employees for booking.`, 'success');
+            if (res.ok && data && data.success) {
+                showNotification(`✅ Published ${data.products || 0} services and ${data.employees || 0} employees to MongoDB!`, 'success');
+                console.log('✅ Catalog published successfully to MongoDB via:', publishEndpoint);
             } else {
-                console.error('Publish failed:', data);
-                showNotification(data.error || 'Publish failed', 'error');
+                console.error('❌ Publish failed:', { endpoint: publishEndpoint, status: res?.status, data });
+                showNotification(data?.error || `Publish failed (${res?.status || 'unknown'})`, 'error');
             }
         } catch (error) {
             console.error('Publish catalog error:', error);

@@ -365,4 +365,145 @@ router.post('/create-employee', [
   }
 });
 
+// Get business services (for booking website)
+router.get('/business/:businessId/services', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    
+    const User = (await import('../models/User.js')).default;
+    const business = await User.findById(businessId);
+    if (!business) return res.status(404).json({ success: false, error: 'Business not found' });
+
+    const services = business.products || [];
+    const activeServices = services.filter(service => service.isActive !== false);
+
+    res.json({ 
+      success: true, 
+      services: activeServices,
+      businessName: business.businessName
+    });
+  } catch (error) {
+    console.error('Get services error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch services' });
+  }
+});
+
+// Get business employees (for booking website)
+router.get('/business/:businessId/employees', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    
+    const User = (await import('../models/User.js')).default;
+    const business = await User.findById(businessId);
+    if (!business) return res.status(404).json({ success: false, error: 'Business not found' });
+
+    const employees = business.employees || [];
+    const activeEmployees = employees.filter(employee => employee.isActive !== false);
+
+    res.json({ 
+      success: true, 
+      employees: activeEmployees,
+      businessName: business.businessName
+    });
+  } catch (error) {
+    console.error('Get employees error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch employees' });
+  }
+});
+
+// Publish catalog endpoint for PWA backend
+router.post('/publish-catalog', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ success: false, error: 'No token provided' });
+    
+    const jwt = await import('jsonwebtoken');
+    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    
+    const User = (await import('../models/User.js')).default;
+    const user = await User.findById(decoded.userId);
+    if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+
+    const { products = [], employees = [] } = req.body || {};
+
+    const now = new Date();
+
+    // Sanitize and store services/products
+    const sanitizedProducts = (Array.isArray(products) ? products : [])
+      .map(p => ({
+        id: String(p.id || p._id || ''),
+        name: String(p.name || ''),
+        category: String(p.category || 'service'),
+        duration: Number(p.duration || 0),
+        price: Number(p.price || 0),
+        isActive: p.isActive !== false,
+        publishedAt: now
+      }));
+
+    // Sanitize and store employees  
+    const sanitizedEmployees = (Array.isArray(employees) ? employees : [])
+      .map(e => ({
+        id: String(e.id || e._id || ''),
+        name: String(e.name || ''),
+        position: String(e.position || ''),
+        email: String(e.email || ''),
+        phone: String(e.phone || ''),
+        isActive: e.isActive !== false,
+        publishedAt: now
+      }));
+
+    // Store in user document
+    user.products = sanitizedProducts;
+    user.employees = sanitizedEmployees;
+    await user.save();
+
+    console.log(`📋 Catalog published for ${user.email}: ${sanitizedProducts.length} products, ${sanitizedEmployees.length} employees`);
+
+    res.json({ 
+      success: true, 
+      products: sanitizedProducts.length, 
+      employees: sanitizedEmployees.length,
+      message: 'Catalog published successfully to MongoDB'
+    });
+  } catch (error) {
+    console.error('PWA publish catalog error:', error);
+    res.status(500).json({ success: false, error: 'Failed to publish catalog' });
+  }
+});
+
+// Public: Get all businesses with published catalogs (for booking directory)
+router.get('/public/businesses', async (req, res) => {
+  try {
+    const User = (await import('../models/User.js')).default;
+    
+    // Find businesses that have published catalogs (have products or employees)
+    const businesses = await User.find({
+      isActive: true,
+      $or: [
+        { 'products.0': { $exists: true } },  // Has at least one product
+        { 'employees.0': { $exists: true } }  // Has at least one employee
+      ]
+    }).select('_id businessName products employees createdAt').lean();
+
+    const formattedBusinesses = businesses.map(business => ({
+      id: String(business._id),
+      businessName: business.businessName,
+      name: business.businessName, // Alias for compatibility
+      servicesCount: (business.products || []).length,
+      employeesCount: (business.employees || []).length,
+      hasServices: (business.products || []).length > 0,
+      hasEmployees: (business.employees || []).length > 0
+    }));
+
+    res.json({ 
+      success: true, 
+      data: formattedBusinesses,
+      total: formattedBusinesses.length
+    });
+  } catch (error) {
+    console.error('Public businesses error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch businesses' });
+  }
+});
+
 export default router;

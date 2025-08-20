@@ -108,9 +108,10 @@
 		}
 		
 		try {
-			// Try to load businesses from the proper API
-			console.log('🔍 Fetching businesses from:', `${authApi}/public/businesses`);
-			let response = await fetch(`${authApi}/public/businesses`);
+					// Try to load businesses from the PWA backend API (has published catalogs)
+		const pwaBackendEndpoint = `${pwaBackendApi}/auth/public/businesses`;
+		console.log('🔍 Fetching businesses from PWA backend:', pwaBackendEndpoint);
+		let response = await fetch(pwaBackendEndpoint);
 			
 			if (!response.ok) {
 				// Fallback: Try marketing API

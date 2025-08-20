@@ -109,6 +109,27 @@ const userSchema = new mongoose.Schema({
     lastActiveDate: { type: Date, default: Date.now }
   },
   
+  // Published catalog data for booking website
+  products: [{
+    id: String,
+    name: String,
+    category: { type: String, default: 'service' },
+    duration: { type: Number, default: 60 },
+    price: { type: Number, default: 0 },
+    isActive: { type: Boolean, default: true },
+    publishedAt: { type: Date, default: Date.now }
+  }],
+  
+  employees: [{
+    id: String,
+    name: String,
+    position: String,
+    email: String,
+    phone: String,
+    isActive: { type: Boolean, default: true },
+    publishedAt: { type: Date, default: Date.now }
+  }],
+
   // Account status
   isActive: {
     type: Boolean,

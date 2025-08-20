@@ -8,3 +8,6 @@
 [33md36584e[m fix(flow): proper role-based dashboard loading, therapist payroll integration, tab loading fixes, role-specific views
 [33ma01d1c2[m chore: update meta description to trigger deploy
 [33mc00bf93[m fix(receipt-storage): store camera/file receipts as blobs in IndexedDB receipts store; add rider/utility roles; therapist sees only own bookings/rooms; cleaning checklist with prev therapist check
+[33m06e1e1f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m 🚀 FIX: Booking Website & UI Improvements
+[33m3cbc5b6[m 🔐 MAJOR: Implement Unified MongoDB Authentication System
+[33mb95633f[m Remove Nuclear Clear Systems
