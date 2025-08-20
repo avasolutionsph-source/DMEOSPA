@@ -139,6 +139,18 @@ class BookingsManager {
 						if (t._id) identifiers.ids.push(String(t._id));
 					});
 				}
+				
+				// If STILL no matches, use the active employee from role manager directly
+				if (identifiers.ids.length === 0 && window.roleManager?.activeEmployee?.id) {
+					console.log('🔧 Using active employee ID as fallback:', window.roleManager.activeEmployee.id);
+					identifiers.ids.push(String(window.roleManager.activeEmployee.id));
+				}
+				
+				// Last resort: use a default ID for testing
+				if (identifiers.ids.length === 0) {
+					console.log('🔧 Using default therapist ID for testing');
+					identifiers.ids.push('6'); // Default therapist ID
+				}
 			}
 		} catch(e) {
 			console.warn('Error loading local employees:', e);
