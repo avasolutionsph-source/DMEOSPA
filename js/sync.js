@@ -14,9 +14,11 @@ class SyncManager {
         // Delayed initialization to prevent blocking
         setTimeout(async () => {
             try {
-                // Hardcoded API URL for production deployment
-                this.apiUrl = 'https://ava-marketing-api.onrender.com';
-                console.log('🔄 Using production API URL:', this.apiUrl);
+                // Use PWA backend API instead of deprecated marketing API
+                this.apiUrl = window.appConfig ? 
+                    window.appConfig.getApiUrl('pwa').replace('/api', '') : 
+                    'https://ava-pwa-backend.onrender.com';
+                console.log('🔄 Using PWA backend API URL:', this.apiUrl);
 
                 // Set up online/offline listeners
                 window.addEventListener('online', () => this.handleOnline());
@@ -519,8 +521,11 @@ class SyncManager {
         }
 
         try {
-            // Get authentication token with priority order
-            const token = localStorage.getItem('userToken') || localStorage.getItem('authToken') || localStorage.getItem('token');
+            // Get authentication token - use auth_token from unified auth
+            const token = localStorage.getItem('auth_token') || 
+                        sessionStorage.getItem('auth_token') ||
+                        localStorage.getItem('userToken') || 
+                        localStorage.getItem('authToken');
             
             const headers = {
                 'Content-Type': 'application/json',

@@ -945,8 +945,18 @@ Type "DELETE" to confirm:`;
 
 // Initialize settings manager
 const settingsManager = new SettingsManager();
+window.settingsManager = settingsManager;
 
 // Load settings when page is shown
 window.loadSettings = async function() {
     await settingsManager.init();
 };
+
+// Auto-initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        settingsManager.init();
+    });
+} else {
+    settingsManager.init();
+}
