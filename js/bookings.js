@@ -58,6 +58,9 @@ class BookingsManager {
 			<div class="page-header">
 				<h1>My Bookings</h1>
 				<div class="header-actions">
+					<button class="btn btn-info" onclick="window.findAllBookings()" style="margin-right: 0.5rem;">
+						<i class="fas fa-search"></i> Find All Bookings
+					</button>
 					<button class="btn btn-secondary" onclick="window.syncBookingsFromBookingSite()" style="margin-right: 0.5rem;">
 						<i class="fas fa-sync"></i> Check Booking Website
 					</button>
@@ -748,6 +751,62 @@ window.syncBookingsFromBookingSite = async function() {
 	} catch (error) {
 		console.error('❌ Manual sync failed:', error);
 	}
+};
+
+// Debug function to find all bookings everywhere
+window.findAllBookings = async function() {
+	console.log('🔍 Searching for bookings everywhere...');
+	
+	// 1. Check PWA local database
+	try {
+		const localBookings = await db.getAll('bookings');
+		console.log('💾 PWA Local Bookings:', localBookings.length);
+		localBookings.forEach((b, i) => {
+			console.log(`Local ${i+1}:`, {
+				id: b.id,
+				customer: b.customerName,
+				service: b.serviceName,
+				employee: b.employeeName,
+				status: b.status,
+				source: b.source,
+				date: b.date || b.startTime
+			});
+		});
+	} catch (e) {
+		console.warn('❌ Failed to check local bookings:', e);
+	}
+	
+	// 2. Check marketing API
+	try {
+		const resp = await fetch('https://ava-marketing-api.onrender.com/api/business/bookings', {
+			headers: {
+				'Authorization': `Bearer ${localStorage.getItem('userToken') || localStorage.getItem('authToken') || ''}`,
+				'x-user-id': window.authSystem?.currentUser?.ownerId || window.authSystem?.currentUser?.id || ''
+			}
+		});
+		if (resp.ok) {
+			const data = await resp.json();
+			const remoteBookings = data.bookings || data.data || [];
+			console.log('🌐 Marketing API Bookings:', remoteBookings.length);
+			remoteBookings.forEach((b, i) => {
+				console.log(`Remote ${i+1}:`, {
+					id: b._id || b.id,
+					customer: b.customer?.name || b.customerName,
+					service: b.serviceName,
+					employee: b.employeeName,
+					status: b.status,
+					source: b.source,
+					date: b.startTime || b.date
+				});
+			});
+		} else {
+			console.warn('❌ Marketing API bookings failed:', resp.status);
+		}
+	} catch (e) {
+		console.warn('❌ Failed to check marketing API bookings:', e);
+	}
+	
+	console.log('🎯 Search complete! Check logs above for all bookings.');
 };
 
 // Debug function to create test bookings for the current therapist
