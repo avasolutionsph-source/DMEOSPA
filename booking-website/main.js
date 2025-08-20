@@ -108,15 +108,15 @@
 		}
 		
 		try {
-					// Try to load businesses from the PWA backend API (has published catalogs)
-		const pwaBackendEndpoint = `${pwaBackendApi}/auth/public/businesses`;
-		console.log('🔍 Fetching businesses from PWA backend:', pwaBackendEndpoint);
-		let response = await fetch(pwaBackendEndpoint);
+			// Try marketing API first (where catalogs are actually published)
+			console.log('🔍 Fetching businesses from marketing API:', `${marketingApi}/api/public/businesses`);
+			let response = await fetch(`${marketingApi}/api/public/businesses`);
 			
 			if (!response.ok) {
-				// Fallback: Try marketing API
-				console.log('⚠️ Primary API failed, trying marketing API fallback');
-				response = await fetch(`${marketingApi}/api/public/businesses`);
+				// Fallback: Try PWA backend
+				console.log('⚠️ Marketing API failed, trying PWA backend fallback');
+				const pwaBackendEndpoint = `${pwaBackendApi}/auth/public/businesses`;
+				response = await fetch(pwaBackendEndpoint);
 			}
 			
 			if (!response.ok) {

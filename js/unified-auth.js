@@ -59,32 +59,32 @@ class UnifiedAuth {
             }
             
             if (token && userData) {
-                // Validate token with backend
-                const isValid = await this.validateToken(token);
-                if (isValid) {
-                    this.authToken = token;
-                    this.currentUser = JSON.parse(userData);
-                    this.isLoggedIn = true;
-                    
-                    console.log('✅ Existing session restored:', this.currentUser.email);
-                    this.updateUI();
-                    
-                    // Sync business data for branch accounts (in background)
-                    if (this.currentUser.role !== 'owner' && this.currentUser.businessId) {
-                        console.log('🔄 Branch account session restored, syncing latest data...');
-                        db.syncBranchAccountData(this.currentUser).catch(error => {
-                            console.warn('⚠️ Background sync failed (non-critical):', error);
-                        });
-                    }
-                    
-                    // Normalize storage to unified keys
-                    try {
-                        localStorage.setItem('auth_token', token);
-                        localStorage.setItem('auth_user', JSON.stringify(this.currentUser));
-                    } catch (_) {}
+                // IMMEDIATELY restore session for seamless experience
+                this.authToken = token;
+                this.currentUser = JSON.parse(userData);
+                this.isLoggedIn = true;
+                
+                console.log('🚀 Session restored immediately (no logout flicker):', this.currentUser.email);
+                this.updateUI();
+                
+                // Normalize storage to unified keys
+                try {
+                    localStorage.setItem('auth_token', token);
+                    localStorage.setItem('auth_user', JSON.stringify(this.currentUser));
+                } catch (_) {}
 
-                    return true;
+                // Validate token in background (don't wait for it)
+                this.validateTokenInBackground(token);
+
+                // Sync business data for branch accounts (in background)
+                if (this.currentUser.role !== 'owner' && this.currentUser.businessId) {
+                    console.log('🔄 Branch account session restored, syncing latest data...');
+                    db.syncBranchAccountData(this.currentUser).catch(error => {
+                        console.warn('⚠️ Background sync failed (non-critical):', error);
+                    });
                 }
+                
+                return true;
             }
             
             // Clear invalid session data
@@ -95,6 +95,28 @@ class UnifiedAuth {
         }
         
         return false;
+    }
+
+    // Background token validation (doesn't affect UI immediately)
+    async validateTokenInBackground(token) {
+        try {
+            console.log('🔍 Validating token in background...');
+            const isValid = await this.validateToken(token);
+            
+            if (!isValid) {
+                console.warn('⚠️ Background token validation failed - session will be cleared');
+                this.showNotification('Session expired. Please log in again.', 'warning');
+                setTimeout(() => {
+                    this.clearSession();
+                    this.updateUI();
+                }, 3000); // Give user time to see the warning
+            } else {
+                console.log('✅ Background token validation successful');
+            }
+        } catch (error) {
+            console.warn('Background token validation error:', error);
+            // Don't clear session on network errors - keep user logged in
+        }
     }
 
     // Validate token with backend (with offline support and multiple endpoints)
