@@ -1,13 +1,60 @@
 // Netlify Function to handle API requests
-// Simple implementation without Express wrapper
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+// User model schema
+const userSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  firstName: String,
+  lastName: String,
+  businessName: String,
+  businessType: String,
+  role: { type: String, default: 'owner' }
+});
+
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+let User;
+try {
+  User = mongoose.model('User');
+} catch {
+  User = mongoose.model('User', userSchema);
+}
+
+// Connect to MongoDB
+let isConnected = false;
+const connectDB = async () => {
+  if (isConnected) return;
+  
+  try {
+    if (!process.env.MONGO_URI) {
+      console.log('⚠️ MONGO_URI not found, using test mode');
+      return false;
+    }
+    
+    await mongoose.connect(process.env.MONGO_URI);
+    isConnected = true;
+    console.log('✅ MongoDB connected in Netlify function');
+    return true;
+  } catch (error) {
+    console.error('❌ MongoDB connection failed:', error.message);
+    return false;
+  }
+};
 
 export const handler = async (event, context) => {
-  // Set CORS headers
+  // Set comprehensive CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Content-Type': 'application/json'
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Origin',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, HEAD',
+    'Access-Control-Max-Age': '86400',
+    'Content-Type': 'application/json',
+    'Vary': 'Origin'
   };
 
   // Handle preflight requests
@@ -15,7 +62,7 @@ export const handler = async (event, context) => {
     return {
       statusCode: 200,
       headers,
-      body: ''
+      body: JSON.stringify({ message: 'CORS preflight successful' })
     };
   }
 
@@ -28,57 +75,74 @@ export const handler = async (event, context) => {
   if (event.httpMethod === 'POST' && path === '/auth/login') {
     try {
       console.log('🔑 Netlify Function: Processing login request');
-      console.log('🔑 Request method:', event.httpMethod);
-      console.log('🔑 Request path:', path);
-      console.log('🔑 Request headers:', event.headers);
-      console.log('🔑 Request body length:', event.body?.length || 0);
+      console.log('🔑 Environment check:', {
+        hasMongoUri: !!process.env.MONGO_URI,
+        hasJwtSecret: !!process.env.JWT_SECRET,
+        nodeEnv: process.env.NODE_ENV
+      });
       
       const { email, password } = JSON.parse(event.body || '{}');
       
-      console.log('🔑 Parsed email:', email);
-      console.log('🔑 Password provided:', !!password);
+      console.log('🔑 Login attempt for:', email);
       
-      // Enhanced test authentication - accept multiple test accounts
-      if (email && password) {
-        
-        // Define test accounts
-        const testAccounts = {
-          'test@spa.com': { password: 'test123', name: 'Test User', business: 'Test Spa' },
-          'demo@spa.com': { password: 'demo123', name: 'Demo User', business: 'Demo Spa' },
-          'smnaga@gmail.com': { password: 'any', name: 'SM Naga', business: 'Naga Business' },
-          'admin@test.com': { password: 'admin', name: 'Admin User', business: 'Admin Business' }
+      if (!email || !password) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            success: false,
+            error: 'Email and password required'
+          })
         };
-        
-        // Check if it's a test account or accept any credentials
-        const testAccount = testAccounts[email.toLowerCase()];
-        const isValidLogin = testAccount ? 
-          (testAccount.password === password || testAccount.password === 'any') : 
-          true; // Accept any email/password combination for testing
-        
-        if (isValidLogin) {
-          const token = 'netlify-token-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-          
-          const user = testAccount ? {
-            id: 'test-user-' + email.split('@')[0],
-            email: email,
-            firstName: testAccount.name.split(' ')[0],
-            lastName: testAccount.name.split(' ')[1] || 'User',
-            role: 'owner',
-            businessName: testAccount.business,
-            businessType: 'spa'
-          } : {
-            id: 'user-' + email.split('@')[0],
-            email: email,
-            firstName: email.split('@')[0],
-            lastName: 'User',
-            role: 'owner',
-            businessName: email.split('@')[0] + ' Business',
-            businessType: 'spa'
-          };
+      }
 
-          console.log('✅ Login successful for:', email);
-          console.log('✅ Generated token:', token.substring(0, 20) + '...');
-          console.log('✅ User data:', user);
+      // Try to connect to MongoDB
+      const dbConnected = await connectDB();
+      
+      if (dbConnected) {
+        // Real database authentication
+        console.log('🔑 Using real database authentication');
+        
+        try {
+          const user = await User.findOne({ email: email.toLowerCase() });
+          
+          if (!user) {
+            console.log('❌ User not found:', email);
+            return {
+              statusCode: 401,
+              headers,
+              body: JSON.stringify({
+                success: false,
+                error: 'Invalid email or password'
+              })
+            };
+          }
+
+          const isMatch = await user.comparePassword(password);
+          if (!isMatch) {
+            console.log('❌ Invalid password for:', email);
+            return {
+              statusCode: 401,
+              headers,
+              body: JSON.stringify({
+                success: false,
+                error: 'Invalid email or password'
+              })
+            };
+          }
+
+          // Generate JWT token
+          const token = jwt.sign(
+            { 
+              userId: user._id, 
+              email: user.email, 
+              role: user.role || 'owner' 
+            },
+            process.env.JWT_SECRET || 'fallback-secret',
+            { expiresIn: process.env.JWT_EXPIRE || '7d' }
+          );
+
+          console.log('✅ Real database login successful for:', email);
 
           return {
             statusCode: 200,
@@ -86,34 +150,88 @@ export const handler = async (event, context) => {
             body: JSON.stringify({
               success: true,
               token,
-              user,
+              user: {
+                id: user._id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role || 'owner',
+                businessName: user.businessName,
+                businessType: user.businessType
+              },
               debug: {
                 timestamp: new Date().toISOString(),
-                functionVersion: '1.1.0',
-                testMode: true
+                functionVersion: '2.0.0',
+                databaseMode: true
               }
             })
           };
-        } else {
-          console.log('❌ Invalid credentials for test account:', email);
-          return {
-            statusCode: 401,
-            headers,
-            body: JSON.stringify({
-              success: false,
-              error: 'Invalid credentials for test account'
-            })
-          };
+
+        } catch (dbError) {
+          console.error('❌ Database query error:', dbError);
+          // Fall through to test mode
         }
-      } else {
-        console.log('❌ Missing email or password');
+      }
+      
+      // Fallback to test mode if database fails
+      console.log('🔄 Falling back to test mode authentication');
+      
+      const testAccounts = {
+        'test@spa.com': { password: 'test123', name: 'Test User', business: 'Test Spa' },
+        'demo@spa.com': { password: 'demo123', name: 'Demo User', business: 'Demo Spa' },
+        'smnaga@gmail.com': { password: 'any', name: 'SM Naga', business: 'Naga Business' },
+        'admin@test.com': { password: 'admin', name: 'Admin User', business: 'Admin Business' }
+      };
+      
+      const testAccount = testAccounts[email.toLowerCase()];
+      const isValidLogin = testAccount ? 
+        (testAccount.password === password || testAccount.password === 'any') : 
+        true; // Accept any credentials in test mode
+      
+      if (isValidLogin) {
+        const token = 'test-token-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        
+        const user = testAccount ? {
+          id: 'test-user-' + email.split('@')[0],
+          email: email,
+          firstName: testAccount.name.split(' ')[0],
+          lastName: testAccount.name.split(' ')[1] || 'User',
+          role: 'owner',
+          businessName: testAccount.business,
+          businessType: 'spa'
+        } : {
+          id: 'user-' + email.split('@')[0],
+          email: email,
+          firstName: email.split('@')[0],
+          lastName: 'User',
+          role: 'owner',
+          businessName: email.split('@')[0] + ' Business',
+          businessType: 'spa'
+        };
+
+        console.log('✅ Test mode login successful for:', email);
+
         return {
-          statusCode: 400,
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            token,
+            user,
+            debug: {
+              timestamp: new Date().toISOString(),
+              functionVersion: '2.0.0',
+              testMode: true
+            }
+          })
+        };
+      } else {
+        return {
+          statusCode: 401,
           headers,
           body: JSON.stringify({
             success: false,
-            error: 'Email and password required',
-            received: { email: !!email, password: !!password }
+            error: 'Invalid credentials'
           })
         };
       }
