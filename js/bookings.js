@@ -28,8 +28,12 @@ class BookingsManager {
 		try {
 			const roleA = (window.roleManager?.activeEmployee?.role || '').toLowerCase();
 			const roleB = (window.authSystem?.currentUser?.role || '').toLowerCase();
+			console.log('🔍 Therapist check:', { roleA, roleB, activeEmployee: window.roleManager?.activeEmployee, currentUser: window.authSystem?.currentUser });
 			return roleA === 'therapist' || roleB === 'therapist';
-		} catch(_) { return false; }
+		} catch(e) { 
+			console.warn('Therapist check error:', e);
+			return false; 
+		}
 	}
 
 	buildTherapistPage() {
@@ -79,38 +83,58 @@ class BookingsManager {
 	}
 
 	async syncTherapistOnly() {
+		console.log('🔄 Starting therapist bookings sync...');
 		try {
-			if (!window.apiClient) return;
+			if (!window.apiClient) {
+				console.warn('❌ No API client available');
+				return;
+			}
+			console.log('📡 Fetching from /api/business/bookings...');
 			const resp = await window.apiClient.get('/api/business/bookings');
+			console.log('📡 Response status:', resp.status, resp.ok);
 			let json = null;
 			try { json = await resp.json(); } catch(_) { json = null; }
+			console.log('📦 Raw bookings data:', json);
 			const all = json?.bookings || json?.data || [];
+			console.log('📋 All bookings count:', all.length);
 			const me = await this.getTherapistIdentifiers();
+			console.log('👤 Therapist identifiers:', me);
 			const norm = (s) => (s||'').trim().toLowerCase();
 			const filtered = all.filter(b => {
 				const bid = String(b.employeeId || '');
 				const bname = norm(b.employeeName);
-				return (me.ids.includes(bid)) || (!!me.name && bname === norm(me.name));
+				const match = (me.ids.includes(bid)) || (!!me.name && bname === norm(me.name));
+				if (match) console.log('✅ Booking matches therapist:', b);
+				return match;
 			});
+			console.log('🎯 Filtered bookings for therapist:', filtered.length);
 			this.therapistBookings = filtered.sort((a,b) => new Date(a.startTime||a.date) - new Date(b.startTime||b.date));
 			this.renderTherapistBookings();
 		} catch (e) {
-			console.warn('Therapist bookings fetch failed, falling back to local', e);
+			console.warn('❌ Therapist bookings fetch failed, falling back to local', e);
 			// Fallback to locally cached bookings filtered by therapist
 			let local = await db.getAll('bookings');
+			console.log('💾 Local bookings count:', local.length);
 			const me = await this.getTherapistIdentifiers();
+			console.log('👤 Therapist identifiers (fallback):', me);
 			const norm = (s) => (s||'').trim().toLowerCase();
 			local = local.filter(b => me.ids.includes(String(b.employeeId||'')) || (!!me.name && norm(b.employeeName) === norm(me.name)));
+			console.log('🎯 Local filtered bookings for therapist:', local.length);
 			this.therapistBookings = local.sort((a,b) => new Date(a.date) - new Date(b.date));
 			this.renderTherapistBookings();
 		}
 	}
 
 	renderTherapistBookings() {
+		console.log('🎨 Rendering therapist bookings, count:', this.therapistBookings.length);
 		const tbody = document.getElementById('therapistBookingsBody');
-		if (!tbody) return;
+		if (!tbody) {
+			console.warn('❌ therapistBookingsBody element not found');
+			return;
+		}
 		if (this.therapistBookings.length === 0) {
 			tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1rem;">No bookings assigned to you yet</td></tr>';
+			console.log('📄 Rendered empty state');
 			return;
 		}
 		tbody.innerHTML = this.therapistBookings.map(b => `
@@ -122,6 +146,7 @@ class BookingsManager {
 				<td><span class="badge badge-${(b.status||'pending')==='confirmed'?'success':(b.status==='cancelled'?'danger':'warning')}">${b.status||'pending'}</span></td>
 			</tr>
 		`).join('');
+		console.log('✅ Rendered', this.therapistBookings.length, 'therapist bookings');
 	}
 
 	setupEventListeners() {
@@ -435,6 +460,16 @@ class BookingsManager {
 
 const bookingsManager = new BookingsManager();
 window.loadBookings = async function() { await bookingsManager.init(); };
+
+// Debug function to test therapist view
+window.testTherapistView = function() {
+	console.log('🧪 Testing therapist view...');
+	console.log('Current role manager:', window.roleManager);
+	console.log('Current auth system:', window.authSystem);
+	console.log('Is therapist view?', bookingsManager.isTherapistView());
+	bookingsManager.buildTherapistPage();
+	bookingsManager.syncTherapistOnly();
+};
 
 // Hook: when a new booking is created (example function)
 async function createBooking(booking) {
