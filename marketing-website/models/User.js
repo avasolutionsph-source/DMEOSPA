@@ -57,8 +57,24 @@ const userSchema = new mongoose.Schema({
   // Role (for super admin)
   role: {
     type: String,
-    enum: ['owner','employee','receptionist','therapist','manager','admin','customer','superAdmin'],
+    enum: ['owner','employee','receptionist','therapist','manager','admin','customer','superAdmin','franchise_owner'],
     default: 'customer'
+  },
+  
+  // Business type and franchise information
+  businessType: {
+    type: String,
+    enum: ['single_location', 'franchise_owner'],
+    default: 'single_location'
+  },
+  franchiseSize: {
+    type: String,
+    enum: ['1-5', '6-10', '11+'],
+    required: false
+  },
+  isMainOwner: {
+    type: Boolean,
+    default: false
   },
   
   // Permissions by role (for PWA compatibility)
