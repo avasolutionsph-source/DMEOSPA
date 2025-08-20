@@ -117,6 +117,31 @@ class SimpleLogin {
             return;
         }
 
+        // ADVANCED DEBUGGING - Check environment
+        console.log('🔍 ADVANCED DEBUG: Login Environment Check');
+        console.log('📍 Current URL:', window.location.href);
+        console.log('🌐 Navigator online:', navigator.onLine);
+        console.log('🏠 Origin:', window.location.origin);
+        console.log('🎯 Target API URL:', this.apiUrl);
+        console.log('📡 Connection status:', document.getElementById('connectionStatus')?.textContent);
+        
+        // Check if service worker is intercepting
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            console.log('🔧 Service Worker active:', navigator.serviceWorker.controller.scriptURL);
+        } else {
+            console.log('🔧 No active Service Worker');
+        }
+
+        // Check offline mode settings
+        const isOfflineMode = localStorage.getItem('offlineMode') === 'true';
+        console.log('📱 Offline mode enabled:', isOfflineMode);
+        
+        // Check if any cache interceptors exist
+        if (window.caches) {
+            const cacheNames = await caches.keys();
+            console.log('💾 Available caches:', cacheNames);
+        }
+
         // Show loading state
         loginBtn.disabled = true;
         loginText.style.display = 'none';
@@ -124,25 +149,61 @@ class SimpleLogin {
 
         try {
             console.log('🔑 Simple Login: Attempting login for:', email);
+            console.log('🔑 Using API URL:', this.apiUrl);
 
-            // Direct API call with proper headers
-            const response = await fetch(`${this.apiUrl}/auth/login`, {
+            // Force online mode for login
+            if (isOfflineMode) {
+                console.log('⚠️ Temporarily disabling offline mode for login');
+                localStorage.setItem('offlineMode', 'false');
+            }
+
+            // Create request with detailed logging
+            const requestUrl = `${this.apiUrl}/auth/login`;
+            const requestOptions = {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'Origin': window.location.origin
+                    'Origin': window.location.origin,
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
                 },
+                cache: 'no-cache',
                 body: JSON.stringify({
                     email: email,
                     password: password
                 })
-            });
+            };
 
-            console.log('🔑 Login response status:', response.status);
+            console.log('📤 Request URL:', requestUrl);
+            console.log('📤 Request options:', requestOptions);
+
+            // Test basic connectivity first
+            console.log('🔍 Testing basic connectivity...');
+            try {
+                const testResponse = await fetch('https://httpbin.org/get', { 
+                    method: 'GET',
+                    cache: 'no-cache'
+                });
+                console.log('✅ Basic connectivity test:', testResponse.ok ? 'PASSED' : 'FAILED');
+            } catch (testError) {
+                console.log('❌ Basic connectivity test FAILED:', testError.message);
+            }
+
+            // Direct API call with comprehensive error handling
+            console.log('🚀 Making API call...');
+            const response = await fetch(requestUrl, requestOptions);
+
+            console.log('📥 Response received:');
+            console.log('📥 Status:', response.status);
+            console.log('📥 Status text:', response.statusText);
+            console.log('📥 Headers:', Object.fromEntries(response.headers.entries()));
+            console.log('📥 URL:', response.url);
+            console.log('📥 Type:', response.type);
 
             const data = await response.json();
-            console.log('🔑 Login response data:', data);
+            console.log('📥 Response data:', data);
 
             if (response.ok && data.success && data.token) {
                 // Success! Store auth data
@@ -181,14 +242,153 @@ class SimpleLogin {
             }
 
         } catch (error) {
-            console.error('🔑 Simple Login error:', error);
-            this.showError('Connection failed. Please check your internet connection and try again.');
+            console.error('❌ DETAILED ERROR ANALYSIS:');
+            console.error('❌ Error type:', error.constructor.name);
+            console.error('❌ Error message:', error.message);
+            console.error('❌ Error stack:', error.stack);
+            
+            // Analyze specific error types
+            let errorMessage = 'Connection failed. ';
+            let debugInfo = '';
+            
+            if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                errorMessage += 'Network request blocked. ';
+                debugInfo = 'This could be: 1) Service Worker interference, 2) CORS policy, 3) Offline mode, 4) Ad blocker';
+                
+                // Try to diagnose further
+                if (!navigator.onLine) {
+                    errorMessage += 'Device appears offline. ';
+                }
+                
+                // Check if service worker is interfering
+                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                    errorMessage += 'Service Worker may be blocking request. ';
+                    debugInfo += ' | Service Worker URL: ' + navigator.serviceWorker.controller.scriptURL;
+                }
+                
+            } else if (error.message.includes('CORS')) {
+                errorMessage += 'Cross-origin request blocked. ';
+                debugInfo = 'CORS policy preventing access to API endpoint';
+            } else if (error.message.includes('timeout')) {
+                errorMessage += 'Request timed out. ';
+                debugInfo = 'Server may be slow or unavailable';
+            }
+            
+            console.error('❌ Analysis:', debugInfo);
+            
+            // Try alternative approaches
+            await this.tryAlternativeLogin(email, password, errorMessage);
+            
         } finally {
             // Reset button state
             loginBtn.disabled = false;
             loginText.style.display = 'inline';
             loginLoading.style.display = 'none';
+            
+            // Restore offline mode if it was enabled
+            const wasOfflineMode = localStorage.getItem('wasOfflineMode') === 'true';
+            if (wasOfflineMode) {
+                localStorage.setItem('offlineMode', 'true');
+                localStorage.removeItem('wasOfflineMode');
+            }
         }
+    }
+
+    // Try alternative login methods
+    async tryAlternativeLogin(email, password, originalError) {
+        console.log('🔄 Attempting alternative login methods...');
+        
+        const alternatives = [
+            // Try without cache headers
+            async () => {
+                console.log('🔄 Trying without cache-control headers...');
+                return await fetch(`${this.apiUrl}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+            },
+            // Try with different endpoint
+            async () => {
+                console.log('🔄 Trying direct function endpoint...');
+                return await fetch('https://ava-solutions-marketing.netlify.app/.netlify/functions/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+            },
+            // Try JSONP-style approach
+            async () => {
+                console.log('🔄 Trying with different mode...');
+                return await fetch(`${this.apiUrl}/auth/login`, {
+                    method: 'POST',
+                    mode: 'cors',
+                    credentials: 'omit',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+            }
+        ];
+
+        for (let i = 0; i < alternatives.length; i++) {
+            try {
+                console.log(`🔄 Alternative method ${i + 1}...`);
+                const response = await alternatives[i]();
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log(`✅ Alternative method ${i + 1} SUCCESS!`);
+                    
+                    if (data.success && data.token) {
+                        this.handleSuccessfulLogin(data);
+                        return;
+                    }
+                }
+            } catch (altError) {
+                console.log(`❌ Alternative method ${i + 1} failed:`, altError.message);
+            }
+        }
+        
+        // All alternatives failed
+        this.showError(originalError + ' All alternative methods failed. Check console for details.');
+    }
+
+    // Handle successful login (extracted for reuse)
+    handleSuccessfulLogin(data) {
+        this.authToken = data.token;
+        this.currentUser = data.user;
+        this.isLoggedIn = true;
+
+        // Store in localStorage with both old and new keys for compatibility
+        localStorage.setItem('auth_token', data.token);
+        localStorage.setItem('auth_user', JSON.stringify(data.user));
+        localStorage.setItem('userToken', data.token);
+        localStorage.setItem('userData', JSON.stringify(data.user));
+        localStorage.setItem('isLoggedIn', 'true');
+
+        console.log('✅ Simple Login: Login successful for:', data.user.email);
+
+        // Update UI
+        this.updateLoginUI(data.user);
+
+        // Close modal
+        document.getElementById('simpleLoginModal').remove();
+
+        // Show success message
+        this.showSuccessMessage(data.user);
+
+        // Reload page to ensure all systems recognize the login
+        setTimeout(() => {
+            window.location.reload();
+        }, 1500);
     }
 
     // Show error message
