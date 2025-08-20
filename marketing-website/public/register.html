@@ -82,6 +82,32 @@
                         </div>
                         
                         <div class="form-group">
+                            <label class="form-label">Business Type</label>
+                            <select class="form-select" name="businessType" required id="businessTypeSelect">
+                                <option value="">Select your business type...</option>
+                                <option value="single_location">Single Location Business</option>
+                                <option value="franchise_owner">Franchise Owner (Multiple Locations)</option>
+                            </select>
+                            <small style="color: #666; font-size: 0.9rem;">
+                                • Single Location: Manage one spa/business location<br>
+                                • Franchise Owner: Manage multiple locations from one dashboard
+                            </small>
+                        </div>
+                        
+                        <div class="form-group" id="franchiseSizeGroup" style="display: none;">
+                            <label class="form-label">Franchise Size</label>
+                            <select class="form-select" name="franchiseSize" id="franchiseSizeSelect">
+                                <option value="">Select number of locations...</option>
+                                <option value="1-5">1-5 locations</option>
+                                <option value="6-10">6-10 locations</option>
+                                <option value="11+">11+ locations</option>
+                            </select>
+                            <small style="color: #666; font-size: 0.9rem;">
+                                This helps us provide the right features for your business size
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
                             <label class="form-label">Choose Your Plan</label>
                             <select class="form-select" name="plan">
                                 <option value="unpaid">Unpaid - No Features (₱0/month)</option>
@@ -169,7 +195,9 @@
                 businessName: formData.get('businessName'),
                 phone: formData.get('phone'),
                 password: password,
-                plan: formData.get('plan')
+                plan: formData.get('plan'),
+                businessType: formData.get('businessType'),
+                franchiseSize: formData.get('franchiseSize')
             };
             
             try {
@@ -215,6 +243,34 @@
             successElement.style.display = 'block';
             document.getElementById('registerError').style.display = 'none';
         }
+
+        // Show/hide franchise size dropdown based on business type
+        document.getElementById('businessTypeSelect').addEventListener('change', function() {
+            const franchiseSizeGroup = document.getElementById('franchiseSizeGroup');
+            const franchiseSizeSelect = document.getElementById('franchiseSizeSelect');
+            
+            if (this.value === 'franchise_owner') {
+                franchiseSizeGroup.style.display = 'block';
+                franchiseSizeSelect.required = true;
+            } else {
+                franchiseSizeGroup.style.display = 'none';
+                franchiseSizeSelect.required = false;
+                franchiseSizeSelect.value = '';
+            }
+        });
+
+        // Additional validation for franchise size
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            const businessType = document.getElementById('businessTypeSelect').value;
+            const franchiseSize = document.getElementById('franchiseSizeSelect').value;
+            
+            // Validate franchise size if franchise owner is selected
+            if (businessType === 'franchise_owner' && !franchiseSize) {
+                e.preventDefault();
+                showError('Please select your franchise size');
+                return false;
+            }
+        });
     </script>
     <script src="/assets/main.js"></script>
 </body>

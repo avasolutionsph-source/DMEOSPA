@@ -1241,11 +1241,6 @@ app.get('/business-dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/business-dashboard.html'));
 });
 
-// Franchise/Enterprise Registration
-app.get('/franchise-register', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/franchise-register.html'));
-});
-
 // Removed owner bookings page (bookings are viewed from the booking site)
 
 // Dashboard redirect (redirect to PWA for direct access)
