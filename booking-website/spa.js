@@ -63,52 +63,46 @@
 	function selectService(svc){ selectedService = svc; serviceSelect.value = svc.id; qs('#durationInput').value = svc.duration; updateSummary(); }
 
 	async function tryProducts(){
-		// NEW: Get products directly from PWA via postMessage
+		// Load services from published catalog in Marketing API (where they're stored)
 		try {
-			console.log('📡 Requesting products from PWA...');
-			const pwaUrl = 'https://ava-solutions-pwa.netlify.app';
-			const pwaWindow = window.open(pwaUrl, 'pwa_products', 'width=1,height=1,left=-1000,top=-1000');
+			console.log('📡 Loading services from published catalog...');
+			const businessId = params.get('businessId') || localStorage.getItem('bookingBusinessId');
 			
-			const productsPromise = new Promise((resolve, reject) => {
-				const timeout = setTimeout(() => {
-					pwaWindow.close();
-					reject(new Error('PWA products timeout'));
-				}, 10000);
-				
-				const messageHandler = (event) => {
-					if (event.origin !== pwaUrl) return;
-					
-					if (event.data.type === 'PWA_READY') {
-						pwaWindow.postMessage({
-							type: 'GET_PRODUCTS',
-							businessId: businessId || localStorage.getItem('bookingBusinessId')
-						}, pwaUrl);
-					}
-					
-					if (event.data.type === 'PRODUCTS_RESPONSE') {
-						clearTimeout(timeout);
-						pwaWindow.close();
-						window.removeEventListener('message', messageHandler);
-						resolve(event.data.products);
-					}
-				};
-				
-				window.addEventListener('message', messageHandler);
-			});
+			if (!businessId) {
+				console.error('❌ No businessId found');
+				return { success: false, error: 'Business ID required' };
+			}
 			
-			const products = await productsPromise;
-			console.log('✅ Got products from PWA:', products);
-			return { success: true, data: products };
+			// Try to get published services from Marketing API
+			const servicesUrl = `${marketingApi}/api/business/${businessId}/services`;
+			console.log('🔍 Fetching services from:', servicesUrl);
+			
+			const response = await fetch(servicesUrl);
+			if (!response.ok) {
+				throw new Error(`Services API failed: ${response.status}`);
+			}
+			
+			const data = await response.json();
+			console.log('✅ Services loaded from published catalog:', data);
+			
+			if (data.success && data.services) {
+				return { success: true, data: data.services };
+			} else {
+				throw new Error('No services found in published catalog');
+			}
 			
 		} catch (e) {
-			console.warn('❌ Direct PWA products failed, falling back to marketing API:', e);
-			// Fallback to marketing proxy
+			console.warn('❌ Published catalog failed, trying marketing API products endpoint:', e);
+			
+			// Fallback to marketing API products endpoint
 			try {
 				apiHost = marketingApi;
-				return await fetchJSON(`${apiBase()}/products`);
+				const fallbackData = await fetchJSON(`${apiBase()}/products`);
+				console.log('✅ Fallback products loaded:', fallbackData);
+				return fallbackData;
 			} catch (e2) {
-				console.warn('❌ Marketing API also failed:', e2);
-				return null;
+				console.error('❌ All product loading methods failed:', e2);
+				return { success: false, error: e2.message };
 			}
 		}
 	}
@@ -116,56 +110,69 @@
 	async function loadCatalog(){
 		await ensureBackendUrl();
 		const res = await tryProducts();
-		if (!res) { availabilityResult.textContent = 'Unable to load services.'; return; }
-		const services = (res.data||[]).filter(p=>p.category==='service' || p.category==='massage');
+		
+		if (!res || !res.success) { 
+			availabilityResult.textContent = res?.error || 'Unable to load services.'; 
+			console.error('❌ Failed to load catalog:', res);
+			return; 
+		}
+		
+		const services = (res.data||[]).filter(p=>p.category==='service' || p.category==='massage' || !p.category);
+		console.log('📋 Processing services:', services.length, 'services found');
+		
+		if (services.length === 0) {
+			availabilityResult.textContent = 'No services available. Please contact the business to publish their catalog.';
+			console.warn('⚠️ No services found for business');
+			return;
+		}
+		
 		serviceSelect.innerHTML = services.map(s=>`<option value="${s._id||s.id}" data-name="${s.name}" data-duration="${s.duration||60}">${s.name}${s.duration?` (${s.duration}m)`:''}</option>`).join('');
 		renderServiceChips(services);
 		renderServiceCards(services);
 		if (services[0]) selectService({ id: services[0]._id||services[0].id, name: services[0].name, duration: services[0].duration||60 });
-		// NEW: Get employees directly from PWA
+		
+		console.log('✅ Services loaded successfully:', services.length, 'services');
+		// Load employees from published catalog
 		try {
-			console.log('👥 Requesting employees from PWA...');
-			const pwaUrl = 'https://ava-solutions-pwa.netlify.app';
-			const pwaWindow = window.open(pwaUrl, 'pwa_employees', 'width=1,height=1,left=-1000,top=-1000');
+			console.log('👥 Loading employees from published catalog...');
+			const businessId = params.get('businessId') || localStorage.getItem('bookingBusinessId');
 			
-			const employeesPromise = new Promise((resolve, reject) => {
-				const timeout = setTimeout(() => {
-					pwaWindow.close();
-					reject(new Error('PWA employees timeout'));
-				}, 10000);
+			if (businessId) {
+				// Try to get published employees from Marketing API
+				const employeesUrl = `${marketingApi}/api/business/${businessId}/employees`;
+				console.log('🔍 Fetching employees from:', employeesUrl);
 				
-				const messageHandler = (event) => {
-					if (event.origin !== pwaUrl) return;
+				const response = await fetch(employeesUrl);
+				if (response.ok) {
+					const data = await response.json();
+					console.log('✅ Employees loaded from published catalog:', data);
 					
-					if (event.data.type === 'PWA_READY') {
-						pwaWindow.postMessage({
-							type: 'GET_EMPLOYEES',
-							businessId: businessId || localStorage.getItem('bookingBusinessId')
-						}, pwaUrl);
+					if (data.success && data.employees) {
+						const employees = data.employees;
+						employeeSelect.innerHTML = '<option value="">Any available</option>' + 
+							employees.map(e => `<option value="${e.id}" data-name="${e.name}">${e.name || 'Employee'} (${e.position || 'Staff'})</option>`).join('');
+						console.log('✅ Employee dropdown populated with', employees.length, 'employees');
 					}
-					
-					if (event.data.type === 'EMPLOYEES_RESPONSE') {
-						clearTimeout(timeout);
-						pwaWindow.close();
-						window.removeEventListener('message', messageHandler);
-						resolve(event.data.employees);
-					}
-				};
-				
-				window.addEventListener('message', messageHandler);
-			});
-			
-			const employees = await employeesPromise;
-			console.log('✅ Got employees from PWA:', employees);
-			employeeSelect.innerHTML = '<option value="">Any available</option>' + (employees||[]).map(e=>`<option value="${e._id||e.id}" data-name="${e.name}">${e.name||e.email||'Employee'}</option>`).join('');
-			
+				} else {
+					throw new Error(`Employees API failed: ${response.status}`);
+				}
+			}
 		} catch (e) {
-			console.warn('❌ Direct PWA employees failed, falling back to marketing API:', e);
+			console.warn('❌ Published catalog employees failed, trying marketing API fallback:', e);
+			
 			// Fallback to marketing API
-			let empsRes = await fetchJSON(`${apiBase()}/public/employees`).catch(()=>null);
-			if (!empsRes) { empsRes = await fetchJSON(`${apiBase()}/employees`).catch(()=>null); }
-			if (empsRes) {
-				employeeSelect.innerHTML = '<option value="">Any available</option>' + (empsRes.data||[]).map(e=>`<option value="${e._id||e.id}" data-name="${e.name}">${e.name||e.email||'Employee'}</option>`).join('');
+			try {
+				let empsRes = await fetchJSON(`${apiBase()}/public/employees`).catch(()=>null);
+				if (!empsRes) { 
+					empsRes = await fetchJSON(`${apiBase()}/employees`).catch(()=>null); 
+				}
+				if (empsRes && empsRes.data) {
+					employeeSelect.innerHTML = '<option value="">Any available</option>' + 
+						(empsRes.data||[]).map(e=>`<option value="${e._id||e.id}" data-name="${e.name}">${e.name||e.email||'Employee'}</option>`).join('');
+					console.log('✅ Employees loaded from fallback API');
+				}
+			} catch (fallbackError) {
+				console.error('❌ All employee loading methods failed:', fallbackError);
 			}
 		}
 	}

@@ -870,6 +870,64 @@ app.get('/api/business/bookings', async (req, res) => {
   }
 });
 
+// Business services endpoint (for booking website)
+app.get('/api/business/:businessId/services', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    
+    const User = (await import('./models/User.js')).default;
+    const business = await User.findById(businessId);
+    
+    if (!business) {
+      return res.status(404).json({ success: false, error: 'Business not found' });
+    }
+
+    const services = business.products || [];
+    const activeServices = services.filter(service => service.isActive !== false);
+    
+    console.log(`📋 Services requested for ${business.businessName}: ${activeServices.length} active services`);
+
+    res.json({ 
+      success: true, 
+      services: activeServices,
+      businessName: business.businessName,
+      total: activeServices.length
+    });
+  } catch (error) {
+    console.error('Get business services error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch services' });
+  }
+});
+
+// Business employees endpoint (for booking website)
+app.get('/api/business/:businessId/employees', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    
+    const User = (await import('./models/User.js')).default;
+    const business = await User.findById(businessId);
+    
+    if (!business) {
+      return res.status(404).json({ success: false, error: 'Business not found' });
+    }
+
+    const employees = business.employees || [];
+    const activeEmployees = employees.filter(employee => employee.isActive !== false);
+    
+    console.log(`👥 Employees requested for ${business.businessName}: ${activeEmployees.length} active employees`);
+
+    res.json({ 
+      success: true, 
+      employees: activeEmployees,
+      businessName: business.businessName,
+      total: activeEmployees.length
+    });
+  } catch (error) {
+    console.error('Get business employees error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch employees' });
+  }
+});
+
 // Business employees endpoint
 app.get('/api/business/employees', async (req, res) => {
   try {
