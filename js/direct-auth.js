@@ -201,10 +201,11 @@
                     messageDiv.style.color = '#155724';
                     messageDiv.textContent = 'Login successful! Redirecting...';
                     
-                    // Close modal and redirect
+                    // Close modal and reload the page to show dashboard
                     setTimeout(() => {
                         modal.remove();
-                        window.location.href = 'dashboard.html';
+                        // Simply reload the page - the PWA will show the dashboard
+                        window.location.reload();
                     }, 1000);
                 } else {
                     messageDiv.style.background = '#f8d7da';
