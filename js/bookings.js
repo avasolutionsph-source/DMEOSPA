@@ -1,4 +1,5 @@
 // Bookings Management
+console.log('📚 bookings.js script loaded successfully');
 class BookingsManager {
 	constructor() {
 		this.bookings = [];
@@ -473,7 +474,9 @@ class BookingsManager {
 	}
 }
 
+console.log('📦 Creating BookingsManager instance...');
 const bookingsManager = new BookingsManager();
+console.log('🔗 Setting up window.loadBookings function...');
 window.loadBookings = async function() { 
 	console.log('📞 window.loadBookings() called');
 	try {
@@ -483,6 +486,7 @@ window.loadBookings = async function() {
 		console.error('❌ window.loadBookings() failed:', error);
 	}
 };
+console.log('✅ window.loadBookings is now available:', typeof window.loadBookings);
 
 // Debug function to test therapist view
 window.testTherapistView = function() {
