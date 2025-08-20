@@ -73,23 +73,68 @@
 				return { success: false, error: 'Business ID required' };
 			}
 			
-			// Try to get published services from Marketing API
-			const servicesUrl = `${marketingApi}/api/business/${businessId}/services`;
-			console.log('🔍 Fetching services from:', servicesUrl);
+			// Get published services from user's published catalog
+			console.log('🔍 Loading published services for business:', businessId);
 			
-			const response = await fetch(servicesUrl);
-			if (!response.ok) {
-				throw new Error(`Services API failed: ${response.status}`);
+			// Try multiple endpoints to get published services
+			let catalogData = null;
+			
+			// Method 1: Try new business catalog endpoint
+			try {
+				console.log('🔍 Method 1: Trying business catalog endpoint...');
+				const catalogResponse = await fetch(`${marketingApi}/api/public/business-catalog/${businessId}`);
+				if (catalogResponse.ok) {
+					catalogData = await catalogResponse.json();
+					console.log('✅ Business catalog loaded:', catalogData);
+					if (catalogData.success && catalogData.services) {
+						return { success: true, data: catalogData.services };
+					}
+				}
+			} catch (e) {
+				console.warn('⚠️ Business catalog endpoint failed:', e);
 			}
 			
-			const data = await response.json();
-			console.log('✅ Services loaded from published catalog:', data);
-			
-			if (data.success && data.services) {
-				return { success: true, data: data.services };
-			} else {
-				throw new Error('No services found in published catalog');
+			// Method 2: Try products endpoint with business ID header
+			try {
+				console.log('🔍 Method 2: Trying products endpoint with business ID header...');
+				const productsResponse = await fetch(`${marketingApi}/api/products`, {
+					headers: {
+						'x-user-id': businessId,
+						'Content-Type': 'application/json'
+					}
+				});
+				
+				if (productsResponse.ok) {
+					const productsData = await productsResponse.json();
+					console.log('✅ Products loaded via products endpoint:', productsData);
+					if (productsData.data && productsData.data.length > 0) {
+						return { success: true, data: productsData.data };
+					}
+				}
+			} catch (e) {
+				console.warn('⚠️ Products endpoint failed:', e);
 			}
+			
+			// Method 3: Try public employees endpoint to see if business exists
+			try {
+				console.log('🔍 Method 3: Checking if business exists via employees endpoint...');
+				const employeesResponse = await fetch(`${marketingApi}/api/public/employees`, {
+					headers: {
+						'x-user-id': businessId,
+						'Content-Type': 'application/json'
+					}
+				});
+				
+				if (employeesResponse.ok) {
+					const employeesData = await employeesResponse.json();
+					console.log('📋 Business exists, but no services published yet:', employeesData);
+					return { success: true, data: [], message: 'Business exists but no services published yet' };
+				}
+			} catch (e) {
+				console.warn('⚠️ Employees check failed:', e);
+			}
+			
+			throw new Error('Business not found or no published catalog available');
 			
 		} catch (e) {
 			console.warn('❌ Published catalog failed, trying marketing API products endpoint:', e);
@@ -132,48 +177,47 @@
 		if (services[0]) selectService({ id: services[0]._id||services[0].id, name: services[0].name, duration: services[0].duration||60 });
 		
 		console.log('✅ Services loaded successfully:', services.length, 'services');
-		// Load employees from published catalog
+		// Load employees from the same business catalog we got services from
 		try {
-			console.log('👥 Loading employees from published catalog...');
-			const businessId = params.get('businessId') || localStorage.getItem('bookingBusinessId');
+			console.log('👥 Loading employees for business:', businessId);
 			
 			if (businessId) {
-				// Try to get published employees from Marketing API
-				const employeesUrl = `${marketingApi}/api/business/${businessId}/employees`;
-				console.log('🔍 Fetching employees from:', employeesUrl);
-				
-				const response = await fetch(employeesUrl);
-				if (response.ok) {
-					const data = await response.json();
-					console.log('✅ Employees loaded from published catalog:', data);
-					
-					if (data.success && data.employees) {
-						const employees = data.employees;
-						employeeSelect.innerHTML = '<option value="">Any available</option>' + 
-							employees.map(e => `<option value="${e.id}" data-name="${e.name}">${e.name || 'Employee'} (${e.position || 'Staff'})</option>`).join('');
-						console.log('✅ Employee dropdown populated with', employees.length, 'employees');
+				// Try the business catalog endpoint first
+				try {
+					const catalogResponse = await fetch(`${marketingApi}/api/public/business-catalog/${businessId}`);
+					if (catalogResponse.ok) {
+						const catalogData = await catalogResponse.json();
+						console.log('✅ Business catalog loaded for employees:', catalogData);
+						
+						if (catalogData.success && catalogData.employees) {
+							const employees = catalogData.employees;
+							employeeSelect.innerHTML = '<option value="">Any available</option>' + 
+								employees.map(e => `<option value="${e.id}" data-name="${e.name}">${e.name || 'Employee'} (${e.position || 'Staff'})</option>`).join('');
+							console.log('✅ Employee dropdown populated with', employees.length, 'employees');
+							return; // Success, exit early
+						}
 					}
-				} else {
-					throw new Error(`Employees API failed: ${response.status}`);
+				} catch (catalogError) {
+					console.warn('⚠️ Business catalog endpoint failed for employees:', catalogError);
+				}
+				
+				// Fallback: Try public employees endpoint
+				try {
+					let empsRes = await fetchJSON(`${apiBase()}/public/employees`).catch(()=>null);
+					if (!empsRes) { 
+						empsRes = await fetchJSON(`${apiBase()}/employees`).catch(()=>null); 
+					}
+					if (empsRes && empsRes.data) {
+						employeeSelect.innerHTML = '<option value="">Any available</option>' + 
+							(empsRes.data||[]).map(e=>`<option value="${e._id||e.id}" data-name="${e.name}">${e.name||e.email||'Employee'}</option>`).join('');
+						console.log('✅ Employees loaded from fallback API');
+					}
+				} catch (fallbackError) {
+					console.error('❌ All employee loading methods failed:', fallbackError);
 				}
 			}
 		} catch (e) {
-			console.warn('❌ Published catalog employees failed, trying marketing API fallback:', e);
-			
-			// Fallback to marketing API
-			try {
-				let empsRes = await fetchJSON(`${apiBase()}/public/employees`).catch(()=>null);
-				if (!empsRes) { 
-					empsRes = await fetchJSON(`${apiBase()}/employees`).catch(()=>null); 
-				}
-				if (empsRes && empsRes.data) {
-					employeeSelect.innerHTML = '<option value="">Any available</option>' + 
-						(empsRes.data||[]).map(e=>`<option value="${e._id||e.id}" data-name="${e.name}">${e.name||e.email||'Employee'}</option>`).join('');
-					console.log('✅ Employees loaded from fallback API');
-				}
-			} catch (fallbackError) {
-				console.error('❌ All employee loading methods failed:', fallbackError);
-			}
+			console.error('❌ Employee loading failed:', e);
 		}
 	}
 

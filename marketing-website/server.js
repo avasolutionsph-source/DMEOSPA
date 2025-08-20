@@ -520,6 +520,37 @@ app.get('/api/public/businesses', async (req, res) => {
   }
 });
 
+// Public: get business catalog (services + employees for booking website)
+app.get('/api/public/business-catalog/:businessId', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    
+    const User = (await import('./models/User.js')).default;
+    const business = await User.findById(businessId);
+    
+    if (!business) {
+      return res.status(404).json({ success: false, error: 'Business not found' });
+    }
+
+    const services = (business.products || []).filter(service => service.isActive !== false);
+    const employees = (business.employees || []).filter(employee => employee.isActive !== false);
+    
+    console.log(`📋 Business catalog requested for ${business.businessName}: ${services.length} services, ${employees.length} employees`);
+
+    res.json({ 
+      success: true, 
+      businessName: business.businessName,
+      services: services,
+      employees: employees,
+      servicesCount: services.length,
+      employeesCount: employees.length
+    });
+  } catch (error) {
+    console.error('Get business catalog error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch business catalog' });
+  }
+});
+
 // Proxy bookings and availability to PWA backend so PWA/webapp can use one base URL
 app.use('/api/bookings', async (req, res) => {
   console.log(`📡 Bookings ${req.method} request:`, req.originalUrl, req.headers['x-user-id']);
