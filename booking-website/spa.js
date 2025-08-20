@@ -115,22 +115,52 @@
 	async function submitBooking(){
 		try {
 			const sOpt = serviceSelect.options[serviceSelect.selectedIndex];
-			const payload = { source: 'booking-site', storeId: storeSelect.value, storeName: storeSelect.options[storeSelect.selectedIndex]?.text || 'Main Branch', customer: { name: qs('#customerName').value, phone: qs('#customerPhone').value, email: qs('#customerEmail').value }, serviceId: serviceSelect.value, serviceName: sOpt?.dataset?.name || selectedService?.name || '', durationMins: parseInt(qs('#durationInput').value || selectedService?.duration || '60', 10), partySize: parseInt(qs('#partySizeInput').value || '1', 10), startTime: selectedSlot ? new Date(selectedSlot).toISOString() : new Date(`${dateInput.value}T09:00:00`).toISOString(), status: 'pending', employeeId: employeeSelect.value || undefined, employeeName: (employeeSelect.options[employeeSelect.selectedIndex]?.text || ''), notes: qs('#notes').value || '' };
-			// Try marketing proxy first
+			const payload = { 
+				source: 'booking-site', 
+				storeId: storeSelect.value, 
+				storeName: storeSelect.options[storeSelect.selectedIndex]?.text || 'Main Branch', 
+				customer: { 
+					name: qs('#customerName').value, 
+					phone: qs('#customerPhone').value, 
+					email: qs('#customerEmail').value 
+				}, 
+				serviceId: serviceSelect.value, 
+				serviceName: sOpt?.dataset?.name || selectedService?.name || '', 
+				durationMins: parseInt(qs('#durationInput').value || selectedService?.duration || '60', 10), 
+				partySize: parseInt(qs('#partySizeInput').value || '1', 10), 
+				startTime: selectedSlot ? new Date(selectedSlot).toISOString() : new Date(`${dateInput.value}T09:00:00`).toISOString(), 
+				status: 'pending', 
+				employeeId: employeeSelect.value || undefined, 
+				employeeName: (employeeSelect.options[employeeSelect.selectedIndex]?.text || ''), 
+				notes: qs('#notes').value || '' 
+			};
+			
+			console.log('📝 Submitting booking:', payload);
+			console.log('🏢 Business ID:', businessId || localStorage.getItem('bookingBusinessId'));
+			
+			// Always try marketing API first (which has fallback storage)
 			apiHost = marketingApi;
-			await fetchJSON(`${apiBase()}/bookings`, { method:'POST', body: JSON.stringify(payload) });
-			alert('Booking submitted!');
+			const response = await fetchJSON(`${apiBase()}/bookings`, { method:'POST', body: JSON.stringify(payload) });
+			console.log('✅ Booking submitted successfully:', response);
+			alert('Booking submitted successfully!');
+			
 		} catch(e){
+			console.warn('❌ Marketing API booking failed:', e);
 			// Fallback: try direct PWA if configured
 			try {
 				const pwa = localStorage.getItem('pwaApiUrl');
 				if (isHttps(pwa)) {
+					console.log('🔄 Trying direct PWA backend...');
 					await fetchJSON(`${pwa}/api/bookings`, { method:'POST', body: JSON.stringify(payload) });
+					console.log('✅ PWA backend booking successful');
 					alert('Booking submitted!');
 					return;
 				}
-			} catch(_){ }
-			alert('Booking failed');
+			} catch(e2){ 
+				console.warn('❌ PWA backend also failed:', e2);
+			}
+			console.error('❌ All booking attempts failed');
+			alert('Booking failed - please try again or contact support');
 		}
 	}
 

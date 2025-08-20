@@ -540,7 +540,10 @@ app.use('/api/bookings', async (req, res) => {
       const text = await response.text();
       return res.status(response.status).type(response.headers.get('content-type') || 'application/json').send(text);
     }
-    // Fallback for GET when backend returns non-200: serve from marketing DB
+    
+    // If backend returns non-200, use fallback storage for both GET and POST
+    console.warn('PWA backend returned non-200:', response.status, 'using fallback storage');
+    
     if (req.method === 'GET') {
       try {
         const User = (await import('./models/User.js')).default;
@@ -552,6 +555,42 @@ app.use('/api/bookings', async (req, res) => {
         console.error('Bookings GET fallback error:', e.message);
       }
     }
+    
+    if (req.method === 'POST') {
+      try {
+        const User = (await import('./models/User.js')).default;
+        const userId = req.headers['x-user-id'];
+        if (!userId) return res.status(500).json({ error: 'Failed to reach bookings backend' });
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        const payload = req.body || {};
+        user.bookings = user.bookings || [];
+        const newBooking = {
+          source: payload.source || 'booking-site',
+          storeId: payload.storeId,
+          storeName: payload.storeName,
+          customer: payload.customer,
+          serviceId: payload.serviceId,
+          serviceName: payload.serviceName,
+          durationMins: payload.durationMins || 60,
+          partySize: payload.partySize || 1,
+          employeeId: payload.employeeId,
+          employeeName: payload.employeeName,
+          startTime: payload.startTime ? new Date(payload.startTime) : new Date(),
+          status: payload.status || 'pending',
+          notes: payload.notes || '',
+          createdAt: new Date()
+        };
+        user.bookings.push(newBooking);
+        await user.save();
+        console.log('✅ Booking stored in marketing DB fallback:', newBooking);
+        return res.status(201).json({ success: true, data: { id: user.bookings[user.bookings.length-1]._id } });
+      } catch (e) {
+        console.error('Bookings POST fallback error:', e.message);
+      }
+    }
+    
+    // If all fallbacks fail, return the original error
     const text = await response.text();
     return res.status(response.status).type(response.headers.get('content-type') || 'application/json').send(text);
   } catch (err) {
