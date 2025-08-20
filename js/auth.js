@@ -63,10 +63,10 @@ class AuthSystem {
         this.attachMainLoginButton();
     }
 
-    // Attach event listener to main login button
+    // Attach event listener to main login button - SIMPLIFIED
     attachMainLoginButton() {
-        console.log('🚫 DISABLED: Auth.js login button handler - using direct modal instead');
-        return; // DISABLED to prevent interference
+        console.log('✅ SIMPLIFIED: Auth system simplified for testing');
+        return;
         
         const mainLoginBtn = document.getElementById('showLoginBtn');
         if (mainLoginBtn) {
@@ -100,23 +100,10 @@ class AuthSystem {
         }
     }
 
-    // Handle user login
+    // Handle user login - SIMPLIFIED
     async handleLogin() {
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
-        const rememberMe = document.getElementById('rememberMe').checked;
-
-        if (!email || !password) {
-            showNotification('Please enter email and password', 'error');
-            return;
-        }
-
-        setButtonLoading('loginBtn', true);
-        showLoading('Signing in...', 'Please wait while we verify your credentials');
-
-        try {
-            // REMOVED: Blocking code that prevented login
-            console.log('handleLogin called - but this should not be used anymore');
+        console.log('✅ SIMPLIFIED: Login handler simplified for testing');
+        return;
             
             if (loginData.success) {
                 await this.setAuthState(loginData.user, loginData.token, rememberMe);

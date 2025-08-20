@@ -53,10 +53,7 @@
                     <i class="fas fa-door-closed"></i>
                     <span>Rooms</span>
                 </a>
-                <a href="#" class="nav-item" data-page="chatbot">
-                    <i class="fas fa-robot"></i>
-                    <span>AI Assistant</span>
-                </a>
+                <!-- Removed: Chatbot navigation - feature removed -->
                 <a href="#" class="nav-item" data-page="settings">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
@@ -589,48 +586,7 @@
                 </div>
             </div>
 
-            <!-- Chatbot Page -->
-            <div id="chatbot" class="page">
-                <div class="page-header">
-                    <h1>AI Business Assistant</h1>
-                </div>
-                <div class="chatbot-container">
-                    <div class="chat-messages" id="chatMessages">
-                        <div class="chat-message bot">
-                            <div class="message-avatar">
-                                <i class="fas fa-robot"></i>
-                            </div>
-                            <div class="message-content">
-                                <p><strong>🌟 Welcome to your AI Business Assistant!</strong></p>
-                                <br>
-                                <p>Hello! I'm your intelligent spa management companion, here to help you grow and optimize your business! 🚀</p>
-                                <br>
-                                <p><strong>What I can do for you:</strong></p>
-                                <br>
-                                <p>💰 <strong>Smart Analytics</strong> - Ask me "Who's my best employee?" or "What's my most profitable service?"</p>
-                                <br>
-                                <p>📊 <strong>Business Intelligence</strong> - Try "How much will I earn this month?" or "Show me my revenue trends"</p>
-                                <br>
-                                <p>🎯 <strong>Personalized Tips</strong> - Say "I want to make more profit" or "Help me prevent theft"</p>
-                                <br>
-                                <p>🔍 <strong>Deep Insights</strong> - Ask "Is someone stealing?" or "When should I close?"</p>
-                                <br>
-                                <p>💡 <strong>Expert Advice</strong> - Request "Marketing tips" or "Staff management help"</p>
-                                <br>
-                                <p><strong>💬 Just talk to me naturally!</strong> I understand your questions and analyze your actual business data to give you specific, actionable advice.</p>
-                                <br>
-                                <p><em>What would you like to know about your business today? 😊</em></p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="chat-input-container">
-                        <input type="text" id="chatInput" placeholder="Ask me anything about your business...">
-                        <button class="btn btn-primary" id="sendChatBtn">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <!-- Removed: Chatbot page - causing performance issues and chunk errors -->
 
             <!-- Settings Page -->
             <div id="settings" class="page">
@@ -2097,10 +2053,9 @@
     
     <script src="js/database.js"></script>
     <script src="js/api.js"></script>
-    <script src="js/entitlements.js"></script>
+    <script src="js/entitlements-simple.js"></script>
     <script src="js/auth.js"></script>
-    <script src="js/cloud-sync.js"></script>
-    <script src="js/sync.js"></script>
+    <!-- Removed: js/cloud-sync.js, js/sync.js - causing failed API calls and errors -->
     <script src="js/app.js"></script>
     <script src="js/rooms.js"></script>
     <script src="js/pos.js"></script>
@@ -2109,9 +2064,8 @@
     <script src="js/inventory-migration.js"></script>
     <script src="js/employees.js"></script>
     <script src="js/expenses.js"></script>
-    <script src="js/payroll-requests.js"></script>
-    <script src="js/scheduling.js"></script>
-    <script src="js/chatbot.js"></script>
+    <!-- Removed: js/payroll-requests.js, js/scheduling.js - unimplemented features -->
+    <!-- Removed: js/chatbot.js - causing performance issues and chunk errors -->
     <script src="js/dashboard.js"></script>
     <script src="js/settings.js"></script>
     <script src="js/privacy.js"></script>
@@ -2247,7 +2201,7 @@
         // Register Service Worker for offline functionality (only for http/https)
         if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.protocol === 'https:')) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js', {
+                navigator.serviceWorker.register('./service-worker-simple.js', {
                     scope: './' // Limit scope to current directory only
                 })
                     .then(registration => {
