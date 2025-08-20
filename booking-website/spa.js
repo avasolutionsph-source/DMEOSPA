@@ -73,7 +73,7 @@
 			// Method 1: Try new business catalog endpoint
 			try {
 				console.log('🔍 Method 1: Trying business catalog endpoint...');
-				const catalogResponse = await fetch(`${pwaBackendApi}/api/auth/public/business-catalog/${businessId}`);
+				const catalogResponse = await fetch(`${pwaBackendApi}/api/public/business-catalog/${businessId}`);
 				if (catalogResponse.ok) {
 					catalogData = await catalogResponse.json();
 					console.log('✅ Business catalog loaded:', catalogData);
@@ -109,7 +109,7 @@
 			// Method 3: Try public employees endpoint to see if business exists
 			try {
 				console.log('🔍 Method 3: Checking if business exists via employees endpoint...');
-				const employeesResponse = await fetch(`${marketingApi}/api/public/employees`, {
+				const employeesResponse = await fetch(`${pwaBackendApi}/api/public/employees`, {
 					headers: {
 						'x-user-id': businessId,
 						'Content-Type': 'application/json'
@@ -175,7 +175,7 @@
 			if (businessId) {
 				// Try the business catalog endpoint first
 				try {
-					const catalogResponse = await fetch(`${pwaBackendApi}/api/auth/public/business-catalog/${businessId}`);
+					const catalogResponse = await fetch(`${pwaBackendApi}/api/public/business-catalog/${businessId}`);
 					if (catalogResponse.ok) {
 						const catalogData = await catalogResponse.json();
 						console.log('✅ Business catalog loaded for employees:', catalogData);

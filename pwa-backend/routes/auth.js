@@ -471,6 +471,37 @@ router.post('/publish-catalog', async (req, res) => {
   }
 });
 
+// Public: Get business catalog (services + employees for booking website)
+router.get('/public/business-catalog/:businessId', async (req, res) => {
+  try {
+    const { businessId } = req.params;
+    
+    const User = (await import('../models/User.js')).default;
+    const business = await User.findById(businessId);
+    
+    if (!business) {
+      return res.status(404).json({ success: false, error: 'Business not found' });
+    }
+
+    const services = (business.products || []).filter(service => service.isActive !== false);
+    const employees = (business.employees || []).filter(employee => employee.isActive !== false);
+    
+    console.log(`📋 Business catalog requested for ${business.businessName}: ${services.length} services, ${employees.length} employees`);
+
+    res.json({ 
+      success: true, 
+      businessName: business.businessName,
+      services: services,
+      employees: employees,
+      servicesCount: services.length,
+      employeesCount: employees.length
+    });
+  } catch (error) {
+    console.error('Get business catalog error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch business catalog' });
+  }
+});
+
 // Public: Get all businesses with published catalogs (for booking directory)
 router.get('/public/businesses', async (req, res) => {
   try {

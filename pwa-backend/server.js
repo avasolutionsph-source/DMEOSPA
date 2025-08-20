@@ -66,6 +66,9 @@ app.use('/api', syncRoutes); // products/inventory/employees/transactions sync
 app.use('/api/user', userRoutes);
 app.use('/api', bookingRoutes); // bookings & availability
 
+// Public routes for booking website (no auth required)
+app.use('/api', authRoutes); // Mount auth routes under /api as well for public endpoints
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
