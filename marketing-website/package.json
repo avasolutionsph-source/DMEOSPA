@@ -3,14 +3,15 @@
   "version": "1.0.0",
   "description": "Ava Solutions Professional Marketing Website",
   "main": "server.js",
+  "type": "module",
 
   "scripts": {
-    "build": "echo 'Static site deployment ready - no build process needed'",
-    "postinstall": "echo 'Dependencies installed successfully'",
-    "start": "echo 'This is a static site - no server needed'",
-    "test": "echo 'No tests needed for static site'",
-    "dev": "echo 'Use live server for local development'",
-    "verify": "echo 'Static files verified'"
+    "build": "npm install",
+    "postinstall": "echo 'Dependencies installed successfully'", 
+    "start": "node server.js",
+    "test": "echo 'No tests specified'",
+    "dev": "nodemon server.js",
+    "verify": "node --check server.js"
   },
   "engines": {
     "node": ">=18.0.0",
