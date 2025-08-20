@@ -1,8 +1,9 @@
-// Therapist Portal JavaScript
+// Therapist Portal JavaScript - MongoDB Auth Enabled
 (function() {
     const isLocal = ['localhost','127.0.0.1'].some(h => location.hostname.startsWith(h));
-    const marketingApi = 'https://ava-marketing-api.onrender.com';
-    const apiBase = () => `${marketingApi}/api`;
+    const pwaBackendApi = 'http://localhost:4000/api'; // MongoDB-enabled PWA Backend
+    const marketingApi = 'https://ava-marketing-api.onrender.com'; // Fallback
+    const apiBase = () => isLocal ? pwaBackendApi : `${marketingApi}/api`;
 
     let currentTherapist = null;
     let todayBookings = [];
@@ -35,6 +36,8 @@
     }
 
     async function loadTherapistAuth() {
+        console.log('🔐 Loading therapist authentication...');
+        
         // Check URL parameters first (direct link from main app)
         const params = new URLSearchParams(location.search);
         const token = params.get('token');
@@ -43,54 +46,94 @@
         const therapistEmail = params.get('email');
 
         if (token && (therapistId || therapistName || therapistEmail)) {
-            currentTherapist = {
-                token: token,
-                id: therapistId,
-                name: therapistName || therapistEmail?.split('@')[0] || 'Therapist',
-                email: therapistEmail,
-                role: 'therapist'
-            };
+            console.log('📱 Auth from URL parameters');
             
-            // Store for future sessions
-            localStorage.setItem('therapistAuth', JSON.stringify(currentTherapist));
-            
-            // Clean up URL
-            const cleanUrl = location.pathname;
-            history.replaceState({}, document.title, cleanUrl);
-            
-            return;
+            // Validate the token with MongoDB backend
+            const userData = await validateTherapistToken(token);
+            if (userData) {
+                currentTherapist = {
+                    token: token,
+                    id: userData.id,
+                    name: userData.firstName + ' ' + userData.lastName,
+                    email: userData.email,
+                    role: userData.role,
+                    permissions: userData.permissions,
+                    therapistDetails: userData.therapistDetails
+                };
+                
+                // Store for future sessions
+                localStorage.setItem('therapistAuth', JSON.stringify(currentTherapist));
+                
+                // Clean up URL
+                const cleanUrl = location.pathname;
+                history.replaceState({}, document.title, cleanUrl);
+                
+                console.log('✅ Therapist authenticated from URL:', currentTherapist.email);
+                return;
+            }
         }
 
-        // Check localStorage
+        // Check stored authentication
         const stored = localStorage.getItem('therapistAuth');
         if (stored) {
             try {
                 currentTherapist = JSON.parse(stored);
                 
-                // Validate token is still good
-                if (await validateTherapistToken(currentTherapist.token)) {
+                // Validate stored token
+                const userData = await validateTherapistToken(currentTherapist.token);
+                if (userData) {
+                    // Update with latest user data
+                    currentTherapist.permissions = userData.permissions;
+                    currentTherapist.therapistDetails = userData.therapistDetails;
+                    localStorage.setItem('therapistAuth', JSON.stringify(currentTherapist));
+                    console.log('✅ Therapist session restored:', currentTherapist.email);
                     return;
                 } else {
+                    console.warn('❌ Stored token invalid, clearing session');
                     localStorage.removeItem('therapistAuth');
                     currentTherapist = null;
                 }
             } catch (e) {
+                console.error('Error parsing stored auth:', e);
                 localStorage.removeItem('therapistAuth');
+                currentTherapist = null;
             }
         }
+
+        console.log('❌ No valid therapist authentication found');
     }
 
     async function validateTherapistToken(token) {
         try {
+            console.log('🔍 Validating therapist token with MongoDB backend...');
+            
             const response = await fetch(`${apiBase()}/auth/validate`, {
+                method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
-            return response.ok;
-        } catch (e) {
-            return false;
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.valid && data.user) {
+                    // Check if user is actually a therapist
+                    if (data.user.role === 'therapist') {
+                        console.log('✅ Valid therapist token:', data.user.email);
+                        return data.user;
+                    } else {
+                        console.warn('❌ User is not a therapist, role:', data.user.role);
+                        return null;
+                    }
+                }
+            }
+            
+            console.warn('❌ Token validation failed');
+            return null;
+        } catch (error) {
+            console.error('❌ Token validation error:', error);
+            return null;
         }
     }
 
@@ -475,9 +518,197 @@
     }
 
     function showTherapistLogin() {
-        // Simple redirect to login for now
-        window.location.href = `/login.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+        console.log('🔐 Redirecting to therapist login...');
+        
+        // Create a simple login form for therapists
+        showTherapistLoginModal();
     }
+
+    function showTherapistLoginModal() {
+        // Remove existing modal if any
+        const existingModal = document.getElementById('therapistLoginModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Create login modal
+        const modal = document.createElement('div');
+        modal.id = 'therapistLoginModal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+
+        modal.innerHTML = `
+            <div style="
+                background: white;
+                padding: 2rem;
+                border-radius: 12px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                max-width: 400px;
+                width: 90%;
+                max-height: 90vh;
+                overflow-y: auto;
+            ">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <h2 style="margin: 0 0 0.5rem 0; color: #333;">
+                        <i class="fas fa-user-md" style="color: #667eea; margin-right: 0.5rem;"></i>
+                        Therapist Login
+                    </h2>
+                    <p style="margin: 0; color: #666; font-size: 0.9rem;">
+                        Access your personalized therapist portal
+                    </p>
+                </div>
+
+                <form id="therapistLoginForm" style="margin-bottom: 1rem;">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #333;">Email</label>
+                        <input type="email" id="therapistEmail" required
+                               placeholder="your.email@spa.com"
+                               style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 6px; font-size: 1rem; box-sizing: border-box;">
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #333;">Password</label>
+                        <input type="password" id="therapistPassword" required
+                               placeholder="Your password"
+                               style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 6px; font-size: 1rem; box-sizing: border-box;">
+                    </div>
+
+                    <button type="submit" id="therapistLoginBtn" 
+                            style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-bottom: 1rem;">
+                        <i class="fas fa-sign-in-alt"></i> Sign In as Therapist
+                    </button>
+                </form>
+
+                <div id="therapistLoginError" style="display: none; background: #fee; color: #c33; padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem;"></div>
+
+                <div style="text-align: center; font-size: 0.85rem; color: #666; margin-top: 1rem;">
+                    Don't have an account? Contact your spa manager.
+                </div>
+
+                <button onclick="closeTherapistLoginModal()" 
+                        style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 1.5rem; color: #999; cursor: pointer;">
+                    ×
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Add event listeners
+        const form = document.getElementById('therapistLoginForm');
+        form.addEventListener('submit', handleTherapistLogin);
+
+        // Focus email input
+        setTimeout(() => {
+            document.getElementById('therapistEmail').focus();
+        }, 100);
+
+        // Close on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeTherapistLoginModal();
+            }
+        });
+    }
+
+    async function handleTherapistLogin(event) {
+        event.preventDefault();
+        console.log('🔐 Processing therapist login...');
+
+        const email = document.getElementById('therapistEmail').value.trim();
+        const password = document.getElementById('therapistPassword').value;
+        const errorDiv = document.getElementById('therapistLoginError');
+        const loginBtn = document.getElementById('therapistLoginBtn');
+
+        // Clear previous errors
+        errorDiv.style.display = 'none';
+
+        if (!email || !password) {
+            showTherapistError('Please enter both email and password');
+            return;
+        }
+
+        // Set loading state
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+
+        try {
+            const response = await fetch(`${apiBase()}/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success && data.user) {
+                // Check if user is a therapist
+                if (data.user.role === 'therapist') {
+                    // Store therapist data
+                    currentTherapist = {
+                        token: data.token,
+                        id: data.user.id,
+                        name: `${data.user.firstName} ${data.user.lastName}`,
+                        email: data.user.email,
+                        role: data.user.role,
+                        permissions: data.user.permissions,
+                        therapistDetails: data.user.therapistDetails
+                    };
+
+                    localStorage.setItem('therapistAuth', JSON.stringify(currentTherapist));
+
+                    // Close modal and initialize portal
+                    closeTherapistLoginModal();
+                    
+                    // Reload the portal with authenticated user
+                    await setupUI();
+                    await setupEventListeners();
+                    await loadTherapistData();
+
+                    showNotification(`Welcome back, ${data.user.firstName}!`, 'success');
+                    console.log('✅ Therapist login successful');
+                } else {
+                    showTherapistError(`Access denied. Your account role is "${data.user.role}". Only therapist accounts can access this portal.`);
+                }
+            } else {
+                showTherapistError(data.error || 'Login failed. Please check your credentials.');
+            }
+
+        } catch (error) {
+            console.error('❌ Therapist login error:', error);
+            showTherapistError('Connection failed. Please check your network and try again.');
+        } finally {
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In as Therapist';
+        }
+    }
+
+    function showTherapistError(message) {
+        const errorDiv = document.getElementById('therapistLoginError');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    }
+
+    window.closeTherapistLoginModal = function() {
+        const modal = document.getElementById('therapistLoginModal');
+        if (modal) {
+            modal.remove();
+        }
+    };
 
     function showNotification(message, type = 'info') {
         // Simple notification system

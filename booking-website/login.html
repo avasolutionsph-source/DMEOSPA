@@ -31,28 +31,75 @@
   </main>
   <script>
   (function(){
-    const marketingApi = 'https://ava-marketing-api.onrender.com';
+    const isLocal = ['localhost','127.0.0.1'].some(h => location.hostname.startsWith(h));
+    const pwaBackendApi = 'http://localhost:4000/api'; // MongoDB-enabled PWA Backend
+    const marketingApi = 'https://ava-marketing-api.onrender.com'; // MongoDB-enabled Marketing API
+    const authApi = isLocal ? pwaBackendApi : marketingApi; // Use PWA backend locally, marketing API in production
+    
+    console.log('🔐 Login page using auth API:', authApi);
+    
     async function bookingSiteLogin(email, password){
-      const res = await fetch(`${marketingApi}/api/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email, password })});
+      console.log('🔐 Processing login for:', email);
+      
+      const res = await fetch(`${authApi}/auth/login`, { 
+        method:'POST', 
+        headers:{'Content-Type':'application/json'}, 
+        body: JSON.stringify({ email, password })
+      });
+      
       const data = await res.json();
-      if (!res.ok || !data.token) throw new Error(data.error || 'Login failed');
+      
+      if (!res.ok || !data.success || !data.token) {
+        throw new Error(data.error || 'Login failed');
+      }
+      
+      console.log('✅ Login successful for:', data.user.email, 'Role:', data.user.role);
+      
+      // Store authentication data
       localStorage.setItem('authToken', data.token);
-      try { if (data.user && (data.user._id || data.user.id)) { localStorage.setItem('bookingBusinessId', String(data.user._id || data.user.id)); } } catch(_){}
+      localStorage.setItem('bookingUser', JSON.stringify(data.user));
+      
+      // Store business ID for owners/managers
+      try { 
+        if (data.user && (data.user._id || data.user.id)) { 
+          localStorage.setItem('bookingBusinessId', String(data.user._id || data.user.id)); 
+        } 
+      } catch(_){}
+      
       // Decide destination by role
       const role = (data.user && data.user.role) || 'customer';
       if (role === 'customer') {
         // Customers go to business directory
         window.location.href = '/';
-      } else {
-        // Business owners and admins go to owner dashboard
+      } else if (['owner', 'manager'].includes(role)) {
+        // Business owners and managers go to owner dashboard
         window.location.href = '/owner.html';
+      } else if (role === 'therapist') {
+        // Therapists go to therapist portal
+        window.location.href = '/therapist.html';
+      } else {
+        // Default fallback
+        window.location.href = '/';
       }
     }
+    
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value.trim();
       const pass = document.getElementById('loginPass').value;
-      try { await bookingSiteLogin(email, pass); } catch(err){ alert(err.message || 'Login failed'); }
+      
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      
+      try { 
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Signing in...';
+        await bookingSiteLogin(email, pass); 
+      } catch(err){ 
+        alert(err.message || 'Login failed');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
     });
   })();
   </script>
