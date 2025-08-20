@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear All Data - Fresh Start</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            margin: 0;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 2rem;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            max-width: 600px;
+            text-align: center;
+        }
+        .warning {
+            background: rgba(255,255,255,0.2);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        .btn {
+            background: white;
+            color: #dc3545;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 0.5rem;
+            font-size: 1rem;
+        }
+        .btn:hover {
+            background: #f8f9fa;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            border: 2px solid white;
+        }
+        .progress {
+            background: rgba(255,255,255,0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            display: none;
+        }
+        .checklist {
+            text-align: left;
+            background: rgba(255,255,255,0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        .check-item {
+            margin: 0.5rem 0;
+            padding: 0.25rem 0;
+        }
+        .check-item.done {
+            color: #90ee90;
+        }
+        .check-item.done::before {
+            content: "✅ ";
+        }
+        .check-item:not(.done)::before {
+            content: "⏳ ";
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Clear All Data - Fresh Start</h1>
+        
+        <div class="warning">
+            <h3>⚠️ WARNING</h3>
+            <p>This will completely clear all user data, accounts, settings, and cached information from:</p>
+            <ul style="text-align: left; margin: 1rem 0;">
+                <li>All user accounts and passwords</li>
+                <li>Business settings and configurations</li>
+                <li>Cached bookings, transactions, inventory</li>
+                <li>Employee data and role assignments</li>
+                <li>Browser storage (localStorage, sessionStorage)</li>
+                <li>IndexedDB databases</li>
+                <li>Service worker caches</li>
+            </ul>
+            <p><strong>CODE WILL NOT BE AFFECTED</strong> - only data is cleared.</p>
+        </div>
+
+        <div class="checklist" id="clearingChecklist" style="display: none;">
+            <h4>🔄 Data Clearing Progress:</h4>
+            <div id="checkItems"></div>
+        </div>
+
+        <div class="progress" id="progressArea">
+            <h4>🔄 Clearing Data...</h4>
+            <p id="progressText">Initializing...</p>
+        </div>
+
+        <div id="buttons">
+            <button class="btn btn-danger" onclick="startDataClear()">
+                🧹 CLEAR ALL DATA - FRESH START
+            </button>
+            <button class="btn" onclick="window.location.href='/index.html'">
+                ← Cancel - Back to App
+            </button>
+        </div>
+
+        <div id="completion" style="display: none;">
+            <h3>✅ Data Cleared Successfully!</h3>
+            <p>All user data has been completely cleared. You can now start fresh.</p>
+            <button class="btn" onclick="window.location.href='/index.html'">
+                🚀 Start Fresh - Go to App
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const clearingSteps = [
+            'Clearing localStorage data',
+            'Clearing sessionStorage data', 
+            'Clearing IndexedDB databases',
+            'Clearing Service Worker caches',
+            'Clearing user accounts database',
+            'Clearing business configurations',
+            'Clearing role assignments',
+            'Clearing booking data',
+            'Clearing transaction data',
+            'Clearing employee data',
+            'Clearing inventory data',
+            'Clearing cached settings',
+            'Clearing authentication tokens',
+            'Clearing session data',
+            'Resetting UI state'
+        ];
+
+        async function startDataClear() {
+            const buttons = document.getElementById('buttons');
+            const progress = document.getElementById('progressArea');
+            const checklist = document.getElementById('clearingChecklist');
+            const checkItems = document.getElementById('checkItems');
+            
+            // Hide buttons, show progress
+            buttons.style.display = 'none';
+            progress.style.display = 'block';
+            checklist.style.display = 'block';
+            
+            // Initialize checklist
+            checkItems.innerHTML = clearingSteps.map(step => 
+                `<div class="check-item" id="step-${clearingSteps.indexOf(step)}">${step}</div>`
+            ).join('');
+
+            try {
+                for (let i = 0; i < clearingSteps.length; i++) {
+                    const step = clearingSteps[i];
+                    const progressText = document.getElementById('progressText');
+                    const stepElement = document.getElementById(`step-${i}`);
+                    
+                    progressText.textContent = step;
+                    console.log(`🔄 ${step}...`);
+                    
+                    await performClearingStep(i);
+                    
+                    stepElement.classList.add('done');
+                    await sleep(200); // Visual feedback
+                }
+
+                // Show completion
+                progress.style.display = 'none';
+                document.getElementById('completion').style.display = 'block';
+                
+                console.log('✅ All data cleared successfully!');
+                
+            } catch (error) {
+                console.error('❌ Error during data clearing:', error);
+                document.getElementById('progressText').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function performClearingStep(stepIndex) {
+            switch (stepIndex) {
+                case 0: // localStorage
+                    const localKeys = Object.keys(localStorage);
+                    localKeys.forEach(key => localStorage.removeItem(key));
+                    break;
+                    
+                case 1: // sessionStorage
+                    sessionStorage.clear();
+                    break;
+                    
+                case 2: // IndexedDB
+                    if ('indexedDB' in window) {
+                        try {
+                            const databases = await indexedDB.databases();
+                            for (const db of databases) {
+                                indexedDB.deleteDatabase(db.name);
+                                console.log(`🗑️ Deleted database: ${db.name}`);
+                            }
+                        } catch (e) {
+                            console.warn('Could not clear some databases:', e);
+                        }
+                    }
+                    break;
+                    
+                case 3: // Service Worker caches
+                    if ('serviceWorker' in navigator && 'caches' in window) {
+                        try {
+                            const cacheNames = await caches.keys();
+                            await Promise.all(
+                                cacheNames.map(cacheName => caches.delete(cacheName))
+                            );
+                            console.log('🗑️ Cleared service worker caches');
+                        } catch (e) {
+                            console.warn('Could not clear caches:', e);
+                        }
+                    }
+                    break;
+                    
+                case 4: // User accounts
+                    localStorage.removeItem('avas_users_db');
+                    localStorage.removeItem('simple_user');
+                    localStorage.removeItem('universal_user');
+                    break;
+                    
+                case 5: // Business config
+                    localStorage.removeItem('businessName');
+                    localStorage.removeItem('businessConfig');
+                    break;
+                    
+                case 6: // Role assignments
+                    localStorage.removeItem('activeEmployeeRole');
+                    localStorage.removeItem('managerAssigned');
+                    break;
+                    
+                case 7: // Booking data
+                    localStorage.removeItem('bookings');
+                    localStorage.removeItem('therapistBookings');
+                    localStorage.removeItem('lastBookingSync');
+                    break;
+                    
+                case 8: // Transaction data
+                    localStorage.removeItem('transactions');
+                    localStorage.removeItem('todayTransactions');
+                    break;
+                    
+                case 9: // Employee data
+                    localStorage.removeItem('employees');
+                    localStorage.removeItem('employeeData');
+                    break;
+                    
+                case 10: // Inventory data
+                    localStorage.removeItem('inventory');
+                    localStorage.removeItem('inventoryItems');
+                    break;
+                    
+                case 11: // Settings
+                    const settingsToKeep = ['currency', 'currencySymbol'];
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.includes('setting') && !settingsToKeep.includes(key)) {
+                            localStorage.removeItem(key);
+                        }
+                    });
+                    break;
+                    
+                case 12: // Auth tokens
+                    const authKeys = [
+                        'authToken', 'userToken', 'simple_token', 'universal_token',
+                        'avas_auth_token', 'therapistAuth'
+                    ];
+                    authKeys.forEach(key => {
+                        localStorage.removeItem(key);
+                        sessionStorage.removeItem(key);
+                    });
+                    break;
+                    
+                case 13: // Session data
+                    const sessionKeys = [
+                        'isLoggedIn', 'currentUser', 'userData', 'activeUserId',
+                        'simple_user', 'universal_user', 'avas_session_info'
+                    ];
+                    sessionKeys.forEach(key => {
+                        localStorage.removeItem(key);
+                        sessionStorage.removeItem(key);
+                    });
+                    break;
+                    
+                case 14: // UI state reset
+                    // Reset any cached UI states
+                    if (window.roleManager) {
+                        window.roleManager.activeEmployee = null;
+                    }
+                    break;
+            }
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Add warning for accidental navigation
+        window.addEventListener('beforeunload', (e) => {
+            if (document.getElementById('progressArea').style.display !== 'none') {
+                e.preventDefault();
+                e.returnValue = 'Data clearing in progress. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        });
+    </script>
+</body>
+</html>
