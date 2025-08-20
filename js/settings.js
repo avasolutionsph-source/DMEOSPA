@@ -628,6 +628,30 @@ class SettingsManager {
             btn.disabled = false; btn.innerHTML = original;
 
             if (res.ok && data && data.success) {
+                // ALSO store catalog locally for easy booking website access
+                const currentUser = window.unifiedAuth?.getCurrentUser();
+                if (currentUser) {
+                    const catalogData = {
+                        businessId: currentUser.id,
+                        businessName: currentUser.businessName,
+                        services: services,
+                        employees: employees,
+                        publishedAt: new Date().toISOString(),
+                        publishedBy: currentUser.email
+                    };
+                    
+                    // Store in localStorage for booking website access
+                    localStorage.setItem('published_catalog', JSON.stringify(catalogData));
+                    
+                    // Also store a public catalog that booking websites can access
+                    const publicCatalog = {
+                        [`business_${currentUser.id}`]: catalogData
+                    };
+                    localStorage.setItem('public_business_catalogs', JSON.stringify(publicCatalog));
+                    
+                    console.log('💾 Catalog also stored locally for direct access');
+                }
+                
                 showNotification(`✅ Published ${data.products || 0} services and ${data.employees || 0} employees to MongoDB!`, 'success');
                 console.log('✅ Catalog published successfully to MongoDB via:', publishEndpoint);
             } else {
