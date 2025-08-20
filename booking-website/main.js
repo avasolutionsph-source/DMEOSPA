@@ -103,7 +103,7 @@
 			if (!response.ok) {
 				// Fallback: Try local PWA backend
 				console.log('⚠️ Remote PWA failed (status:', response.status, '), trying local PWA backend fallback');
-				const pwaBackendEndpoint = `${pwaBackendApi}/auth/public/businesses`;
+				const pwaBackendEndpoint = `${pwaBackendApi}/api/auth/public/businesses`;
 				try {
 					response = await fetch(pwaBackendEndpoint);
 				} catch (e) {

@@ -1503,7 +1503,10 @@
             const err = document.getElementById('employeeEmailError');
             if (!email) { if(err) err.style.display='none'; return; }
             try{
-                const res = await fetch('https://ava-marketing-api.onrender.com/api/auth/check-email?email=' + encodeURIComponent(email));
+                // Use unified auth instead of direct marketing API calls
+                const res = window.unifiedAuth ? 
+                    await window.unifiedAuth.checkEmailExists(email) : 
+                    { ok: true, json: () => ({ exists: false }) };
                 const data = await res.json();
                 if (data.exists) { if(err){ err.style.display='block'; err.textContent='Email already in use'; } }
                 else { if(err) err.style.display='none'; }
@@ -1822,7 +1825,9 @@
         async function fetchAndUpdateBusinessName(token) {
             try {
                 console.log('Fetching real business name from database...');
-                const response = await fetch('https://ava-marketing-api.onrender.com/api/user/business-name', {
+                // Use unified auth business name retrieval
+                const apiUrl = window.appConfig?.getApiUrl('pwa') || 'https://ava-pwa-backend.onrender.com/api';
+                const response = await fetch(`${apiUrl}/auth/user/business-name`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -1895,7 +1900,9 @@
                 console.log('Password length:', password.length);
                 
                 // Call marketing website login API
-                const response = await fetch('https://ava-marketing-api.onrender.com/api/auth/login', {
+                // Use unified auth login instead of direct API calls
+                const apiUrl = window.appConfig?.getApiUrl('pwa') || 'https://ava-pwa-backend.onrender.com/api';
+                const response = await fetch(`${apiUrl}/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

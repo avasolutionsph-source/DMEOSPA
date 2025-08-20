@@ -4,8 +4,8 @@ class UnifiedAuth {
         this.currentUser = null;
         this.authToken = null;
         this.isLoggedIn = false;
-        this.apiBaseUrl = 'http://localhost:4000/api'; // PWA Backend
-        this.marketingApiUrl = 'https://ava-marketing-api.onrender.com/api'; // Marketing API
+        this.apiBaseUrl = (window.appConfig?.getApiUrl('pwa')) || 'https://ava-pwa-backend.onrender.com/api';
+        // Marketing API deprecated - now using PWA backend only
         this.onAuthChange = null; // Callback for auth state changes
         
         console.log('🔐 Unified Auth System initialized');

@@ -1,9 +1,8 @@
 // Therapist Portal JavaScript - MongoDB Auth Enabled
 (function() {
     const isLocal = ['localhost','127.0.0.1'].some(h => location.hostname.startsWith(h));
-    const pwaBackendApi = 'http://localhost:4000/api'; // MongoDB-enabled PWA Backend
-    const marketingApi = 'https://marketing-website-sz2b.onrender.com'; // Deployed Marketing API
-    const apiBase = () => isLocal ? pwaBackendApi : `${marketingApi}/api`;
+    const pwaBackendApi = 'https://ava-pwa-backend.onrender.com/api'; // PWA Backend 
+    const apiBase = () => isLocal ? 'http://localhost:4000/api' : pwaBackendApi;
 
     let currentTherapist = null;
     let todayBookings = [];
