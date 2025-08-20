@@ -15,11 +15,24 @@ class UnifiedAuth {
     async init() {
         console.log('🚀 Initializing Unified Auth...');
         
+        // Disable any competing auth systems first
+        window.disableOldAuthSystems();
+        
         // Check for existing session
-        await this.checkExistingSession();
+        const sessionRestored = await this.checkExistingSession();
+        console.log('🔍 Session restoration result:', sessionRestored);
         
         // Set up event listeners
         this.setupEventListeners();
+        
+        // Add page visibility change handler to prevent logout on tab switches
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                console.log('👁️ Page hidden - maintaining auth state');
+            } else {
+                console.log('👁️ Page visible - auth state maintained');
+            }
+        });
         
         console.log('✅ Unified Auth ready');
     }
@@ -341,8 +354,17 @@ class UnifiedAuth {
         if (user.role !== 'owner' && user.businessId) {
             console.log('🔄 Branch account detected, syncing business data...');
             try {
-                await db.syncBranchAccountData(user);
-                console.log('✅ Branch data sync completed');
+                // Ensure database is ready before syncing
+                if (window.ensureDBInit) {
+                    await window.ensureDBInit();
+                }
+                
+                if (db && db.syncBranchAccountData) {
+                    await db.syncBranchAccountData(user);
+                    console.log('✅ Branch data sync completed');
+                } else {
+                    console.warn('⚠️ Database not ready for branch sync');
+                }
             } catch (syncError) {
                 console.warn('⚠️ Branch data sync failed (non-critical):', syncError);
             }
@@ -418,7 +440,7 @@ class UnifiedAuth {
         const navPermissions = {
             'dashboard': permissions.dashboard,
             'pos': permissions.pos,
-            'expenses': permissions.pos, // POS users can view expenses
+            'expenses': permissions.expenses || permissions.pos, // Use explicit expenses permission or fallback to POS
             'bookings': permissions.bookings,
             'products': permissions.products,
             'inventory': permissions.inventory,
@@ -622,12 +644,32 @@ class UnifiedAuth {
 // Create global instance
 window.unifiedAuth = new UnifiedAuth();
 
+// Disable old auth systems immediately
+window.disableOldAuthSystems = function() {
+    // Disable old auth systems that might conflict
+    if (window.authSystem) {
+        window.authSystem.isLoggedIn = false;
+        window.authSystem = null;
+        console.log('🚫 Disabled old authSystem');
+    }
+    if (window.permanentAuth) {
+        window.permanentAuth = null;
+        console.log('🚫 Disabled permanentAuth');
+    }
+    if (window.universalLogin) {
+        window.universalLogin = null;
+        console.log('🚫 Disabled universalLogin');
+    }
+};
+
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
+        window.disableOldAuthSystems();
         setTimeout(() => window.unifiedAuth.init(), 500);
     });
 } else {
+    window.disableOldAuthSystems();
     setTimeout(() => window.unifiedAuth.init(), 500);
 }
 
@@ -635,4 +677,24 @@ if (document.readyState === 'loading') {
 window.login = () => window.unifiedAuth.showLoginModal();
 window.logout = () => window.unifiedAuth.logout();
 
+// Debug function to check auth state
+window.debugAuth = function() {
+    console.log('🔍 AUTH DEBUG:', {
+        unifiedAuthExists: !!window.unifiedAuth,
+        isLoggedIn: window.unifiedAuth?.isLoggedIn,
+        currentUser: window.unifiedAuth?.currentUser,
+        authToken: !!window.unifiedAuth?.authToken,
+        localStorageToken: !!localStorage.getItem('auth_token'),
+        sessionStorageToken: !!sessionStorage.getItem('auth_token'),
+        localStorageUser: !!localStorage.getItem('auth_user'),
+        sessionStorageUser: !!sessionStorage.getItem('auth_user'),
+        conflictingAuthSystems: {
+            authSystem: !!window.authSystem,
+            permanentAuth: !!window.permanentAuth,
+            universalLogin: !!window.universalLogin
+        }
+    });
+};
+
 console.log('🔐 Unified Auth System loaded');
+console.log('💡 Use window.debugAuth() to troubleshoot login issues');

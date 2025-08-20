@@ -1669,12 +1669,13 @@
                         }, 100);
                     }
                     
-                    // Restore auth system state if available
-                    if (window.authSystem && userToken) {
-                        console.log('🔐 Restoring auth system state');
-                        window.authSystem.authToken = userToken;
-                        window.authSystem.currentUser = user;
-                        window.authSystem.isLoggedIn = true;
+                    // Use unified auth system only
+                    if (window.unifiedAuth && userToken && user) {
+                        console.log('🔐 Setting unified auth state');
+                        window.unifiedAuth.authToken = userToken;
+                        window.unifiedAuth.currentUser = user;
+                        window.unifiedAuth.isLoggedIn = true;
+                        window.unifiedAuth.updateUI();
                     }
                     
                     // Fetch and update business name from server

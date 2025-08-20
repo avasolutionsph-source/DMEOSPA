@@ -5,7 +5,8 @@
   "main": "server.js",
 
   "scripts": {
-    "build": "echo 'Static site deployment ready'",
+    "build": "echo 'Static site deployment ready - no build process needed'",
+    "postinstall": "echo 'Dependencies installed successfully'",
     "start": "echo 'This is a static site - no server needed'",
     "test": "echo 'No tests needed for static site'",
     "dev": "echo 'Use live server for local development'",

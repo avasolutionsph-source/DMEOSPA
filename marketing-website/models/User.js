@@ -60,6 +60,23 @@ const userSchema = new mongoose.Schema({
     enum: ['owner','employee','receptionist','therapist','manager','admin','customer','superAdmin'],
     default: 'customer'
   },
+  
+  // Permissions by role (for PWA compatibility)
+  permissions: {
+    dashboard: { type: Boolean, default: true },
+    pos: { type: Boolean, default: true },
+    inventory: { type: Boolean, default: true },
+    employees: { type: Boolean, default: true },
+    bookings: { type: Boolean, default: true },
+    products: { type: Boolean, default: true },
+    rooms: { type: Boolean, default: true },
+    settings: { type: Boolean, default: true },
+    analytics: { type: Boolean, default: true },
+    chatbot: { type: Boolean, default: true },
+    therapistPortal: { type: Boolean, default: false },
+    timer: { type: Boolean, default: false },
+    expenses: { type: Boolean, default: true }
+  },
 
   // Business ownership/affiliation
   businessId: { type: String }, // for owners: equals _id; for employees: owner's _id
@@ -197,6 +214,70 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 // Get full name
 userSchema.virtual('fullName').get(function() {
   return `${this.firstName} ${this.lastName}`;
+});
+
+// Set permissions based on role
+userSchema.methods.setRolePermissions = function() {
+  const rolePermissions = {
+    owner: {
+      dashboard: true, pos: true, inventory: true, employees: true,
+      bookings: true, products: true, rooms: true, settings: true,
+      analytics: true, chatbot: true, therapistPortal: false, timer: false,
+      expenses: true
+    },
+    manager: {
+      dashboard: true, pos: true, inventory: true, employees: true,
+      bookings: true, products: true, rooms: true, settings: true,
+      analytics: true, chatbot: false, therapistPortal: false, timer: false,
+      expenses: true
+    },
+    therapist: {
+      dashboard: true, pos: false, inventory: false, employees: false,
+      bookings: true, products: false, rooms: false, settings: true,
+      analytics: false, chatbot: false, therapistPortal: true, timer: true,
+      expenses: false
+    },
+    receptionist: {
+      dashboard: true, pos: true, inventory: false, employees: false,
+      bookings: true, products: false, rooms: true, settings: false,
+      analytics: false, chatbot: false, therapistPortal: false, timer: false,
+      expenses: true
+    },
+    employee: {
+      dashboard: true, pos: true, inventory: false, employees: false,
+      bookings: true, products: false, rooms: false, settings: false,
+      analytics: false, chatbot: false, therapistPortal: false, timer: false,
+      expenses: true
+    },
+    customer: {
+      dashboard: false, pos: false, inventory: false, employees: false,
+      bookings: true, products: false, rooms: false, settings: false,
+      analytics: false, chatbot: false, therapistPortal: false, timer: false,
+      expenses: false
+    },
+    admin: {
+      dashboard: true, pos: true, inventory: true, employees: true,
+      bookings: true, products: true, rooms: true, settings: true,
+      analytics: true, chatbot: true, therapistPortal: false, timer: false,
+      expenses: true
+    },
+    superAdmin: {
+      dashboard: true, pos: true, inventory: true, employees: true,
+      bookings: true, products: true, rooms: true, settings: true,
+      analytics: true, chatbot: true, therapistPortal: false, timer: false,
+      expenses: true
+    }
+  };
+
+  this.permissions = rolePermissions[this.role] || rolePermissions.customer;
+};
+
+// Auto-set permissions before save
+userSchema.pre('save', function(next) {
+  if (this.isModified('role') || this.isNew) {
+    this.setRolePermissions();
+  }
+  next();
 });
 
 // Indexes

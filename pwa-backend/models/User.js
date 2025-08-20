@@ -79,7 +79,8 @@ const userSchema = new mongoose.Schema({
     analytics: { type: Boolean, default: true },
     chatbot: { type: Boolean, default: true },
     therapistPortal: { type: Boolean, default: false },
-    timer: { type: Boolean, default: false }
+    timer: { type: Boolean, default: false },
+    expenses: { type: Boolean, default: true }
   },
   
   // Therapist-specific data
@@ -167,27 +168,32 @@ userSchema.methods.setRolePermissions = function() {
     owner: {
       dashboard: true, pos: true, inventory: true, employees: true,
       bookings: true, products: true, rooms: true, settings: true,
-      analytics: true, chatbot: true, therapistPortal: false, timer: false
+      analytics: true, chatbot: true, therapistPortal: false, timer: false,
+      expenses: true // Explicitly add expenses permission
     },
     manager: {
       dashboard: true, pos: true, inventory: true, employees: true,
       bookings: true, products: true, rooms: true, settings: true,
-      analytics: true, chatbot: false, therapistPortal: false, timer: false
+      analytics: true, chatbot: false, therapistPortal: false, timer: false,
+      expenses: true // Explicitly add expenses permission
     },
     therapist: {
       dashboard: true, pos: false, inventory: false, employees: false,
       bookings: true, products: false, rooms: false, settings: true,
-      analytics: false, chatbot: false, therapistPortal: true, timer: true
+      analytics: false, chatbot: false, therapistPortal: true, timer: true,
+      expenses: false // Therapists don't see expenses
     },
     receptionist: {
       dashboard: true, pos: true, inventory: false, employees: false,
       bookings: true, products: false, rooms: true, settings: false,
-      analytics: false, chatbot: false, therapistPortal: false, timer: false
+      analytics: false, chatbot: false, therapistPortal: false, timer: false,
+      expenses: true // Receptionists can see expenses (they handle payments)
     },
     employee: {
       dashboard: true, pos: true, inventory: false, employees: false,
       bookings: true, products: false, rooms: false, settings: false,
-      analytics: false, chatbot: false, therapistPortal: false, timer: false
+      analytics: false, chatbot: false, therapistPortal: false, timer: false,
+      expenses: true // Employees can see expenses (they might add them)
     }
   };
 

@@ -415,21 +415,25 @@ class App {
         return this.businessConfig?.modules?.[moduleName] || false;
     }
 
-    // Check if user is already logged in
+    // Check if user is already logged in (unified auth)
     checkIfUserLoggedIn() {
-        // Check multiple possible login state indicators
-        const userToken = localStorage.getItem('userToken') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        const userData = localStorage.getItem('userData') || localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
-        const isLoggedIn = localStorage.getItem('isLoggedIn');
+        // Use unified auth system to check login state
+        if (window.unifiedAuth && window.unifiedAuth.isUserLoggedIn) {
+            const isLoggedIn = window.unifiedAuth.isUserLoggedIn();
+            console.log('🔐 Unified auth login state:', isLoggedIn);
+            return isLoggedIn;
+        }
         
-        // If any login indicators exist, user is likely logged in
-        const hasLoginData = !!(userToken || userData || isLoggedIn === 'true');
+        // Fallback: Check unified auth storage keys
+        const authToken = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+        const authUser = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
+        
+        const hasLoginData = !!(authToken && authUser);
         
         if (hasLoginData) {
-            console.log('Detected existing login state:', {
-                hasToken: !!userToken,
-                hasUserData: !!userData,
-                isLoggedIn: isLoggedIn
+            console.log('✅ Detected unified auth login state:', {
+                hasToken: !!authToken,
+                hasUserData: !!authUser
             });
         }
         
