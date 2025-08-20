@@ -1,6 +1,7 @@
-// SIMPLE LOGIN - No Modal, Direct Form
+// SIMPLE LOGIN - DISABLED (Replaced by unified-auth.js)
 (function() {
-    console.log('🔥 SIMPLE LOGIN: Creating direct login form...');
+    console.log('⚠️  SIMPLE LOGIN: DISABLED - Using unified MongoDB authentication instead');
+    return; // Exit early - this system is disabled
     
     // Remove the broken modal completely
     function removeModal() {
