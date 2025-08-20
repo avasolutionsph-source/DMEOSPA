@@ -1,7 +1,7 @@
 (function(){
 	const isLocal = ['localhost','127.0.0.1'].some(h => location.hostname.startsWith(h));
 	const pwaBackendApi = 'http://localhost:4000/api'; // MongoDB-enabled PWA Backend
-	const marketingApi = 'https://ava-pwa-backend.onrender.com'; // Use existing PWA backend
+	const marketingApi = 'https://ava-solutions-marketing.netlify.app'; // Use Marketing Website API
 	const authApi = isLocal ? pwaBackendApi : marketingApi; // Use PWA backend for everything
 	const qs = sel => document.querySelector(sel);
 	

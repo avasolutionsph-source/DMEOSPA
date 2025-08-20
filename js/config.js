@@ -6,6 +6,8 @@ class ConfigManager {
     constructor() {
         this.environment = this.detectEnvironment();
         this.config = this.loadConfig();
+        this.version = this.getConfigVersion();
+        this.lastReload = Date.now();
     }
 
     detectEnvironment() {
@@ -154,6 +156,78 @@ class ConfigManager {
     clearOverrides() {
         localStorage.removeItem('config_overrides');
         this.config = this.loadConfig();
+    }
+
+    // Cache-busting and force reload methods
+    getConfigVersion() {
+        // Use a combination of timestamp and current config hash for versioning
+        const configStr = JSON.stringify(this.config || {});
+        const hash = this.simpleHash(configStr);
+        return `${hash}-${Date.now()}`;
+    }
+
+    simpleHash(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        return Math.abs(hash).toString(36);
+    }
+
+    forceReload() {
+        // Clear any cached configurations
+        this.clearCache();
+        
+        // Reload configuration
+        this.config = this.loadConfig();
+        this.version = this.getConfigVersion();
+        this.lastReload = Date.now();
+        
+        console.log('🔄 Configuration forcefully reloaded:', {
+            environment: this.environment,
+            version: this.version,
+            timestamp: new Date(this.lastReload).toISOString()
+        });
+        
+        // Emit event for other components to react
+        window.dispatchEvent(new CustomEvent('config:reloaded', { 
+            detail: { config: this.config, version: this.version } 
+        }));
+        
+        return this.config;
+    }
+
+    clearCache() {
+        // Clear localStorage cache items that might interfere
+        const cacheKeys = [
+            'config_overrides',
+            'auth_token_cache',
+            'api_cache',
+            'unified_auth_cache'
+        ];
+        
+        cacheKeys.forEach(key => {
+            try {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            } catch (e) {
+                // Ignore errors
+            }
+        });
+        
+        // Clear any window-level caches
+        if (window.dataService && window.dataService.clearCache) {
+            window.dataService.clearCache();
+        }
+    }
+
+    // Get cache-busted API URL with version parameter
+    getApiUrlWithCacheBuster(service = 'pwa') {
+        const baseUrl = this.config.api[service];
+        const separator = baseUrl.includes('?') ? '&' : '?';
+        return `${baseUrl}${separator}v=${this.version}&_t=${Date.now()}`;
     }
 
     // Get all config for debugging

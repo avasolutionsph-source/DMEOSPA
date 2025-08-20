@@ -1504,7 +1504,7 @@
             if (!email) { if(err) err.style.display='none'; return; }
             try{
                 // Check email uniqueness across entire system
-                const apiUrl = window.appConfig?.getApiUrl('pwa') || 'https://ava-pwa-backend.onrender.com/api';
+                const apiUrl = window.appConfig?.getApiUrl('pwa') || 'https://ava-solutions-marketing.netlify.app/api';
                 const res = await fetch(`${apiUrl}/auth/check-email?email=${encodeURIComponent(email)}`);
                 
                 if (res.ok) {
@@ -1851,7 +1851,7 @@
             try {
                 console.log('Fetching real business name from database...');
                 // Use unified auth business name retrieval
-                const apiUrl = window.appConfig?.getApiUrl('pwa') || 'https://ava-pwa-backend.onrender.com/api';
+                const apiUrl = window.appConfig?.getApiUrl('pwa') || 'https://ava-solutions-marketing.netlify.app/api';
                 const response = await fetch(`${apiUrl}/auth/user/business-name`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -1926,7 +1926,7 @@
                 
                 // Call marketing website login API
                 // Use unified auth login instead of direct API calls
-                const apiUrl = window.appConfig?.getApiUrl('pwa') || 'https://ava-pwa-backend.onrender.com/api';
+                const apiUrl = window.appConfig?.getApiUrl('pwa') || 'https://ava-solutions-marketing.netlify.app/api';
                 const response = await fetch(`${apiUrl}/auth/login`, {
                     method: 'POST',
                     headers: {
@@ -2316,6 +2316,8 @@
     </script>
     
     <!-- Architecture Layer Scripts - Load First -->
+    <!-- Cache Buster - Must load before config to clear old cached URLs -->
+    <script src="js/cache-buster.js"></script>
     <script src="js/config.js"></script>
     <script src="js/constants.js"></script>
     <script src="js/services/eventBus.js"></script>

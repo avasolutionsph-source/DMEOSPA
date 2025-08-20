@@ -1,7 +1,7 @@
 // Therapist Portal JavaScript - MongoDB Auth Enabled
 (function() {
     const isLocal = ['localhost','127.0.0.1'].some(h => location.hostname.startsWith(h));
-    const pwaBackendApi = 'https://ava-pwa-backend.onrender.com/api'; // PWA Backend 
+    const pwaBackendApi = 'https://ava-solutions-marketing.netlify.app/api'; // Marketing Website API (unified backend) 
     const apiBase = () => isLocal ? 'http://localhost:4000/api' : pwaBackendApi;
 
     let currentTherapist = null;

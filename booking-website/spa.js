@@ -1,6 +1,6 @@
 (function(){
 	const isLocal = ['localhost','127.0.0.1'].some(h => location.hostname.startsWith(h));
-	const pwaBackendApi = 'https://ava-pwa-backend.onrender.com'; // Use existing PWA backend
+	const pwaBackendApi = 'https://ava-solutions-marketing.netlify.app'; // Use Marketing Website API
 	// Use PWA backend for everything - no more marketing API needed
 	let apiHost = pwaBackendApi;
 	const apiBase = () => `${apiHost}/api`;
