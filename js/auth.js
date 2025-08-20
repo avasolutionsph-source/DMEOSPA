@@ -576,11 +576,35 @@ class AuthSystem {
                 }
             }
 
-            // Add user ID to business config
-            const businessConfig = await db.get('settings', 'businessConfig');
-            if (businessConfig) {
-                businessConfig.value.userId = this.currentUser.id;
-                await db.update('settings', businessConfig);
+            // Add owner user ID to business config so API calls can use x-user-id correctly.
+            // For owner accounts, use their own id. For employee accounts, try to decode ownerId from JWT.
+            try {
+                const businessConfig = await db.get('settings', 'businessConfig');
+                if (businessConfig) {
+                    let ownerIdToStore = null;
+                    const role = (this.currentUser.role || '').toLowerCase();
+                    if (role === 'owner') {
+                        ownerIdToStore = String(this.currentUser.id);
+                    } else {
+                        // Decode JWT payload for ownerId if available
+                        const tkn = this.authToken || localStorage.getItem('userToken') || localStorage.getItem('authToken');
+                        if (tkn && tkn.split('.').length === 3) {
+                            try {
+                                const payload = JSON.parse(atob(tkn.split('.')[1]));
+                                if (payload && payload.ownerId) ownerIdToStore = String(payload.ownerId);
+                            } catch(_) {}
+                        }
+                        // Fallback: keep existing userId if present
+                        if (!ownerIdToStore && businessConfig.value?.userId) ownerIdToStore = String(businessConfig.value.userId);
+                    }
+                    if (ownerIdToStore) {
+                        businessConfig.value.userId = ownerIdToStore;
+                        await db.update('settings', businessConfig);
+                        console.log('Updated businessConfig.userId to owner:', ownerIdToStore);
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to set business owner id in settings', e);
             }
 
         } catch (error) {
