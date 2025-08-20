@@ -1503,14 +1503,39 @@
             const err = document.getElementById('employeeEmailError');
             if (!email) { if(err) err.style.display='none'; return; }
             try{
-                // Use unified auth instead of direct marketing API calls
-                const res = window.unifiedAuth ? 
-                    await window.unifiedAuth.checkEmailExists(email) : 
-                    { ok: true, json: () => ({ exists: false }) };
-                const data = await res.json();
-                if (data.exists) { if(err){ err.style.display='block'; err.textContent='Email already in use'; } }
-                else { if(err) err.style.display='none'; }
-            }catch(_){ if(err) err.style.display='none'; }
+                // Check email uniqueness across entire system
+                const apiUrl = window.appConfig?.getApiUrl('pwa') || 'https://ava-pwa-backend.onrender.com/api';
+                const res = await fetch(`${apiUrl}/auth/check-email?email=${encodeURIComponent(email)}`);
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.exists) { 
+                        if(err){ 
+                            err.style.display='block'; 
+                            err.textContent = data.message || 'Email already in use';
+                            err.style.color = '#dc3545';
+                        } 
+                    } else { 
+                        if(err) {
+                            err.style.display='block';
+                            err.textContent = 'Email is available';
+                            err.style.color = '#28a745';
+                        }
+                    }
+                } else {
+                    if(err) {
+                        err.style.display='block';
+                        err.textContent = 'Unable to verify email availability';
+                        err.style.color = '#ffc107';
+                    }
+                }
+            }catch(_){ 
+                if(err) {
+                    err.style.display='block';
+                    err.textContent = 'Unable to verify email availability';
+                    err.style.color = '#ffc107';
+                }
+            }
         }
         (function(){
             var perf=(window.performanceProfile||'balanced');

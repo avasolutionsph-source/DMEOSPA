@@ -3,7 +3,79 @@ import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import User from '../models/User.js';
 
+// Import email validator (convert to ES6 import)
+const checkEmailUniqueness = async (email) => {
+  try {
+    // Check in main User collection
+    const existingUser = await User.findOne({ 
+      email: email.toLowerCase() 
+    });
+
+    if (existingUser) {
+      return {
+        exists: true,
+        location: 'user_account',
+        userType: existingUser.role || 'user',
+        message: `Email already registered as ${existingUser.role || 'user'}`
+      };
+    }
+
+    // Check in employees array within user documents
+    const userWithEmployee = await User.findOne({
+      'employees.email': email.toLowerCase()
+    });
+
+    if (userWithEmployee) {
+      return {
+        exists: true,
+        location: 'employee_account', 
+        userType: 'employee',
+        message: 'Email already registered as an employee'
+      };
+    }
+
+    return { exists: false, message: 'Email is available' };
+  } catch (error) {
+    console.error('Email check error:', error);
+    return { exists: false, error: 'Unable to verify email availability' };
+  }
+};
+
 const router = express.Router();
+
+// Check email availability (public endpoint)
+router.get('/check-email', async (req, res) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email parameter is required'
+      });
+    }
+
+    const emailCheck = await checkEmailUniqueness(email);
+    
+    res.json({
+      success: true,
+      exists: emailCheck.exists,
+      available: !emailCheck.exists,
+      message: emailCheck.message,
+      details: emailCheck.exists ? {
+        location: emailCheck.location,
+        userType: emailCheck.userType
+      } : null
+    });
+
+  } catch (error) {
+    console.error('Email check endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error checking email availability'
+    });
+  }
+});
 
 // Register new user
 router.post('/register', [
@@ -25,12 +97,14 @@ router.post('/register', [
 
     const { email, password, firstName, lastName, businessName, phone, role = 'owner' } = req.body;
 
-    // Check if user exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ 
+    // Check email uniqueness across entire system
+    const emailCheck = await checkEmailUniqueness(email);
+    if (emailCheck.exists) {
+      return res.status(409).json({ 
         success: false,
-        error: 'Email already in use' 
+        error: 'Email already in use',
+        message: emailCheck.message,
+        details: emailCheck
       });
     }
 
@@ -42,11 +116,13 @@ router.post('/register', [
       lastName,
       businessName,
       phone,
-      role,
+      role: 'owner', // Force new registrations to be business owners
       subscriptionPlan: 'pro',
       subscriptionStatus: 'active',
-      businessId: role === 'owner' ? undefined : undefined, // Will be set after save for owners
-      isActive: true
+      accountType: 'business_owner', // Main business account
+      businessId: undefined, // Will be set to their own ID after save
+      isActive: true,
+      isBranch: false // Primary business, not a branch
     });
 
     // For owners, set businessId to their own ID after saving
