@@ -589,6 +589,117 @@ window.loadBookings = async function() {
 };
 console.log('✅ window.loadBookings is now available:', typeof window.loadBookings);
 
+// Direct communication handler for booking website
+window.addEventListener('message', async (event) => {
+	// Only accept messages from booking website
+	const allowedOrigins = [
+		'https://ava-solutions-booking.netlify.app',
+		'https://avaphbooking.netlify.app'
+	];
+	
+	if (!allowedOrigins.includes(event.origin)) return;
+	
+	console.log('📨 Received message from booking website:', event.data);
+	
+	if (event.data.type === 'SUBMIT_BOOKING') {
+		try {
+			const booking = event.data.booking;
+			console.log('📝 Processing direct booking from website:', booking);
+			
+			// Store booking directly in PWA database
+			const bookingToStore = {
+				source: booking.source || 'booking-website',
+				externalId: 'booking_' + Date.now(),
+				date: booking.startTime,
+				serviceId: booking.serviceId,
+				serviceName: booking.serviceName,
+				employeeId: booking.employeeId,
+				employeeName: booking.employeeName,
+				customerName: booking.customer?.name || '',
+				customerPhone: booking.customer?.phone || '',
+				customerEmail: booking.customer?.email || '',
+				roomNumber: '', // Will be assigned later
+				status: booking.status || 'confirmed',
+				storeId: booking.storeId || 'default',
+				partySize: booking.partySize || 1,
+				duration: booking.durationMins || 60,
+				notes: booking.notes || '',
+				createdAt: new Date().toISOString(),
+				modifiedAt: new Date().toISOString()
+			};
+			
+			await db.add('bookings', bookingToStore);
+			console.log('✅ Booking stored in PWA database:', bookingToStore);
+			
+			// Refresh bookings if on bookings page
+			if (window.app?.currentPage === 'bookings') {
+				await bookingsManager.init();
+			}
+			
+			// Send success response back to booking website
+			event.source.postMessage({
+				type: 'BOOKING_SUCCESS',
+				booking: bookingToStore
+			}, event.origin);
+			
+		} catch (error) {
+			console.error('❌ Failed to store booking in PWA:', error);
+			event.source.postMessage({
+				type: 'BOOKING_ERROR',
+				error: error.message
+			}, event.origin);
+		}
+	}
+	
+	if (event.data.type === 'GET_PRODUCTS') {
+		try {
+			console.log('📦 Fetching products for booking website...');
+			const products = await db.getAll('products');
+			console.log('✅ Sending products to booking website:', products.length);
+			
+			event.source.postMessage({
+				type: 'PRODUCTS_RESPONSE',
+				products: products || []
+			}, event.origin);
+			
+		} catch (error) {
+			console.error('❌ Failed to get products:', error);
+			event.source.postMessage({
+				type: 'PRODUCTS_RESPONSE',
+				products: []
+			}, event.origin);
+		}
+	}
+	
+	if (event.data.type === 'GET_EMPLOYEES') {
+		try {
+			console.log('👥 Fetching employees for booking website...');
+			const employees = await db.getAll('employees');
+			console.log('✅ Sending employees to booking website:', employees.length);
+			
+			event.source.postMessage({
+				type: 'EMPLOYEES_RESPONSE',
+				employees: employees || []
+			}, event.origin);
+			
+		} catch (error) {
+			console.error('❌ Failed to get employees:', error);
+			event.source.postMessage({
+				type: 'EMPLOYEES_RESPONSE',
+				employees: []
+			}, event.origin);
+		}
+	}
+});
+
+// Send PWA ready signal when page loads
+window.addEventListener('load', () => {
+	if (window.opener) {
+		console.log('📡 Sending PWA ready signal to booking website');
+		window.opener.postMessage({ type: 'PWA_READY' }, '*');
+	}
+});
+
 // Debug function to test therapist view
 window.testTherapistView = function() {
 	console.log('🧪 Testing therapist view...');
