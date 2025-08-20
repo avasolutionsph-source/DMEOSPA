@@ -3,31 +3,103 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Ava Booking</title>
+	<title>Ava Booking - Fresh Start</title>
 	<link rel="stylesheet" href="/style.css">
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+	<style>
+		.fresh-start {
+			text-align: center;
+			padding: 3rem 2rem;
+			max-width: 600px;
+			margin: 0 auto;
+		}
+		.clear-btn {
+			background: #dc3545;
+			color: white;
+			padding: 1rem 2rem;
+			border: none;
+			border-radius: 8px;
+			cursor: pointer;
+			font-weight: bold;
+			margin: 1rem;
+			font-size: 1rem;
+		}
+		.clear-btn:hover {
+			background: #c82333;
+		}
+		.info-box {
+			background: #e7f3ff;
+			border: 1px solid #b3d9ff;
+			padding: 1.5rem;
+			border-radius: 8px;
+			margin: 2rem 0;
+		}
+	</style>
 </head>
 <body>
 	<header>
 		<div class="row">
 			<div class="brand"><span class="dot"></span> Ava Booking</div>
 			<div id="authArea">
+				<button class="clear-btn" onclick="clearAllData()">🧹 Clear All Data</button>
 				<a id="loginBtn" class="btn" href="/login.html">Login</a>
-				<a id="ownerBookingsLink" class="btn" style="display:none" href="/owner.html">Owner Dashboard</a>
-				<button id="logoutBtn" class="btn" style="display:none">Logout</button>
 			</div>
 		</div>
 	</header>
+	
 	<main class="container">
-		<!-- Embedded login modal for booking site -->
-		<!-- Login now lives on /login.html -->
-		<section id="businessSection" class="card">
-			<div class="section-title"><h2>Choose a Spa</h2><small class="sub">Select a spa to book.</small></div>
-			<div id="businessList" class="biz-list"></div>
-			<p class="sub" id="businessHint" style="margin-top:8px">Tap a spa to continue.</p>
-		</section>
+		<div class="fresh-start">
+			<h1>🧹 Fresh Start Mode</h1>
+			<p>Ready to clear all cached booking data and start completely fresh.</p>
+			
+			<div class="info-box">
+				<h3>📋 What Will Be Cleared:</h3>
+				<ul style="text-align: left;">
+					<li>All cached spa/business listings</li>
+					<li>Stored booking preferences</li>
+					<li>Authentication data</li>
+					<li>Browser cache and storage</li>
+					<li>Any temporary session data</li>
+				</ul>
+				<p><strong>Note:</strong> This only clears data, not the code.</p>
+			</div>
+			
+			<button class="clear-btn" onclick="clearAllData()">
+				🧹 CLEAR ALL BOOKING DATA
+			</button>
+			
+			<div style="margin-top: 2rem;">
+				<a href="/spa.html" class="btn">← Back to Spa App</a>
+			</div>
+		</div>
 	</main>
-	<script src="/main.js"></script>
+	
+	<script src="/emergency-clear.js"></script>
+	
+	<script>
+		function clearAllData() {
+			if (confirm('Are you sure you want to clear ALL booking data? This cannot be undone.')) {
+				console.log('🚨 User confirmed - clearing all data...');
+				
+				// Run the emergency clear
+				if (window.clearBookingData) {
+					window.clearBookingData();
+				} else {
+					// Manual clear as fallback
+					localStorage.clear();
+					sessionStorage.clear();
+					alert('✅ Data cleared! Page will refresh.');
+					window.location.reload();
+				}
+			}
+		}
+		
+		// Auto-clear on page load if requested
+		const params = new URLSearchParams(location.search);
+		if (params.get('clear') === 'true') {
+			setTimeout(clearAllData, 1000);
+		}
+	</script>
 </body>
 </html>
