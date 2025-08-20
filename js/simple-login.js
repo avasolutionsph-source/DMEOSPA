@@ -3,12 +3,14 @@
 
 class SimpleLogin {
     constructor() {
+        // Try edge function first, then fallback to regular API
+        this.edgeApiUrl = 'https://ava-solutions-marketing.netlify.app/api/edge';
         this.apiUrl = 'https://ava-solutions-marketing.netlify.app/api';
         this.isLoggedIn = false;
         this.currentUser = null;
         this.authToken = null;
         
-        console.log('🔑 Simple Login System initialized');
+        console.log('🔑 Simple Login System initialized with Edge Functions');
     }
 
     // Create and show simple login modal
@@ -157,8 +159,8 @@ class SimpleLogin {
                 localStorage.setItem('offlineMode', 'false');
             }
 
-            // Create request with detailed logging
-            const requestUrl = `${this.apiUrl}/auth/login`;
+            // Create request with detailed logging - Try Edge Function first
+            const requestUrl = `${this.edgeApiUrl}/auth/login`;
             const requestOptions = {
                 method: 'POST',
                 headers: {
@@ -299,9 +301,21 @@ class SimpleLogin {
         console.log('🔄 Attempting alternative login methods...');
         
         const alternatives = [
+            // Try Edge Function FIRST - most reliable
+            async () => {
+                console.log('🔄 Method 1: Trying Netlify Edge Function...');
+                return await fetch(`${this.edgeApiUrl}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+            },
             // Try without cache headers
             async () => {
-                console.log('🔄 Trying without cache-control headers...');
+                console.log('🔄 Method 2: Trying regular API without cache headers...');
                 return await fetch(`${this.apiUrl}/auth/login`, {
                     method: 'POST',
                     headers: {
@@ -313,7 +327,7 @@ class SimpleLogin {
             },
             // Try with different endpoint
             async () => {
-                console.log('🔄 Trying direct function endpoint...');
+                console.log('🔄 Method 3: Trying direct function endpoint...');
                 return await fetch('https://ava-solutions-marketing.netlify.app/.netlify/functions/api/auth/login', {
                     method: 'POST',
                     headers: {
@@ -325,11 +339,10 @@ class SimpleLogin {
             },
             // Try JSONP-style approach
             async () => {
-                console.log('🔄 Trying with different mode...');
+                console.log('🔄 Method 4: Trying with no-cors mode...');
                 return await fetch(`${this.apiUrl}/auth/login`, {
                     method: 'POST',
-                    mode: 'cors',
-                    credentials: 'omit',
+                    mode: 'no-cors',
                     headers: {
                         'Content-Type': 'application/json'
                     },

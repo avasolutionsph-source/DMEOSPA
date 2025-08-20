@@ -85,6 +85,9 @@
                     <button id="simpleLoginBtn" class="btn btn-success" style="cursor: pointer; z-index: 10; position: relative; margin-top: 5px; background: #28a745; border-color: #28a745;" onclick="window.simpleLogin.showLoginModal();">
                         <i class="fas fa-rocket"></i> Quick Login
                     </button>
+                    <button id="directLoginBtn" class="btn btn-warning" style="cursor: pointer; z-index: 10; position: relative; margin-top: 5px; background: #ffc107; border-color: #ffc107; color: #212529;" onclick="window.directAuth.showLoginModal();">
+                        <i class="fas fa-bolt"></i> Direct Login
+                    </button>
                     <div id="userInfo" style="display: none;" class="user-info">
                         <span id="userName">User</span>
                         <button id="logoutBtn" class="btn btn-secondary">
@@ -2367,6 +2370,8 @@
     <script src="js/database.js"></script>
     <!-- Load unified auth FIRST to prevent logout flicker -->
     <script src="js/unified-auth.js"></script>
+    <!-- Direct Authentication System -->
+    <script src="js/direct-auth.js"></script>
     <!-- Simple Login - Backup reliable login system -->
     <script src="js/simple-login.js"></script>
     <script src="js/api.js"></script>
