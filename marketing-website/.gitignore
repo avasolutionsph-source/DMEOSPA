@@ -5,7 +5,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Environment variables
-#.env
+.env
 .env.local
 .env.development.local
 .env.test.local
@@ -23,35 +23,15 @@ pids
 
 # Coverage directory used by tools like istanbul
 coverage/
+*.lcov
 
-# nyc test coverage
-.nyc_output
+# Build outputs (not needed for static site)
+build/
+dist/
 
-# Dependency directories
-node_modules/
-jspm_packages/
-
-# Optional npm cache directory
-.npm
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# dotenv environment variables file
-#.env
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Cache
+.cache/
+.parcel-cache/
 
 # OS generated files
 .DS_Store
@@ -62,11 +42,13 @@ jspm_packages/
 ehthumbs.db
 Thumbs.db
 
-# Build outputs
-dist/
-build/
-public/build/
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
 # Temporary files
-tmp/
-temp/
+*.tmp
+*.temp

@@ -1,0 +1,11 @@
+# Files to ignore during Netlify build
+server.js
+routes/
+models/
+middleware/
+config/
+scripts/
+package.json
+package-lock.json
+.env*
+node_modules/
