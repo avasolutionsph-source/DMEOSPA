@@ -465,8 +465,6 @@ class EntitlementsSystem {
         // COMPLETELY DISABLED - NO FEATURE SECTION GATING
         console.log('🔓 TESTING MODE: Feature section gating completely disabled');
         return;
-            return;
-        }
 
         // Gate inventory features in POS
         if (!this.can('inventory')) {
