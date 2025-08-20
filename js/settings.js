@@ -578,52 +578,24 @@ class SettingsManager {
                 tokenExists: !!token
             });
 
-            let res, data;
-            let publishEndpoint = '';
-
-            // Try PWA backend first (for local development and unified auth)
-            try {
-                publishEndpoint = `${pwaBackendApi}/auth/publish-catalog`;
-                console.log('🔄 Trying PWA backend:', publishEndpoint);
-                
-                res = await fetch(publishEndpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ products: services, employees })
-                });
-                
-                if (res.ok) {
-                    data = await res.json();
-                    console.log('✅ PWA backend succeeded:', data);
-                } else {
-                    throw new Error(`PWA backend failed: ${res.status}`);
-                }
-            } catch (pwaError) {
-                console.warn('⚠️ PWA backend failed, trying marketing API:', pwaError.message);
-                
-                // Fallback to marketing API
-                try {
-                    publishEndpoint = `${marketingApi}/api/public/publish-catalog`;
-                    console.log('🔄 Trying marketing API:', publishEndpoint);
-                    
-                    res = await fetch(publishEndpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({ products: services, employees })
-                    });
-                    
-                    data = await res.json();
-                    console.log('📥 Marketing API response:', { status: res.status, data });
-                } catch (marketingError) {
-                    throw new Error(`Both endpoints failed. PWA: ${pwaError.message}, Marketing: ${marketingError.message}`);
-                }
-            }
+            // Use PWA backend (both local and deployed)
+            const isLocal = ['localhost','127.0.0.1'].some(h => location.hostname.startsWith(h));
+            const apiUrl = isLocal ? 'http://localhost:4000/api' : 'https://ava-pwa-backend.onrender.com/api';
+            
+            const publishEndpoint = `${apiUrl}/auth/publish-catalog`;
+            console.log('🔄 Publishing to PWA backend:', publishEndpoint);
+            
+            const res = await fetch(publishEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ products: services, employees })
+            });
+            
+            const data = await res.json();
+            console.log('📥 PWA backend response:', { status: res.status, data });
             
             btn.disabled = false; btn.innerHTML = original;
 

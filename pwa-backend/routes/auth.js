@@ -421,6 +421,8 @@ router.post('/publish-catalog', async (req, res) => {
     const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     
     const User = (await import('../models/User.js')).default;
+    const BusinessCatalog = (await import('../models/BusinessCatalog.js')).default;
+    
     const user = await User.findById(decoded.userId);
     if (!user) return res.status(404).json({ success: false, error: 'User not found' });
 
@@ -436,8 +438,8 @@ router.post('/publish-catalog', async (req, res) => {
         category: String(p.category || 'service'),
         duration: Number(p.duration || 0),
         price: Number(p.price || 0),
-        isActive: p.isActive !== false,
-        publishedAt: now
+        description: String(p.description || ''),
+        isActive: p.isActive !== false
       }));
 
     // Sanitize and store employees  
@@ -449,13 +451,32 @@ router.post('/publish-catalog', async (req, res) => {
         email: String(e.email || ''),
         phone: String(e.phone || ''),
         isActive: e.isActive !== false,
-        publishedAt: now
+        canBook: e.canBook !== false
       }));
 
-    // Store in user document
+    // Store in both user document and BusinessCatalog collection
     user.products = sanitizedProducts;
     user.employees = sanitizedEmployees;
     await user.save();
+
+    // Update or create business catalog
+    let catalog = await BusinessCatalog.findOne({ userId: decoded.userId });
+    if (!catalog) {
+      catalog = new BusinessCatalog({
+        userId: decoded.userId,
+        businessName: user.businessName || user.email || 'Spa Business'
+      });
+    }
+
+    catalog.businessName = user.businessName || user.email || 'Spa Business';
+    catalog.businessType = user.businessType || 'spa';
+    catalog.services = sanitizedProducts;
+    catalog.employees = sanitizedEmployees;
+    catalog.isPublished = true;
+    catalog.publishedAt = now;
+    catalog.publishedBy = user.email;
+    
+    await catalog.save();
 
     console.log(`📋 Catalog published for ${user.email}: ${sanitizedProducts.length} products, ${sanitizedEmployees.length} employees`);
 
@@ -476,21 +497,21 @@ router.get('/public/business-catalog/:businessId', async (req, res) => {
   try {
     const { businessId } = req.params;
     
-    const User = (await import('../models/User.js')).default;
-    const business = await User.findById(businessId);
+    const BusinessCatalog = (await import('../models/BusinessCatalog.js')).default;
+    const catalog = await BusinessCatalog.findOne({ userId: businessId });
     
-    if (!business) {
-      return res.status(404).json({ success: false, error: 'Business not found' });
+    if (!catalog || !catalog.isPublished) {
+      return res.status(404).json({ success: false, error: 'Business catalog not found or not published' });
     }
 
-    const services = (business.products || []).filter(service => service.isActive !== false);
-    const employees = (business.employees || []).filter(employee => employee.isActive !== false);
+    const services = (catalog.services || []).filter(service => service.isActive !== false);
+    const employees = (catalog.employees || []).filter(employee => employee.isActive !== false);
     
-    console.log(`📋 Business catalog requested for ${business.businessName}: ${services.length} services, ${employees.length} employees`);
+    console.log(`📋 Business catalog requested for ${catalog.businessName}: ${services.length} services, ${employees.length} employees`);
 
     res.json({ 
       success: true, 
-      businessName: business.businessName,
+      businessName: catalog.businessName,
       services: services,
       employees: employees,
       servicesCount: services.length,
@@ -505,25 +526,23 @@ router.get('/public/business-catalog/:businessId', async (req, res) => {
 // Public: Get all businesses with published catalogs (for booking directory)
 router.get('/public/businesses', async (req, res) => {
   try {
-    const User = (await import('../models/User.js')).default;
+    const BusinessCatalog = (await import('../models/BusinessCatalog.js')).default;
     
-    // Find businesses that have published catalogs (have products or employees)
-    const businesses = await User.find({
-      isActive: true,
-      $or: [
-        { 'products.0': { $exists: true } },  // Has at least one product
-        { 'employees.0': { $exists: true } }  // Has at least one employee
-      ]
-    }).select('_id businessName products employees createdAt').lean();
+    // Find businesses that have published catalogs
+    const catalogs = await BusinessCatalog.find({
+      isPublished: true
+    }).select('userId businessName businessType services employees publishedAt').lean();
 
-    const formattedBusinesses = businesses.map(business => ({
-      id: String(business._id),
-      businessName: business.businessName,
-      name: business.businessName, // Alias for compatibility
-      servicesCount: (business.products || []).length,
-      employeesCount: (business.employees || []).length,
-      hasServices: (business.products || []).length > 0,
-      hasEmployees: (business.employees || []).length > 0
+    const formattedBusinesses = catalogs.map(catalog => ({
+      id: String(catalog.userId),
+      businessName: catalog.businessName,
+      name: catalog.businessName, // Alias for compatibility
+      businessType: catalog.businessType || 'spa',
+      servicesCount: (catalog.services || []).length,
+      employeesCount: (catalog.employees || []).length,
+      hasServices: (catalog.services || []).length > 0,
+      hasEmployees: (catalog.employees || []).length > 0,
+      publishedAt: catalog.publishedAt
     }));
 
     res.json({ 
