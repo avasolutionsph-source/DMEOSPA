@@ -51,7 +51,9 @@ const defaultOrigins = [
   'https://ava-solutions-pwa.netlify.app',
   'https://ava-solutions-booking.netlify.app',
   // New booking site domain(s)
-  'https://avaphbooking.netlify.app'
+  'https://avaphbooking.netlify.app',
+  // PWA backend for cross-origin requests
+  'https://ava-pwa-backend.onrender.com'
 ];
 const envOrigins = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
@@ -1239,6 +1241,70 @@ app.get('/download', (req, res) => {
 // Business Dashboard (for business owners)
 app.get('/business-dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/business-dashboard.html'));
+});
+
+// PWA Authentication Proxy - allows PWA to authenticate through Marketing Website
+app.post('/api/pwa-auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // Try to authenticate using Marketing Website auth
+    const User = (await import('./models/User.js')).default;
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Invalid credentials' 
+      });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Invalid credentials' 
+      });
+    }
+
+    // Generate token for PWA usage
+    const jwt = (await import('jsonwebtoken')).default;
+    const token = jwt.sign(
+      { 
+        userId: user._id, 
+        email: user.email, 
+        role: user.role,
+        businessName: user.businessName,
+        businessType: user.businessType,
+        isMainOwner: user.isMainOwner
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        businessName: user.businessName,
+        role: user.role,
+        businessType: user.businessType,
+        isMainOwner: user.isMainOwner
+      }
+    });
+
+  } catch (error) {
+    console.error('PWA Auth Proxy Error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Authentication failed' 
+    });
+  }
 });
 
 // Removed owner bookings page (bookings are viewed from the booking site)
