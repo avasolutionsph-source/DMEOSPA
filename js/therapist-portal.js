@@ -126,11 +126,28 @@ class TherapistPortalManager {
     async loadPortalPage() {
         console.log('📄 Loading therapist portal page');
         
-        // Update session info
-        await this.updateSessionInfo();
+        // Use cached data if available for faster loading
+        if (window.performanceOptimizer?.getCachedData('therapistSession')) {
+            const cachedSession = window.performanceOptimizer.getCachedData('therapistSession');
+            this.displayCachedSession(cachedSession);
+        }
         
-        // Check portal status
-        this.checkPortalConnection();
+        // Update session info (async)
+        this.updateSessionInfo().then(sessionInfo => {
+            if (window.performanceOptimizer) {
+                window.performanceOptimizer.setCachedData('therapistSession', sessionInfo);
+            }
+        });
+        
+        // Check portal status (non-blocking)
+        setTimeout(() => this.checkPortalConnection(), 100);
+    }
+
+    displayCachedSession(sessionInfo) {
+        const container = document.getElementById('therapistSessionInfo');
+        if (container && sessionInfo) {
+            container.innerHTML = sessionInfo.html;
+        }
     }
 
     async updateSessionInfo() {
@@ -141,7 +158,7 @@ class TherapistPortalManager {
         const activeEmployee = window.roleManager?.activeEmployee;
         const isLoggedIn = window.authSystem?.isLoggedIn;
         
-        container.innerHTML = `
+        const sessionHtml = `
             <div style="background: white; padding: 1rem; border-radius: 8px;">
                 <strong><i class="fas fa-user"></i> Account</strong>
                 <p style="margin: 0.5rem 0 0 0; color: #666;">
@@ -167,6 +184,16 @@ class TherapistPortalManager {
                 </p>
             </div>
         `;
+        
+        container.innerHTML = sessionHtml;
+        
+        // Return session info for caching
+        return {
+            html: sessionHtml,
+            user: currentUser?.email,
+            role: activeEmployee?.role || currentUser?.role,
+            status: isLoggedIn
+        };
     }
 
     checkPortalConnection() {

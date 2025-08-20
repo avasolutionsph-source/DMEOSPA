@@ -1,26 +1,46 @@
 // Service Worker for Offline Functionality - Updated with Enhanced Chatbot
-const CACHE_NAME = 'ava-solutions-v1.7.2';
+const CACHE_NAME = 'ava-solutions-v1.8.0';
 const urlsToCache = [
     './',
     './index.html',
     './styles.css',
     './js/app.js',
     './js/database.js',
+    './js/auth.js',
+    // Core modules - always cached
+    './js/dashboard.js',
+    './js/settings.js',
+    // Lazy-loaded modules - cached when accessed
     './js/pos.js',
     './js/products.js',
     './js/inventory.js',
     './js/employees.js',
     './js/bookings.js',
+    './js/therapist-portal.js',
     './js/rooms.js',
     './js/payroll.js',
     './js/giftcerts.js',
     './js/chatbot.js',
-    './js/dashboard.js',
-    './js/settings.js',
     './js/sync.js',
+    // Therapist portal files
+    './booking-website/therapist.html',
+    './booking-website/therapist.js',
+    './therapist-quick-access.html',
+    // External resources
     'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
     'https://cdn.jsdelivr.net/npm/chart.js'
+];
+
+// Performance-critical files that should be cached immediately
+const CRITICAL_CACHE = [
+    './',
+    './index.html', 
+    './styles.css',
+    './js/app.js',
+    './js/database.js',
+    './js/auth.js',
+    './js/dashboard.js'
 ];
 
 // Install event - cache resources

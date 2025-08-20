@@ -355,52 +355,111 @@ class AuthSystem {
         });
     }
 
-    // Set authentication state
+    // Set authentication state (server-first, minimal local storage)
     async setAuthState(user, token, rememberMe = false) {
-        // Ensure account isolation: if switching users, purge local data first
-        await this.ensureAccountIsolation(user);
+        console.log('🔐 Setting authentication state for user:', user.email, 'Role:', user.role);
+        
+        // Clear any previous user's local data to prevent bleed
+        await this.clearPreviousUserData();
 
         this.currentUser = user;
         this.authToken = token;
         this.isLoggedIn = true;
 
-        // Save to localStorage if remember me is checked
+        // ONLY save the token - never save user data locally
         if (rememberMe) {
             localStorage.setItem('authToken', token);
-            localStorage.setItem('currentUser', JSON.stringify(user));
+            // Remove any cached user data
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('userData');
         } else {
-            // Save to sessionStorage for session-only
             sessionStorage.setItem('authToken', token);
-            sessionStorage.setItem('currentUser', JSON.stringify(user));
+            // Remove any cached user data
+            sessionStorage.removeItem('currentUser');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('userData');
         }
 
         // Update UI
         this.updateAuthUI();
         
-        // Add user ID to all future database operations
+        // Initialize user session with server data
         await this.initializeUserData();
 
-        // Re-load entitlements and gates immediately without requiring manual refresh
+        // Load fresh entitlements from server
         try {
             if (window.entitlementsSystem) {
                 window.entitlementsSystem.token = token;
-                await window.entitlementsSystem.loadEntitlements();
+                // Force fresh load from server
+                await window.entitlementsSystem.loadEntitlementsFromServer();
                 window.entitlementsSystem.updateUI();
             }
-            if (window.app && typeof window.app.onUserLoggedIn === 'function') {
-                window.app.onUserLoggedIn();
-            }
-                            // Apply role restrictions immediately after login
-                setTimeout(() => {
-                    if (window.roleManager && this.currentUser?.role && this.currentUser.role !== 'owner') {
-                        console.log('🔒 Post-login: Applying role restrictions for:', this.currentUser.role);
-                        window.roleManager.gateNavigationByRole();
+            
+            // Apply role restrictions based on server data
+            setTimeout(() => {
+                if (window.roleManager && user.role && user.role !== 'owner') {
+                    console.log('🔒 Applying server-based role restrictions for:', user.role);
+                    
+                    // Set role manager data from server
+                    if (user.role === 'therapist' || user.role === 'manager' || user.role === 'receptionist') {
+                        window.roleManager.activeEmployee = {
+                            id: user.id || user.employeeId,
+                            name: user.name || user.employeeName || user.firstName,
+                            role: user.role
+                        };
+                        // Save role session with server data
+                        localStorage.setItem('activeEmployeeRole', JSON.stringify(window.roleManager.activeEmployee));
                     }
-                }, 50);
-                
-                // Auto refresh to ensure menus, caches, and SW pick up session immediately  
-                setTimeout(() => { try { window.location.reload(true); } catch(_) { window.location.reload(); } }, 1000);
-        } catch(_) {}
+                    
+                    window.roleManager.gateNavigationByRole();
+                }
+            }, 100);
+            
+            // Shorter auto-refresh delay
+            setTimeout(() => { 
+                console.log('🔄 Refreshing to apply server-based permissions');
+                try { window.location.reload(true); } catch(_) { window.location.reload(); } 
+            }, 500);
+        } catch(error) {
+            console.error('Error setting up user session:', error);
+        }
+    }
+
+    // Clear previous user's local data to prevent data bleed
+    async clearPreviousUserData() {
+        console.log('🧹 Clearing previous user data to prevent bleed...');
+        
+        // Clear all possible local storage keys
+        const keysToRemove = [
+            'currentUser', 'userData', 'subscriptionPlan', 'businessName',
+            'businessConfig', 'lastSync', 'therapistAuth', 'employeeData'
+        ];
+        
+        keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+        });
+        
+        // Clear role manager data
+        if (window.roleManager) {
+            window.roleManager.activeEmployee = null;
+            localStorage.removeItem('activeEmployeeRole');
+        }
+        
+        // Clear database caches that might contain user-specific data
+        try {
+            if (window.db) {
+                const userSpecificStores = [
+                    'bookings', 'transactions', 'employees', 
+                    'inventory', 'products', 'customers'
+                ];
+                for (const store of userSpecificStores) {
+                    try { await window.db.clearStore(store); } catch(_) {}
+                }
+            }
+        } catch(error) {
+            console.warn('Could not clear some local data:', error);
+        }
     }
 
     // Ensure that when a different user logs in, previous user's local data is not visible
@@ -450,58 +509,92 @@ class AuthSystem {
         }
     }
 
-    // Load saved authentication state
+    // Load and validate authentication state from server
     async loadAuthState() {
-        // Check all possible token storage locations
+        console.log('🔄 Auth system loading state - checking server first...');
+        
+        // Check for token only (no local user data caching)
         let token = localStorage.getItem('userToken') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-        let userStr = localStorage.getItem('userData') || localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
-        let isLoggedIn = localStorage.getItem('isLoggedIn');
+        
+        if (!token) {
+            console.log('❌ No authentication token found');
+            return false;
+        }
 
-        console.log('🔄 Auth system loading state:', {
-            hasToken: !!token,
-            hasUserData: !!userStr,
-            isLoggedIn: isLoggedIn
-        });
-
-        if (token && userStr && isLoggedIn === 'true') {
-            try {
+        // ALWAYS validate with server - no local user data trust
+        try {
+            console.log('🌐 Validating token with server...');
+            const userData = await this.validateTokenWithServer(token);
+            
+            if (userData && userData.success) {
+                // Set authentication state from server response
                 this.authToken = token;
-                this.currentUser = JSON.parse(userStr);
+                this.currentUser = userData.user;
                 this.isLoggedIn = true;
                 
-                console.log('✅ Auth state restored for user:', this.currentUser.email);
+                console.log('✅ Server validation successful for user:', userData.user.email);
+                console.log('👤 User role from server:', userData.user.role);
+                console.log('🏢 User features from server:', userData.features);
                 
                 // Update business name in settings
                 await this.updateUserSettings();
                 
                 this.updateAuthUI();
                 
-                // Force role-based navigation gating after auth state is loaded
+                // Apply role restrictions based on server data
                 setTimeout(() => {
-                    if (this.currentUser?.role && this.currentUser.role !== 'owner') {
-                        console.log('🔒 Employee account detected, applying role restrictions for:', this.currentUser.role);
-                        // Fix: Call the method on roleManager, not this
+                    if (userData.user.role && userData.user.role !== 'owner') {
+                        console.log('🔒 Applying server-validated role restrictions for:', userData.user.role);
                         if (window.roleManager && typeof window.roleManager.gateNavigationByRole === 'function') {
+                            // Update role manager with server data
+                            if (userData.user.role === 'therapist' || userData.user.role === 'manager') {
+                                window.roleManager.activeEmployee = {
+                                    id: userData.user.id || userData.user.employeeId,
+                                    name: userData.user.name || userData.user.employeeName,
+                                    role: userData.user.role
+                                };
+                            }
                             window.roleManager.gateNavigationByRole();
-                            
-                            // Double-check on mobile devices after a brief delay
-                            setTimeout(() => {
-                                console.log('📱 Double-checking role restrictions for mobile');
-                                window.roleManager.gateNavigationByRole();
-                            }, 500);
                         }
                     }
-                }, 50); // Even faster application
+                }, 50);
                 
                 return true;
-            } catch (error) {
-                console.error('Failed to load auth state:', error);
+            } else {
+                console.log('❌ Server validation failed');
                 this.clearAuthState();
+                return false;
             }
-        } else {
-            console.log('❌ No valid auth state found');
+        } catch (error) {
+            console.error('❌ Server validation error:', error);
+            this.clearAuthState();
+            return false;
         }
-        return false;
+    }
+
+    // Validate token with server and get fresh user data
+    async validateTokenWithServer(token) {
+        try {
+            const response = await fetch('https://ava-marketing-api.onrender.com/api/auth/validate', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                return data;
+            } else {
+                console.log('Server validation failed with status:', response.status);
+                return null;
+            }
+        } catch (error) {
+            console.error('Network error during validation:', error);
+            // If server is unreachable, deny access for security
+            return null;
+        }
     }
 
     // Validate current session
@@ -520,23 +613,65 @@ class AuthSystem {
         }
     }
 
-    // Clear authentication state
-    clearAuthState() {
+    // Clear authentication state and all user data
+    async clearAuthState() {
+        console.log('🧹 Clearing all authentication state and user data...');
+        
         this.currentUser = null;
         this.authToken = null;
         this.isLoggedIn = false;
 
         // Clear ALL possible storage locations
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('userData');
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('subscriptionPlan');
-        sessionStorage.removeItem('authToken');
-        sessionStorage.removeItem('currentUser');
+        const allStorageKeys = [
+            'userToken', 'authToken', 'userData', 'currentUser', 'isLoggedIn',
+            'subscriptionPlan', 'businessName', 'businessConfig', 'lastSync',
+            'therapistAuth', 'employeeData', 'activeEmployeeRole', 'managerAssigned'
+        ];
+        
+        allStorageKeys.forEach(key => {
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+        });
 
-        console.log('🧹 Cleared all auth state');
+        // Clear role manager
+        if (window.roleManager) {
+            window.roleManager.activeEmployee = null;
+            window.roleManager.clearEmployeeSession();
+        }
+
+        // Clear all local database data to prevent data bleed
+        try {
+            if (window.db) {
+                const allStores = [
+                    'products', 'inventory', 'employees', 'transactions', 
+                    'customers', 'bookings', 'rooms', 'sessions', 
+                    'attendance', 'schedules', 'leaveRequests', 
+                    'payrollRuns', 'tips', 'giftCertificates', 'syncQueue'
+                ];
+                
+                for (const store of allStores) {
+                    try { 
+                        await window.db.clearStore(store);
+                        console.log(`🗑️ Cleared ${store} store`);
+                    } catch(_) {}
+                }
+                
+                // Keep only app settings, clear user-specific settings
+                const settingsToKeep = ['currency', 'currencySymbol', 'apiUrl'];
+                try {
+                    const allSettings = await window.db.getAll('settings');
+                    for (const setting of allSettings) {
+                        if (!settingsToKeep.includes(setting.key)) {
+                            await window.db.delete('settings', setting.key);
+                        }
+                    }
+                } catch(_) {}
+            }
+        } catch(error) {
+            console.warn('Could not clear all local data:', error);
+        }
+
+        console.log('✅ All auth state and user data cleared');
         this.updateAuthUI();
     }
 
