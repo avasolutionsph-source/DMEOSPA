@@ -825,13 +825,8 @@ class RoleManager {
 	}
 
 	gateNavigationByRole() {
-		const navItems = document.querySelectorAll('.nav-item');
-		// TESTING MODE: Show all navigation items for all roles
-		navItems.forEach(item => {
-			console.log('🔓 TESTING MODE: Role gating disabled, showing nav item:', item.dataset.page);
-			item.style.display = '';
-		});
-		console.log('🚀 TESTING MODE: Role-based navigation gating disabled');
+		// COMPLETELY DISABLED FOR TESTING - No role restrictions at all
+		console.log('🚀 TESTING MODE: Role-based navigation gating completely disabled');
 	}
 
 	showRoleLoginModal() {

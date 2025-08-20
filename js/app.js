@@ -135,10 +135,13 @@ class App {
 
     setupNavigation() {
         const navItems = document.querySelectorAll('.nav-item');
+        console.log('🧭 Setting up navigation for', navItems.length, 'items');
         navItems.forEach(item => {
+            const page = item.dataset.page;
+            console.log('🔗 Adding click handler for page:', page);
             item.addEventListener('click', (e) => {
+                console.log('🖱️ Navigation click detected for page:', page);
                 e.preventDefault();
-                const page = item.dataset.page;
                 this.showPage(page);
                 
                 // Update active state
@@ -146,9 +149,11 @@ class App {
                 item.classList.add('active');
             });
         });
+        console.log('✅ Navigation setup complete');
     }
 
     showPage(pageName) {
+        console.log('📄 showPage called with:', pageName);
         // Hide all pages
         document.querySelectorAll('.page').forEach(page => {
             page.classList.remove('active');
@@ -157,11 +162,15 @@ class App {
         // Show selected page
         const selectedPage = document.getElementById(pageName);
         if (selectedPage) {
+            console.log('✅ Found page element for:', pageName);
             selectedPage.classList.add('active');
             this.currentPage = pageName;
             
             // Load page-specific data
+            console.log('📊 Loading page data for:', pageName);
             this.loadPageData(pageName);
+        } else {
+            console.error('❌ Page element not found for:', pageName);
         }
     }
 

@@ -432,10 +432,8 @@ class EntitlementsSystem {
         // Add subscription status to UI
         this.updateSubscriptionStatus();
 
-        // Apply additional role-based gating if available
-        if (window.roleManager && typeof window.roleManager.gateNavigationByRole === 'function') {
-            window.roleManager.gateNavigationByRole();
-        }
+        // TESTING MODE: Role-based gating completely disabled
+        console.log('🚀 TESTING MODE: Skipping role-based navigation gating');
     }
 
     // Gate navigation items
