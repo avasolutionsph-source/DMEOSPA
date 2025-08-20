@@ -79,6 +79,9 @@ class DashboardManager {
                     <div class="therapist-welcome">
                         <h1>Welcome, ${therapistName}!</h1>
                         <p>Working at ${workplaceName}</p>
+                        <button class="btn btn-sm btn-warning" onclick="window.applyRoleRestrictions()" style="margin-top: 0.5rem;">
+                            <i class="fas fa-lock"></i> Apply Role Restrictions
+                        </button>
                     </div>
                     <div class="current-time" id="currentTime"></div>
                 </div>

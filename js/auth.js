@@ -467,6 +467,15 @@ class AuthSystem {
                 await this.updateUserSettings();
                 
                 this.updateAuthUI();
+                
+                // Force role-based navigation gating after auth state is loaded
+                setTimeout(() => {
+                    if (this.isEmployeeAccount()) {
+                        console.log('🔒 Employee account detected, applying role restrictions');
+                        this.gateNavigationByRole();
+                    }
+                }, 500);
+                
                 return true;
             } catch (error) {
                 console.error('Failed to load auth state:', error);
@@ -940,6 +949,24 @@ window.addEventListener('DOMContentLoaded', () => window.roleManager.loadFromSto
 // Expose quick actions on settings page via console
 window.showRoleLogin = () => window.roleManager.showRoleLoginModal();
 window.clearRoleLogin = () => window.roleManager.clearEmployeeSession();
+
+// Debug function to manually apply role restrictions
+window.applyRoleRestrictions = () => {
+    console.log('🔧 Manually applying role restrictions...');
+    if (window.roleManager) {
+        window.roleManager.gateNavigationByRole();
+    }
+};
+
+// Force role gating when page loads
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        if (window.roleManager && window.authSystem?.currentUser?.role === 'therapist') {
+            console.log('🔒 Page loaded - applying therapist restrictions');
+            window.roleManager.gateNavigationByRole();
+        }
+    }, 1000);
+});
 
 // Initialize auth system
 const authSystem = new AuthSystem();
