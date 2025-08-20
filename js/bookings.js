@@ -150,84 +150,18 @@ class BookingsManager {
 		return identifiers;
 	}
 
-	async syncTherapistOnly() {
+		async syncTherapistOnly() {
 		console.log('🔄 Starting therapist bookings sync...');
+		
+		// ALWAYS check local bookings first (includes test bookings and cached data)
+		let localBookings = [];
 		try {
-			if (!window.apiClient) {
-				console.warn('❌ No API client available');
-				return;
-			}
-			console.log('📡 Fetching from /api/business/bookings...');
-			const resp = await window.apiClient.get('/api/business/bookings');
-			console.log('📡 Response status:', resp.status, resp.ok);
-			let json = null;
-			try { json = await resp.json(); } catch(_) { json = null; }
-			console.log('📦 Raw bookings data:', json);
-			const all = json?.bookings || json?.data || [];
-			console.log('📋 All bookings count:', all.length);
+			localBookings = await db.getAll('bookings');
+			console.log('💾 Local bookings count:', localBookings.length);
 			
-			// Log each booking for debugging
-			if (all.length > 0) {
-				console.log('📋 All bookings details:');
-				all.forEach((booking, index) => {
-					console.log(`Booking ${index + 1}:`, {
-						id: booking._id || booking.id,
-						employeeId: booking.employeeId,
-						employeeName: booking.employeeName,
-						employeeEmail: booking.employeeEmail,
-						customer: booking.customer,
-						serviceName: booking.serviceName,
-						startTime: booking.startTime,
-						status: booking.status,
-						fullBooking: booking
-					});
-				});
-			}
-			const me = await this.getTherapistIdentifiers();
-			console.log('👤 Therapist identifiers:', me);
-			const norm = (s) => (s||'').trim().toLowerCase();
-			const filtered = all.filter(b => {
-				const bid = String(b.employeeId || '');
- 			const bname = norm(b.employeeName || '');
-				const bemail = norm(b.employeeEmail || '');
-				
-				// Check multiple matching criteria
-				const matchById = me.ids.includes(bid);
-				const matchByName = !!me.name && bname === norm(me.name);
-				const matchByEmail = !!me.email && bemail === me.email;
-				
-				const match = matchById || matchByName || matchByEmail;
-				
-				console.log('🔍 Checking booking:', {
-					booking: b,
-					therapistIds: me.ids,
-					therapistName: me.name,
-					therapistEmail: me.email,
-					bookingEmployeeId: bid,
-					bookingEmployeeName: bname,
-					bookingEmployeeEmail: bemail,
-					matchById,
-					matchByName,
-					matchByEmail,
-					finalMatch: match
-				});
-				
-				if (match) console.log('✅ Booking matches therapist:', b);
-				return match;
-			});
-			console.log('🎯 Filtered bookings for therapist:', filtered.length);
-			this.therapistBookings = filtered.sort((a,b) => new Date(a.startTime||a.date) - new Date(b.startTime||b.date));
-			this.renderTherapistBookings();
-		} catch (e) {
-			console.warn('❌ Therapist bookings fetch failed, falling back to local', e);
-			// Fallback to locally cached bookings filtered by therapist
-			let local = await db.getAll('bookings');
-			console.log('💾 Local bookings count:', local.length);
-			
-			// Log local bookings for debugging
-			if (local.length > 0) {
+			if (localBookings.length > 0) {
 				console.log('💾 Local bookings details:');
-				local.forEach((booking, index) => {
+				localBookings.forEach((booking, index) => {
 					console.log(`Local Booking ${index + 1}:`, {
 						id: booking._id || booking.id,
 						employeeId: booking.employeeId,
@@ -243,37 +177,69 @@ class BookingsManager {
 					});
 				});
 			}
+		} catch (e) {
+			console.warn('❌ Failed to load local bookings:', e);
+		}
+		
+		// Then try to get remote bookings and merge
+		let remoteBookings = [];
+		try {
+			if (window.apiClient) {
+				console.log('📡 Fetching from /api/business/bookings...');
+				const resp = await window.apiClient.get('/api/business/bookings');
+				console.log('📡 Response status:', resp.status, resp.ok);
+				let json = null;
+				try { json = await resp.json(); } catch(_) { json = null; }
+				console.log('📦 Raw remote bookings data:', json);
+				remoteBookings = json?.bookings || json?.data || [];
+				console.log('📋 Remote bookings count:', remoteBookings.length);
+			}
+		} catch (e) {
+			console.warn('❌ Failed to fetch remote bookings:', e);
+		}
+		
+		// Combine local and remote bookings
+		const allBookings = [...localBookings, ...remoteBookings];
+		console.log('📋 Total bookings (local + remote):', allBookings.length);
+		
+		// Filter for this therapist
+		const me = await this.getTherapistIdentifiers();
+		console.log('👤 Therapist identifiers:', me);
+		const norm = (s) => (s||'').trim().toLowerCase();
+		
+		const filtered = allBookings.filter(b => {
+			const bid = String(b.employeeId || '');
+			const bname = norm(b.employeeName || '');
+			const bemail = norm(b.employeeEmail || '');
 			
-			const me = await this.getTherapistIdentifiers();
-			console.log('👤 Therapist identifiers (fallback):', me);
-			const norm = (s) => (s||'').trim().toLowerCase();
+			// Check multiple matching criteria
+			const matchById = me.ids.includes(bid);
+			const matchByName = !!me.name && bname === norm(me.name);
+			const matchByEmail = !!me.email && bemail === me.email;
 			
-			const filteredLocal = local.filter(b => {
-				const bid = String(b.employeeId || '');
-				const bname = norm(b.employeeName || '');
-				const bemail = norm(b.employeeEmail || '');
-				
-				const matchById = me.ids.includes(bid);
-				const matchByName = !!me.name && bname === norm(me.name);
-				const matchByEmail = !!me.email && bemail === me.email;
-				
-				const match = matchById || matchByName || matchByEmail;
-				
-				console.log('🔍 Checking local booking:', {
-					booking: b,
-					matchById,
-					matchByName,
-					matchByEmail,
-					finalMatch: match
-				});
-				
-				return match;
+			const match = matchById || matchByName || matchByEmail;
+			
+			console.log('🔍 Checking booking:', {
+				booking: b,
+				therapistIds: me.ids,
+				therapistName: me.name,
+				therapistEmail: me.email,
+				bookingEmployeeId: bid,
+				bookingEmployeeName: bname,
+				bookingEmployeeEmail: bemail,
+				matchById,
+				matchByName,
+				matchByEmail,
+				finalMatch: match
 			});
 			
-			console.log('🎯 Local filtered bookings for therapist:', filteredLocal.length);
-			this.therapistBookings = filteredLocal.sort((a,b) => new Date(a.date||a.startTime) - new Date(b.date||b.startTime));
-			this.renderTherapistBookings();
-		}
+			if (match) console.log('✅ Booking matches therapist:', b);
+			return match;
+		});
+		
+		console.log('🎯 Filtered bookings for therapist:', filtered.length);
+		this.therapistBookings = filtered.sort((a,b) => new Date(a.startTime||a.date||a.startTime) - new Date(b.startTime||b.date||b.startTime));
+		this.renderTherapistBookings();
 	}
 
 	renderTherapistBookings() {
