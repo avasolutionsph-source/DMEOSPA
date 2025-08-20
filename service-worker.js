@@ -1,5 +1,5 @@
 // Service Worker for Offline Functionality - Updated with Enhanced Chatbot
-const CACHE_NAME = 'ava-solutions-v1.7.1';
+const CACHE_NAME = 'ava-solutions-v1.7.2';
 const urlsToCache = [
     './',
     './index.html',
@@ -27,9 +27,12 @@ const urlsToCache = [
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then((cache) => {
+            .then(async (cache) => {
                 console.log('Opened cache');
-                return cache.addAll(urlsToCache);
+                // Add assets defensively to avoid install failure on one bad URL
+                for (const url of urlsToCache) {
+                    try { await cache.add(url); } catch (_) {}
+                }
             })
             .catch((error) => {
                 console.error('Failed to cache:', error);

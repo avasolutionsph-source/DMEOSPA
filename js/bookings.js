@@ -68,7 +68,7 @@ class BookingsManager {
 			const since = this.lastSync || (await db.get('settings', 'externalBookingsLastSync'))?.value || '';
 			// Always include x-user-id via apiClient if no token; apiClient injects it now
 			let res = await window.apiClient.get(`/api/bookings${since ? `?since=${encodeURIComponent(since)}` : ''}`);
-			if (!res.ok) return;
+			if (!res.ok) throw new Error(`primary bookings failed ${res.status}`);
 			const { data } = await res.json();
 			if (Array.isArray(data)) {
 				for (const bk of data) {

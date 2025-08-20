@@ -100,8 +100,8 @@ class APIClient {
         try {
             this.pendingRequests.set(requestId, { endpoint, options: defaultOptions });
             
-            // Add x-user-id if no bearer token
-            if (!defaultOptions.headers['Authorization'] && this.userId) {
+            // Always include x-user-id when available so server fallbacks can work
+            if (this.userId) {
                 defaultOptions.headers['x-user-id'] = this.userId;
             }
             const response = await fetch(url, defaultOptions);
