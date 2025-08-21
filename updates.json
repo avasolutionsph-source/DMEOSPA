@@ -1,0 +1,59 @@
+{
+  "version": "1.1.0",
+  "lastUpdated": "2024-01-20",
+  "updates": [
+    {
+      "version": "1.0.1",
+      "title": "Rooms Management System",
+      "description": "Room tracking with real-time timers and occupancy management",
+      "script": "quick-rooms-fix.js",
+      "date": "2024-01-20",
+      "features": [
+        "Room status tracking (Available/Occupied)",
+        "Live service timers",
+        "Room assignment in POS",
+        "Service tracking per room"
+      ]
+    },
+    {
+      "version": "1.0.2",
+      "title": "Gift Certificate System",
+      "description": "Complete gift certificate management with control numbers",
+      "script": "update-gift-certificates.js",
+      "date": "2024-01-20",
+      "features": [
+        "Unique control number generation",
+        "Prevent double use",
+        "Full audit trail",
+        "Print certificates"
+      ]
+    },
+    {
+      "version": "1.0.3",
+      "title": "Enhanced POS Discounts",
+      "description": "Senior/PWD and promotional discount system",
+      "script": "update-pos-discounts.js",
+      "date": "2024-01-20",
+      "features": [
+        "Senior Citizen/PWD discounts with ID tracking",
+        "Custom promotional discounts",
+        "Discount audit logging",
+        "Employee assignment in checkout"
+      ]
+    },
+    {
+      "version": "1.0.4",
+      "title": "Database Optimization",
+      "description": "Performance improvements and bug fixes",
+      "script": "update-database-v2.js",
+      "date": "2024-01-20",
+      "features": [
+        "Faster data loading",
+        "Improved sync reliability",
+        "Bug fixes"
+      ]
+    }
+  ],
+  "criticalUpdate": false,
+  "minimumVersion": "1.0.0"
+}
