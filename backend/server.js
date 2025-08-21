@@ -12,6 +12,7 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
 import plansRoutes from './routes/plans.js';
+import subscriptionsRoutes from './routes/subscriptions.js';
 
 const app = express();
 
@@ -78,6 +79,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/plans', plansRoutes);
+app.use('/api/subscriptions', subscriptionsRoutes);
 
 // Serve static files for frontends (if needed)
 app.use('/marketing', express.static('../frontend-marketing'));
