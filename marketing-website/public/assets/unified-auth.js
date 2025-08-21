@@ -10,6 +10,16 @@
     
     // Demo/fallback accounts for when backend is unavailable
     const DEMO_ACCOUNTS = {
+        'avasolutionsph@gmail.com': {
+            password: 'Ava12345',
+            role: 'superAdmin',
+            firstName: 'Ava',
+            lastName: 'Solutions',
+            businessName: 'Ava Solutions PH',
+            isWebsiteOwner: true,
+            canManageSubscriptions: true,
+            plan: 'enterprise'
+        },
         'jc@gmail.com': {
             password: 'password123',
             role: 'owner',
@@ -30,13 +40,6 @@
             firstName: 'SM',
             lastName: 'Naga',
             businessName: 'Ava Solutions'
-        },
-        'avasolutionsph@gmail.com': {
-            password: 'ava2024',
-            role: 'owner',
-            firstName: 'Ava',
-            lastName: 'Solutions',
-            businessName: 'Ava Solutions PH'
         }
     };
     
@@ -120,19 +123,29 @@
         // Check if it's a demo account
         const account = DEMO_ACCOUNTS[email.toLowerCase()];
         
-        // For JC and other demo accounts, accept any password
+        // For website owner account, require exact password
+        if (email.toLowerCase() === 'avasolutionsph@gmail.com') {
+            if (password !== 'Ava12345') {
+                return null; // Wrong password for website owner
+            }
+        }
+        
+        // For other accounts
         if (account || email.toLowerCase() === 'jc@gmail.com') {
             console.log('✅ Local/Demo authentication successful');
             
             const token = 'local-' + Date.now();
             const userData = {
-                id: 'user-' + Date.now(),
+                id: account && account.isWebsiteOwner ? 'website-owner' : 'user-' + Date.now(),
                 email: email,
                 firstName: account ? account.firstName : email.split('@')[0].toUpperCase(),
                 lastName: account ? account.lastName : 'User',
                 role: account ? account.role : 'owner',
                 businessName: account ? account.businessName : 'Demo Business',
-                isDemo: true
+                isWebsiteOwner: account ? account.isWebsiteOwner : false,
+                canManageSubscriptions: account ? account.canManageSubscriptions : false,
+                plan: account ? account.plan : 'pro',
+                isDemo: !account?.isWebsiteOwner
             };
             
             // Store authentication data
