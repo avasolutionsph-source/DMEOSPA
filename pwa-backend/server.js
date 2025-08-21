@@ -33,7 +33,27 @@ app.use('/api', limiter);
 
 // CORS - Allow PWA to connect from anywhere with comprehensive settings
 app.use(cors({ 
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:8080', 'http://127.0.0.1:5500', 'http://localhost:4000', 'https://ava-solutions-marketing.netlify.app', 'https://ava-solutions-pwa.netlify.app', 'https://ava-solutions-booking.netlify.app', 'https://avaphbooking.netlify.app'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or Postman)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 
+      'http://localhost:8080', 'http://127.0.0.1:5500', 'http://localhost:4000',
+      'https://ava-solutions-marketing.netlify.app', 
+      'https://ava-solutions-pwa.netlify.app', 
+      'https://ava-solutions-booking.netlify.app', 
+      'https://avaphbooking.netlify.app'
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log('✅ CORS allowed for origin:', origin);
+      callback(null, true);
+    } else {
+      console.log('❌ CORS blocked for origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'Accept', 'Origin', 'X-Requested-With'],
@@ -41,6 +61,16 @@ app.use(cors({
   preflightContinue: false,
   optionsSuccessStatus: 200
 }));
+
+// Handle preflight requests explicitly
+app.options('*', (req, res) => {
+  console.log('🔄 OPTIONS preflight request from:', req.headers.origin);
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-user-id, Accept, Origin, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
 
 // Body parser
 app.use(express.json({ limit: '10mb' })); // Large limit for sync data
@@ -91,4 +121,6 @@ app.listen(port, () => {
   console.log(`📱 API Health: http://localhost:${port}/api/health`);
   console.log(`💾 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`✅ PWA can connect by setting API URL to: http://localhost:${port}/api`);
+  console.log(`🌐 CORS enabled for: https://ava-solutions-marketing.netlify.app`);
+  console.log(`🔐 Login endpoint: http://localhost:${port}/api/auth/login`);
 });
