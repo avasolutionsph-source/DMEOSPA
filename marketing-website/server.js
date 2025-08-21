@@ -8,6 +8,9 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
+import logger from './utils/logger.js';
+import requestLogger from './middleware/requestLogger.js';
+import errorHandler from './middleware/errorHandler.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -22,6 +25,9 @@ const app = express();
 
 // Connect to MongoDB
 connectDB();
+
+// Add request logging middleware
+app.use(requestLogger);
 
 // Security middleware
 app.use(helmet({
@@ -458,6 +464,9 @@ app.use('*', (req, res) => {
     res.status(404).sendFile(path.join(__dirname, 'public/404.html'));
   }
 });
+
+// Add error handling middleware (must be last)
+app.use(errorHandler);
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {

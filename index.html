@@ -41,6 +41,10 @@
                     <i class="fas fa-users"></i>
                     <span>Employees</span>
                 </a>
+                <a href="#" class="nav-item" data-page="rooms">
+                    <i class="fas fa-door-open"></i>
+                    <span>Rooms</span>
+                </a>
                 <a href="#" class="nav-item" data-page="chatbot">
                     <i class="fas fa-robot"></i>
                     <span>AI Assistant</span>
@@ -278,6 +282,19 @@
                     </div>
                 </div>
                 <div class="employees-grid" id="employeesGrid"></div>
+            </div>
+
+            <!-- Rooms Page -->
+            <div id="rooms" class="page">
+                <div class="page-header">
+                    <h1>Room Management</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="addRoomBtn">
+                            <i class="fas fa-plus-circle"></i> Add Room
+                        </button>
+                    </div>
+                </div>
+                <div class="rooms-grid" id="roomsGrid"></div>
             </div>
 
             <!-- Chatbot Page -->
@@ -608,6 +625,49 @@
         </div>
     </div>
 
+    <!-- Room Modal -->
+    <div id="roomModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="roomModalTitle">Add Room</h2>
+                <button class="modal-close" onclick="closeModal('roomModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="roomForm">
+                    <input type="hidden" id="roomId">
+                    <div class="form-group">
+                        <label>Room Name</label>
+                        <input type="text" id="roomName" class="form-input" required placeholder="e.g., Room 1, VIP Suite">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Room Type</label>
+                            <select id="roomType" class="form-input" required>
+                                <option value="general">General Purpose</option>
+                                <option value="massage">Massage Room</option>
+                                <option value="facial">Facial Room</option>
+                                <option value="couple">Couple's Room</option>
+                                <option value="vip">VIP Suite</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Capacity</label>
+                            <input type="number" id="roomCapacity" class="form-input" min="1" max="10" value="1" required>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('roomModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Room
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Checkout Modal -->
     <div id="checkoutModal" class="modal">
         <div class="modal-content">
@@ -618,6 +678,33 @@
                 </button>
             </div>
             <div class="modal-body">
+                <!-- Employee & Room Assignment Section -->
+                <div class="assignment-section" style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="margin-top: 0; color: #2c3e50;"><i class="fas fa-user-check"></i> Service Assignment</h3>
+                    
+                    <!-- Employee Assignment -->
+                    <div class="form-group">
+                        <label style="font-weight: 600; color: #34495e;">
+                            <i class="fas fa-user"></i> Assign to Employee <span style="color: red;">*</span>
+                        </label>
+                        <select id="checkoutEmployeeSelect" class="form-input" style="width: 100%; padding: 10px; border: 2px solid #3498db;">
+                            <option value="">Select Employee</option>
+                        </select>
+                        <small style="color: #7f8c8d;">Employee must be selected for commission tracking</small>
+                    </div>
+                    
+                    <!-- Room Assignment (for services) -->
+                    <div class="form-group" id="roomAssignmentSection" style="display: none;">
+                        <label style="font-weight: 600; color: #34495e;">
+                            <i class="fas fa-door-open"></i> Assign Room
+                        </label>
+                        <select id="checkoutRoomSelect" class="form-input" style="width: 100%; padding: 10px;">
+                            <option value="">No Room Assignment</option>
+                        </select>
+                        <small style="color: #7f8c8d;">Assign a room for service tracking</small>
+                    </div>
+                </div>
+                
                 <div class="checkout-summary">
                     <h3>Order Summary</h3>
                     <div id="checkoutItems"></div>
@@ -1709,6 +1796,8 @@
     <script src="js/inventory.js"></script>
     <script src="js/inventory-migration.js"></script>
     <script src="js/employees.js"></script>
+    <script src="js/rooms.js"></script>
+    <script src="js/giftcertificates.js"></script>
     <script src="js/chatbot.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/settings.js"></script>

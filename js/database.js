@@ -2,7 +2,7 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 1;
+        this.version = 2; // Incremented for rooms and gift certificates
         this.db = null;
         this.userId = null;
     }
@@ -72,6 +72,22 @@ class Database {
                     promoStore.createIndex('status', 'status', { unique: false });
                     promoStore.createIndex('type', 'type', { unique: false });
                     promoStore.createIndex('syncStatus', 'syncStatus', { unique: false });
+                }
+
+                // Rooms store
+                if (!this.db.objectStoreNames.contains('rooms')) {
+                    const roomsStore = this.db.createObjectStore('rooms', { keyPath: 'id', autoIncrement: true });
+                    roomsStore.createIndex('status', 'status', { unique: false });
+                    roomsStore.createIndex('type', 'type', { unique: false });
+                    roomsStore.createIndex('name', 'name', { unique: true });
+                }
+
+                // Active Services store (for room tracking)
+                if (!this.db.objectStoreNames.contains('activeServices')) {
+                    const activeServicesStore = this.db.createObjectStore('activeServices', { keyPath: 'id', autoIncrement: true });
+                    activeServicesStore.createIndex('roomId', 'roomId', { unique: false });
+                    activeServicesStore.createIndex('status', 'status', { unique: false });
+                    activeServicesStore.createIndex('employeeId', 'employeeId', { unique: false });
                 }
 
                 // Settings store

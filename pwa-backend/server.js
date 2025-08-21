@@ -6,6 +6,9 @@ import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import connectDB from './config/db.js';
+import logger from './utils/logger.js';
+import requestLogger from './middleware/requestLogger.js';
+import errorHandler from './middleware/errorHandler.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -16,6 +19,9 @@ const app = express();
 
 // Connect to MongoDB
 connectDB();
+
+// Add request logging middleware
+app.use(requestLogger);
 
 // Security middleware
 app.use(helmet());
@@ -77,6 +83,9 @@ app.use((err, req, res, next) => {
 app.use('*', (req, res) => {
   res.status(404).json({ error: 'API endpoint not found' });
 });
+
+// Add error handling middleware (must be last)
+app.use(errorHandler);
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => {

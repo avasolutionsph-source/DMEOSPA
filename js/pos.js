@@ -341,7 +341,7 @@ class POSSystem {
         totalSpan.textContent = app.formatCurrency(total);
     }
 
-    showCheckout() {
+    async showCheckout() {
         // Check if employee requirement is enabled and there are services in cart
         const requireEmployee = window.app?.isFeatureEnabled('requireEmployeeForServices');
         const hasServices = this.cart.some(item => item.type === 'service');
@@ -355,6 +355,21 @@ class POSSystem {
 
         // Reset discounts for new checkout
         this.resetDiscounts();
+        
+        // Load employees for checkout dropdown
+        await this.loadEmployeesForCheckout();
+        
+        // Check if there are services in cart to show room assignment
+        const hasServices = this.cart.some(item => item.type === 'service');
+        const roomSection = document.getElementById('roomAssignmentSection');
+        if (roomSection) {
+            if (hasServices) {
+                roomSection.style.display = 'block';
+                await this.loadAvailableRooms();
+            } else {
+                roomSection.style.display = 'none';
+            }
+        }
 
         // Update checkout modal
         const checkoutItems = document.getElementById('checkoutItems');
@@ -546,39 +561,95 @@ class POSSystem {
         document.getElementById('checkoutTotal').textContent = app.formatCurrency(Math.max(0, total));
     }
 
+    // Load employees for checkout dropdown
+    async loadEmployeesForCheckout() {
+        try {
+            const employees = await db.getAll('employees');
+            const select = document.getElementById('checkoutEmployeeSelect');
+            if (select) {
+                select.innerHTML = '<option value="">Select Employee</option>';
+                employees.forEach(emp => {
+                    const option = document.createElement('option');
+                    option.value = emp.id;
+                    option.textContent = `${emp.name} - ${emp.position}`;
+                    select.appendChild(option);
+                });
+                
+                // Set previously selected employee if any
+                if (this.selectedEmployee) {
+                    select.value = this.selectedEmployee;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load employees for checkout:', error);
+        }
+    }
+    
+    // Load available rooms for checkout
+    async loadAvailableRooms() {
+        try {
+            const rooms = await db.getAll('rooms');
+            const availableRooms = rooms.filter(r => r.status === 'available');
+            const select = document.getElementById('checkoutRoomSelect');
+            
+            if (select) {
+                select.innerHTML = '<option value="">No Room Assignment</option>';
+                availableRooms.forEach(room => {
+                    const option = document.createElement('option');
+                    option.value = room.id;
+                    option.textContent = `${room.name} - ${this.getRoomTypeLabel(room.type)} (Capacity: ${room.capacity})`;
+                    select.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('Failed to load rooms for checkout:', error);
+        }
+    }
+    
+    getRoomTypeLabel(type) {
+        const types = {
+            'massage': 'Massage Room',
+            'facial': 'Facial Room',
+            'couple': 'Couple\'s Room',
+            'vip': 'VIP Suite',
+            'general': 'General Purpose'
+        };
+        return types[type] || type;
+    }
+
     async processCheckout() {
         // Prevent duplicate checkouts
         if (this.isProcessingCheckout) {
             return;
         }
+        
+        // Get employee from checkout modal
+        const checkoutEmployee = document.getElementById('checkoutEmployeeSelect')?.value;
+        this.selectedEmployee = checkoutEmployee;
 
         // Check if employee is selected
         if (!this.selectedEmployee) {
-            // Highlight the employee selection area
-            const employeeSelection = document.querySelector('.employee-selection');
-            if (employeeSelection) {
-                employeeSelection.style.background = '#ffebee';
-                employeeSelection.style.borderLeft = '4px solid #dc3545';
-                employeeSelection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Focus on the employee dropdown in checkout modal
+            const employeeSelect = document.getElementById('checkoutEmployeeSelect');
+            if (employeeSelect) {
+                employeeSelect.style.borderColor = '#dc3545';
+                employeeSelect.focus();
                 
                 // Flash animation
-                employeeSelection.animate([
+                employeeSelect.animate([
                     { transform: 'scale(1)' },
-                    { transform: 'scale(1.05)' },
+                    { transform: 'scale(1.02)' },
                     { transform: 'scale(1)' }
                 ], {
                     duration: 300,
                     iterations: 2
                 });
-                
-                // Reset color after 3 seconds
-                setTimeout(() => {
-                    employeeSelection.style.background = '#fff3cd';
-                    employeeSelection.style.borderLeft = '4px solid #ffc107';
-                }, 3000);
             }
             
             showNotification('Please select an employee before checkout', 'error');
+            setButtonLoading('confirmCheckoutBtn', false);
+            hideLoading();
+            this.isProcessingCheckout = false;
             return;
         }
 
@@ -705,6 +776,33 @@ class POSSystem {
             if (this.appliedGiftCertificate) {
                 this.appliedGiftCertificate.usedInTransaction = transactionId;
                 await db.update('giftCertificates', this.appliedGiftCertificate);
+            }
+            
+            // Handle room assignment for services
+            const selectedRoomId = document.getElementById('checkoutRoomSelect')?.value;
+            const hasServices = this.cart.some(item => item.type === 'service');
+            
+            if (hasServices && selectedRoomId) {
+                // Get employee details
+                const employee = await db.get('employees', parseInt(this.selectedEmployee));
+                
+                // Get service names
+                const serviceNames = this.cart
+                    .filter(item => item.type === 'service')
+                    .map(item => item.name)
+                    .join(', ');
+                
+                // Assign room to service
+                if (window.roomManager) {
+                    await window.roomManager.assignRoomToService(parseInt(selectedRoomId), {
+                        serviceName: serviceNames,
+                        clientName: transaction.customerName || 'Walk-in',
+                        employeeId: this.selectedEmployee,
+                        employeeName: employee?.name || 'Unknown',
+                        transactionId: transactionId,
+                        estimatedDuration: 60 // Default 60 minutes
+                    });
+                }
             }
 
             // Update inventory stock and track service usage

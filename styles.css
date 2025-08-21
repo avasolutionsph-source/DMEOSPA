@@ -2723,6 +2723,89 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
     gap: 1.25rem;
 }
 
+/* Room Management Styles */
+.rooms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+.room-card {
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.room-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.room-card.occupied {
+    animation: pulse-occupied 2s infinite;
+}
+
+@keyframes pulse-occupied {
+    0% { box-shadow: 0 2px 8px rgba(231, 76, 60, 0.2); }
+    50% { box-shadow: 0 2px 16px rgba(231, 76, 60, 0.4); }
+    100% { box-shadow: 0 2px 8px rgba(231, 76, 60, 0.2); }
+}
+
+.room-header {
+    padding: 12px 15px;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.room-body {
+    padding: 15px;
+}
+
+.room-timer {
+    text-align: center;
+    padding: 10px;
+    background: rgba(231, 76, 60, 0.1);
+    border-radius: 8px;
+    margin: 10px 0;
+    font-family: 'Courier New', monospace;
+}
+
+.service-info {
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+.service-info div {
+    padding: 3px 0;
+    border-bottom: 1px dashed #e0e0e0;
+}
+
+.service-info div:last-child {
+    border-bottom: none;
+}
+
+.room-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.room-actions .btn-sm {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+}
+
+.room-type {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
 .employee-card {
     background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(16px) saturate(150%);
@@ -5015,9 +5098,7 @@ input:checked + .toggle-slider:before {
 }
 
 /* Enhanced Plan Badge Styles for Different Contexts */
-.sidebar .plan-badge {
-    /* Already styled above with modern glassmorphism */
-}
+/* .sidebar .plan-badge is already styled above with modern glassmorphism */
 
 /* Plan badges for other areas (modals, etc.) */
 .modal .plan-badge,

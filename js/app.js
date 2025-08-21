@@ -184,6 +184,11 @@ class App {
                     await window.loadEmployees();
                 }
                 break;
+            case 'rooms':
+                if (window.loadRooms) {
+                    await window.loadRooms();
+                }
+                break;
             case 'chatbot':
                 // Chatbot is loaded on demand
                 break;
