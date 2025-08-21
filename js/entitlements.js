@@ -114,6 +114,7 @@ class EntitlementsSystem {
                     pos: true,
                     inventory: true,
                     employees: true,
+                    rooms: true,  // Added rooms feature for PRO
                     dashboard: 'full',
                     chatbot: true,
                     cloudBackup: true,
@@ -168,6 +169,7 @@ class EntitlementsSystem {
         const sidebarFeatures = {
             'inventory': this.entitlements.inventory,
             'employees': this.entitlements.employees,
+            'rooms': this.entitlements.rooms, // Added rooms to sidebar features
             'chatbot': this.entitlements.chatbot,
             'products': true // Services always available
         };
