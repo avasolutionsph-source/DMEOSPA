@@ -2346,13 +2346,16 @@
     <!-- Conflict Resolver - Prevents duplicate functions -->
     <script src="js/conflict-resolver.js"></script>
     
-    <!-- Authentication Check - Must be first -->
-    <script src="js/role-auth-check.js"></script>
-    <!-- Force Logout System -->
-    <script src="js/force-logout.js"></script>
-    <!-- MongoDB API - No IndexedDB -->
+    <!-- MongoDB API - Load First -->
     <script src="js/mongodb-api.js"></script>
-    <script src="js/remove-indexeddb.js"></script>
+    <!-- Owner Page Fixes - Must be early -->
+    <script src="js/universal-fixes.js"></script>
+    <!-- Role-based Authentication Check - Disabled -->
+    <!-- <script src="js/role-auth-check.js"></script> -->
+    <!-- Force Logout System - Disabled to prevent issues -->
+    <!-- <script src="js/force-logout.js"></script> -->
+    <!-- IndexedDB Removal - Disabled to prevent interference -->
+    <!-- <script src="js/remove-indexeddb.js"></script> -->
     <!-- Core Scripts -->
     <script src="js/database.js"></script>
     <!-- Load unified auth FIRST to prevent logout flicker -->

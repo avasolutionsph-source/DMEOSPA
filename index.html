@@ -2346,13 +2346,16 @@
     <!-- Conflict Resolver - Prevents duplicate functions -->
     <script src="js/conflict-resolver.js"></script>
     
+    <!-- MongoDB API - Load First -->
+    <script src="js/mongodb-api.js"></script>
+    <!-- Universal Fixes -->
+    <script src="js/universal-fixes.js"></script>
     <!-- Index Redirect - Redirects to role-specific page -->
     <script src="js/index-redirect.js"></script>
-    <!-- Authentication Check - Must be first -->
-    <script src="js/auth-check.js"></script>
-    <!-- MongoDB API - No IndexedDB -->
-    <script src="js/mongodb-api.js"></script>
-    <script src="js/remove-indexeddb.js"></script>
+    <!-- Authentication disabled to prevent issues -->
+    <!-- <script src="js/auth-check.js"></script> -->
+    <!-- IndexedDB removal disabled -->
+    <!-- <script src="js/remove-indexeddb.js"></script> -->
     <!-- Core Scripts -->
     <script src="js/database.js"></script>
     <!-- Load unified auth FIRST to prevent logout flicker -->
