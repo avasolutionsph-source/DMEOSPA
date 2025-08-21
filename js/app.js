@@ -141,6 +141,8 @@ class App {
     }
 
     showPage(pageName) {
+        console.log(`Navigating to page: ${pageName}`);
+        
         // Hide all pages
         document.querySelectorAll('.page').forEach(page => {
             page.classList.remove('active');
@@ -154,6 +156,8 @@ class App {
             
             // Load page-specific data
             this.loadPageData(pageName);
+        } else {
+            console.error(`Page element not found: ${pageName}`);
         }
     }
 
@@ -205,8 +209,12 @@ class App {
     }
 
     async loadGiftCertificatesPage() {
+        console.log('Loading Gift Certificates page...');
         const container = document.getElementById('gift-certificates');
-        if (!container) return;
+        if (!container) {
+            console.error('Gift certificates container not found!');
+            return;
+        }
 
         try {
             // Load the gift certificates HTML content
@@ -228,15 +236,18 @@ class App {
                         styleElement.id = 'gift-certificates-styles';
                         styleElement.textContent = styles.textContent;
                         document.head.appendChild(styleElement);
+                        console.log('Gift certificates styles injected');
                     }
                     
                     container.appendChild(content);
+                    console.log('Gift certificates content loaded');
                     
                     // Load the gift certificates JavaScript
                     if (!window.giftCertificateManager) {
                         const script = document.createElement('script');
                         script.src = 'js/gift-certificates.js';
                         script.onload = () => {
+                            console.log('Gift certificates script loaded');
                             if (window.loadGiftCertificates) {
                                 window.loadGiftCertificates();
                             }
@@ -244,11 +255,16 @@ class App {
                         document.body.appendChild(script);
                     } else {
                         // Manager already loaded, just reinitialize
+                        console.log('Reinitializing gift certificate manager');
                         if (window.loadGiftCertificates) {
                             window.loadGiftCertificates();
                         }
                     }
+                } else {
+                    console.error('Gift certificates content not found in HTML');
                 }
+            } else {
+                console.error('Failed to fetch gift-certificates.html:', response.status);
             }
         } catch (error) {
             console.error('Failed to load gift certificates page:', error);
