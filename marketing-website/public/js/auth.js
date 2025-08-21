@@ -39,6 +39,19 @@ window.onclick = function(event) {
     }
 }
 
+// Test backend connection
+async function testBackend() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/test`);
+        const data = await response.json();
+        console.log('🧪 Backend test result:', data);
+        return data.success;
+    } catch (error) {
+        console.error('🧪 Backend test failed:', error);
+        return false;
+    }
+}
+
 // Login form handler
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -135,7 +148,15 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
 });
 
 // Check if user is already logged in
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    // Test backend connection first
+    console.log('🧪 Testing backend connection...');
+    const backendWorking = await testBackend();
+    
+    if (!backendWorking) {
+        console.warn('⚠️ Backend connection test failed');
+    }
+    
     const token = localStorage.getItem('authToken');
     const userData = localStorage.getItem('userData');
     

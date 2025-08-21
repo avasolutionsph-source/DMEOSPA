@@ -69,10 +69,17 @@ app.get('/api/health', (req, res) => {
     message: 'Ava Solutions Unified Backend',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
+    version: '1.2.0',
     database: {
       connected: mongoose.connection.readyState === 1,
       state: mongoose.connection.readyState,
       name: mongoose.connection.name
+    },
+    features: {
+      authentication: true,
+      planLimits: true,
+      subscriptions: true,
+      analytics: true
     }
   });
 });

@@ -148,34 +148,47 @@ router.post('/login', [
       });
     }
 
-    // Initialize missing fields for existing users
-    if (!user.planLimits) {
-      user.setPlanLimits();
-    }
-    if (!user.currentUsage) {
-      user.currentUsage = {
-        customersCount: 0,
-        employeesCount: 1,
-        productsCount: 0,
-        bookingsThisMonth: 0,
-        storageUsedGB: 0,
-        lastUpdated: new Date()
-      };
-    }
-    if (!user.businessMetrics) {
-      user.businessMetrics = {
-        totalSales: 0,
-        totalTransactions: 0,
-        totalProducts: 0,
-        totalEmployees: 0,
-        lastActiveDate: new Date()
-      };
-    }
+    try {
+      // Initialize missing fields for existing users
+      if (!user.planLimits) {
+        console.log('📝 Initializing planLimits for user:', user.email);
+        user.setPlanLimits();
+      }
+      if (!user.currentUsage) {
+        console.log('📝 Initializing currentUsage for user:', user.email);
+        user.currentUsage = {
+          customersCount: 0,
+          employeesCount: 1,
+          productsCount: 0,
+          bookingsThisMonth: 0,
+          storageUsedGB: 0,
+          lastUpdated: new Date()
+        };
+      }
+      if (!user.businessMetrics) {
+        console.log('📝 Initializing businessMetrics for user:', user.email);
+        user.businessMetrics = {
+          totalSales: 0,
+          totalTransactions: 0,
+          totalProducts: 0,
+          totalEmployees: 0,
+          lastActiveDate: new Date()
+        };
+      }
 
-    // Update last login
-    user.lastLogin = new Date();
-    user.businessMetrics.lastActiveDate = new Date();
-    await user.save();
+      // Update last login
+      user.lastLogin = new Date();
+      if (user.businessMetrics) {
+        user.businessMetrics.lastActiveDate = new Date();
+      }
+      
+      console.log('💾 Saving user data for:', user.email);
+      await user.save();
+      console.log('✅ User data saved successfully for:', user.email);
+    } catch (saveError) {
+      console.error('❌ Error saving user data:', saveError);
+      // Continue with login even if save fails
+    }
 
     console.log('✅ Login successful:', email);
 
@@ -229,5 +242,28 @@ router.get('/validate', protect, validateToken);
 
 // Refresh token
 router.post('/refresh', protect, refreshToken);
+
+// Test endpoint for debugging
+router.get('/test', async (req, res) => {
+  try {
+    const User = (await import('../models/User.js')).default;
+    const userCount = await User.countDocuments();
+    
+    res.json({
+      success: true,
+      message: 'Auth system is working',
+      timestamp: new Date().toISOString(),
+      userCount,
+      environment: process.env.NODE_ENV || 'development'
+    });
+  } catch (error) {
+    console.error('Test endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
 
 export default router;
