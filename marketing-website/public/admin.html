@@ -619,6 +619,16 @@
                     window.location.replace('/admin-login.html');
                 } else {
                     console.log('✅ Authentication verified:', user.email);
+                    
+                    // Check if we have an old token format that needs updating
+                    if (user.isWebsiteOwner && token.startsWith('local-')) {
+                        console.log('🔄 Updating old token to admin format...');
+                        const newToken = 'admin-' + Date.now();
+                        localStorage.setItem('adminToken', newToken);
+                        localStorage.setItem('auth_token', newToken);
+                        localStorage.setItem('authToken', newToken);
+                        console.log('✅ Token updated to admin format');
+                    }
                 }
             } catch (e) {
                 console.log('❌ Invalid user data, redirecting...');
