@@ -5,6 +5,9 @@ let filteredUsers = [];
 let currentPage = 1;
 const usersPerPage = 10;
 
+// API Base URL - Use marketing API server
+const API_BASE_URL = 'https://ava-marketing-api.onrender.com/api';
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     const token = localStorage.getItem('adminToken');
@@ -36,7 +39,7 @@ document.getElementById('adminLoginForm').addEventListener('submit', async funct
     const password = formData.get('password');
     
     try {
-        const response = await fetch('/api/auth/admin-login', {
+        const response = await fetch(`${API_BASE_URL}/auth/admin-login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -72,7 +75,7 @@ async function loadDashboard() {
         const token = localStorage.getItem('adminToken');
         
         // Load stats
-        const statsResponse = await fetch('/api/admin/stats', {
+        const statsResponse = await fetch(`${API_BASE_URL}/admin/stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -104,7 +107,7 @@ function updateDashboardStats(stats) {
 async function loadUsers() {
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/admin/users', {
+        const response = await fetch(`${API_BASE_URL}/admin/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -284,7 +287,7 @@ document.getElementById('editUserForm').addEventListener('submit', async functio
     
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`/api/admin/users/${userId}/subscription`, {
+        const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/subscription`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -365,7 +368,7 @@ async function cleanupOldSyncs() {
 
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/admin/cleanup-syncs', {
+        const response = await fetch(`${API_BASE_URL}/admin/cleanup-syncs`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -386,7 +389,7 @@ async function cleanupOldSyncs() {
 async function loadSyncStats() {
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/admin/sync-stats', {
+        const response = await fetch(`${API_BASE_URL}/admin/sync-stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -413,7 +416,7 @@ async function fixUserSubscription(userId, email, currentPlan) {
     
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`/api/admin/fix-user-subscription/${userId}`, {
+        const response = await fetch(`${API_BASE_URL}/admin/fix-user-subscription/${userId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
