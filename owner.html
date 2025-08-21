@@ -1630,23 +1630,7 @@
             window.location.reload();
         };
         
-        // Fix for modal close button - ensure it's always clickable
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add fallback event listener for auth modal close button
-            const authModalCloseBtn = document.querySelector('#authModal .modal-close');
-            if (authModalCloseBtn) {
-                authModalCloseBtn.style.pointerEvents = 'all';
-                authModalCloseBtn.style.zIndex = '10002';
-                authModalCloseBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Close button clicked');
-                    document.getElementById('loginForm')?.reset();
-                    closeModal('authModal');
-                    return false;
-                });
-            }
-        });
+        // Modal close button fix moved to consolidated init
         
         // Global flag to prevent setup wizard from ever showing again
         window.setupWizardDisabled = false;
@@ -2211,11 +2195,8 @@
             alert(`Email: "${email}"\nPassword: "${password}"\nEmail length: ${email.length}\nPassword length: ${password.length}`);
         }
 
-        // Add hover effects to login button
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize business name first
-            initializeBusinessName();
-            
+        // Hover effects moved to consolidated init
+        function addLoginButtonHoverEffects() {
             const loginBtn = document.querySelector('.setup-login-option .btn-outline');
             if (loginBtn) {
                 loginBtn.addEventListener('mouseenter', function() {
@@ -2575,27 +2556,51 @@
         // testConnectionStatus(false); // Test offline state
         // testConnectionStatus(true);  // Test online state
         
-        // Initialize Unified Auth System
+        // CONSOLIDATED INITIALIZATION - All DOMContentLoaded handlers combined
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🚀 Initializing PWA with Unified Auth...');
+            console.log('🚀 Starting consolidated initialization...');
             
-            // Force clear cache before initializing
+            // 1. Initialize Auth System
             if (window.forceClearCache) {
                 window.forceClearCache();
             }
             
-            // Initialize unified auth system
             if (window.UnifiedAuth) {
                 window.unifiedAuth = new UnifiedAuth();
                 await window.unifiedAuth.init();
-                console.log('✅ Unified Auth system initialized');
-            } else {
-                console.warn('⚠️ UnifiedAuth class not found - using fallback auth');
+                console.log('✅ Unified Auth initialized');
             }
+            
+            // 2. Initialize Business Name
+            if (typeof initializeBusinessName === 'function') {
+                initializeBusinessName();
+            }
+            
+            // 3. Fix Modal Close Buttons
+            const authModalCloseBtn = document.querySelector('#authModal .modal-close');
+            if (authModalCloseBtn) {
+                authModalCloseBtn.style.pointerEvents = 'all';
+                authModalCloseBtn.style.zIndex = '10002';
+                authModalCloseBtn.onclick = function(e) {
+                    e.preventDefault();
+                    document.getElementById('loginForm')?.reset();
+                    closeModal('authModal');
+                };
+            }
+            
+            // 4. Add Login Button Hover Effects
+            if (typeof addLoginButtonHoverEffects === 'function') {
+                addLoginButtonHoverEffects();
+            }
+            
+            console.log('✅ Consolidated initialization complete');
         });
     </script>
     
     <!-- Owner Complete Fix - Ensures all features visible with logout -->
     <script src="js/owner-complete-fix.js"></script>
+    
+    <!-- Owner Cleanup - Removes duplicate code -->
+    <script src="js/owner-cleanup.js"></script>
 </body>
 </html>
