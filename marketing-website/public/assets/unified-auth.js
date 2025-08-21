@@ -134,7 +134,6 @@
         if (account || email.toLowerCase() === 'jc@gmail.com') {
             console.log('✅ Local/Demo authentication successful');
             
-            const token = 'local-' + Date.now();
             const userData = {
                 id: account && account.isWebsiteOwner ? 'website-owner' : 'user-' + Date.now(),
                 email: email,
@@ -147,6 +146,9 @@
                 plan: account ? account.plan : 'pro',
                 isDemo: !account?.isWebsiteOwner
             };
+            
+            // Create admin token for website owner
+            const token = userData.isWebsiteOwner ? 'admin-' + Date.now() : 'local-' + Date.now();
             
             // Store authentication data
             localStorage.setItem('auth_token', token);
