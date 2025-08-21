@@ -297,7 +297,10 @@ class GiftCertificateManager {
 
     renderCertificatesList() {
         const container = document.getElementById('certificates-list');
-        if (!container) return;
+        if (!container) {
+            console.log('Certificate list container not found, will retry...');
+            return;
+        }
 
         const certificates = this.getFilteredCertificates();
         
@@ -602,27 +605,36 @@ class GiftCertificateManager {
     }
 
     setupEventListeners() {
-        // Filter buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                this.currentFilter = e.target.dataset.filter;
-                this.renderCertificatesList();
+        // Wait for DOM to be ready
+        setTimeout(() => {
+            // Filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    this.currentFilter = e.target.dataset.filter;
+                    this.renderCertificatesList();
+                });
             });
-        });
 
-        // Create certificate button
-        const createBtn = document.getElementById('create-certificate-btn');
-        if (createBtn) {
-            createBtn.addEventListener('click', () => this.showCreateModal());
-        }
+            // Create certificate button
+            const createBtn = document.getElementById('create-certificate-btn');
+            if (createBtn) {
+                createBtn.addEventListener('click', () => this.showCreateModal());
+            }
 
-        // Validate certificate button
-        const validateBtn = document.getElementById('validate-certificate-btn');
-        if (validateBtn) {
-            validateBtn.addEventListener('click', () => this.showValidateModal());
-        }
+            // Validate certificate button
+            const validateBtn = document.getElementById('validate-certificate-btn');
+            if (validateBtn) {
+                validateBtn.addEventListener('click', () => this.showValidateModal());
+            }
+
+            // Export button
+            const exportBtn = document.getElementById('export-certificates-btn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', () => this.exportCertificates());
+            }
+        }, 100);
     }
 
     showCreateModal() {
