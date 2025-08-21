@@ -1,0 +1,3 @@
+/api/*  https://ava-pwa-backend.onrender.com/api/:splat  200
+/pwa  https://ava-solutions-pwa.netlify.app  302
+/booking  https://avaphbooking.netlify.app  302
