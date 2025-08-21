@@ -12,8 +12,8 @@ console.log('🔧 Feature installer loaded');
         }
         
         try {
-            // 1. Add Rooms to navigation
-            addRoomsFeature();
+            // 1. Force add Rooms to navigation
+            const roomsAdded = forceAddRoomsToSidebar();
             
             // 2. Create Rooms page
             createRoomsPage();
@@ -30,16 +30,21 @@ console.log('🔧 Feature installer loaded');
             }
             
             // Show success
-            if (typeof showNotification === 'function') {
-                showNotification('✅ All features installed successfully!', 'success');
+            if (roomsAdded) {
+                if (typeof showNotification === 'function') {
+                    showNotification('✅ Rooms installed! Click "Rooms" in the sidebar to access.', 'success');
+                } else {
+                    alert('✅ Rooms installed! Click "Rooms" in the sidebar to access.');
+                }
             } else {
-                alert('✅ All features installed successfully!');
+                if (typeof showNotification === 'function') {
+                    showNotification('⚠️ Could not add Rooms. Please refresh and try again.', 'warning');
+                } else {
+                    alert('⚠️ Could not add Rooms. Please refresh and try again.');
+                }
             }
             
-            // Refresh after 2 seconds
-            setTimeout(() => {
-                location.reload();
-            }, 2000);
+            // Don't auto-refresh, let user see the result
             
         } catch (error) {
             console.error('Error installing features:', error);
@@ -256,6 +261,13 @@ console.log('🔧 Feature installer loaded');
     function checkFeatureStatus() {
         console.log('📊 Checking feature status...');
         
+        // First, try to add Rooms if it's missing
+        const roomsInSidebar = document.querySelector('[data-page="rooms"]');
+        if (!roomsInSidebar) {
+            console.log('Rooms not found in sidebar, adding it now...');
+            forceAddRoomsToSidebar();
+        }
+        
         const features = {
             'POS System': document.querySelector('[data-page="pos"]') !== null,
             'Inventory': document.querySelector('[data-page="inventory"]') !== null,
@@ -276,6 +288,120 @@ console.log('🔧 Feature installer loaded');
         }
         
         alert(statusMessage);
+        
+        // If Rooms still not showing, force add it
+        if (!features['Rooms']) {
+            setTimeout(() => {
+                forceAddRoomsToSidebar();
+                location.reload();
+            }, 500);
+        }
+    }
+    
+    // Force add Rooms to sidebar - more aggressive
+    function forceAddRoomsToSidebar() {
+        console.log('🔨 Force adding Rooms to sidebar...');
+        
+        // Remove any existing rooms first
+        const existingRooms = document.querySelector('[data-page="rooms"]');
+        if (existingRooms) {
+            existingRooms.remove();
+        }
+        
+        // Find the nav menu - try multiple selectors
+        let navMenu = document.querySelector('.nav-menu');
+        if (!navMenu) {
+            navMenu = document.querySelector('nav');
+        }
+        if (!navMenu) {
+            navMenu = document.querySelector('.sidebar nav');
+        }
+        if (!navMenu) {
+            // Find by looking for where other nav items are
+            const existingNavItem = document.querySelector('[data-page="employees"]');
+            if (existingNavItem) {
+                navMenu = existingNavItem.parentElement;
+            }
+        }
+        
+        if (!navMenu) {
+            console.error('Cannot find navigation menu!');
+            return false;
+        }
+        
+        // Find a reference item to copy styles from
+        const employeesItem = navMenu.querySelector('[data-page="employees"]');
+        const referenceItem = employeesItem || navMenu.querySelector('[data-page="inventory"]') || navMenu.querySelector('.nav-item');
+        
+        if (!referenceItem) {
+            console.error('Cannot find reference nav item!');
+            return false;
+        }
+        
+        // Create Rooms link with exact same structure
+        const roomsLink = document.createElement('a');
+        roomsLink.href = '#';
+        
+        // Copy all classes
+        roomsLink.className = referenceItem.className;
+        
+        // Set data-page attribute
+        roomsLink.setAttribute('data-page', 'rooms');
+        
+        // Copy all inline styles
+        roomsLink.style.cssText = referenceItem.style.cssText;
+        
+        // Set the content
+        roomsLink.innerHTML = `
+            <i class="fas fa-door-open"></i>
+            <span>Rooms</span>
+        `;
+        
+        // Insert after employees or at the end
+        if (employeesItem) {
+            employeesItem.parentNode.insertBefore(roomsLink, employeesItem.nextSibling);
+        } else {
+            // Insert before settings if it exists
+            const settingsItem = navMenu.querySelector('[data-page="settings"]');
+            if (settingsItem) {
+                navMenu.insertBefore(roomsLink, settingsItem);
+            } else {
+                navMenu.appendChild(roomsLink);
+            }
+        }
+        
+        // Add click handler
+        roomsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Create rooms page if it doesn't exist
+            if (!document.getElementById('rooms')) {
+                createRoomsPage();
+            }
+            
+            // Navigate to rooms
+            if (window.app && window.app.navigateTo) {
+                window.app.navigateTo('rooms');
+            } else {
+                // Manual navigation
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                roomsLink.classList.add('active');
+                
+                document.querySelectorAll('.page').forEach(page => {
+                    page.style.display = 'none';
+                });
+                
+                const roomsPage = document.getElementById('rooms');
+                if (roomsPage) {
+                    roomsPage.style.display = 'block';
+                }
+            }
+        });
+        
+        console.log('✅ Rooms forcefully added to sidebar!');
+        return true;
     }
     
     // Setup button handlers when DOM is ready
