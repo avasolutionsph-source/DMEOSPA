@@ -82,14 +82,30 @@ console.log('🔧 Fixing stuck loading issue...');
         }
     }
     
-    // Step 4: Enable all features
+    // Step 4: Enable all features and add Rooms
     function enableAllFeatures() {
-        // Override entitlements
+        // Force PRO entitlements
         if (window.entitlementsSystem) {
+            window.entitlementsSystem.currentPlan = 'pro';
+            window.entitlementsSystem.entitlements = {
+                pos: true,
+                inventory: true,
+                employees: true,
+                rooms: true,
+                dashboard: 'full',
+                chatbot: true,
+                cloudBackup: true,
+                analytics: true,
+                multiUser: true,
+                support: 'priority'
+            };
             window.entitlementsSystem.can = () => true;
             window.entitlementsSystem.requiresUpgrade = () => false;
             window.entitlementsSystem.showUpgradePrompt = () => {};
         }
+        
+        // Add Rooms to sidebar if not present
+        addRoomsToSidebar();
         
         // Enable navigation
         const navItems = document.querySelectorAll('.nav-item, [data-page]');
@@ -101,6 +117,51 @@ console.log('🔧 Fixing stuck loading issue...');
         });
         
         console.log('✅ Enabled all features');
+    }
+    
+    // Add Rooms feature to sidebar
+    function addRoomsToSidebar() {
+        // Check if Rooms already exists
+        if (document.querySelector('[data-page="rooms"]')) {
+            return;
+        }
+        
+        const navMenu = document.querySelector('.nav-menu');
+        if (!navMenu) return;
+        
+        // Find employees item to insert after
+        const employeesItem = document.querySelector('[data-page="employees"]');
+        if (!employeesItem) return;
+        
+        // Create Rooms link
+        const roomsLink = document.createElement('a');
+        roomsLink.href = '#';
+        roomsLink.className = 'nav-item';
+        roomsLink.setAttribute('data-page', 'rooms');
+        roomsLink.innerHTML = `
+            <i class="fas fa-door-open"></i>
+            <span>Rooms</span>
+        `;
+        
+        // Copy styles from employees item
+        const computedStyle = window.getComputedStyle(employeesItem);
+        roomsLink.style.display = computedStyle.display;
+        roomsLink.style.padding = computedStyle.padding;
+        roomsLink.style.color = computedStyle.color;
+        roomsLink.style.textDecoration = computedStyle.textDecoration;
+        
+        // Insert after employees
+        employeesItem.parentNode.insertBefore(roomsLink, employeesItem.nextSibling);
+        
+        // Add click handler
+        roomsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (window.app && window.app.navigateTo) {
+                window.app.navigateTo('rooms');
+            }
+        });
+        
+        console.log('✅ Added Rooms to sidebar');
     }
     
     // Step 5: Fix app initialization if needed
