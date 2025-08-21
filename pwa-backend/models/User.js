@@ -154,7 +154,18 @@ userSchema.pre('save', async function(next) {
 
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  try {
+    console.log('🔐 Comparing password for user:', this.email);
+    console.log('🔍 Candidate password length:', candidatePassword?.length);
+    console.log('🔍 Stored password hash starts with:', this.password?.substring(0, 10));
+    
+    const result = await bcrypt.compare(candidatePassword, this.password);
+    console.log('🔍 Password comparison result:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Password comparison error:', error);
+    return false;
+  }
 };
 
 // Get full name

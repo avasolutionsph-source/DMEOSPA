@@ -194,8 +194,11 @@ router.post('/login', [
   body('password').isLength({ min: 1 })
 ], async (req, res) => {
   try {
+    console.log('🔐 PWA Login attempt started');
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ Validation errors:', errors.array());
       return res.status(400).json({ 
         success: false,
         error: 'Validation failed', 
@@ -204,37 +207,64 @@ router.post('/login', [
     }
 
     const { email, password } = req.body;
+    console.log('🔍 Login attempt for email:', email);
+    
+    // Check MongoDB connection
+    if (!User.db || User.db.readyState !== 1) {
+      console.log('❌ MongoDB not connected, readyState:', User.db?.readyState);
+      return res.status(500).json({
+        success: false,
+        error: 'Database connection unavailable'
+      });
+    }
+    
+    console.log('✅ MongoDB connected, searching for user...');
     
     // Find user by email
     const user = await User.findOne({ email }).populate('ownerId');
+    console.log('🔍 User search result:', user ? 'User found' : 'User not found');
+    
     if (!user) {
+      console.log('❌ No user found with email:', email);
       return res.status(401).json({ 
         success: false,
         error: 'Invalid credentials' 
       });
     }
 
+    console.log('✅ User found, checking if active...');
+    
     // Check if account is active
     if (!user.isActive) {
+      console.log('❌ User account is not active');
       return res.status(401).json({ 
         success: false,
         error: 'Account is deactivated' 
       });
     }
 
+    console.log('✅ User is active, verifying password...');
+    
     // Verify password
     const isPasswordValid = await user.comparePassword(password);
+    console.log('🔍 Password verification result:', isPasswordValid);
+    
     if (!isPasswordValid) {
+      console.log('❌ Invalid password for user:', email);
       return res.status(401).json({ 
         success: false,
         error: 'Invalid credentials' 
       });
     }
 
+    console.log('✅ Password valid, updating last login...');
+    
     // Update last login
     user.lastLogin = new Date();
     user.businessMetrics.lastActiveDate = new Date();
     await user.save();
+    
+    console.log('✅ User login updated successfully');
 
     // Generate JWT token
     const token = jwt.sign(
@@ -284,11 +314,19 @@ router.post('/login', [
     });
 
   } catch (error) {
-    console.error('PWA login error:', error);
+    console.error('❌ PWA login error:', error.name, error.message);
+    console.error('🔍 Error stack:', error.stack);
+    console.error('🔍 MongoDB connection state:', User.db?.readyState);
+    
     res.status(500).json({ 
       success: false,
       error: 'Login failed',
-      message: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      message: error.message || 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? {
+        name: error.name,
+        message: error.message,
+        mongoState: User.db?.readyState
+      } : undefined
     });
   }
 });
