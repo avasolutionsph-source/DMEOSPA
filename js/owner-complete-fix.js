@@ -4,7 +4,7 @@
     
     console.log('🔧 Owner Complete Fix loading...');
     
-    // Define complete navigation structure for owner
+    // Define complete navigation structure for owner (without logout - it's at the bottom)
     const OWNER_NAV_ITEMS = [
         { id: 'dashboard', icon: 'fas fa-home', text: 'Dashboard', page: 'dashboard' },
         { id: 'pos', icon: 'fas fa-cash-register', text: 'POS System', page: 'pos' },
@@ -16,8 +16,7 @@
         { id: 'rooms', icon: 'fas fa-door-closed', text: 'Rooms', page: 'rooms' },
         { id: 'chatbot', icon: 'fas fa-robot', text: 'AI Assistant', page: 'chatbot' },
         { id: 'timer', icon: 'fas fa-stopwatch', text: 'Timer', page: 'timer' },
-        { id: 'settings', icon: 'fas fa-cog', text: 'Settings', page: 'settings' },
-        { id: 'logout', icon: 'fas fa-sign-out-alt', text: 'Logout', action: 'logout' }
+        { id: 'settings', icon: 'fas fa-cog', text: 'Settings', page: 'settings' }
     ];
     
     // Function to rebuild navigation menu
@@ -39,39 +38,22 @@
             navLink.href = '#';
             navLink.className = 'nav-item';
             
-            // Special handling for logout
-            if (item.action === 'logout') {
-                navLink.className = 'nav-item logout-item';
-                navLink.style.backgroundColor = '#dc2626';
-                navLink.style.color = 'white';
-                navLink.style.marginTop = '20px';
-                navLink.innerHTML = `
-                    <i class="${item.icon}"></i>
-                    <span>${item.text}</span>
-                `;
-                
-                navLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    handleLogout();
-                });
-            } else {
-                navLink.setAttribute('data-page', item.page);
-                navLink.innerHTML = `
-                    <i class="${item.icon}"></i>
-                    <span>${item.text}</span>
-                `;
-                
-                // Set dashboard as active by default
-                if (item.page === 'dashboard') {
-                    navLink.classList.add('active');
-                }
-                
-                // Add navigation click handler
-                navLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    navigateToPage(item.page);
-                });
+            navLink.setAttribute('data-page', item.page);
+            navLink.innerHTML = `
+                <i class="${item.icon}"></i>
+                <span>${item.text}</span>
+            `;
+            
+            // Set dashboard as active by default
+            if (item.page === 'dashboard') {
+                navLink.classList.add('active');
             }
+            
+            // Add navigation click handler
+            navLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                navigateToPage(item.page);
+            });
             
             navMenu.appendChild(navLink);
         });
@@ -205,13 +187,9 @@
             const navMenu = document.querySelector('.nav-menu');
             if (navMenu) {
                 const navItems = navMenu.querySelectorAll('.nav-item');
-                const hasLogout = Array.from(navItems).some(item => 
-                    item.textContent.includes('Logout') || 
-                    item.querySelector('.fa-sign-out-alt')
-                );
                 
-                // If logout is missing or nav items are incomplete, rebuild
-                if (!hasLogout || navItems.length < OWNER_NAV_ITEMS.length) {
+                // If nav items are incomplete, rebuild
+                if (navItems.length < OWNER_NAV_ITEMS.length) {
                     console.log('Navigation incomplete, rebuilding...');
                     fixAllNavigation();
                 }

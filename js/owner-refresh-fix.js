@@ -4,10 +4,11 @@
     
     console.log('🔄 Owner Refresh Fix loading...');
     
-    // Correct navigation structure with logout
+    // Correct navigation structure WITHOUT logout (it's already at the bottom)
     const CORRECT_NAV = [
         { icon: 'fas fa-home', text: 'Dashboard', page: 'dashboard' },
         { icon: 'fas fa-cash-register', text: 'POS System', page: 'pos' },
+        { icon: 'fas fa-receipt', text: 'Sales & Expenses', page: 'expenses' },
         { icon: 'fas fa-calendar-check', text: 'Bookings', page: 'bookings' },
         { icon: 'fas fa-spa', text: 'Services', page: 'products' },
         { icon: 'fas fa-warehouse', text: 'Inventory', page: 'inventory' },
@@ -15,8 +16,7 @@
         { icon: 'fas fa-door-closed', text: 'Rooms', page: 'rooms' },
         { icon: 'fas fa-robot', text: 'AI Assistant', page: 'chatbot' },
         { icon: 'fas fa-stopwatch', text: 'Timer', page: 'timer' },
-        { icon: 'fas fa-cog', text: 'Settings', page: 'settings' },
-        { icon: 'fas fa-sign-out-alt', text: 'Logout', action: 'logout', style: 'background: #dc2626; color: white; margin-top: 20px;' }
+        { icon: 'fas fa-cog', text: 'Settings', page: 'settings' }
     ];
     
     // Fix business name display
@@ -53,13 +53,9 @@
         
         // Check if navigation is already correct
         const currentItems = navMenu.querySelectorAll('.nav-item');
-        const hasLogout = Array.from(currentItems).some(item => 
-            item.textContent.includes('Logout') || 
-            item.querySelector('.fa-sign-out-alt')
-        );
         
-        // If navigation is wrong or missing logout, rebuild it
-        if (currentItems.length !== CORRECT_NAV.length || !hasLogout) {
+        // If navigation is wrong, rebuild it
+        if (currentItems.length !== CORRECT_NAV.length) {
             console.log('📋 Rebuilding navigation...');
             
             // Clear and rebuild
@@ -69,36 +65,20 @@
                 const navLink = document.createElement('a');
                 navLink.href = '#';
                 navLink.className = 'nav-item';
+                navLink.setAttribute('data-page', item.page);
+                navLink.innerHTML = `<i class="${item.icon}"></i><span>${item.text}</span>`;
                 
-                if (item.action === 'logout') {
-                    // Special logout button
-                    navLink.setAttribute('style', item.style);
-                    navLink.innerHTML = `<i class="${item.icon}"></i><span>${item.text}</span>`;
-                    navLink.onclick = function(e) {
-                        e.preventDefault();
-                        if (confirm('Are you sure you want to logout?')) {
-                            localStorage.clear();
-                            sessionStorage.clear();
-                            window.location.href = '/login.html';
-                        }
-                    };
-                } else {
-                    // Regular nav item
-                    navLink.setAttribute('data-page', item.page);
-                    navLink.innerHTML = `<i class="${item.icon}"></i><span>${item.text}</span>`;
-                    
-                    // Set active state
-                    const currentPage = localStorage.getItem('lastActivePage') || 'dashboard';
-                    if (item.page === currentPage) {
-                        navLink.classList.add('active');
-                    }
-                    
-                    // Add click handler
-                    navLink.onclick = function(e) {
-                        e.preventDefault();
-                        navigateToPage(item.page);
-                    };
+                // Set active state
+                const currentPage = localStorage.getItem('lastActivePage') || 'dashboard';
+                if (item.page === currentPage) {
+                    navLink.classList.add('active');
                 }
+                
+                // Add click handler
+                navLink.onclick = function(e) {
+                    e.preventDefault();
+                    navigateToPage(item.page);
+                };
                 
                 navMenu.appendChild(navLink);
             });
@@ -191,8 +171,8 @@
         setInterval(function() {
             const navMenu = document.querySelector('.nav-menu');
             if (navMenu) {
-                const hasLogout = navMenu.querySelector('.fa-sign-out-alt');
-                if (!hasLogout) {
+                const navItems = navMenu.querySelectorAll('.nav-item');
+                if (navItems.length !== CORRECT_NAV.length) {
                     console.log('🔄 Navigation corrupted, fixing...');
                     forceCorrectNavigation();
                 }
