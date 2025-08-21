@@ -73,9 +73,12 @@
                         credentials: 'omit'
                     });
                     
+                    console.log('🔍 Response status:', response.status);
+                    
                     // Check if we got a response
                     if (response.status === 200 || response.status === 201) {
                         const data = await response.json();
+                        console.log('🔍 MongoDB response data:', data);
                         
                         if (data.token || data.success) {
                             console.log('✅ MongoDB authentication successful');
@@ -85,6 +88,8 @@
                                 role: 'owner',
                                 businessName: 'Business'
                             };
+                            
+                            console.log('🔍 User data from MongoDB:', userData);
                             
                             const token = data.token || 'mongodb-' + Date.now();
                             
@@ -102,9 +107,17 @@
                                 token: token
                             };
                         }
+                    } else {
+                        const errorText = await response.text();
+                        console.log('🔍 Non-success response:', response.status, errorText);
                     }
                 } catch (err) {
                     console.log('⚠️ Endpoint failed:', endpoint, err.message);
+                    console.log('🔍 Error details:', {
+                        name: err.name,
+                        message: err.message,
+                        stack: err.stack?.substring(0, 200)
+                    });
                     continue;
                 }
             }
@@ -212,9 +225,9 @@
     async function authenticate(email, password) {
         console.log('🔐 Starting authentication for:', email);
         
-        // Try MongoDB first (but don't wait too long)
+        // Try MongoDB first with longer timeout for real accounts
         const mongoPromise = tryMongoDBAuth(email, password);
-        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 3000));
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 8000)); // Increased timeout
         
         const mongoResult = await Promise.race([mongoPromise, timeoutPromise]);
         if (mongoResult) {
@@ -222,20 +235,25 @@
             return mongoResult;
         }
         
-        console.log('⏱️ MongoDB timeout or failed, using local auth');
+        console.log('⏱️ MongoDB timeout or failed, checking if this should use local auth');
         
-        // Fallback to local authentication
-        const localResult = tryLocalAuth(email, password);
-        if (localResult) {
-            console.log('✅ Local auth succeeded');
-            return localResult;
+        // Only fall back to local auth for specific demo accounts
+        const isDemoAccount = DEMO_ACCOUNTS[email.toLowerCase()] || email.toLowerCase() === 'jc@gmail.com';
+        
+        if (isDemoAccount) {
+            console.log('📝 Using local auth for demo account:', email);
+            const localResult = tryLocalAuth(email, password);
+            if (localResult) {
+                console.log('✅ Local auth succeeded');
+                return localResult;
+            }
         }
         
-        // Authentication failed - but be helpful
-        console.log('❌ All auth methods failed');
+        // For non-demo accounts that failed MongoDB auth, show more specific error
+        console.log('❌ Auth failed for real account:', email);
         return {
             success: false,
-            error: 'Login service is temporarily unavailable. Please try again.'
+            error: 'Invalid email or password. Please check your credentials or register if you don\'t have an account.'
         };
     }
     

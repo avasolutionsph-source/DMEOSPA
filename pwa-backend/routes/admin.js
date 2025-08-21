@@ -5,6 +5,45 @@ import User from '../models/User.js';
 
 const router = express.Router();
 
+// Centralized mock users data to ensure consistency
+function getMockUsers() {
+  return [
+    {
+      _id: '1',
+      email: 'john.doe@spa.com',
+      firstName: 'John',
+      lastName: 'Doe',
+      businessName: 'Relaxing Spa',
+      subscriptionPlan: 'pro',
+      subscriptionStatus: 'active',
+      createdAt: new Date('2024-01-15'),
+      businessMetrics: { lastActiveDate: new Date() }
+    },
+    {
+      _id: '2', 
+      email: 'jane.smith@wellness.com',
+      firstName: 'Jane',
+      lastName: 'Smith',
+      businessName: 'Wellness Center',
+      subscriptionPlan: 'unpaid',
+      subscriptionStatus: 'inactive',
+      createdAt: new Date('2024-02-10'),
+      businessMetrics: { lastActiveDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) }
+    },
+    {
+      _id: '3',
+      email: 'mike.johnson@massage.com', 
+      firstName: 'Mike',
+      lastName: 'Johnson',
+      businessName: 'Professional Massage',
+      subscriptionPlan: 'pro',
+      subscriptionStatus: 'active',
+      createdAt: new Date('2024-03-05'),
+      businessMetrics: { lastActiveDate: new Date() }
+    }
+  ];
+}
+
 // Admin middleware
 const requireAdmin = async (req, res, next) => {
   try {
@@ -54,16 +93,21 @@ router.get('/stats', requireAdmin, async (req, res) => {
   try {
     console.log('📊 Getting admin stats...');
     
-    // For now, return mock data since we may not have User model in PWA backend
+    // Get mock users to calculate consistent stats
+    const mockUsers = getMockUsers();
+    const activeUsers = mockUsers.filter(u => u.subscriptionStatus === 'active').length;
+    const proUsers = mockUsers.filter(u => u.subscriptionPlan === 'pro').length;
+    const unpaidUsers = mockUsers.filter(u => u.subscriptionPlan === 'unpaid').length;
+    
     const stats = {
-      totalUsers: 5,
-      activeUsers: 3,
+      totalUsers: mockUsers.length, // Now calculated from actual mock data
+      activeUsers: activeUsers,
       planDistribution: [
-        { _id: 'pro', count: 3, revenue: 2997 },
-        { _id: 'unpaid', count: 2, revenue: 0 }
+        { _id: 'pro', count: proUsers, revenue: proUsers * 999 },
+        { _id: 'unpaid', count: unpaidUsers, revenue: 0 }
       ],
       recentUsers: [],
-      totalRevenue: 2997
+      totalRevenue: proUsers * 999
     };
 
     console.log('✅ Admin stats returned successfully');
@@ -82,42 +126,8 @@ router.get('/users', requireAdmin, async (req, res) => {
   try {
     console.log('👥 Getting admin users...');
     
-    // Return mock users for now
-    const users = [
-      {
-        _id: '1',
-        email: 'john.doe@spa.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        businessName: 'Relaxing Spa',
-        subscriptionPlan: 'pro',
-        subscriptionStatus: 'active',
-        createdAt: new Date('2024-01-15'),
-        businessMetrics: { lastActiveDate: new Date() }
-      },
-      {
-        _id: '2', 
-        email: 'jane.smith@wellness.com',
-        firstName: 'Jane',
-        lastName: 'Smith',
-        businessName: 'Wellness Center',
-        subscriptionPlan: 'unpaid',
-        subscriptionStatus: 'inactive',
-        createdAt: new Date('2024-02-10'),
-        businessMetrics: { lastActiveDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) }
-      },
-      {
-        _id: '3',
-        email: 'mike.johnson@massage.com', 
-        firstName: 'Mike',
-        lastName: 'Johnson',
-        businessName: 'Professional Massage',
-        subscriptionPlan: 'pro',
-        subscriptionStatus: 'active',
-        createdAt: new Date('2024-03-05'),
-        businessMetrics: { lastActiveDate: new Date() }
-      }
-    ];
+    // Use centralized mock users function for consistency
+    const users = getMockUsers();
 
     console.log('✅ Admin users returned successfully:', users.length, 'users');
     res.json({
