@@ -12,6 +12,7 @@ import authRoutes from './routes/auth.js';
 import syncRoutes from './routes/sync.js';
 import userRoutes from './routes/user.js';
 import bookingRoutes from './routes/bookings.js';
+import adminRoutes from './routes/admin.js';
 
 const app = express();
 
@@ -65,6 +66,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api', syncRoutes); // products/inventory/employees/transactions sync
 app.use('/api/user', userRoutes);
 app.use('/api', bookingRoutes); // bookings & availability
+app.use('/api/admin', adminRoutes); // admin dashboard routes
 
 // Public routes for booking website (no auth required)
 app.use('/api', authRoutes); // Mount auth routes under /api as well for public endpoints
