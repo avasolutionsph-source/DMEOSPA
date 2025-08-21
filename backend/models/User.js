@@ -38,13 +38,47 @@ const userSchema = new mongoose.Schema({
   // Subscription info
   subscriptionPlan: {
     type: String,
-    enum: ['unpaid', 'free', 'pro', 'enterprise'],
-    default: 'pro'
+    enum: ['starter', 'professional', 'enterprise'],
+    default: 'starter'
   },
   subscriptionStatus: {
     type: String,
-    enum: ['active', 'inactive', 'cancelled'],
-    default: 'active'
+    enum: ['active', 'inactive', 'cancelled', 'trial', 'past_due'],
+    default: 'trial'
+  },
+  subscriptionId: String, // Stripe subscription ID
+  customerId: String, // Stripe customer ID
+  trialEndsAt: {
+    type: Date,
+    default: () => new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // 14 days from now
+  },
+  subscriptionEndsAt: Date,
+  
+  // Plan-based limits and entitlements
+  planLimits: {
+    maxCustomers: { type: Number, default: 50 },
+    maxEmployees: { type: Number, default: 1 },
+    maxProducts: { type: Number, default: 20 },
+    maxBookingsPerMonth: { type: Number, default: 100 },
+    maxStorageGB: { type: Number, default: 1 },
+    allowsOnlineBooking: { type: Boolean, default: false },
+    allowsAdvancedReports: { type: Boolean, default: false },
+    allowsCustomIntegrations: { type: Boolean, default: false },
+    allowsAIInsights: { type: Boolean, default: false },
+    allowsMultiLocation: { type: Boolean, default: false },
+    allowsPrioritySupport: { type: Boolean, default: false },
+    allowsWhiteLabel: { type: Boolean, default: false },
+    allowsMobileApp: { type: Boolean, default: false }
+  },
+  
+  // Current usage tracking
+  currentUsage: {
+    customersCount: { type: Number, default: 0 },
+    employeesCount: { type: Number, default: 1 },
+    productsCount: { type: Number, default: 0 },
+    bookingsThisMonth: { type: Number, default: 0 },
+    storageUsedGB: { type: Number, default: 0 },
+    lastUpdated: { type: Date, default: Date.now }
   },
   
   // Role and permissions
@@ -181,10 +215,135 @@ userSchema.methods.setRolePermissions = function() {
   this.permissions = rolePermissions[this.role] || rolePermissions.employee;
 };
 
-// Auto-set permissions before save
+// Set plan limits based on subscription plan
+userSchema.methods.setPlanLimits = function() {
+  const planLimitsMap = {
+    starter: {
+      maxCustomers: 50,
+      maxEmployees: 1,
+      maxProducts: 20,
+      maxBookingsPerMonth: 100,
+      maxStorageGB: 1,
+      allowsOnlineBooking: false,
+      allowsAdvancedReports: false,
+      allowsCustomIntegrations: false,
+      allowsAIInsights: false,
+      allowsMultiLocation: false,
+      allowsPrioritySupport: false,
+      allowsWhiteLabel: false,
+      allowsMobileApp: false
+    },
+    professional: {
+      maxCustomers: -1, // unlimited
+      maxEmployees: 5,
+      maxProducts: -1, // unlimited
+      maxBookingsPerMonth: -1, // unlimited
+      maxStorageGB: 10,
+      allowsOnlineBooking: true,
+      allowsAdvancedReports: true,
+      allowsCustomIntegrations: false,
+      allowsAIInsights: false,
+      allowsMultiLocation: false,
+      allowsPrioritySupport: true,
+      allowsWhiteLabel: false,
+      allowsMobileApp: true
+    },
+    enterprise: {
+      maxCustomers: -1, // unlimited
+      maxEmployees: -1, // unlimited
+      maxProducts: -1, // unlimited
+      maxBookingsPerMonth: -1, // unlimited
+      maxStorageGB: 100,
+      allowsOnlineBooking: true,
+      allowsAdvancedReports: true,
+      allowsCustomIntegrations: true,
+      allowsAIInsights: true,
+      allowsMultiLocation: true,
+      allowsPrioritySupport: true,
+      allowsWhiteLabel: true,
+      allowsMobileApp: true
+    }
+  };
+
+  this.planLimits = planLimitsMap[this.subscriptionPlan] || planLimitsMap.starter;
+};
+
+// Check if user can perform action based on plan limits
+userSchema.methods.canPerformAction = function(action, additionalData = {}) {
+  const now = new Date();
+  
+  // Check if subscription is active
+  if (this.subscriptionStatus === 'cancelled' || this.subscriptionStatus === 'inactive') {
+    return { allowed: false, reason: 'Subscription inactive' };
+  }
+  
+  // Check if trial has expired
+  if (this.subscriptionStatus === 'trial' && now > this.trialEndsAt) {
+    return { allowed: false, reason: 'Trial expired' };
+  }
+  
+  // Check specific limits based on action
+  switch (action) {
+    case 'addCustomer':
+      if (this.planLimits.maxCustomers !== -1 && 
+          this.currentUsage.customersCount >= this.planLimits.maxCustomers) {
+        return { allowed: false, reason: 'Customer limit reached' };
+      }
+      break;
+      
+    case 'addEmployee':
+      if (this.planLimits.maxEmployees !== -1 && 
+          this.currentUsage.employeesCount >= this.planLimits.maxEmployees) {
+        return { allowed: false, reason: 'Employee limit reached' };
+      }
+      break;
+      
+    case 'addProduct':
+      if (this.planLimits.maxProducts !== -1 && 
+          this.currentUsage.productsCount >= this.planLimits.maxProducts) {
+        return { allowed: false, reason: 'Product limit reached' };
+      }
+      break;
+      
+    case 'addBooking':
+      if (this.planLimits.maxBookingsPerMonth !== -1 && 
+          this.currentUsage.bookingsThisMonth >= this.planLimits.maxBookingsPerMonth) {
+        return { allowed: false, reason: 'Monthly booking limit reached' };
+      }
+      break;
+      
+    case 'onlineBooking':
+      if (!this.planLimits.allowsOnlineBooking) {
+        return { allowed: false, reason: 'Online booking not available in current plan' };
+      }
+      break;
+      
+    case 'advancedReports':
+      if (!this.planLimits.allowsAdvancedReports) {
+        return { allowed: false, reason: 'Advanced reports not available in current plan' };
+      }
+      break;
+      
+    case 'aiInsights':
+      if (!this.planLimits.allowsAIInsights) {
+        return { allowed: false, reason: 'AI insights not available in current plan' };
+      }
+      break;
+      
+    default:
+      return { allowed: true };
+  }
+  
+  return { allowed: true };
+};
+
+// Auto-set permissions and plan limits before save
 userSchema.pre('save', function(next) {
   if (this.isModified('role')) {
     this.setRolePermissions();
+  }
+  if (this.isModified('subscriptionPlan')) {
+    this.setPlanLimits();
   }
   next();
 });

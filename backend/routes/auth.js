@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import User from '../models/User.js';
+import { protect, validateToken, refreshToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -193,49 +194,10 @@ router.post('/login', [
   }
 });
 
-// Validate token
-router.get('/validate', async (req, res) => {
-  try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({ 
-        success: false,
-        error: 'No token provided' 
-      });
-    }
+// Validate token with plan limits and usage info
+router.get('/validate', protect, validateToken);
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId);
-    
-    if (!user || !user.isActive) {
-      return res.status(401).json({ 
-        success: false,
-        error: 'Invalid token' 
-      });
-    }
-
-    res.json({
-      success: true,
-      valid: true,
-      user: {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        businessName: user.businessName,
-        permissions: user.permissions
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Token validation error:', error);
-    res.status(401).json({ 
-      success: false,
-      error: 'Invalid token' 
-    });
-  }
-});
+// Refresh token
+router.post('/refresh', protect, refreshToken);
 
 export default router;
