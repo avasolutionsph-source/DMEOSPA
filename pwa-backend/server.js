@@ -17,7 +17,11 @@ import adminRoutes from './routes/admin.js';
 const app = express();
 
 // Connect to MongoDB
-connectDB();
+connectDB().then(() => {
+  console.log('📊 Database connection attempt completed');
+}).catch(err => {
+  console.error('❌ Database connection failed:', err.message);
+});
 
 // Security middleware
 app.use(helmet());
@@ -82,12 +86,20 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
+  // Import mongoose to check connection
+  const mongoose = (await import('mongoose')).default;
+  
   res.json({ 
     ok: true, 
     message: 'Ava Solutions PWA Backend is running',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    database: {
+      connected: mongoose.connection.readyState === 1,
+      state: mongoose.connection.readyState,
+      stateNames: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState] || 'unknown'
+    }
   });
 });
 

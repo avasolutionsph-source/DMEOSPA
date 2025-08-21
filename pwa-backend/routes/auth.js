@@ -209,16 +209,13 @@ router.post('/login', [
     const { email, password } = req.body;
     console.log('🔍 Login attempt for email:', email);
     
-    // Check MongoDB connection
+    // Check MongoDB connection but don't block the request
+    console.log('🔍 MongoDB connection state:', User.db?.readyState);
     if (!User.db || User.db.readyState !== 1) {
-      console.log('❌ MongoDB not connected, readyState:', User.db?.readyState);
-      return res.status(500).json({
-        success: false,
-        error: 'Database connection unavailable'
-      });
+      console.log('⚠️ MongoDB connection not optimal, attempting anyway...');
+    } else {
+      console.log('✅ MongoDB connected, searching for user...');
     }
-    
-    console.log('✅ MongoDB connected, searching for user...');
     
     // Find user by email
     const user = await User.findOne({ email }).populate('ownerId');
