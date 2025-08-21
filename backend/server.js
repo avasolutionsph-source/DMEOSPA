@@ -39,7 +39,8 @@ app.use(cors({
     'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 
     'http://localhost:8080', 'http://127.0.0.1:5500', 'http://localhost:4000',
     // Production frontends
-    'https://ava-solutions-marketing.netlify.app', 
+    'https://ava-solutions-marketing.netlify.app',
+    'https://avasolutionsph.netlify.app',
     'https://ava-solutions-pwa.netlify.app', 
     'https://ava-solutions-booking.netlify.app', 
     'https://avaphbooking.netlify.app'

@@ -70,7 +70,7 @@ router.post('/register', [
         businessId: user.businessId
       },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRE }
+      { expiresIn: process.env.JWT_EXPIRE || '24h' }
     );
 
     res.status(201).json({
@@ -148,6 +148,30 @@ router.post('/login', [
       });
     }
 
+    // Initialize missing fields for existing users
+    if (!user.planLimits) {
+      user.setPlanLimits();
+    }
+    if (!user.currentUsage) {
+      user.currentUsage = {
+        customersCount: 0,
+        employeesCount: 1,
+        productsCount: 0,
+        bookingsThisMonth: 0,
+        storageUsedGB: 0,
+        lastUpdated: new Date()
+      };
+    }
+    if (!user.businessMetrics) {
+      user.businessMetrics = {
+        totalSales: 0,
+        totalTransactions: 0,
+        totalProducts: 0,
+        totalEmployees: 0,
+        lastActiveDate: new Date()
+      };
+    }
+
     // Update last login
     user.lastLogin = new Date();
     user.businessMetrics.lastActiveDate = new Date();
@@ -164,7 +188,7 @@ router.post('/login', [
         businessId: user.businessId
       },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRE }
+      { expiresIn: process.env.JWT_EXPIRE || '24h' }
     );
 
     res.json({
@@ -186,10 +210,16 @@ router.post('/login', [
 
   } catch (error) {
     console.error('❌ Login error:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     res.status(500).json({ 
       success: false,
       error: 'Login failed',
-      message: error.message
+      message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
