@@ -1,9 +1,0 @@
-{
-  "name": "ava-solutions-marketing-website",
-  "version": "1.0.0",
-  "description": "Ava Solutions Professional Marketing Website - Static Site",
-  "private": true,
-  "scripts": {
-    "build": "exit 0"
-  }
-}
