@@ -359,8 +359,7 @@ class POSSystem {
         // Load employees for checkout dropdown
         await this.loadEmployeesForCheckout();
         
-        // Check if there are services in cart to show room assignment
-        const hasServices = this.cart.some(item => item.type === 'service');
+        // Check if there are services in cart to show room assignment (reuse hasServices variable)
         const roomSection = document.getElementById('roomAssignmentSection');
         if (roomSection) {
             if (hasServices) {
