@@ -621,13 +621,23 @@
                     console.log('✅ Authentication verified:', user.email);
                     
                     // Check if we have an old token format that needs updating
-                    if (user.isWebsiteOwner && token.startsWith('local-')) {
-                        console.log('🔄 Updating old token to admin format...');
+                    console.log('🔍 Current token:', token.substring(0, 20) + '...');
+                    console.log('🔍 User isWebsiteOwner:', user.isWebsiteOwner);
+                    console.log('🔍 Token starts with local:', token.startsWith('local-'));
+                    
+                    if (user.isWebsiteOwner && (!token.startsWith('admin-'))) {
+                        console.log('🔄 Updating token to admin format...');
                         const newToken = 'admin-' + Date.now();
                         localStorage.setItem('adminToken', newToken);
                         localStorage.setItem('auth_token', newToken);
                         localStorage.setItem('authToken', newToken);
-                        console.log('✅ Token updated to admin format');
+                        console.log('✅ Token updated to admin format:', newToken.substring(0, 20) + '...');
+                        
+                        // Force page reload to use new token
+                        setTimeout(() => {
+                            console.log('🔄 Reloading page with new token...');
+                            window.location.reload();
+                        }, 1000);
                     }
                 }
             } catch (e) {

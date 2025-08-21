@@ -10,8 +10,27 @@ const API_BASE_URL = 'https://ava-marketing-api.onrender.com/api';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
+    // Force create admin token for website owner if logged in
+    const userData = localStorage.getItem('userData') || localStorage.getItem('auth_user');
+    if (userData) {
+        try {
+            const user = JSON.parse(userData);
+            if (user.isWebsiteOwner && user.email === 'avasolutionsph@gmail.com') {
+                console.log('🔧 Force creating admin token for website owner...');
+                const adminToken = 'admin-' + Date.now();
+                localStorage.setItem('adminToken', adminToken);
+                localStorage.setItem('auth_token', adminToken);
+                localStorage.setItem('authToken', adminToken);
+                console.log('✅ Admin token created:', adminToken.substring(0, 20) + '...');
+            }
+        } catch (e) {
+            console.error('Error parsing user data:', e);
+        }
+    }
+    
     const token = localStorage.getItem('adminToken');
     if (token) {
+        console.log('🔍 Using admin token:', token.substring(0, 20) + '...');
         showDashboard();
         loadDashboard();
     } else {

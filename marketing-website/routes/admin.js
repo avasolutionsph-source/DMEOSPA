@@ -9,14 +9,17 @@ const router = express.Router();
 const requireAdmin = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
+    console.log('🔍 Admin middleware - Token received:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
+    
     if (!token) {
+      console.log('❌ Admin middleware - No token provided');
       return res.status(401).json({ error: 'Access denied. No token provided.' });
     }
 
     // Check for website owner special token (from unified-auth.js)
-    if (token.startsWith('local-') || token.includes('admin-') || token.includes('demo-admin-signature')) {
+    if (token.startsWith('local-') || token.startsWith('admin-') || token.includes('demo-admin-signature')) {
       // Special handling for website owner/admin tokens from unified-auth
-      console.log('🔑 Website owner token detected');
+      console.log('🔑 Admin middleware - Website owner token detected, type:', token.substring(0, 10));
       req.user = {
         userId: 'website-owner',
         email: 'avasolutionsph@gmail.com',
@@ -24,20 +27,25 @@ const requireAdmin = async (req, res, next) => {
         businessName: 'Ava Solutions PH',
         isWebsiteOwner: true
       };
+      console.log('✅ Admin middleware - Website owner authenticated');
       return next();
     }
 
     // Try to verify as JWT token
+    console.log('🔍 Admin middleware - Attempting JWT verification...');
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     if (decoded.role !== 'admin' && decoded.role !== 'superAdmin') {
+      console.log('❌ Admin middleware - Insufficient role:', decoded.role);
       return res.status(403).json({ error: 'Access denied. Admin role required.' });
     }
 
     req.user = decoded;
+    console.log('✅ Admin middleware - JWT user authenticated:', decoded.email);
     next();
   } catch (error) {
-    console.error('Admin auth error:', error.message);
-    res.status(401).json({ error: 'Invalid token' });
+    console.error('❌ Admin middleware - Auth error:', error.message);
+    console.error('🔍 Admin middleware - Token causing error:', token ? token.substring(0, 30) + '...' : 'NO TOKEN');
+    res.status(401).json({ error: 'Invalid token', details: error.message });
   }
 };
 
