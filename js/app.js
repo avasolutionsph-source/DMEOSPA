@@ -189,6 +189,10 @@ class App {
                     await window.loadRooms();
                 }
                 break;
+            case 'gift-certificates':
+                // Load gift certificates content dynamically
+                await this.loadGiftCertificatesPage();
+                break;
             case 'chatbot':
                 // Chatbot is loaded on demand
                 break;
@@ -197,6 +201,48 @@ class App {
                     await window.loadSettings();
                 }
                 break;
+        }
+    }
+
+    async loadGiftCertificatesPage() {
+        const container = document.getElementById('gift-certificates');
+        if (!container) return;
+
+        try {
+            // Load the gift certificates HTML content
+            const response = await fetch('gift-certificates.html');
+            if (response.ok) {
+                const html = await response.text();
+                // Extract only the main content (not the full HTML)
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const content = doc.querySelector('.gift-certificates-container');
+                
+                if (content) {
+                    container.innerHTML = '';
+                    container.appendChild(content);
+                    
+                    // Load the gift certificates JavaScript
+                    if (!window.giftCertificateManager) {
+                        const script = document.createElement('script');
+                        script.src = 'js/gift-certificates.js';
+                        script.onload = () => {
+                            if (window.loadGiftCertificates) {
+                                window.loadGiftCertificates();
+                            }
+                        };
+                        document.body.appendChild(script);
+                    } else {
+                        // Manager already loaded, just reinitialize
+                        if (window.loadGiftCertificates) {
+                            window.loadGiftCertificates();
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load gift certificates page:', error);
+            container.innerHTML = '<div class="error-message">Failed to load gift certificates. Please refresh the page.</div>';
         }
     }
 

@@ -113,6 +113,7 @@ class EntitlementsSystem {
             inventory: true,
             employees: true,
             rooms: true,
+            'gift-certificates': true,
             dashboard: 'full',
             chatbot: true,
             cloudBackup: true,
@@ -143,7 +144,8 @@ class EntitlementsSystem {
             analytics: true,        // Full analytics
             multiUser: true,        // Full multi-user
             support: 'priority',    // Full support
-            rooms: true             // Full rooms access
+            rooms: true,            // Full rooms access
+            'gift-certificates': true  // Full gift certificates access
         };
         console.log('Set unpaid plan entitlements - basic features only (POS + Dashboard)');
     }
