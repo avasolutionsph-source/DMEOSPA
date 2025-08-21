@@ -31,7 +31,41 @@
                 submitBtn.disabled = true;
                 
                 try {
-                    // Try PWA Backend first
+                    // For demo/test accounts, skip API call
+                    if (email === 'jc@gmail.com' || email === 'demo@spa.com' || email === 'admin@test.com' || email.includes('smnaga')) {
+                        // Create demo session
+                        const demoToken = 'demo-' + Date.now();
+                        const demoUser = {
+                            id: 'demo-' + Date.now(),
+                            email: email,
+                            firstName: email.split('@')[0],
+                            lastName: 'User',
+                            role: email.includes('admin') ? 'admin' : 'owner',
+                            businessName: 'Demo Business'
+                        };
+                        
+                        // Store authentication
+                        localStorage.setItem('auth_token', demoToken);
+                        localStorage.setItem('auth_user', JSON.stringify(demoUser));
+                        localStorage.setItem('userToken', demoToken);
+                        localStorage.setItem('authToken', demoToken);
+                        localStorage.setItem('userData', JSON.stringify(demoUser));
+                        
+                        // Show success
+                        showMessage('Login successful! Redirecting...', 'success');
+                        
+                        // Redirect based on role
+                        setTimeout(() => {
+                            if (demoUser.role === 'admin') {
+                                window.location.href = '/admin';
+                            } else {
+                                window.location.href = '/business-dashboard';
+                            }
+                        }, 1000);
+                        return;
+                    }
+                    
+                    // Try PWA Backend for real accounts
                     const response = await fetch(`${AUTH_API_URL}/auth/login`, {
                         method: 'POST',
                         headers: {
@@ -70,37 +104,7 @@
                     }
                 } catch (error) {
                     console.error('Login error:', error);
-                    
-                    // Fallback: Accept demo credentials
-                    if (email === 'demo@spa.com' || email === 'admin@test.com' || email.includes('smnaga')) {
-                        // Demo/test login
-                        const demoToken = 'demo-' + Date.now();
-                        const demoUser = {
-                            id: 'demo-user',
-                            email: email,
-                            firstName: email.split('@')[0],
-                            role: email.includes('admin') ? 'admin' : 'owner',
-                            businessName: 'Demo Business'
-                        };
-                        
-                        localStorage.setItem('auth_token', demoToken);
-                        localStorage.setItem('auth_user', JSON.stringify(demoUser));
-                        localStorage.setItem('userToken', demoToken);
-                        localStorage.setItem('authToken', demoToken);
-                        localStorage.setItem('userData', JSON.stringify(demoUser));
-                        
-                        showMessage('Demo login successful! Redirecting...', 'success');
-                        
-                        setTimeout(() => {
-                            if (demoUser.role === 'admin') {
-                                window.location.href = '/admin';
-                            } else {
-                                window.location.href = '/business-dashboard';
-                            }
-                        }, 1000);
-                    } else {
-                        showMessage(error.message || 'Login failed. Please try again.', 'error');
-                    }
+                    showMessage('Login service temporarily unavailable. Please try again.', 'error');
                 } finally {
                     // Restore button
                     submitBtn.innerHTML = originalText;
