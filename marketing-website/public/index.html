@@ -227,6 +227,93 @@
             margin-top: 1rem;
         }
 
+        .demo-section {
+            background: #f8f9fa;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .demo-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .demo-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .testimonials {
+            padding: 4rem 2rem;
+            background: white;
+        }
+
+        .testimonials h2 {
+            text-align: center;
+            margin-bottom: 3rem;
+            font-size: 2.5rem;
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .testimonial-card {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .testimonial-content p {
+            font-style: italic;
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .testimonial-author strong {
+            display: block;
+            color: #667eea;
+            margin-bottom: 0.25rem;
+        }
+
+        .testimonial-author span {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .cta-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .cta-section p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
         @media (max-width: 768px) {
             .hero h1 {
                 font-size: 2rem;
@@ -240,6 +327,21 @@
             .nav-links {
                 display: none;
             }
+
+            .demo-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .testimonials-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .demo-section h2,
+            .testimonials h2,
+            .cta-section h2 {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
@@ -249,8 +351,10 @@
             <div class="logo">Ava Solutions PH</div>
             <ul class="nav-links">
                 <li><a href="#features">Features</a></li>
-                <li><a href="#pricing">Pricing</a></li>
-                <li><a href="#contact">Contact</a></li>
+                <li><a href="pricing.html">Pricing</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="contact.html">Contact</a></li>
+                <li><a href="#demo">Demo</a></li>
             </ul>
             <a href="#" class="btn" onclick="openLoginModal()">Login</a>
         </nav>
@@ -298,6 +402,75 @@
                 <h3>AI Assistant</h3>
                 <p>Get business insights and recommendations from our AI-powered assistant.</p>
             </div>
+            <div class="feature-card">
+                <div class="feature-icon">💳</div>
+                <h3>Payment Processing</h3>
+                <p>Accept all major payment methods with secure, fast transaction processing.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>Mobile App</h3>
+                <p>Full-featured mobile app for managing your business on the go.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Data Security</h3>
+                <p>Bank-level security with encrypted data storage and regular backups.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="demo-section" id="demo">
+        <div class="container">
+            <h2>See It In Action</h2>
+            <p>Experience our platform with a live demo</p>
+            <div class="demo-buttons">
+                <a href="https://ava-solutions-pwa.netlify.app" class="btn btn-primary" target="_blank">Try Live Demo</a>
+                <a href="https://avaphbooking.netlify.app" class="btn btn-secondary" target="_blank">Booking Demo</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="testimonials">
+        <div class="container">
+            <h2>What Our Customers Say</h2>
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p>"Ava Solutions transformed our spa operations. We've seen a 40% increase in efficiency and our customers love the online booking system."</p>
+                        <div class="testimonial-author">
+                            <strong>Maria Santos</strong>
+                            <span>Owner, Serenity Spa</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p>"The analytics dashboard gives us insights we never had before. We can make data-driven decisions to grow our business."</p>
+                        <div class="testimonial-author">
+                            <strong>John Rivera</strong>
+                            <span>Manager, Wellness Center Manila</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p>"Setup was incredibly easy and the support team is amazing. Our staff learned the system in just one day."</p>
+                        <div class="testimonial-author">
+                            <strong>Lisa Chen</strong>
+                            <span>Owner, Zen Massage Therapy</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <div class="container">
+            <h2>Ready to Transform Your Business?</h2>
+            <p>Join hundreds of successful spa and wellness businesses using Ava Solutions</p>
+            <a href="#" class="btn btn-primary" onclick="openRegisterModal()">Start Your Free Trial</a>
         </div>
     </section>
 
