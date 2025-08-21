@@ -201,7 +201,44 @@ router.post('/admin-login', [
 
     const { email, password } = req.body;
 
-    // Find admin user
+    // First check hardcoded super admin credentials
+    const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'avasolutionsph@gmail.com';
+    const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'Ava12345';
+    
+    if (email === superAdminEmail && password === superAdminPassword) {
+      // Log super admin login
+      logger.auth('Super Admin login via admin-login endpoint', { email: superAdminEmail, ip: req.ip });
+      
+      // Generate JWT for super admin
+      const token = jwt.sign(
+        { 
+          userId: 'super-admin', 
+          email: superAdminEmail, 
+          role: 'superAdmin',
+          subscriptionPlan: 'pro',
+          businessName: 'Ava Solutions (Super Admin)'
+        },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: process.env.JWT_EXPIRE || '7d' }
+      );
+
+      return res.json({
+        success: true,
+        message: 'Super Admin login successful',
+        token,
+        user: {
+          id: 'super-admin',
+          email: superAdminEmail,
+          firstName: 'Super',
+          lastName: 'Admin',
+          businessName: 'Ava Solutions (Super Admin)',
+          subscriptionPlan: 'pro',
+          role: 'superAdmin'
+        }
+      });
+    }
+
+    // Otherwise, find admin user in database
     const user = await User.findOne({ 
       email, 
       role: { $in: ['admin', 'superAdmin'] } 
