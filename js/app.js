@@ -217,9 +217,19 @@ class App {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 const content = doc.querySelector('.gift-certificates-container');
+                const styles = doc.querySelector('style');
                 
                 if (content) {
                     container.innerHTML = '';
+                    
+                    // Add the styles if not already present
+                    if (styles && !document.getElementById('gift-certificates-styles')) {
+                        const styleElement = document.createElement('style');
+                        styleElement.id = 'gift-certificates-styles';
+                        styleElement.textContent = styles.textContent;
+                        document.head.appendChild(styleElement);
+                    }
+                    
                     container.appendChild(content);
                     
                     // Load the gift certificates JavaScript
