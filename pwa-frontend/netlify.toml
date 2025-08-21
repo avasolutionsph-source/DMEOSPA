@@ -1,0 +1,7 @@
+[build]
+  publish = "."
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://ava-pwa-backend.onrender.com/api/:splat"
+  status = 200

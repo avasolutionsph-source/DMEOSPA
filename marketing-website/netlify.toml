@@ -1,0 +1,17 @@
+[build]
+  publish = "public"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://ava-pwa-backend.onrender.com/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/pwa"
+  to = "https://ava-solutions-pwa.netlify.app"
+  status = 302
+
+[[redirects]]
+  from = "/booking"
+  to = "https://avaphbooking.netlify.app"
+  status = 302
