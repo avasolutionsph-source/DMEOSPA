@@ -6,6 +6,13 @@ class POSSystem {
         this.currentCategory = 'all';
         this.products = [];
         this.inventory = [];
+        
+        // Discount and GC tracking
+        this.appliedGiftCertificate = null;
+        this.appliedSeniorPWDDiscount = null;
+        this.appliedPromoDiscount = null;
+        this.discountAmount = 0;
+        this.gcAmount = 0;
     }
 
     async init() {
@@ -346,8 +353,12 @@ class POSSystem {
             }
         }
 
+        // Reset discounts for new checkout
+        this.resetDiscounts();
+
         // Update checkout modal
         const checkoutItems = document.getElementById('checkoutItems');
+        const checkoutSubtotal = document.getElementById('checkoutSubtotal');
         const checkoutTotal = document.getElementById('checkoutTotal');
 
         // Display items
@@ -358,12 +369,181 @@ class POSSystem {
             </div>
         `).join('');
 
-        // Calculate totals
-        const total = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        // Calculate subtotal
+        const subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-        checkoutTotal.textContent = app.formatCurrency(total);
+        checkoutSubtotal.textContent = app.formatCurrency(subtotal);
+        checkoutTotal.textContent = app.formatCurrency(subtotal);
 
         openModal('checkoutModal');
+    }
+
+    // Reset all discounts
+    resetDiscounts() {
+        this.appliedGiftCertificate = null;
+        this.appliedSeniorPWDDiscount = null;
+        this.appliedPromoDiscount = null;
+        this.discountAmount = 0;
+        this.gcAmount = 0;
+        
+        // Reset UI
+        document.getElementById('gcControlNumber').value = '';
+        document.getElementById('gcStatus').innerHTML = '';
+        document.getElementById('applySeniorPWD').checked = false;
+        document.getElementById('seniorPWDFields').style.display = 'none';
+        document.getElementById('discountCardholderName').value = '';
+        document.getElementById('discountIDNumber').value = '';
+        document.getElementById('discountCardType').value = '';
+        document.getElementById('promoDiscount').value = '';
+        document.getElementById('customDiscountField').style.display = 'none';
+        document.getElementById('discountRow').style.display = 'none';
+        document.getElementById('gcRow').style.display = 'none';
+    }
+
+    // Validate Gift Certificate
+    async validateGiftCertificate() {
+        const controlNumber = document.getElementById('gcControlNumber').value.trim();
+        const statusDiv = document.getElementById('gcStatus');
+        
+        if (!controlNumber) {
+            statusDiv.innerHTML = '<span style="color: red;">Please enter a control number</span>';
+            return;
+        }
+
+        try {
+            // Check if GC exists and is valid
+            const gcs = await db.getByIndex('giftCertificates', 'controlNumber', controlNumber);
+            const gc = gcs && gcs[0];
+            
+            if (!gc) {
+                statusDiv.innerHTML = '<span style="color: red;"><i class="fas fa-times-circle"></i> Invalid control number</span>';
+                this.appliedGiftCertificate = null;
+                this.updateCheckoutTotals();
+                return;
+            }
+
+            if (gc.status === 'used') {
+                statusDiv.innerHTML = `<span style="color: red;"><i class="fas fa-times-circle"></i> Gift certificate already used on ${new Date(gc.usedDate).toLocaleDateString()}</span>`;
+                this.appliedGiftCertificate = null;
+                this.updateCheckoutTotals();
+                return;
+            }
+
+            if (gc.status === 'expired') {
+                statusDiv.innerHTML = '<span style="color: red;"><i class="fas fa-times-circle"></i> Gift certificate has expired</span>';
+                this.appliedGiftCertificate = null;
+                this.updateCheckoutTotals();
+                return;
+            }
+
+            // Valid GC found
+            this.appliedGiftCertificate = gc;
+            this.gcAmount = gc.amount || 0;
+            statusDiv.innerHTML = `<span style="color: green;"><i class="fas fa-check-circle"></i> Valid! Amount: ${app.formatCurrency(gc.amount)}</span>`;
+            this.updateCheckoutTotals();
+            
+        } catch (error) {
+            console.error('GC validation error:', error);
+            statusDiv.innerHTML = '<span style="color: red;">Error validating gift certificate</span>';
+        }
+    }
+
+    // Toggle Senior/PWD fields
+    toggleSeniorPWDFields() {
+        const checkbox = document.getElementById('applySeniorPWD');
+        const fieldsDiv = document.getElementById('seniorPWDFields');
+        
+        if (checkbox.checked) {
+            fieldsDiv.style.display = 'block';
+            this.appliedSeniorPWDDiscount = { percentage: 20 };
+        } else {
+            fieldsDiv.style.display = 'none';
+            this.appliedSeniorPWDDiscount = null;
+        }
+        
+        this.updateCheckoutTotals();
+    }
+
+    // Apply promo discount
+    applyPromoDiscount() {
+        const promoSelect = document.getElementById('promoDiscount');
+        const customField = document.getElementById('customDiscountField');
+        
+        if (promoSelect.value === 'custom') {
+            customField.style.display = 'block';
+            
+            // Add listener for custom discount
+            const customPercent = document.getElementById('customDiscountPercent');
+            customPercent.onchange = () => {
+                const percent = parseFloat(customPercent.value) || 0;
+                this.appliedPromoDiscount = {
+                    type: 'custom',
+                    percentage: percent,
+                    reason: document.getElementById('customDiscountReason').value
+                };
+                this.updateCheckoutTotals();
+            };
+        } else {
+            customField.style.display = 'none';
+            
+            if (promoSelect.value) {
+                const [, percent] = promoSelect.value.match(/-(\d+)$/) || [, 0];
+                this.appliedPromoDiscount = {
+                    type: promoSelect.value,
+                    percentage: parseInt(percent)
+                };
+            } else {
+                this.appliedPromoDiscount = null;
+            }
+        }
+        
+        this.updateCheckoutTotals();
+    }
+
+    // Update checkout totals with discounts
+    updateCheckoutTotals() {
+        const subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        let total = subtotal;
+        
+        // Reset discount amount
+        this.discountAmount = 0;
+        
+        // Apply Senior/PWD discount (20%)
+        if (this.appliedSeniorPWDDiscount) {
+            const seniorDiscount = subtotal * 0.20;
+            this.discountAmount += seniorDiscount;
+        }
+        
+        // Apply promo discount
+        if (this.appliedPromoDiscount) {
+            const promoDiscount = subtotal * (this.appliedPromoDiscount.percentage / 100);
+            this.discountAmount += promoDiscount;
+        }
+        
+        // Apply discounts
+        total -= this.discountAmount;
+        
+        // Apply gift certificate
+        if (this.appliedGiftCertificate) {
+            const gcDeduction = Math.min(this.gcAmount, total);
+            total -= gcDeduction;
+            document.getElementById('gcRow').style.display = 'flex';
+            document.getElementById('checkoutGC').textContent = `-${app.formatCurrency(gcDeduction)}`;
+        } else {
+            document.getElementById('gcRow').style.display = 'none';
+        }
+        
+        // Update UI
+        document.getElementById('checkoutSubtotal').textContent = app.formatCurrency(subtotal);
+        
+        if (this.discountAmount > 0) {
+            document.getElementById('discountRow').style.display = 'flex';
+            document.getElementById('checkoutDiscount').textContent = `-${app.formatCurrency(this.discountAmount)}`;
+        } else {
+            document.getElementById('discountRow').style.display = 'none';
+        }
+        
+        document.getElementById('checkoutTotal').textContent = app.formatCurrency(Math.max(0, total));
     }
 
     async processCheckout() {
@@ -425,18 +605,87 @@ class POSSystem {
         try {
             const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
             
+            // Validate Senior/PWD discount fields if applied
+            if (this.appliedSeniorPWDDiscount) {
+                const cardholderName = document.getElementById('discountCardholderName').value.trim();
+                const idNumber = document.getElementById('discountIDNumber').value.trim();
+                const cardType = document.getElementById('discountCardType').value;
+                
+                if (!cardholderName || !idNumber || !cardType) {
+                    showNotification('Please fill in all Senior/PWD discount fields', 'error');
+                    setButtonLoading('confirmCheckoutBtn', false);
+                    hideLoading();
+                    this.isProcessingCheckout = false;
+                    return;
+                }
+                
+                this.appliedSeniorPWDDiscount.cardholderName = cardholderName;
+                this.appliedSeniorPWDDiscount.idNumber = idNumber;
+                this.appliedSeniorPWDDiscount.cardType = cardType;
+            }
+            
             // Calculate totals
-            const total = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            let total = subtotal - this.discountAmount;
+            
+            // Apply GC amount
+            if (this.appliedGiftCertificate) {
+                const gcDeduction = Math.min(this.gcAmount, total);
+                total -= gcDeduction;
+                
+                // Mark GC as used
+                this.appliedGiftCertificate.status = 'used';
+                this.appliedGiftCertificate.usedDate = new Date().toISOString();
+                this.appliedGiftCertificate.usedInTransaction = null; // Will be updated after transaction is saved
+                await db.update('giftCertificates', this.appliedGiftCertificate);
+            }
 
-            // Create transaction
+            // Create comprehensive transaction with audit trail
             const transaction = {
                 date: new Date().toISOString(),
                 items: [...this.cart],
-                subtotal: total,
+                subtotal: subtotal,
+                discountAmount: this.discountAmount,
+                gcAmount: this.appliedGiftCertificate ? Math.min(this.gcAmount, subtotal - this.discountAmount) : 0,
                 tax: 0,
-                total: total,
+                total: Math.max(0, total),
                 paymentMethod: paymentMethod,
                 employeeId: this.selectedEmployee || null,
+                
+                // Discount details for audit
+                discounts: {
+                    seniorPWD: this.appliedSeniorPWDDiscount ? {
+                        applied: true,
+                        percentage: this.appliedSeniorPWDDiscount.percentage,
+                        amount: subtotal * 0.20,
+                        cardholderName: this.appliedSeniorPWDDiscount.cardholderName,
+                        idNumber: this.appliedSeniorPWDDiscount.idNumber,
+                        cardType: this.appliedSeniorPWDDiscount.cardType
+                    } : null,
+                    promo: this.appliedPromoDiscount ? {
+                        applied: true,
+                        type: this.appliedPromoDiscount.type,
+                        percentage: this.appliedPromoDiscount.percentage,
+                        amount: subtotal * (this.appliedPromoDiscount.percentage / 100),
+                        reason: this.appliedPromoDiscount.reason
+                    } : null,
+                    giftCertificate: this.appliedGiftCertificate ? {
+                        applied: true,
+                        controlNumber: this.appliedGiftCertificate.controlNumber,
+                        amount: Math.min(this.gcAmount, subtotal - this.discountAmount),
+                        gcId: this.appliedGiftCertificate.id
+                    } : null
+                },
+                
+                // Audit metadata
+                auditLog: {
+                    createdBy: this.selectedEmployee || 'system',
+                    createdAt: new Date().toISOString(),
+                    terminal: 'POS-1',
+                    ipAddress: 'local',
+                    userAgent: navigator.userAgent
+                },
+                
                 syncStatus: 'pending'
             };
 
@@ -451,6 +700,12 @@ class POSSystem {
 
             // Save transaction
             const transactionId = await db.add('transactions', transaction);
+            
+            // Update GC with transaction reference if used
+            if (this.appliedGiftCertificate) {
+                this.appliedGiftCertificate.usedInTransaction = transactionId;
+                await db.update('giftCertificates', this.appliedGiftCertificate);
+            }
 
             // Update inventory stock and track service usage
             for (const item of this.cart) {

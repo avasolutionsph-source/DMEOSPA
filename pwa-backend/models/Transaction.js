@@ -43,6 +43,38 @@ const transactionSchema = new mongoose.Schema({
     min: 0,
     default: 0
   },
+  
+  // Detailed discount tracking
+  discountDetails: {
+    seniorPWD: {
+      applied: { type: Boolean, default: false },
+      percentage: Number,
+      amount: Number,
+      cardholderName: String,
+      idNumber: String,
+      cardType: { type: String, enum: ['senior', 'pwd'] }
+    },
+    promo: {
+      applied: { type: Boolean, default: false },
+      type: String,
+      percentage: Number,
+      amount: Number,
+      reason: String
+    },
+    giftCertificate: {
+      applied: { type: Boolean, default: false },
+      controlNumber: String,
+      amount: Number,
+      gcId: String
+    }
+  },
+  
+  // Gift Certificate amount
+  gcAmount: {
+    type: Number,
+    min: 0,
+    default: 0
+  },
   total: {
     type: Number,
     required: true,
@@ -80,6 +112,21 @@ const transactionSchema = new mongoose.Schema({
     type: String,
     enum: ['completed', 'cancelled', 'refunded'],
     default: 'completed'
+  },
+  
+  // Audit trail
+  auditLog: {
+    createdBy: String,
+    createdAt: Date,
+    terminal: String,
+    ipAddress: String,
+    userAgent: String,
+    modifications: [{
+      date: Date,
+      by: String,
+      action: String,
+      details: String
+    }]
   },
   
   // Sync metadata

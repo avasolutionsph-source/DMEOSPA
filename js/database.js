@@ -56,6 +56,24 @@ class Database {
                     transactionsStore.createIndex('syncStatus', 'syncStatus', { unique: false });
                 }
 
+                // Gift Certificates store
+                if (!this.db.objectStoreNames.contains('giftCertificates')) {
+                    const gcStore = this.db.createObjectStore('giftCertificates', { keyPath: 'id', autoIncrement: true });
+                    gcStore.createIndex('controlNumber', 'controlNumber', { unique: true });
+                    gcStore.createIndex('status', 'status', { unique: false });
+                    gcStore.createIndex('usedDate', 'usedDate', { unique: false });
+                    gcStore.createIndex('syncStatus', 'syncStatus', { unique: false });
+                }
+
+                // Promo Discounts store
+                if (!this.db.objectStoreNames.contains('promoDiscounts')) {
+                    const promoStore = this.db.createObjectStore('promoDiscounts', { keyPath: 'id', autoIncrement: true });
+                    promoStore.createIndex('code', 'code', { unique: true });
+                    promoStore.createIndex('status', 'status', { unique: false });
+                    promoStore.createIndex('type', 'type', { unique: false });
+                    promoStore.createIndex('syncStatus', 'syncStatus', { unique: false });
+                }
+
                 // Settings store
                 if (!this.db.objectStoreNames.contains('settings')) {
                     const settingsStore = this.db.createObjectStore('settings', { keyPath: 'key' });

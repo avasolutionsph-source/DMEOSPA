@@ -622,12 +622,76 @@
                     <h3>Order Summary</h3>
                     <div id="checkoutItems"></div>
                     <div class="checkout-totals">
+                        <div class="summary-row subtotal">
+                            <span>Subtotal:</span>
+                            <span id="checkoutSubtotal">₱0.00</span>
+                        </div>
+                        <div class="summary-row discount" id="discountRow" style="display: none;">
+                            <span>Discount:</span>
+                            <span id="checkoutDiscount">-₱0.00</span>
+                        </div>
+                        <div class="summary-row gc" id="gcRow" style="display: none;">
+                            <span>Gift Certificate:</span>
+                            <span id="checkoutGC">-₱0.00</span>
+                        </div>
                         <div class="summary-row total">
                             <span>Total:</span>
                             <span id="checkoutTotal">₱0.00</span>
                         </div>
                     </div>
                 </div>
+                
+                <!-- Discounts Section -->
+                <div class="discount-section">
+                    <h3>Discounts & Gift Certificates</h3>
+                    
+                    <!-- Gift Certificate -->
+                    <div class="form-group">
+                        <label><i class="fas fa-gift"></i> Gift Certificate</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="gcControlNumber" class="form-input" placeholder="Enter Control Number">
+                            <button type="button" class="btn btn-secondary" onclick="posSystem.validateGiftCertificate()">
+                                <i class="fas fa-check"></i> Validate
+                            </button>
+                        </div>
+                        <div id="gcStatus" style="margin-top: 5px; font-size: 0.9rem;"></div>
+                    </div>
+                    
+                    <!-- Senior/PWD Discount -->
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="applySeniorPWD" onchange="posSystem.toggleSeniorPWDFields()">
+                            <span class="checkmark"></span>
+                            Apply Senior Citizen / PWD Discount (20%)
+                        </label>
+                        <div id="seniorPWDFields" style="display: none; margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                            <input type="text" id="discountCardholderName" class="form-input" placeholder="Cardholder Name" style="margin-bottom: 10px;">
+                            <input type="text" id="discountIDNumber" class="form-input" placeholder="ID Number" style="margin-bottom: 10px;">
+                            <select id="discountCardType" class="form-input">
+                                <option value="">Select Card Type</option>
+                                <option value="senior">Senior Citizen</option>
+                                <option value="pwd">PWD</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Other Promo Discounts -->
+                    <div class="form-group">
+                        <label><i class="fas fa-percentage"></i> Other Promo Discounts</label>
+                        <select id="promoDiscount" class="form-input" onchange="posSystem.applyPromoDiscount()">
+                            <option value="">No Promo Applied</option>
+                            <option value="new-customer-10">New Customer (10% off)</option>
+                            <option value="loyalty-15">Loyalty Reward (15% off)</option>
+                            <option value="holiday-20">Holiday Special (20% off)</option>
+                            <option value="custom">Custom Discount...</option>
+                        </select>
+                        <div id="customDiscountField" style="display: none; margin-top: 10px;">
+                            <input type="number" id="customDiscountPercent" class="form-input" placeholder="Enter discount %" min="0" max="100" step="1">
+                            <input type="text" id="customDiscountReason" class="form-input" placeholder="Reason for discount" style="margin-top: 5px;">
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="payment-section">
                     <h3>Payment Method</h3>
                     <div class="payment-options">
