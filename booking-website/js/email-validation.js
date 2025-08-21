@@ -2,7 +2,7 @@
 // Prevents duplicate emails when customers book appointments
 
 (function() {
-    const apiUrl = 'https://ava-solutions-marketing.netlify.app/api';
+    const apiUrl = 'https://ava-marketing-api.onrender.com/api';
     let validationTimeout = null;
 
     // Check email uniqueness

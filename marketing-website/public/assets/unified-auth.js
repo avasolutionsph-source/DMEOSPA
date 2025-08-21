@@ -156,6 +156,11 @@
             localStorage.setItem('userData', JSON.stringify(userData));
             localStorage.setItem('user', JSON.stringify(userData));
             
+            // Store admin token if user is admin/superAdmin
+            if (userData.role === 'admin' || userData.role === 'superAdmin' || userData.isWebsiteOwner) {
+                localStorage.setItem('adminToken', token);
+            }
+            
             return {
                 success: true,
                 user: userData,
@@ -185,6 +190,11 @@
             localStorage.setItem('auth_user', JSON.stringify(userData));
             localStorage.setItem('userData', JSON.stringify(userData));
             localStorage.setItem('user', JSON.stringify(userData));
+            
+            // Store admin token if user is admin/superAdmin
+            if (userData.role === 'admin' || userData.role === 'superAdmin' || userData.isWebsiteOwner) {
+                localStorage.setItem('adminToken', token);
+            }
             
             return {
                 success: true,

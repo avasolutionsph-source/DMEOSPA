@@ -3,7 +3,7 @@
 
 class EmailValidator {
     constructor() {
-        this.apiUrl = 'https://ava-solutions-marketing.netlify.app/api';
+        this.apiUrl = 'https://ava-marketing-api.onrender.com/api';
         this.debounceTimer = null;
         this.lastCheckedEmail = '';
     }

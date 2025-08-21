@@ -601,6 +601,31 @@
         </div>
     </div>
 
+    <!-- Load auth check first to ensure proper authentication -->
+    <script>
+        // Immediate auth check before page loads
+        console.log('🔒 Checking authentication...');
+        const token = localStorage.getItem('adminToken') || localStorage.getItem('auth_token') || localStorage.getItem('authToken');
+        const userData = localStorage.getItem('userData') || localStorage.getItem('auth_user');
+        
+        if (!token || !userData) {
+            console.log('❌ No authentication found, redirecting...');
+            window.location.replace('/admin-login.html');
+        } else {
+            try {
+                const user = JSON.parse(userData);
+                if (user.role !== 'admin' && user.role !== 'superAdmin' && !user.isWebsiteOwner) {
+                    console.log('❌ Insufficient privileges, redirecting...');
+                    window.location.replace('/admin-login.html');
+                } else {
+                    console.log('✅ Authentication verified:', user.email);
+                }
+            } catch (e) {
+                console.log('❌ Invalid user data, redirecting...');
+                window.location.replace('/admin-login.html');
+            }
+        }
+    </script>
     <script src="/js/admin-auth-check.js"></script>
     <script src="/assets/admin.js"></script>
     <script src="/assets/unified-auth.js"></script>

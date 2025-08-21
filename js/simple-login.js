@@ -1,16 +1,22 @@
-// SIMPLE LOGIN - ENABLED - Direct API Connection
-// Bypasses all existing auth complexity for reliable login
+// SIMPLE LOGIN - DEPRECATED - NOT FOR PRODUCTION USE
+// This system bypasses security and should only be used for development/testing
 
 class SimpleLogin {
     constructor() {
+        // SECURITY WARNING: Disable in production
+        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            console.warn('🚨 SECURITY WARNING: Simple Login disabled in production');
+            return;
+        }
+        
         // Try edge function first, then fallback to regular API
-        this.edgeApiUrl = 'https://ava-solutions-marketing.netlify.app/api/edge';
-        this.apiUrl = 'https://ava-solutions-marketing.netlify.app/api';
+        this.edgeApiUrl = 'https://ava-marketing-api.onrender.com/api/edge';
+        this.apiUrl = 'https://ava-pwa-backend.onrender.com/api';
         this.isLoggedIn = false;
         this.currentUser = null;
         this.authToken = null;
         
-        console.log('🔑 Simple Login System initialized with Edge Functions');
+        console.log('🔑 Simple Login System initialized (DEVELOPMENT ONLY)');
     }
 
     // Create and show simple login modal
@@ -328,7 +334,7 @@ class SimpleLogin {
             // Try with different endpoint
             async () => {
                 console.log('🔄 Method 3: Trying direct function endpoint...');
-                return await fetch('https://ava-solutions-marketing.netlify.app/.netlify/functions/api/auth/login', {
+                return await fetch('https://ava-marketing-api.onrender.com/api/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

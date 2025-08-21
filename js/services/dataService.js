@@ -200,7 +200,7 @@ class DataService {
             }
 
             // Use config for API URL
-            const apiUrl = window.appConfig?.getApiUrl('pwa') || 'https://ava-solutions-marketing.netlify.app/api';
+            const apiUrl = window.appConfig?.getApiUrl('pwa') || 'https://ava-pwa-backend.onrender.com/api';
             
             const response = await fetch(`${apiUrl}/auth/publish-catalog`, {
                 method: 'POST',
@@ -289,7 +289,7 @@ class DataService {
     // Utility Methods
     async checkOnlineStatus() {
         try {
-            const apiUrl = window.appConfig?.getApiUrl('pwa') || 'https://ava-solutions-marketing.netlify.app/api';
+            const apiUrl = window.appConfig?.getApiUrl('pwa') || 'https://ava-pwa-backend.onrender.com/api';
             const response = await fetch(`${apiUrl}/health`, { method: 'HEAD' });
             return response.ok;
         } catch {

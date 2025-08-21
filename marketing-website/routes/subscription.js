@@ -139,6 +139,48 @@ router.get('/plans', (req, res) => {
   res.json({ success: true, plans });
 });
 
+// Create checkout session (placeholder for Stripe/PayMongo integration)
+router.post('/checkout', requireAuth, async (req, res) => {
+  try {
+    const { priceId } = req.body;
+    
+    if (!priceId) {
+      return res.status(400).json({ error: 'Price ID is required' });
+    }
+
+    // TODO: Integrate with actual payment processor (Stripe/PayMongo)
+    // For now, return a placeholder checkout URL
+    const checkoutUrl = `https://ava-marketing-api.onrender.com/checkout?priceId=${priceId}&userId=${req.user.userId}`;
+    
+    res.json({
+      success: true,
+      checkoutUrl,
+      message: 'Checkout session created'
+    });
+  } catch (error) {
+    console.error('Create checkout session error:', error);
+    res.status(500).json({ error: 'Failed to create checkout session' });
+  }
+});
+
+// Get customer portal URL (placeholder for Stripe/PayMongo integration)
+router.get('/portal', requireAuth, async (req, res) => {
+  try {
+    // TODO: Integrate with actual payment processor (Stripe/PayMongo)
+    // For now, return a placeholder portal URL
+    const portalUrl = `https://ava-marketing-api.onrender.com/customer-portal?userId=${req.user.userId}`;
+    
+    res.json({
+      success: true,
+      portalUrl,
+      message: 'Customer portal URL generated'
+    });
+  } catch (error) {
+    console.error('Get customer portal error:', error);
+    res.status(500).json({ error: 'Failed to get customer portal URL' });
+  }
+});
+
 // Helper function to get features by plan
 function getFeaturesByPlan(plan) {
   const features = {
