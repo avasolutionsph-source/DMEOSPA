@@ -143,6 +143,12 @@ class App {
     showPage(pageName) {
         console.log(`Navigating to page: ${pageName}`);
         
+        // Close all modals first
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.classList.remove('active');
+            modal.style.display = 'none';
+        });
+        
         // Hide all pages
         document.querySelectorAll('.page').forEach(page => {
             page.classList.remove('active');
@@ -470,6 +476,7 @@ class App {
         const modal = document.getElementById(modalId);
         if (modal) {
             modal.classList.remove('active');
+            modal.style.display = 'none';
             
             // Clear form if exists
             const form = modal.querySelector('form');
