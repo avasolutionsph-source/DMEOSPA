@@ -11,7 +11,7 @@ class SettingsManager {
         await this.loadSettings();
         this.setupEventListeners();
         this.addBusinessTypeSection();
-        this.addApiUrlInput();
+        // this.addApiUrlInput(); // Commented out - method needs to be implemented
         this.addSyncButton();
         this.addImportButton();
         this.addPerformanceSection();
