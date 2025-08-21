@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nuclear Service Worker Clear</title>
+    <meta charset="utf-8">
+</head>
+<body>
+    <h1>🚨 Nuclear Service Worker Clearing</h1>
+    <div id="status">Starting nuclear clear...</div>
+    <button onclick="clearEverything()">🔥 CLEAR EVERYTHING</button>
+    <button onclick="location.reload(true)">🔄 HARD RELOAD</button>
+    
+    <script>
+        async function clearEverything() {
+            const statusDiv = document.getElementById('status');
+            let messages = [];
+            
+            try {
+                // 1. Unregister ALL service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    messages.push(`Found ${registrations.length} service workers`);
+                    
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                        messages.push(`✅ Unregistered: ${registration.scope}`);
+                    }
+                }
+                
+                // 2. Clear ALL caches
+                const cacheNames = await caches.keys();
+                messages.push(`Found ${cacheNames.length} caches`);
+                
+                for (const cacheName of cacheNames) {
+                    await caches.delete(cacheName);
+                    messages.push(`✅ Deleted cache: ${cacheName}`);
+                }
+                
+                // 3. Clear localStorage
+                localStorage.clear();
+                messages.push('✅ Cleared localStorage');
+                
+                // 4. Clear sessionStorage
+                sessionStorage.clear();
+                messages.push('✅ Cleared sessionStorage');
+                
+                // 5. Clear IndexedDB
+                if ('indexedDB' in window) {
+                    try {
+                        const databases = await indexedDB.databases();
+                        for (const db of databases) {
+                            indexedDB.deleteDatabase(db.name);
+                            messages.push(`✅ Deleted IndexedDB: ${db.name}`);
+                        }
+                    } catch (e) {
+                        messages.push('⚠️ Could not clear IndexedDB');
+                    }
+                }
+                
+                messages.push('');
+                messages.push('🎯 NUCLEAR CLEAR COMPLETE!');
+                messages.push('');
+                messages.push('📋 NEXT STEPS:');
+                messages.push('1. Close ALL browser tabs');
+                messages.push('2. Restart your browser completely');
+                messages.push('3. Open localhost:3000 in a fresh tab');
+                messages.push('4. Or try Incognito/Private mode');
+                
+                statusDiv.innerHTML = messages.join('<br>');
+                
+                // Force a hard reload after 2 seconds
+                setTimeout(() => {
+                    window.location.reload(true);
+                }, 2000);
+                
+            } catch (error) {
+                messages.push(`❌ Error: ${error.message}`);
+                statusDiv.innerHTML = messages.join('<br>');
+            }
+        }
+        
+        // Auto-run on load
+        window.onload = clearEverything;
+    </script>
+</body>
+</html>

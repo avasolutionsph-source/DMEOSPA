@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force Inventory Update</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #d63031;
+            margin-bottom: 10px;
+        }
+        .alert {
+            background: #ffe5e5;
+            border-left: 4px solid #ff6b6b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        button {
+            background: #00b894;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #00cec9;
+        }
+        button:disabled {
+            background: #b2bec3;
+            cursor: not-allowed;
+        }
+        .output {
+            background: #2d3436;
+            color: #dfe6e9;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success { color: #00b894; }
+        .error { color: #ff6b6b; }
+        .warning { color: #fdcb6e; }
+        .info { color: #74b9ff; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        .fix-btn {
+            background: #e17055;
+        }
+        .fix-btn:hover {
+            background: #d63031;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔨 Force Inventory Update - Field Fix</h1>
+        <p>This tool will fix the inventory field mismatch issue (currentStock vs quantity).</p>
+        
+        <div class="alert">
+            <strong>⚠️ Current Issue:</strong> Your inventory items may have "currentStock" field instead of "quantity" field, causing the website to show 0 or wrong values.
+        </div>
+
+        <button onclick="diagnoseIssue()">🔍 Diagnose Issue</button>
+        <button onclick="fixInventoryFields()">🔧 Fix Field Names</button>
+        <button onclick="forceSyncWithFix()" class="fix-btn">⚡ Fix & Sync Everything</button>
+        <button onclick="clearLog()">🗑️ Clear Log</button>
+
+        <div id="output" class="output"></div>
+    </div>
+
+    <script src="js/database.js"></script>
+    <script>
+        const db = new Database();
+        let initialized = false;
+        
+        async function init() {
+            if (!initialized) {
+                await db.init();
+                initialized = true;
+                log('Database initialized', 'success');
+            }
+        }
+        
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const span = document.createElement('span');
+            span.className = type;
+            span.textContent = `[${timestamp}] ${message}\n`;
+            output.appendChild(span);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('output').innerHTML = '';
+        }
+        
+        async function diagnoseIssue() {
+            clearLog();
+            try {
+                await init();
+                log('Diagnosing inventory field issues...', 'info');
+                
+                const inventory = await db.getAll('inventory');
+                log(`Found ${inventory.length} inventory items\n`, 'info');
+                
+                let issueCount = 0;
+                
+                for (const item of inventory) {
+                    log(`\nItem: ${item.name} (ID: ${item.id})`, 'info');
+                    log(`  SKU: ${item.sku || 'none'}`, 'info');
+                    
+                    // Check which fields exist
+                    const hasQuantity = item.hasOwnProperty('quantity');
+                    const hasCurrentStock = item.hasOwnProperty('currentStock');
+                    
+                    if (hasCurrentStock && !hasQuantity) {
+                        log(`  ⚠️ Has currentStock (${item.currentStock}) but NO quantity field`, 'warning');
+                        issueCount++;
+                    } else if (hasQuantity && hasCurrentStock) {
+                        log(`  ✓ Has both fields: quantity=${item.quantity}, currentStock=${item.currentStock}`, 'success');
+                        if (item.quantity !== item.currentStock) {
+                            log(`    ⚠️ Values don't match!`, 'warning');
+                            issueCount++;
+                        }
+                    } else if (hasQuantity && !hasCurrentStock) {
+                        log(`  ✓ Has quantity field (${item.quantity})`, 'success');
+                    } else {
+                        log(`  ❌ Missing both quantity and currentStock fields!`, 'error');
+                        issueCount++;
+                    }
+                    
+                    // Show other important fields
+                    log(`  Unit: ${item.unit || 'not set'}`, 'info');
+                    log(`  Min Stock: ${item.minStock || 'not set'}`, 'info');
+                    log(`  Sync Status: ${item.syncStatus || 'unknown'}`, 'info');
+                }
+                
+                log('\n' + '='.repeat(50), 'info');
+                if (issueCount > 0) {
+                    log(`\n❌ Found ${issueCount} items with field issues`, 'error');
+                    log('Click "Fix Field Names" to resolve these issues', 'warning');
+                } else {
+                    log('\n✅ All items have correct field structure', 'success');
+                }
+                
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function fixInventoryFields() {
+            clearLog();
+            try {
+                await init();
+                log('Fixing inventory field names...', 'info');
+                
+                const inventory = await db.getAll('inventory');
+                let fixedCount = 0;
+                
+                for (const item of inventory) {
+                    let needsUpdate = false;
+                    
+                    // If item has currentStock but not quantity, copy the value
+                    if (item.hasOwnProperty('currentStock') && !item.hasOwnProperty('quantity')) {
+                        item.quantity = item.currentStock;
+                        needsUpdate = true;
+                        log(`Fixed: ${item.name} - copied currentStock (${item.currentStock}) to quantity`, 'success');
+                    }
+                    // If both exist but don't match, use the higher value
+                    else if (item.hasOwnProperty('currentStock') && item.hasOwnProperty('quantity')) {
+                        if (item.currentStock !== item.quantity) {
+                            const higherValue = Math.max(item.currentStock || 0, item.quantity || 0);
+                            item.quantity = higherValue;
+                            item.currentStock = higherValue;
+                            needsUpdate = true;
+                            log(`Fixed: ${item.name} - set both fields to ${higherValue}`, 'success');
+                        }
+                    }
+                    // If neither exist, set to 0
+                    else if (!item.hasOwnProperty('currentStock') && !item.hasOwnProperty('quantity')) {
+                        item.quantity = 0;
+                        item.currentStock = 0;
+                        needsUpdate = true;
+                        log(`Fixed: ${item.name} - set both fields to 0 (was missing)`, 'warning');
+                    }
+                    
+                    // Ensure unit field exists
+                    if (!item.unit) {
+                        item.unit = 'units';
+                        needsUpdate = true;
+                    }
+                    
+                    // Ensure minStock exists
+                    if (!item.hasOwnProperty('minStock')) {
+                        item.minStock = 5;
+                        needsUpdate = true;
+                    }
+                    
+                    // Mark for re-sync
+                    if (needsUpdate) {
+                        item.syncStatus = 'pending';
+                        item.modifiedAt = new Date().toISOString();
+                        await db.update('inventory', item);
+                        fixedCount++;
+                    }
+                }
+                
+                log(`\n✅ Fixed ${fixedCount} inventory items`, 'success');
+                if (fixedCount > 0) {
+                    log('Now run "Fix & Sync Everything" to update the website', 'warning');
+                }
+                
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function forceSyncWithFix() {
+            clearLog();
+            try {
+                await init();
+                log('Starting complete fix and sync process...', 'info');
+                
+                // First fix all field issues
+                log('\nStep 1: Fixing field names...', 'info');
+                await fixInventoryFields();
+                
+                // Then sync everything
+                log('\nStep 2: Syncing to backend...', 'info');
+                
+                const token = localStorage.getItem('userToken');
+                if (!token) {
+                    log('❌ No auth token. Please login to PWA first!', 'error');
+                    return;
+                }
+                
+                const inventory = await db.getAll('inventory');
+                log(`Syncing ${inventory.length} items...`, 'info');
+                
+                // Calculate summary
+                const lowStockItems = inventory.filter(item => {
+                    const stock = item.quantity || 0;
+                    return stock > 0 && stock <= (item.minStock || 5);
+                }).length;
+                
+                const outOfStockItems = inventory.filter(item => {
+                    const stock = item.quantity || 0;
+                    return stock === 0;
+                }).length;
+                
+                // Prepare clean data for sync
+                const cleanInventory = inventory.map(item => ({
+                    id: item.id,
+                    name: item.name || 'Unknown Item',
+                    sku: item.sku || '',
+                    category: item.category || 'Uncategorized',
+                    quantity: item.quantity || 0,  // This is now guaranteed to exist
+                    unit: item.unit || 'units',
+                    minStock: item.minStock || 5,
+                    price: item.price || item.unitPrice || 0,
+                    cost: item.cost || 0,
+                    supplier: item.supplier || '',
+                    description: item.description || item.notes || '',
+                    lastRestocked: item.lastRestocked || null
+                }));
+                
+                log('\nItems being synced:', 'info');
+                for (const item of cleanInventory) {
+                    log(`  - ${item.name}: ${item.quantity} ${item.unit}`, 'info');
+                }
+                
+                // Get API URL
+                const apiSettings = await db.get('settings', 'apiUrl');
+                const apiUrl = apiSettings?.value || 'https://ava-marketing-api.onrender.com';
+                
+                log(`\nSending to ${apiUrl}...`, 'info');
+                
+                const response = await fetch(`${apiUrl}/api/inventory/sync`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        inventory: cleanInventory,
+                        inventorySummary: {
+                            totalItems: inventory.length,
+                            lowStockItems: lowStockItems,
+                            outOfStockItems: outOfStockItems
+                        }
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    log(`\n✅ SUCCESS! ${result.message}`, 'success');
+                    
+                    // Mark all as synced
+                    for (const item of inventory) {
+                        item.syncStatus = 'synced';
+                        await db.update('inventory', item);
+                    }
+                    
+                    log('\n🎉 All items synced!', 'success');
+                    log('Refresh your Business Dashboard now to see correct stock values.', 'warning');
+                    
+                    // Verify the sync
+                    log('\nVerifying backend data...', 'info');
+                    const verifyResponse = await fetch(`${apiUrl}/api/business/inventory`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (verifyResponse.ok) {
+                        const backendData = await verifyResponse.json();
+                        log(`\nBackend now has ${backendData.totalItems} items`, 'success');
+                        
+                        if (backendData.inventory && backendData.inventory.length > 0) {
+                            log('\nBackend inventory:', 'info');
+                            for (const item of backendData.inventory) {
+                                log(`  - ${item.name}: ${item.quantity} ${item.unit}`, 'success');
+                            }
+                        }
+                    }
+                    
+                } else {
+                    const error = await response.text();
+                    log(`\n❌ Sync failed: ${error}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

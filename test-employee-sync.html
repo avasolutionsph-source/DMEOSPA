@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Employee Sync</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .description {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .info {
+            color: #17a2b8;
+        }
+        .warning {
+            color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Employee Sync Tester</h1>
+        <p class="description">
+            This tool helps test and debug the employee data sync between the PWA and Business Dashboard.
+            Make sure you're logged in to the PWA before testing.
+        </p>
+        
+        <div>
+            <button onclick="checkEmployeeData()">📊 Check Employee Data</button>
+            <button onclick="checkTransactionData()">💰 Check Transaction Data</button>
+            <button onclick="calculateMetrics()">📈 Calculate Metrics</button>
+            <button onclick="testSync()">🔄 Test Sync</button>
+            <button onclick="clearOutput()">🗑️ Clear Output</button>
+        </div>
+        
+        <div id="output" class="output"></div>
+    </div>
+
+    <script src="js/database.js"></script>
+    <script>
+        const db = new Database();
+        let initialized = false;
+        
+        async function init() {
+            if (!initialized) {
+                await db.init();
+                initialized = true;
+                log('Database initialized', 'success');
+            }
+        }
+        
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const line = `[${timestamp}] ${message}\n`;
+            const span = document.createElement('span');
+            span.className = type;
+            span.textContent = line;
+            output.appendChild(span);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearOutput() {
+            document.getElementById('output').innerHTML = '';
+            log('Output cleared', 'info');
+        }
+        
+        async function checkEmployeeData() {
+            try {
+                await init();
+                log('Checking employee data...', 'info');
+                
+                const employees = await db.getAll('employees');
+                log(`Found ${employees.length} employees:`, 'success');
+                
+                for (const emp of employees) {
+                    log(`\n👤 ${emp.name} (ID: ${emp.id})`, 'info');
+                    log(`   Position: ${emp.position}`, 'info');
+                    log(`   Email: ${emp.email}`, 'info');
+                    log(`   Commission Rate: ${emp.commissionRate || 0}%`, 'info');
+                    log(`   Sync Status: ${emp.syncStatus || 'unknown'}`, 'info');
+                }
+                
+                if (employees.length === 0) {
+                    log('No employees found. Add employees in the PWA first.', 'warning');
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkTransactionData() {
+            try {
+                await init();
+                log('Checking transaction data...', 'info');
+                
+                const transactions = await db.getAll('transactions');
+                log(`Found ${transactions.length} transactions:`, 'success');
+                
+                // Group by employee
+                const byEmployee = {};
+                for (const t of transactions) {
+                    const empId = t.employeeId || 'unassigned';
+                    if (!byEmployee[empId]) {
+                        byEmployee[empId] = {
+                            count: 0,
+                            total: 0
+                        };
+                    }
+                    byEmployee[empId].count++;
+                    byEmployee[empId].total += t.total || 0;
+                }
+                
+                for (const [empId, data] of Object.entries(byEmployee)) {
+                    log(`\nEmployee ID ${empId}:`, 'info');
+                    log(`   Transactions: ${data.count}`, 'info');
+                    log(`   Total Sales: ₱${data.total.toFixed(2)}`, 'info');
+                }
+                
+                if (transactions.length === 0) {
+                    log('No transactions found. Create some sales in the POS first.', 'warning');
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function calculateMetrics() {
+            try {
+                await init();
+                log('Calculating employee metrics...', 'info');
+                
+                const employees = await db.getAll('employees');
+                const transactions = await db.getAll('transactions');
+                
+                log(`Analyzing ${employees.length} employees and ${transactions.length} transactions`, 'info');
+                
+                for (const emp of employees) {
+                    // Calculate metrics
+                    const empTransactions = transactions.filter(t => 
+                        String(t.employeeId) === String(emp.id)
+                    );
+                    
+                    const totalSales = empTransactions.reduce((sum, t) => sum + (t.total || 0), 0);
+                    const transactionCount = empTransactions.length;
+                    const avgSale = transactionCount > 0 ? totalSales / transactionCount : 0;
+                    const commission = totalSales * ((emp.commissionRate || 0) / 100);
+                    
+                    log(`\n📊 ${emp.name}:`, 'success');
+                    log(`   Total Sales: ₱${totalSales.toFixed(2)}`, 'info');
+                    log(`   Transactions: ${transactionCount}`, 'info');
+                    log(`   Average Sale: ₱${avgSale.toFixed(2)}`, 'info');
+                    log(`   Commission (${emp.commissionRate || 0}%): ₱${commission.toFixed(2)}`, 'info');
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testSync() {
+            try {
+                await init();
+                log('Starting sync test...', 'info');
+                
+                // Get API URL from settings
+                const apiSettings = await db.get('settings', 'apiUrl');
+                const apiUrl = apiSettings?.value || 'https://ava-marketing-api.onrender.com';
+                log(`API URL: ${apiUrl}`, 'info');
+                
+                // Get auth token
+                const token = localStorage.getItem('userToken');
+                if (!token) {
+                    log('No auth token found. Please login first.', 'error');
+                    return;
+                }
+                log('Auth token found', 'success');
+                
+                // Calculate employee metrics
+                const employees = await db.getAll('employees');
+                const transactions = await db.getAll('transactions');
+                
+                const employeeMetrics = {};
+                for (const transaction of transactions) {
+                    if (transaction.employeeId) {
+                        const empId = String(transaction.employeeId);
+                        if (!employeeMetrics[empId]) {
+                            employeeMetrics[empId] = {
+                                totalSales: 0,
+                                transactions: 0
+                            };
+                        }
+                        employeeMetrics[empId].totalSales += transaction.total || 0;
+                        employeeMetrics[empId].transactions += 1;
+                    }
+                }
+                
+                const processedEmployees = employees.map(emp => {
+                    const empIdStr = String(emp.id);
+                    const metrics = employeeMetrics[empIdStr] || {};
+                    const totalSales = metrics.totalSales || 0;
+                    const transactions = metrics.transactions || 0;
+                    const avgSale = transactions > 0 ? totalSales / transactions : 0;
+                    const commissionRate = emp.commissionRate || 0;
+                    const totalCommission = totalSales * (commissionRate / 100);
+                    
+                    return {
+                        id: emp.id,
+                        name: emp.name,
+                        position: emp.position,
+                        email: emp.email,
+                        phone: emp.phone,
+                        hiredDate: emp.hiredDate,
+                        commission: commissionRate,
+                        totalSales: totalSales,
+                        totalCommission: totalCommission,
+                        transactions: transactions,
+                        avgSale: avgSale
+                    };
+                });
+                
+                log(`\nSending ${processedEmployees.length} employees with calculated metrics...`, 'info');
+                
+                // Send to server
+                const response = await fetch(`${apiUrl}/api/employees/sync`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ employees: processedEmployees })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    log('✅ Sync successful!', 'success');
+                    log(`Server response: ${JSON.stringify(result, null, 2)}`, 'info');
+                    
+                    // Show what was synced
+                    for (const emp of processedEmployees) {
+                        log(`\n✅ Synced: ${emp.name}`, 'success');
+                        log(`   Sales: ₱${emp.totalSales.toFixed(2)}`, 'info');
+                        log(`   Transactions: ${emp.transactions}`, 'info');
+                        log(`   Commission: ₱${emp.totalCommission.toFixed(2)}`, 'info');
+                    }
+                } else {
+                    const error = await response.text();
+                    log(`❌ Sync failed: ${response.status}`, 'error');
+                    log(`Error: ${error}`, 'error');
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -3,412 +3,307 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pricing Plans - Ava Solutions PH</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1rem 0;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-
-        .nav-links {
-            display: flex;
-            list-style: none;
-            gap: 2rem;
-        }
-
-        .nav-links a {
-            color: white;
-            text-decoration: none;
-            transition: opacity 0.3s;
-        }
-
-        .nav-links a:hover {
-            opacity: 0.8;
-        }
-
-        .btn {
-            background: white;
-            color: #667eea;
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: transform 0.3s;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .hero {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 8rem 2rem 4rem;
-            text-align: center;
-            margin-top: 60px;
-        }
-
-        .hero h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-
-        .hero p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
-
-        .pricing-section {
-            padding: 4rem 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-top: 3rem;
-        }
-
-        .pricing-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            padding: 2.5rem;
-            text-align: center;
-            position: relative;
-            border: 2px solid transparent;
-            transition: transform 0.3s, border-color 0.3s;
-        }
-
-        .pricing-card:hover {
-            transform: translateY(-5px);
-            border-color: #667eea;
-        }
-
-        .pricing-card.featured {
-            border-color: #667eea;
-            transform: scale(1.05);
-        }
-
-        .pricing-card.featured::before {
-            content: "Most Popular";
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #667eea;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 15px;
-            font-size: 0.9rem;
-            font-weight: bold;
-        }
-
-        .plan-name {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            color: #333;
-        }
-
-        .plan-price {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 0.5rem;
-        }
-
-        .plan-period {
-            color: #666;
-            margin-bottom: 2rem;
-        }
-
-        .plan-features {
-            list-style: none;
-            margin-bottom: 2rem;
-        }
-
-        .plan-features li {
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #eee;
-        }
-
-        .plan-features li:last-child {
-            border-bottom: none;
-        }
-
-        .plan-features li::before {
-            content: "✓";
-            color: #28a745;
-            font-weight: bold;
-            margin-right: 0.5rem;
-        }
-
-        .plan-button {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 5px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            width: 100%;
-            transition: background 0.3s;
-        }
-
-        .plan-button:hover {
-            background: #5a67d8;
-        }
-
-        .faq-section {
-            background: #f8f9fa;
-            padding: 4rem 2rem;
-        }
-
-        .faq-container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .faq-section h2 {
-            text-align: center;
-            margin-bottom: 3rem;
-            font-size: 2.5rem;
-        }
-
-        .faq-item {
-            background: white;
-            margin-bottom: 1rem;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .faq-question {
-            background: #667eea;
-            color: white;
-            padding: 1.5rem;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .faq-answer {
-            padding: 1.5rem;
-            display: none;
-        }
-
-        .faq-answer.active {
-            display: block;
-        }
-
-        .footer {
-            background: #333;
-            color: white;
-            text-align: center;
-            padding: 2rem;
-        }
-
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2rem;
-            }
-            
-            .pricing-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .pricing-card.featured {
-                transform: none;
-            }
-            
-            .nav-links {
-                display: none;
-            }
-        }
-    </style>
+    <title>Pricing - Ava Solutions</title>
+    <meta name="description" content="Choose the perfect plan for your business. Start with our free plan or upgrade to unlock advanced AI features.">
+    
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
-    <header class="header">
-        <nav class="nav">
-            <div class="logo">Ava Solutions PH</div>
-            <ul class="nav-links">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="#pricing">Pricing</a></li>
-                <li><a href="about.html">About</a></li>
-                <li><a href="contact.html">Contact</a></li>
-            </ul>
-            <a href="index.html#login" class="btn">Login</a>
-        </nav>
-    </header>
-
-    <section class="hero">
-        <h1>Simple, Transparent Pricing</h1>
-        <p>Choose the perfect plan for your spa or wellness business</p>
-    </section>
-
-    <section class="pricing-section" id="pricing">
-        <div class="pricing-grid">
-            <div class="pricing-card">
-                <div class="plan-name">Starter</div>
-                <div class="plan-price">₱999</div>
-                <div class="plan-period">per month</div>
-                <ul class="plan-features">
-                    <li>Point of Sale System</li>
-                    <li>Basic Inventory Management</li>
-                    <li>Up to 50 customers</li>
-                    <li>Basic Reporting</li>
-                    <li>Email Support</li>
-                    <li>1 User Account</li>
-                </ul>
-                <button class="plan-button" onclick="selectPlan('starter')">Get Started</button>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-spa"></i>
+                <span>Ava Solutions</span>
             </div>
-
-            <div class="pricing-card featured">
-                <div class="plan-name">Professional</div>
-                <div class="plan-price">₱1,999</div>
-                <div class="plan-period">per month</div>
-                <ul class="plan-features">
-                    <li>Everything in Starter</li>
-                    <li>Online Booking System</li>
-                    <li>Advanced Analytics</li>
-                    <li>Unlimited Customers</li>
-                    <li>Staff Management</li>
-                    <li>Up to 5 User Accounts</li>
-                    <li>Phone & Email Support</li>
-                    <li>Mobile App Access</li>
-                </ul>
-                <button class="plan-button" onclick="selectPlan('professional')">Start Free Trial</button>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/pricing">Pricing</a>
+                <a href="/#features">Features</a>
+                <a href="https://ava-solutions-marketing.netlify.app/download">Download</a>
+                <a href="/#contact">Contact</a>
+                <div class="nav-auth" id="navAuth">
+                    <a href="/login" class="btn-secondary">Login</a>
+                    <a href="/register" class="btn-primary">Get Started</a>
+                </div>
             </div>
+        </div>
+    </nav>
 
-            <div class="pricing-card">
-                <div class="plan-name">Enterprise</div>
-                <div class="plan-price">₱3,999</div>
-                <div class="plan-period">per month</div>
-                <ul class="plan-features">
-                    <li>Everything in Professional</li>
-                    <li>AI-Powered Insights</li>
-                    <li>Custom Integrations</li>
-                    <li>Unlimited User Accounts</li>
-                    <li>Priority Support</li>
-                    <li>Dedicated Account Manager</li>
-                    <li>Advanced Security Features</li>
-                    <li>White-label Options</li>
-                </ul>
-                <button class="plan-button" onclick="selectPlan('enterprise')">Contact Sales</button>
+    <!-- Pricing Header -->
+    <section class="pricing-header">
+        <div class="container">
+            <div class="pricing-hero">
+                <h1>Simple, Transparent Pricing</h1>
+                <p>Choose the perfect plan for your business. Start free, upgrade when you're ready.</p>
+                <div class="billing-toggle">
+                    <span class="billing-label">Monthly</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="billingToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="billing-label">Annual <span class="discount-badge">Save 20%</span></span>
+                </div>
             </div>
         </div>
     </section>
 
-    <section class="faq-section">
-        <div class="faq-container">
+    <!-- Pricing Plans -->
+    <section class="pricing-plans">
+        <div class="container">
+            <div class="plans-grid simplified-plans">
+                <!-- Unpaid Plan -->
+                <div class="pricing-card">
+                    <div class="plan-header">
+                        <h3>Unpaid</h3>
+                        <div class="plan-price">
+                            <span class="monthly-price">₱0</span>
+                            <span class="annual-price" style="display: none;">₱0</span>
+                            <span class="period">/month</span>
+                        </div>
+                        <p class="plan-description">Try our AI Business Assistant with basic features</p>
+                    </div>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check"></i> Smart POS System</li>
+                        <li><i class="fas fa-check"></i> Basic Dashboard</li>
+                        <li><i class="fas fa-check"></i> Service Management</li>
+                        <li><i class="fas fa-check"></i> Basic Reporting</li>
+                        <li><i class="fas fa-check"></i> Offline Capability</li>
+                        <li><i class="fas fa-check"></i> Email Support</li>
+                        <li><i class="fas fa-times"></i> AI Business Assistant</li>
+                        <li><i class="fas fa-times"></i> Inventory Management</li>
+                        <li><i class="fas fa-times"></i> Employee Management</li>
+                        <li><i class="fas fa-times"></i> Advanced Analytics</li>
+                        <li><i class="fas fa-times"></i> Cloud Backup</li>
+                    </ul>
+                    <a href="/register?plan=unpaid" class="plan-button btn-secondary">Get Started Free</a>
+                    <p class="plan-note">No credit card required • Forever free</p>
+                </div>
+
+                <!-- Pro Plan (Most Popular) -->
+                <div class="pricing-card featured">
+                    <div class="plan-badge">🚀 Most Popular</div>
+                    <div class="plan-header">
+                        <h3>Pro</h3>
+                        <div class="plan-price">
+                            <span class="monthly-price">₱999</span>
+                            <span class="annual-price" style="display: none;">₱799</span>
+                            <span class="period">/month</span>
+                        </div>
+                        <p class="plan-description">Complete AI-powered business management solution</p>
+                    </div>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check"></i> Everything in Unpaid</li>
+                        <li><i class="fas fa-robot"></i> <strong>AI Business Assistant</strong></li>
+                        <li><i class="fas fa-brain"></i> Intelligent Profit Optimization</li>
+                        <li><i class="fas fa-warehouse"></i> Smart Inventory Management</li>
+                        <li><i class="fas fa-users"></i> Employee & Commission Tracking</li>
+                        <li><i class="fas fa-chart-line"></i> Advanced Analytics & Insights</li>
+                        <li><i class="fas fa-cloud"></i> Automatic Cloud Backup</li>
+                        <li><i class="fas fa-shield-alt"></i> Loss Prevention Alerts</li>
+                        <li><i class="fas fa-bullhorn"></i> Marketing Recommendations</li>
+                        <li><i class="fas fa-phone"></i> Priority Phone Support</li>
+                        <li><i class="fas fa-sync"></i> Real-time Data Sync</li>
+                    </ul>
+                    <a href="/register?plan=pro" class="plan-button btn-primary">Start 30-Day Free Trial</a>
+                    <p class="plan-note">30-day free trial • Cancel anytime • No setup fees</p>
+                </div>
+
+                <!-- Enterprise Plan -->
+                <div class="pricing-card">
+                    <div class="plan-header">
+                        <h3>Enterprise</h3>
+                        <div class="plan-price">
+                            <span class="monthly-price">Custom</span>
+                            <span class="annual-price" style="display: none;">Custom</span>
+                            <span class="period"></span>
+                        </div>
+                        <p class="plan-description">Tailored AI solutions for business chains and franchises</p>
+                    </div>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check"></i> Everything in Pro</li>
+                        <li><i class="fas fa-building"></i> Multiple Locations</li>
+                        <li><i class="fas fa-cogs"></i> Custom AI Training</li>
+                        <li><i class="fas fa-plug"></i> Custom Integrations</li>
+                        <li><i class="fas fa-user-tie"></i> Dedicated Account Manager</li>
+                        <li><i class="fas fa-graduation-cap"></i> Custom Training & Onboarding</li>
+                        <li><i class="fas fa-headset"></i> 24/7 Priority Support</li>
+                        <li><i class="fas fa-certificate"></i> SLA Guarantee</li>
+                        <li><i class="fas fa-palette"></i> White-label Options</li>
+                    </ul>
+                    <a href="/#contact" class="plan-button btn-secondary">Contact Sales</a>
+                    <p class="plan-note">Custom pricing • Volume discounts available</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature Comparison -->
+    <section class="feature-comparison">
+        <div class="container">
+            <h2>Feature Comparison</h2>
+            <div class="comparison-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Features</th>
+                            <th>Free</th>
+                            <th>Basic</th>
+                            <th>Pro</th>
+                            <th>Enterprise</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>POS System</td>
+                            <td><i class="fas fa-check"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Transactions per month</td>
+                            <td>50</td>
+                            <td>Unlimited</td>
+                            <td>Unlimited</td>
+                            <td>Unlimited</td>
+                        </tr>
+                        <tr>
+                            <td>Inventory Management</td>
+                            <td><i class="fas fa-times"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Employee Management</td>
+                            <td><i class="fas fa-times"></i></td>
+                            <td><i class="fas fa-times"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                        </tr>
+                        <tr>
+                            <td>AI Business Assistant</td>
+                            <td><i class="fas fa-times"></i></td>
+                            <td><i class="fas fa-times"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Advanced Analytics</td>
+                            <td><i class="fas fa-times"></i></td>
+                            <td>Basic</td>
+                            <td><i class="fas fa-check"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Multi-location Support</td>
+                            <td><i class="fas fa-times"></i></td>
+                            <td><i class="fas fa-times"></i></td>
+                            <td><i class="fas fa-times"></i></td>
+                            <td><i class="fas fa-check"></i></td>
+                        </tr>
+                        <tr>
+                            <td>Support</td>
+                            <td>Email</td>
+                            <td>Priority Email</td>
+                            <td>Phone + Email</td>
+                            <td>Dedicated</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq">
+        <div class="container">
             <h2>Frequently Asked Questions</h2>
-            
-            <div class="faq-item">
-                <div class="faq-question" onclick="toggleFaq(this)">
-                    Is there a free trial available?
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <h3>Can I change plans anytime?</h3>
+                    <p>Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate any billing adjustments.</p>
                 </div>
-                <div class="faq-answer">
-                    Yes! We offer a 14-day free trial for all plans. No credit card required to start.
+                <div class="faq-item">
+                    <h3>Is there a setup fee?</h3>
+                    <p>No setup fees. All plans include free setup and onboarding support to get you started quickly.</p>
                 </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question" onclick="toggleFaq(this)">
-                    Can I change my plan later?
+                <div class="faq-item">
+                    <h3>What happens to my data if I cancel?</h3>
+                    <p>Your data is always yours. You can export all your data at any time, and we keep it available for 90 days after cancellation.</p>
                 </div>
-                <div class="faq-answer">
-                    Absolutely! You can upgrade or downgrade your plan at any time. Changes take effect immediately.
+                <div class="faq-item">
+                    <h3>Do you offer refunds?</h3>
+                    <p>Yes, we offer a 30-day money-back guarantee for all paid plans. No questions asked.</p>
                 </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question" onclick="toggleFaq(this)">
-                    What payment methods do you accept?
+                <div class="faq-item">
+                    <h3>Is my data secure?</h3>
+                    <p>Absolutely. We use bank-level encryption and security measures to protect your business data.</p>
                 </div>
-                <div class="faq-answer">
-                    We accept all major credit cards, PayPal, and bank transfers. All payments are processed securely.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question" onclick="toggleFaq(this)">
-                    Is my data secure?
-                </div>
-                <div class="faq-answer">
-                    Yes! We use bank-level encryption and security measures. Your data is backed up daily and stored securely.
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question" onclick="toggleFaq(this)">
-                    Do you offer setup assistance?
-                </div>
-                <div class="faq-answer">
-                    Yes! We provide free setup assistance for all plans, including data migration and staff training.
+                <div class="faq-item">
+                    <h3>Can I use it offline?</h3>
+                    <p>Yes! Ava Solutions works completely offline. Data syncs automatically when you're back online.</p>
                 </div>
             </div>
         </div>
     </section>
 
+    <!-- CTA -->
+    <section class="pricing-cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Get Started?</h2>
+                <p>Join hundreds of business owners who trust Ava Solutions</p>
+                <div class="cta-buttons">
+                    <a href="/register" class="btn-primary btn-large">Start Free Trial</a>
+                    <a href="/#contact" class="btn-secondary btn-large">Contact Sales</a>
+                </div>
+                <p class="cta-note">No credit card required • 30-day free trial • Cancel anytime</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
     <footer class="footer">
-        <p>&copy; 2024 Ava Solutions PH. All rights reserved.</p>
-        <p>Contact: info@avasolutionsph.com | +63 xxx xxx xxxx</p>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="brand">
+                        <i class="fas fa-spa"></i>
+                        <span>Ava Solutions</span>
+                    </div>
+                    <p>Intelligent business management system that works offline and grows with your business.</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>Product</h4>
+                        <a href="/#features">Features</a>
+                        <a href="/pricing">Pricing</a>
+                        <a href="/download">Download</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Support</h4>
+                        <a href="/help">Help Center</a>
+                        <a href="/#contact">Contact</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Legal</h4>
+                        <a href="/privacy">Privacy</a>
+                        <a href="/terms">Terms</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Ava Solutions Philippines. All rights reserved.</p>
+            </div>
+        </div>
     </footer>
 
-    <script>
-        function toggleFaq(element) {
-            const answer = element.nextElementSibling;
-            const allAnswers = document.querySelectorAll('.faq-answer');
-            
-            // Close all other FAQ answers
-            allAnswers.forEach(ans => {
-                if (ans !== answer) {
-                    ans.classList.remove('active');
-                }
-            });
-            
-            // Toggle current answer
-            answer.classList.toggle('active');
-        }
-
-        function selectPlan(planName) {
-            alert(`You selected the ${planName} plan! Redirecting to registration...`);
-            window.location.href = 'index.html#register';
-        }
-    </script>
+    <script src="/assets/pricing.js"></script>
+    <script src="/assets/main.js"></script>
 </body>
 </html>

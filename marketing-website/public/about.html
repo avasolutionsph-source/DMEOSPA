@@ -3,424 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About Us - Ava Solutions PH</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1rem 0;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-
-        .nav-links {
-            display: flex;
-            list-style: none;
-            gap: 2rem;
-        }
-
-        .nav-links a {
-            color: white;
-            text-decoration: none;
-            transition: opacity 0.3s;
-        }
-
-        .nav-links a:hover {
-            opacity: 0.8;
-        }
-
-        .btn {
-            background: white;
-            color: #667eea;
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: transform 0.3s;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .hero {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 8rem 2rem 4rem;
-            text-align: center;
-            margin-top: 60px;
-        }
-
-        .hero h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-
-        .hero p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .about-section {
-            padding: 4rem 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .about-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 3rem;
-            margin-bottom: 4rem;
-        }
-
-        .about-text {
-            font-size: 1.1rem;
-            line-height: 1.8;
-        }
-
-        .about-text h2 {
-            color: #667eea;
-            margin-bottom: 1.5rem;
-            font-size: 2rem;
-        }
-
-        .stats-section {
-            background: #f8f9fa;
-            padding: 4rem 2rem;
-        }
-
-        .stats-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            text-align: center;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .stat-number {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 1.1rem;
-        }
-
-        .team-section {
-            padding: 4rem 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .team-section h2 {
-            text-align: center;
-            margin-bottom: 3rem;
-            font-size: 2.5rem;
-        }
-
-        .team-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-        }
-
-        .team-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            padding: 2rem;
-            text-align: center;
-            transition: transform 0.3s;
-        }
-
-        .team-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .team-avatar {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            margin: 0 auto 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: white;
-            font-weight: bold;
-        }
-
-        .team-name {
-            font-size: 1.3rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-
-        .team-role {
-            color: #667eea;
-            font-weight: bold;
-            margin-bottom: 1rem;
-        }
-
-        .team-bio {
-            color: #666;
-            line-height: 1.6;
-        }
-
-        .values-section {
-            background: #f8f9fa;
-            padding: 4rem 2rem;
-        }
-
-        .values-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .values-section h2 {
-            text-align: center;
-            margin-bottom: 3rem;
-            font-size: 2.5rem;
-        }
-
-        .values-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .value-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        .value-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-
-        .value-title {
-            font-size: 1.3rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            color: #333;
-        }
-
-        .value-description {
-            color: #666;
-            line-height: 1.6;
-        }
-
-        .footer {
-            background: #333;
-            color: white;
-            text-align: center;
-            padding: 2rem;
-        }
-
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2rem;
-            }
-            
-            .about-grid,
-            .stats-grid,
-            .team-grid,
-            .values-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .nav-links {
-                display: none;
-            }
-        }
-    </style>
+    <title>About Us - Ava Solutions</title>
+    <link href="assets/style.css" rel="stylesheet">
 </head>
 <body>
-    <header class="header">
-        <nav class="nav">
-            <div class="logo">Ava Solutions PH</div>
-            <ul class="nav-links">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="pricing.html">Pricing</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="contact.html">Contact</a></li>
-            </ul>
-            <a href="index.html#login" class="btn">Login</a>
-        </nav>
-    </header>
-
-    <section class="hero">
-        <h1>About Ava Solutions</h1>
-        <p>Empowering spa and wellness businesses across the Philippines with innovative technology solutions</p>
-    </section>
-
-    <section class="about-section" id="about">
-        <div class="about-grid">
-            <div class="about-text">
-                <h2>Our Story</h2>
-                <p>Founded in 2024, Ava Solutions was born from a simple observation: spa and wellness businesses in the Philippines were struggling with outdated, fragmented systems that hindered their growth.</p>
-                
-                <p>Our founders, with decades of combined experience in both technology and wellness industries, set out to create a comprehensive solution that would streamline operations, enhance customer experiences, and drive business growth.</p>
-                
-                <p>Today, we're proud to serve hundreds of businesses across the Philippines, from small neighborhood spas to large wellness chains.</p>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="/">Ava Solutions</a>
             </div>
-            
-            <div class="about-text">
-                <h2>Our Mission</h2>
-                <p>To empower spa and wellness businesses with innovative, user-friendly technology that simplifies operations, enhances customer experiences, and drives sustainable growth.</p>
-                
-                <h2>Our Vision</h2>
-                <p>To become the leading technology partner for wellness businesses in Southeast Asia, helping them thrive in an increasingly digital world.</p>
-                
-                <h2>Why Choose Us?</h2>
-                <p>We understand the unique challenges of the wellness industry. Our solutions are built specifically for spas, massage centers, and wellness clinics, with features that matter most to your business.</p>
+            <div class="nav-menu">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/features" class="nav-link">Features</a>
+                <a href="/pricing" class="nav-link">Pricing</a>
+                <a href="/about" class="nav-link active">About</a>
+                <a href="/contact" class="nav-link">Contact</a>
+                <a href="/login" class="nav-link btn-primary">Login</a>
             </div>
         </div>
-    </section>
+    </nav>
 
-    <section class="stats-section">
-        <div class="stats-container">
-            <h2>Our Impact</h2>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number">500+</div>
-                    <div class="stat-label">Happy Customers</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">50,000+</div>
-                    <div class="stat-label">Appointments Managed</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">₱100M+</div>
-                    <div class="stat-label">Revenue Processed</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">99.9%</div>
-                    <div class="stat-label">Uptime Guarantee</div>
-                </div>
+    <main>
+        <section class="hero-section">
+            <div class="container">
+                <h1>About Ava Solutions</h1>
+                <p class="hero-subtitle">Empowering spa and wellness businesses across the Philippines</p>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <section class="team-section">
-        <h2>Meet Our Team</h2>
-        <div class="team-grid">
-            <div class="team-card">
-                <div class="team-avatar">AS</div>
-                <div class="team-name">Ana Santos</div>
-                <div class="team-role">CEO & Founder</div>
-                <div class="team-bio">Former spa owner with 15 years of industry experience. Passionate about helping businesses grow through technology.</div>
-            </div>
-            
-            <div class="team-card">
-                <div class="team-avatar">MR</div>
-                <div class="team-name">Miguel Rodriguez</div>
-                <div class="team-role">CTO & Co-Founder</div>
-                <div class="team-bio">Software architect with expertise in scalable systems. Previously led engineering teams at major tech companies.</div>
-            </div>
-            
-            <div class="team-card">
-                <div class="team-avatar">LC</div>
-                <div class="team-name">Lisa Chen</div>
-                <div class="team-role">Head of Customer Success</div>
-                <div class="team-bio">Dedicated to ensuring every customer succeeds. Expert in business process optimization and training.</div>
-            </div>
-            
-            <div class="team-card">
-                <div class="team-avatar">JP</div>
-                <div class="team-name">Jose Pangan</div>
-                <div class="team-role">Lead Developer</div>
-                <div class="team-bio">Full-stack developer passionate about creating intuitive user experiences. Loves solving complex technical challenges.</div>
-            </div>
-        </div>
-    </section>
-
-    <section class="values-section">
-        <div class="values-container">
-            <h2>Our Values</h2>
-            <div class="values-grid">
-                <div class="value-card">
-                    <div class="value-icon">🎯</div>
-                    <div class="value-title">Customer First</div>
-                    <div class="value-description">Everything we do is focused on helping our customers succeed. Their growth is our success.</div>
-                </div>
-                
-                <div class="value-card">
-                    <div class="value-icon">💡</div>
-                    <div class="value-title">Innovation</div>
-                    <div class="value-description">We continuously innovate to stay ahead of industry trends and provide cutting-edge solutions.</div>
-                </div>
-                
-                <div class="value-card">
-                    <div class="value-icon">🤝</div>
-                    <div class="value-title">Partnership</div>
-                    <div class="value-description">We're not just a vendor – we're your technology partner, committed to your long-term success.</div>
-                </div>
-                
-                <div class="value-card">
-                    <div class="value-icon">🔒</div>
-                    <div class="value-title">Trust & Security</div>
-                    <div class="value-description">We protect your data and your customers' privacy with the highest security standards.</div>
+        <section class="content-section">
+            <div class="container">
+                <div class="about-content">
+                    <h2>Our Mission</h2>
+                    <p>To provide affordable, powerful business management solutions for spa and wellness businesses in the Philippines.</p>
+                    
+                    <h2>Our Story</h2>
+                    <p>Founded with the vision of helping local businesses thrive in the digital age, Ava Solutions specializes in creating intuitive, offline-first applications that work even without internet connectivity.</p>
+                    
+                    <h2>Why Choose Us?</h2>
+                    <ul>
+                        <li>Built specifically for Filipino businesses</li>
+                        <li>Works offline - no internet required</li>
+                        <li>Affordable pricing plans</li>
+                        <li>Local customer support</li>
+                        <li>Regular updates and improvements</li>
+                    </ul>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+    </main>
 
     <footer class="footer">
-        <p>&copy; 2024 Ava Solutions PH. All rights reserved.</p>
-        <p>Contact: info@avasolutionsph.com | +63 xxx xxx xxxx</p>
+        <div class="container">
+            <p>&copy; 2024 Ava Solutions Philippines. All rights reserved.</p>
+        </div>
     </footer>
+
+    <script src="assets/main.js"></script>
 </body>
 </html>

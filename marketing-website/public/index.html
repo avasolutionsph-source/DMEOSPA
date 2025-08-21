@@ -3,538 +3,292 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ava Solutions PH - Spa Management System</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1rem 0;
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-
-        .nav-links {
-            display: flex;
-            list-style: none;
-            gap: 2rem;
-        }
-
-        .nav-links a {
-            color: white;
-            text-decoration: none;
-            transition: opacity 0.3s;
-        }
-
-        .nav-links a:hover {
-            opacity: 0.8;
-        }
-
-        .btn {
-            background: white;
-            color: #667eea;
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: transform 0.3s;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .hero {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 8rem 2rem 4rem;
-            text-align: center;
-            margin-top: 60px;
-        }
-
-        .hero h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-
-        .hero p {
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .hero-btns {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .btn-primary {
-            background: white;
-            color: #667eea;
-            padding: 1rem 2rem;
-            font-size: 1.1rem;
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: white;
-            border: 2px solid white;
-            padding: 1rem 2rem;
-            font-size: 1.1rem;
-        }
-
-        .features {
-            padding: 4rem 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .features h2 {
-            text-align: center;
-            margin-bottom: 3rem;
-            font-size: 2.5rem;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .feature-card {
-            text-align: center;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .feature-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-
-        .footer {
-            background: #333;
-            color: white;
-            text-align: center;
-            padding: 2rem;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 2000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 2rem;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 400px;
-            position: relative;
-        }
-
-        .close {
-            position: absolute;
-            right: 1rem;
-            top: 1rem;
-            font-size: 2rem;
-            cursor: pointer;
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: bold;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-
-        .btn-full {
-            width: 100%;
-            padding: 1rem;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 1.1rem;
-            cursor: pointer;
-        }
-
-        .btn-full:hover {
-            background: #5a67d8;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .mt-1 {
-            margin-top: 1rem;
-        }
-
-        .demo-section {
-            background: #f8f9fa;
-            padding: 4rem 2rem;
-            text-align: center;
-        }
-
-        .demo-section h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .demo-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin-top: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .testimonials {
-            padding: 4rem 2rem;
-            background: white;
-        }
-
-        .testimonials h2 {
-            text-align: center;
-            margin-bottom: 3rem;
-            font-size: 2.5rem;
-        }
-
-        .testimonials-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .testimonial-card {
-            background: #f8f9fa;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .testimonial-content p {
-            font-style: italic;
-            margin-bottom: 1.5rem;
-            font-size: 1.1rem;
-            line-height: 1.6;
-        }
-
-        .testimonial-author strong {
-            display: block;
-            color: #667eea;
-            margin-bottom: 0.25rem;
-        }
-
-        .testimonial-author span {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .cta-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 4rem 2rem;
-            text-align: center;
-        }
-
-        .cta-section h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .cta-section p {
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
-        }
-
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2rem;
-            }
-            
-            .hero-btns {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .nav-links {
-                display: none;
-            }
-
-            .demo-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .testimonials-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .demo-section h2,
-            .testimonials h2,
-            .cta-section h2 {
-                font-size: 2rem;
-            }
-        }
-    </style>
+    <title>Ava Solutions - AI Business Assistant</title>
+    <meta name="description" content="Intelligent business management system with AI assistant, POS, inventory management, and analytics. Works offline and grows with your business across any industry.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
-    <header class="header">
-        <nav class="nav">
-            <div class="logo">Ava Solutions PH</div>
-            <ul class="nav-links">
-                <li><a href="#features">Features</a></li>
-                <li><a href="pricing.html">Pricing</a></li>
-                <li><a href="about.html">About</a></li>
-                <li><a href="contact.html">Contact</a></li>
-                <li><a href="#demo">Demo</a></li>
-            </ul>
-            <a href="#" class="btn" onclick="openLoginModal()">Login</a>
-        </nav>
-    </header>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-spa"></i>
+                <span>Ava Solutions</span>
+            </div>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/pricing">Pricing</a>
+                <a href="/features">Features</a>
+                <a href="https://ava-solutions-marketing.netlify.app/download">Download</a>
+                <a href="/contact">Contact</a>
+                <div class="nav-auth" id="navAuth">
+                    <a href="/login" class="btn-secondary">Login</a>
+                    <a href="/register" class="btn-primary">Get Started</a>
+                </div>
+            </div>
+            <div class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
 
+    <!-- Hero Section -->
     <section class="hero">
-        <h1>Transform Your Spa Business</h1>
-        <p>Complete spa management system with POS, booking, inventory, and analytics. Everything you need to run a successful wellness business.</p>
-        <div class="hero-btns">
-            <a href="#" class="btn btn-primary" onclick="openRegisterModal()">Start Free Trial</a>
-            <a href="/pwa" class="btn btn-secondary">View Demo</a>
-        </div>
-    </section>
-
-    <section class="features" id="features">
-        <h2>Everything You Need</h2>
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">💼</div>
-                <h3>Point of Sale</h3>
-                <p>Fast, intuitive POS system designed specifically for spas and wellness centers.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">📅</div>
-                <h3>Online Booking</h3>
-                <p>Let customers book appointments online 24/7 with automatic confirmations.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">📊</div>
-                <h3>Analytics Dashboard</h3>
-                <p>Track sales, customer behavior, and business performance with detailed reports.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">👥</div>
-                <h3>Staff Management</h3>
-                <p>Manage employees, schedules, and permissions from one central location.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">📦</div>
-                <h3>Inventory Control</h3>
-                <p>Track products, supplies, and automatically reorder when running low.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">💬</div>
-                <h3>AI Assistant</h3>
-                <p>Get business insights and recommendations from our AI-powered assistant.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">💳</div>
-                <h3>Payment Processing</h3>
-                <p>Accept all major payment methods with secure, fast transaction processing.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">📱</div>
-                <h3>Mobile App</h3>
-                <p>Full-featured mobile app for managing your business on the go.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🔒</div>
-                <h3>Data Security</h3>
-                <p>Bank-level security with encrypted data storage and regular backups.</p>
-            </div>
-        </div>
-    </section>
-
-    <section class="demo-section" id="demo">
-        <div class="container">
-            <h2>See It In Action</h2>
-            <p>Experience our platform with a live demo</p>
-            <div class="demo-buttons">
-                <a href="https://ava-solutions-pwa.netlify.app" class="btn btn-primary" target="_blank">Try Live Demo</a>
-                <a href="https://avaphbooking.netlify.app" class="btn btn-secondary" target="_blank">Booking Demo</a>
-            </div>
-        </div>
-    </section>
-
-    <section class="testimonials">
-        <div class="container">
-            <h2>What Our Customers Say</h2>
-            <div class="testimonials-grid">
-                <div class="testimonial-card">
-                    <div class="testimonial-content">
-                        <p>"Ava Solutions transformed our spa operations. We've seen a 40% increase in efficiency and our customers love the online booking system."</p>
-                        <div class="testimonial-author">
-                            <strong>Maria Santos</strong>
-                            <span>Owner, Serenity Spa</span>
-                        </div>
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1>AI Business Assistant<br>That Works <span class="highlight">Everywhere</span></h1>
+                <p>Intelligent offline-first business management system with AI assistant, complete POS, inventory tracking, and employee management. Perfect for any service-based business that wants to grow smarter.</p>
+                <div class="hero-buttons">
+                    <a href="/register" class="btn-primary btn-large">Start Free Trial</a>
+                    <a href="/download" class="btn-secondary btn-large">
+                        <i class="fas fa-download"></i> Download PWA
+                    </a>
+                </div>
+                <div class="hero-features">
+                    <div class="feature-badge">
+                        <i class="fas fa-wifi-slash"></i>
+                        <span>Works Offline</span>
+                    </div>
+                    <div class="feature-badge">
+                        <i class="fas fa-robot"></i>
+                        <span>AI Assistant</span>
+                    </div>
+                    <div class="feature-badge">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>Mobile App</span>
+                    </div>
+                    <div class="feature-badge">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Analytics</span>
                     </div>
                 </div>
-                <div class="testimonial-card">
-                    <div class="testimonial-content">
-                        <p>"The analytics dashboard gives us insights we never had before. We can make data-driven decisions to grow our business."</p>
-                        <div class="testimonial-author">
-                            <strong>John Rivera</strong>
-                            <span>Manager, Wellness Center Manila</span>
+            </div>
+            <div class="hero-demo">
+                <div class="laptop-device">
+                    <div class="laptop-screen">
+                        <div class="browser-bar">
+                            <div class="browser-dots">
+                                <span class="dot red"></span>
+                                <span class="dot yellow"></span>
+                                <span class="dot green"></span>
+                            </div>
+                            <div class="browser-url">
+                                <i class="fas fa-lock"></i>
+                                <span>app.avasolutions.ph</span>
+                            </div>
+                            <div class="browser-actions">
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                        <div class="app-preview">
+                            <div class="app-header">
+                                <div class="app-title">
+                                    <i class="fas fa-spa"></i>
+                                    <span>Ava Solutions</span>
+                                </div>
+                                <div class="status-indicator online"></div>
+                            </div>
+                            <div class="app-dashboard">
+                                <div class="stats-row">
+                                    <div class="stat-card">
+                                        <div class="stat-value">₱25,480</div>
+                                        <div class="stat-label">Today's Sales</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-value">42</div>
+                                        <div class="stat-label">Transactions</div>
+                                    </div>
+                                </div>
+                                <div class="quick-actions">
+                                    <div class="action-btn">
+                                        <i class="fas fa-cash-register"></i>
+                                        <span>POS</span>
+                                    </div>
+                                    <div class="action-btn">
+                                        <i class="fas fa-warehouse"></i>
+                                        <span>Inventory</span>
+                                    </div>
+                                    <div class="action-btn">
+                                        <i class="fas fa-users"></i>
+                                        <span>Staff</span>
+                                    </div>
+                                    <div class="action-btn">
+                                        <i class="fas fa-robot"></i>
+                                        <span>AI Assistant</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="testimonial-card">
-                    <div class="testimonial-content">
-                        <p>"Setup was incredibly easy and the support team is amazing. Our staff learned the system in just one day."</p>
-                        <div class="testimonial-author">
-                            <strong>Lisa Chen</strong>
-                            <span>Owner, Zen Massage Therapy</span>
-                        </div>
+                    <div class="laptop-base">
+                        <div class="laptop-notch"></div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="cta-section">
+    <!-- Features Section -->
+    <section id="features" class="features">
         <div class="container">
-            <h2>Ready to Transform Your Business?</h2>
-            <p>Join hundreds of successful spa and wellness businesses using Ava Solutions</p>
-            <a href="#" class="btn btn-primary" onclick="openRegisterModal()">Start Your Free Trial</a>
+            <div class="section-header">
+                <h2>Everything You Need to Run Your Business</h2>
+                <p>Complete business management in one intelligent application</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-cash-register"></i>
+                    </div>
+                    <h3>Smart POS System</h3>
+                    <p>Lightning-fast checkout with automatic inventory updates, commission tracking, and multiple payment methods.</p>
+                    <ul class="feature-list">
+                        <li>Services & product sales</li>
+                        <li>Employee commission tracking</li>
+                        <li>Multiple payment methods</li>
+                        <li>Receipt printing</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>AI Business Assistant</h3>
+                    <p>Get intelligent insights and recommendations based on your actual business data to increase profits.</p>
+                    <ul class="feature-list">
+                        <li>Profit optimization tips</li>
+                        <li>Loss prevention alerts</li>
+                        <li>Marketing recommendations</li>
+                        <li>Staff performance insights</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-warehouse"></i>
+                    </div>
+                    <h3>Inventory Management</h3>
+                    <p>Automatic stock tracking with low-stock alerts and usage calculation for your business operations.</p>
+                    <ul class="feature-list">
+                        <li>Auto stock deduction</li>
+                        <li>Low stock alerts</li>
+                        <li>Usage tracking per service</li>
+                        <li>Purchase order management</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>Employee Management</h3>
+                    <p>Track staff performance, calculate commissions, and manage schedules efficiently.</p>
+                    <ul class="feature-list">
+                        <li>Performance tracking</li>
+                        <li>Commission calculation</li>
+                        <li>Sales analytics per employee</li>
+                        <li>Schedule management</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Business Analytics</h3>
+                    <p>Real-time insights with beautiful charts showing sales trends, peak hours, and growth metrics.</p>
+                    <ul class="feature-list">
+                        <li>Sales trends & forecasting</li>
+                        <li>Peak hour analysis</li>
+                        <li>Customer insights</li>
+                        <li>Financial reporting</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-wifi-slash"></i>
+                    </div>
+                    <h3>Offline First</h3>
+                    <p>Keep your business running even without internet. Data syncs automatically when online.</p>
+                    <ul class="feature-list">
+                        <li>Complete offline functionality</li>
+                        <li>Automatic sync when online</li>
+                        <li>No downtime</li>
+                        <li>Data backup & recovery</li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </section>
 
-    <footer class="footer" id="contact">
-        <p>&copy; 2024 Ava Solutions PH. All rights reserved.</p>
-        <p>Contact: info@avasolutionsph.com | +63 xxx xxx xxxx</p>
+
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="brand">
+                        <i class="fas fa-spa"></i>
+                        <span>Ava Solutions</span>
+                    </div>
+                    <p>Intelligent business management system that works offline and grows with your business.</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>Product</h4>
+                        <a href="#features">Features</a>
+                        <a href="/pricing">Pricing</a>
+                        <a href="/download">Download App</a>
+                        <a href="/demo">Request Demo</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Company</h4>
+                        <a href="/about">About Us</a>
+                        <a href="#contact">Contact</a>
+                        <a href="/careers">Careers</a>
+                        <a href="/blog">Blog</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Support</h4>
+                        <a href="/help">Help Center</a>
+                        <a href="/documentation">Documentation</a>
+                        <a href="/training">Training</a>
+                        <a href="/status">System Status</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Legal</h4>
+                        <a href="/privacy">Privacy Policy</a>
+                        <a href="/terms">Terms of Service</a>
+                        <a href="/security">Security</a>
+                        <a href="/compliance">Compliance</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Ava Solutions Philippines. All rights reserved.</p>
+                <div class="footer-legal">
+                    <a href="/privacy">Privacy Policy</a>
+                    <a href="/terms">Terms of Service</a>
+                </div>
+            </div>
+        </div>
     </footer>
 
-    <!-- Login Modal -->
-    <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('loginModal')">&times;</span>
-            <h2>Login</h2>
-            <form id="loginForm">
-                <div class="form-group">
-                    <label>Email:</label>
-                    <input type="email" id="loginEmail" required>
-                </div>
-                <div class="form-group">
-                    <label>Password:</label>
-                    <input type="password" id="loginPassword" required>
-                </div>
-                <button type="submit" class="btn-full">Login</button>
-            </form>
-            <div class="text-center mt-1">
-                <a href="#" onclick="switchToRegister()">Don't have an account? Register</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Register Modal -->
-    <div id="registerModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('registerModal')">&times;</span>
-            <h2>Create Account</h2>
-            <form id="registerForm">
-                <div class="form-group">
-                    <label>First Name:</label>
-                    <input type="text" id="firstName" required>
-                </div>
-                <div class="form-group">
-                    <label>Last Name:</label>
-                    <input type="text" id="lastName" required>
-                </div>
-                <div class="form-group">
-                    <label>Business Name:</label>
-                    <input type="text" id="businessName" required>
-                </div>
-                <div class="form-group">
-                    <label>Email:</label>
-                    <input type="email" id="registerEmail" required>
-                </div>
-                <div class="form-group">
-                    <label>Password:</label>
-                    <input type="password" id="registerPassword" required minlength="6">
-                </div>
-                <button type="submit" class="btn-full">Create Account</button>
-            </form>
-            <div class="text-center mt-1">
-                <a href="#" onclick="switchToLogin()">Already have an account? Login</a>
-            </div>
-        </div>
-    </div>
-
-    <script src="js/auth.js"></script>
+    <!-- Scripts -->
+    <script src="/assets/main.js"></script>
 </body>
 </html>

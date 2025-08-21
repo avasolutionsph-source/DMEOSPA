@@ -3,8 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Ava Solutions</title>
+    <title>Super Admin - Ava Solutions</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a6fd8;
+            --secondary: #764ba2;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --text-dark: #1f2937;
+            --text-light: #6b7280;
+            --bg-light: #f9fafb;
+            --bg-white: #ffffff;
+            --border: #e5e7eb;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,89 +31,129 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f5f5;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
         }
 
-        .header {
+        .admin-header {
             background: white;
             padding: 1rem 2rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #667eea;
+        .admin-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
         }
 
-        .user-info {
+        .admin-brand i {
+            font-size: 1.5rem;
+        }
+
+        .admin-user {
             display: flex;
             align-items: center;
             gap: 1rem;
         }
 
-        .btn-logout {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .container {
-            max-width: 1200px;
+        .admin-container {
+            max-width: 1400px;
             margin: 2rem auto;
             padding: 0 2rem;
         }
 
-        .stats-grid {
+        .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
+            gap: 1.5rem;
             margin-bottom: 3rem;
         }
 
         .stat-card {
             background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            text-align: center;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow);
         }
 
-        .stat-icon {
-            font-size: 3rem;
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 1rem;
         }
 
-        .stat-number {
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+        }
+
+        .stat-icon.primary { background: var(--primary); }
+        .stat-icon.success { background: var(--success); }
+        .stat-icon.warning { background: var(--warning); }
+        .stat-icon.secondary { background: var(--secondary); }
+
+        .stat-value {
             font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 0.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
         }
 
         .stat-label {
-            color: #666;
+            color: var(--text-light);
             font-size: 0.9rem;
         }
 
-        .section {
+        .admin-section {
             background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow);
             margin-bottom: 2rem;
         }
 
-        .section h2 {
+        .section-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .section-content {
+            padding: 1.5rem;
+        }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
             margin-bottom: 1.5rem;
-            color: #333;
+            flex-wrap: wrap;
+        }
+
+        .filter-input, .filter-select {
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 0.25rem;
+            font-size: 0.9rem;
         }
 
         .users-table {
@@ -104,225 +163,444 @@
 
         .users-table th,
         .users-table td {
-            padding: 1rem;
             text-align: left;
-            border-bottom: 1px solid #eee;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
         }
 
         .users-table th {
-            background: #f8f9fa;
-            font-weight: bold;
+            background: var(--bg-light);
+            font-weight: 600;
+            color: var(--text-dark);
         }
 
-        .users-table tr:hover {
-            background: #f8f9fa;
+        .user-info {
+            display: flex;
+            flex-direction: column;
         }
 
-        .badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 15px;
+        .user-name {
+            font-weight: 500;
+        }
+
+        .user-email {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .plan-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
             font-size: 0.8rem;
-            font-weight: bold;
+            font-weight: 500;
         }
 
-        .badge-active {
-            background: #d4edda;
-            color: #155724;
+        .plan-free { background: #e5e7eb; color: var(--text-dark); }
+        .plan-basic { background: #dbeafe; color: #1e40af; }
+        .plan-pro { background: #dcfce7; color: #166534; }
+        .plan-enterprise { background: #fef3c7; color: #92400e; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.8rem;
+            font-weight: 500;
         }
 
-        .badge-inactive {
-            background: #f8d7da;
-            color: #721c24;
+        .status-active { background: #dcfce7; color: #166534; }
+        .status-inactive { background: #fee2e2; color: #dc2626; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.25rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
         }
 
-        .badge-pro {
-            background: #d1ecf1;
-            color: #0c5460;
+        .btn-primary {
+            background: var(--primary);
+            color: white;
         }
 
-        .badge-unpaid {
-            background: #fff3cd;
-            color: #856404;
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 0.25rem;
+            font-size: 1rem;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            height: 80px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            background: white;
+            cursor: pointer;
+            border-radius: 0.25rem;
+        }
+
+        .page-btn.active {
+            background: var(--primary);
+            color: white;
         }
 
         .loading {
             text-align: center;
             padding: 2rem;
-            color: #666;
+            color: var(--text-light);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-light);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        #loginForm {
+            max-width: 400px;
+            margin: 5rem auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-header h1 {
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .success-message {
+            background: #dcfce7;
+            color: #166534;
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+            margin-bottom: 1rem;
+            display: none;
         }
 
         @media (max-width: 768px) {
-            .container {
+            .admin-header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .admin-container {
                 padding: 0 1rem;
             }
-            
-            .stats-grid {
+
+            .dashboard-grid {
                 grid-template-columns: 1fr;
             }
-            
+
+            .filters {
+                flex-direction: column;
+            }
+
             .users-table {
                 font-size: 0.9rem;
+            }
+
+            .modal-content {
+                margin: 10% 1rem;
             }
         }
     </style>
 </head>
 <body>
-    <header class="header">
-        <div class="logo">Ava Solutions - Admin</div>
-        <div class="user-info">
-            <span id="adminName">Loading...</span>
-            <button class="btn-logout" onclick="logout()">Logout</button>
+    <!-- Login Form -->
+    <div id="loginForm">
+        <div class="login-header">
+            <i class="fas fa-spa" style="font-size: 2rem; color: var(--primary); margin-bottom: 1rem;"></i>
+            <h1>Super Admin Login</h1>
+            <p style="color: var(--text-light);">Ava Solutions Admin Panel</p>
         </div>
-    </header>
+        
+        <div class="error-message" id="loginError"></div>
+        
+        <form id="adminLoginForm">
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-input" name="email" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-input" name="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+        </form>
+    </div>
 
-    <div class="container">
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon">👥</div>
-                <div class="stat-number" id="totalUsers">-</div>
-                <div class="stat-label">Total Users</div>
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" style="display: none;">
+        <!-- Header -->
+        <div class="admin-header">
+            <div class="admin-brand">
+                <i class="fas fa-spa"></i>
+                <span>Ava Solutions - Super Admin</span>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon">✅</div>
-                <div class="stat-number" id="activeUsers">-</div>
-                <div class="stat-label">Active Users</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">💰</div>
-                <div class="stat-number" id="totalRevenue">₱-</div>
-                <div class="stat-label">Total Revenue</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">📊</div>
-                <div class="stat-number" id="proUsers">-</div>
-                <div class="stat-label">Pro Subscribers</div>
+            <div class="admin-user">
+                <span id="adminName">Admin User</span>
+                <button class="btn btn-primary btn-sm" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
             </div>
         </div>
 
-        <div class="section">
-            <h2>Recent Users</h2>
-            <div id="usersLoading" class="loading">Loading users...</div>
-            <table class="users-table" id="usersTable" style="display: none;">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Business</th>
-                        <th>Email</th>
-                        <th>Plan</th>
-                        <th>Status</th>
-                        <th>Joined</th>
-                    </tr>
-                </thead>
-                <tbody id="usersTableBody">
-                </tbody>
-            </table>
+        <!-- Main Content -->
+        <div class="admin-container">
+            <!-- Dashboard Stats -->
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-value" id="totalUsers">0</div>
+                            <div class="stat-label">Total Users</div>
+                        </div>
+                        <div class="stat-icon primary">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-value" id="activeUsers">0</div>
+                            <div class="stat-label">Active Users</div>
+                        </div>
+                        <div class="stat-icon success">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-value" id="totalRevenue">₱0</div>
+                            <div class="stat-label">Monthly Revenue</div>
+                        </div>
+                        <div class="stat-icon warning">
+                            <i class="fas fa-peso-sign"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-value" id="paidUsers">0</div>
+                            <div class="stat-label">Paid Subscriptions</div>
+                        </div>
+                        <div class="stat-icon secondary">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Management -->
+            <div class="admin-section">
+                <div class="section-header">
+                    <h2 class="section-title">User Management</h2>
+                    <button class="btn btn-primary" onclick="refreshUsers()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div class="section-content">
+                    <!-- Filters -->
+                    <div class="filters">
+                        <input type="text" class="filter-input" id="searchFilter" placeholder="Search users..." onkeyup="filterUsers()">
+                        <select class="filter-select" id="planFilter" onchange="filterUsers()">
+                            <option value="">All Plans</option>
+                            <option value="unpaid">Unpaid</option>
+                            <option value="pro">Pro</option>
+                        </select>
+                        <select class="filter-select" id="statusFilter" onchange="filterUsers()">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+
+                    <!-- Users Table -->
+                    <div id="usersContainer">
+                        <div class="loading">Loading users...</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script>
-        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://localhost:4000/api' 
-            : 'https://ava-pwa-backend.onrender.com/api';
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit User Subscription</h3>
+                <button class="close" onclick="closeModal()">&times;</button>
+            </div>
+            
+            <div class="error-message" id="modalError"></div>
+            <div class="success-message" id="modalSuccess"></div>
+            
+            <form id="editUserForm">
+                <input type="hidden" id="editUserId">
+                
+                <div class="form-group">
+                    <label class="form-label">User</label>
+                    <div id="editUserInfo" style="color: var(--text-light);"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Subscription Plan</label>
+                    <select class="form-select" id="editPlan" required>
+                        <option value="unpaid">Unpaid - No Features</option>
+                        <option value="pro">Pro - All Features (₱999/month)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="editStatus" required>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Admin Notes</label>
+                    <textarea class="form-textarea" id="editNotes" placeholder="Add notes about this user..."></textarea>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        // Check authentication
-        function checkAuth() {
-            const token = localStorage.getItem('authToken');
-            const userData = localStorage.getItem('userData');
-
-            if (!token || !userData) {
-                window.location.href = '/';
-                return false;
-            }
-
-            const user = JSON.parse(userData);
-            if (user.role !== 'admin' && user.role !== 'superAdmin') {
-                alert('Access denied. Admin privileges required.');
-                window.location.href = '/';
-                return false;
-            }
-
-            document.getElementById('adminName').textContent = `${user.firstName} ${user.lastName}`;
-            return true;
-        }
-
-        // Logout function
-        function logout() {
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('userData');
-            window.location.href = '/';
-        }
-
-        // Load dashboard stats
-        async function loadStats() {
-            try {
-                const token = localStorage.getItem('authToken');
-                const response = await fetch(`${API_BASE_URL}/admin/stats`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    const stats = data.stats;
-                    document.getElementById('totalUsers').textContent = stats.totalUsers;
-                    document.getElementById('activeUsers').textContent = stats.activeUsers;
-                    document.getElementById('totalRevenue').textContent = `₱${stats.totalRevenue.toLocaleString()}`;
-                    
-                    const proCount = stats.planDistribution.find(p => p._id === 'pro')?.count || 0;
-                    document.getElementById('proUsers').textContent = proCount;
-                }
-            } catch (error) {
-                console.error('❌ Failed to load stats:', error);
-            }
-        }
-
-        // Load users table
-        async function loadUsers() {
-            try {
-                const token = localStorage.getItem('authToken');
-                const response = await fetch(`${API_BASE_URL}/admin/users`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    const tbody = document.getElementById('usersTableBody');
-                    tbody.innerHTML = '';
-
-                    data.users.forEach(user => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${user.firstName} ${user.lastName}</td>
-                            <td>${user.businessName}</td>
-                            <td>${user.email}</td>
-                            <td><span class="badge badge-${user.subscriptionPlan}">${user.subscriptionPlan.toUpperCase()}</span></td>
-                            <td><span class="badge badge-${user.isActive ? 'active' : 'inactive'}">${user.isActive ? 'Active' : 'Inactive'}</span></td>
-                            <td>${new Date(user.createdAt).toLocaleDateString()}</td>
-                        `;
-                        tbody.appendChild(row);
-                    });
-
-                    document.getElementById('usersLoading').style.display = 'none';
-                    document.getElementById('usersTable').style.display = 'table';
-                }
-            } catch (error) {
-                console.error('❌ Failed to load users:', error);
-                document.getElementById('usersLoading').textContent = 'Failed to load users';
-            }
-        }
-
-        // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            if (checkAuth()) {
-                loadStats();
-                loadUsers();
-            }
-        });
-    </script>
+    <script src="/assets/admin.js"></script>
 </body>
 </html>

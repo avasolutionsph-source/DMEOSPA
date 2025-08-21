@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Inventory Sync</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #1E3A8A;
+            margin-bottom: 10px;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        button {
+            background: #1E3A8A;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .danger {
+            background: #dc3545;
+        }
+        .danger:hover {
+            background: #c82333;
+        }
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix Inventory Sync Issues</h1>
+        <p>This tool will help fix the inventory data mismatch between your PWA and Business Dashboard.</p>
+        
+        <div class="warning">
+            <strong>⚠️ Important:</strong> Make sure you're logged in to both the PWA and Business Dashboard before proceeding.
+        </div>
+
+        <div class="step">
+            <h3>Step 1: Check Current Status</h3>
+            <p>First, let's see what data exists in both systems:</p>
+            <button onclick="checkCurrentStatus()">🔍 Check Current Status</button>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Force Complete Sync</h3>
+            <p>This will sync ALL inventory items from PWA to the website:</p>
+            <button onclick="forceCompleteSync()">🔄 Force Complete Sync</button>
+        </div>
+
+        <div class="step">
+            <h3>Step 3: Verify Sync</h3>
+            <p>Check if the data now matches:</p>
+            <button onclick="verifySync()">✅ Verify Sync</button>
+        </div>
+
+        <div class="step" style="background: #fff3cd;">
+            <h3>Optional: Reset Inventory</h3>
+            <p><strong>⚠️ Warning:</strong> This will clear all inventory sync status. Use only if sync is completely broken.</p>
+            <button class="danger" onclick="resetInventorySync()">🗑️ Reset Sync Status</button>
+        </div>
+
+        <div id="output" class="output"></div>
+    </div>
+
+    <script src="js/database.js"></script>
+    <script>
+        const db = new Database();
+        let initialized = false;
+        
+        async function init() {
+            if (!initialized) {
+                await db.init();
+                initialized = true;
+                log('✅ Database initialized');
+            }
+        }
+        
+        function log(message) {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            output.innerHTML += `[${timestamp}] ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('output').innerHTML = '';
+        }
+        
+        async function checkCurrentStatus() {
+            clearLog();
+            try {
+                await init();
+                log('Checking current inventory status...\n');
+                
+                // Check PWA data
+                const inventory = await db.getAll('inventory');
+                log(`📦 PWA Inventory: ${inventory.length} items`);
+                
+                if (inventory.length > 0) {
+                    log('\nPWA Items:');
+                    for (const item of inventory) {
+                        log(`  - ${item.name} (SKU: ${item.sku || 'none'})`);
+                        log(`    Quantity: ${item.quantity || item.currentStock || 0} ${item.unit || 'units'}`);
+                        log(`    Sync Status: ${item.syncStatus || 'unknown'}`);
+                        log('');
+                    }
+                }
+                
+                // Check Backend data
+                const token = localStorage.getItem('userToken');
+                if (token) {
+                    log('\nChecking backend data...');
+                    const response = await fetch('https://ava-marketing-api.onrender.com/api/business/inventory', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        log(`\n🌐 Backend Inventory: ${data.totalItems || 0} items`);
+                        
+                        if (data.inventory && data.inventory.length > 0) {
+                            log('\nBackend Items:');
+                            for (const item of data.inventory) {
+                                log(`  - ${item.name} (SKU: ${item.sku || 'none'})`);
+                                log(`    Quantity: ${item.quantity || 0} ${item.unit || 'units'}`);
+                                log('');
+                            }
+                        }
+                    } else {
+                        log('❌ Failed to fetch backend data');
+                    }
+                } else {
+                    log('⚠️ No auth token found. Please login to the PWA first.');
+                }
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`);
+            }
+        }
+        
+        async function forceCompleteSync() {
+            clearLog();
+            try {
+                await init();
+                log('Starting complete inventory sync...\n');
+                
+                const token = localStorage.getItem('userToken');
+                if (!token) {
+                    log('❌ No auth token found. Please login to the PWA first.');
+                    return;
+                }
+                
+                // Get all inventory items
+                const allInventory = await db.getAll('inventory');
+                log(`Found ${allInventory.length} inventory items to sync\n`);
+                
+                if (allInventory.length === 0) {
+                    log('⚠️ No inventory items found in PWA. Add items first.');
+                    return;
+                }
+                
+                // Calculate summary
+                const lowStockItems = allInventory.filter(item => {
+                    const stock = item.quantity || item.currentStock || 0;
+                    return stock <= (item.minStock || 5) && stock > 0;
+                }).length;
+                
+                const outOfStockItems = allInventory.filter(item => {
+                    const stock = item.quantity || item.currentStock || 0;
+                    return stock === 0;
+                }).length;
+                
+                // Process inventory for sync
+                const processedInventory = allInventory.map(item => ({
+                    id: item.id || item._id,
+                    name: item.name || 'Unknown Item',
+                    sku: item.sku || '',
+                    category: item.category || 'Uncategorized',
+                    quantity: item.quantity || item.currentStock || 0,
+                    unit: item.unit || 'units',
+                    minStock: item.minStock || 5,
+                    price: item.price || item.unitPrice || 0,
+                    cost: item.cost || 0,
+                    supplier: item.supplier || '',
+                    description: item.description || item.notes || '',
+                    lastRestocked: item.lastRestocked || null
+                }));
+                
+                log('Syncing items:');
+                for (const item of processedInventory) {
+                    log(`  - ${item.name} (SKU: ${item.sku}): ${item.quantity} ${item.unit}`);
+                }
+                
+                // Get API URL from settings
+                const apiSettings = await db.get('settings', 'apiUrl');
+                const apiUrl = apiSettings?.value || 'https://ava-marketing-api.onrender.com';
+                
+                log(`\n📤 Sending to ${apiUrl}/api/inventory/sync...`);
+                
+                // Send to server
+                const response = await fetch(`${apiUrl}/api/inventory/sync`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        inventory: processedInventory,
+                        inventorySummary: {
+                            totalItems: allInventory.length,
+                            lowStockItems: lowStockItems,
+                            outOfStockItems: outOfStockItems
+                        }
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    log(`\n✅ Sync successful! ${result.message}`);
+                    
+                    // Mark all items as synced
+                    for (const item of allInventory) {
+                        item.syncStatus = 'synced';
+                        await db.update('inventory', item);
+                    }
+                    
+                    log('✅ All items marked as synced in PWA');
+                    log('\n🎉 Sync complete! Refresh your Business Dashboard to see updated data.');
+                } else {
+                    const error = await response.text();
+                    log(`\n❌ Sync failed: ${error}`);
+                }
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`);
+            }
+        }
+        
+        async function verifySync() {
+            clearLog();
+            log('Verifying sync status...\n');
+            await checkCurrentStatus();
+            
+            const inventory = await db.getAll('inventory');
+            const token = localStorage.getItem('userToken');
+            
+            if (token && inventory.length > 0) {
+                const response = await fetch('https://ava-marketing-api.onrender.com/api/business/inventory', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (inventory.length === data.totalItems) {
+                        log('\n✅ SUCCESS: Item counts match!');
+                    } else {
+                        log(`\n⚠️ WARNING: Item count mismatch`);
+                        log(`PWA: ${inventory.length} items`);
+                        log(`Backend: ${data.totalItems} items`);
+                        log('\nTry running "Force Complete Sync" again.');
+                    }
+                }
+            }
+        }
+        
+        async function resetInventorySync() {
+            if (!confirm('Are you sure? This will reset all inventory sync status.')) {
+                return;
+            }
+            
+            clearLog();
+            try {
+                await init();
+                log('Resetting inventory sync status...\n');
+                
+                const inventory = await db.getAll('inventory');
+                let count = 0;
+                
+                for (const item of inventory) {
+                    item.syncStatus = 'pending';
+                    await db.update('inventory', item);
+                    count++;
+                }
+                
+                log(`✅ Reset ${count} inventory items to pending sync status`);
+                log('\nNow run "Force Complete Sync" to sync all items.');
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

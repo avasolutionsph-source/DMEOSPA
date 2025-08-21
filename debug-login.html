@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Login Data</title>
+</head>
+<body>
+    <h1>Debug Login Data</h1>
+    <button onclick="showStoredData()">Show Stored Data</button>
+    <div id="output"></div>
+
+    <script>
+        function showStoredData() {
+            const output = document.getElementById('output');
+            let html = '<h2>LocalStorage Data:</h2>';
+            
+            // Check all possible keys
+            const keys = ['userToken', 'userData', 'isLoggedIn', 'authToken', 'currentUser', 'subscriptionPlan'];
+            
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                html += `<p><strong>${key}:</strong> ${value || 'null'}</p>`;
+                
+                if (value && (key === 'userData' || key === 'currentUser')) {
+                    try {
+                        const parsed = JSON.parse(value);
+                        html += `<pre>${JSON.stringify(parsed, null, 2)}</pre>`;
+                    } catch (e) {
+                        html += `<p>Error parsing JSON: ${e.message}</p>`;
+                    }
+                }
+            });
+            
+            html += '<h2>SessionStorage Data:</h2>';
+            keys.forEach(key => {
+                const value = sessionStorage.getItem(key);
+                html += `<p><strong>${key}:</strong> ${value || 'null'}</p>`;
+                
+                if (value && (key === 'userData' || key === 'currentUser')) {
+                    try {
+                        const parsed = JSON.parse(value);
+                        html += `<pre>${JSON.stringify(parsed, null, 2)}</pre>`;
+                    } catch (e) {
+                        html += `<p>Error parsing JSON: ${e.message}</p>`;
+                    }
+                }
+            });
+            
+            output.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
