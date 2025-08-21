@@ -1,5 +1,9 @@
 [build]
   publish = "public"
+  ignore = false
+  
+[build.environment]
+  NODE_VERSION = "18"
 
 [[redirects]]
   from = "/api/*"
