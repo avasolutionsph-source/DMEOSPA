@@ -1,5 +1,5 @@
-# API redirects - proxy to Netlify Functions
-/api/*  /.netlify/functions/api/:splat  200
+# API redirects - proxy to PWA Backend
+/api/*  https://ava-pwa-backend.onrender.com/api/:splat  200!
 
 # App download redirects
 /download/*  /download.html  200
