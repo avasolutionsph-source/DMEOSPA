@@ -282,7 +282,7 @@
             const userData = localStorage.getItem('userData');
 
             if (!token || !userData) {
-                window.location.href = '/';
+                window.location.href = '/login.html';
                 return false;
             }
 
@@ -297,7 +297,7 @@
         function logout() {
             localStorage.removeItem('authToken');
             localStorage.removeItem('userData');
-            window.location.href = '/';
+            window.location.href = '/login.html';
         }
 
         // Feature button handlers
