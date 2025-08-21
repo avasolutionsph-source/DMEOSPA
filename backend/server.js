@@ -13,6 +13,7 @@ import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
 import plansRoutes from './routes/plans.js';
 import subscriptionsRoutes from './routes/subscriptions.js';
+import analyticsRoutes from './routes/analytics.js';
 
 const app = express();
 
@@ -80,6 +81,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/plans', plansRoutes);
 app.use('/api/subscriptions', subscriptionsRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Serve static files for frontends (if needed)
 app.use('/marketing', express.static('../frontend-marketing'));

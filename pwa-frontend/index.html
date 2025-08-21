@@ -267,7 +267,7 @@
                 <div class="feature-icon">📊</div>
                 <div class="feature-title">Analytics</div>
                 <div class="feature-desc">View detailed reports and business insights</div>
-                <button class="btn-feature">View Reports</button>
+                <button class="btn-feature" onclick="openAnalytics()">View Reports</button>
             </div>
         </div>
     </div>
@@ -301,13 +301,20 @@
             window.location.href = '/login.html';
         }
 
+        // Open analytics dashboard
+        function openAnalytics() {
+            window.location.href = '/analytics.html';
+        }
+
         // Feature button handlers
         document.addEventListener('DOMContentLoaded', function() {
             if (!checkAuth()) return;
 
-            // Add click handlers for feature buttons
+            // Add click handlers for feature buttons (except analytics)
             const featureButtons = document.querySelectorAll('.btn-feature');
             featureButtons.forEach(button => {
+                if (button.onclick) return; // Skip buttons with custom onclick
+                
                 button.addEventListener('click', function() {
                     const feature = this.parentElement.querySelector('.feature-title').textContent;
                     alert(`${feature} feature coming soon!`);
