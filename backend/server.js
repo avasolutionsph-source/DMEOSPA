@@ -1,5 +1,5 @@
 // Render deployment wrapper for marketing website
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { dirname, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -18,8 +18,14 @@ console.log('🔄 Loading marketing website server...');
 // Now import and run the marketing website server
 (async () => {
   try {
-    await import('./server.js');
+    const serverPath = pathToFileURL(join(__dirname, '../marketing-website/server.js')).href;
+    await import(serverPath);
     console.log('✅ Marketing website server loaded successfully');
+    // Keep the process alive
+    process.on('SIGTERM', () => {
+      console.log('⚠️  SIGTERM received, shutting down gracefully...');
+      process.exit(0);
+    });
   } catch (error) {
     console.error('❌ Failed to load marketing website server:', error);
     console.error('Stack:', error.stack);
