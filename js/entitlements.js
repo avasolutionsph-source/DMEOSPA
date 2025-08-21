@@ -102,56 +102,48 @@ class EntitlementsSystem {
         }
     }
 
-    // Set entitlements based on subscription plan
+    // Set entitlements based on subscription plan - ALL USERS GET ALL FEATURES
     setEntitlementsForPlan(plan) {
         console.log(`🔍 ENTITLEMENTS DEBUG: Setting plan for "${plan}"`);
         this.currentPlan = plan;
         
-        switch (plan) {
-            case 'pro':
-                // PRO plan - all features available
-                this.entitlements = {
-                    pos: true,
-                    inventory: true,
-                    employees: true,
-                    rooms: true,  // Added rooms feature for PRO
-                    dashboard: 'full',
-                    chatbot: true,
-                    cloudBackup: true,
-                    analytics: true,
-                    multiUser: true,
-                    support: 'priority'
-                };
-                console.log('✅ PRO PLAN ACTIVATED - All features enabled!');
-                console.log('📋 PRO Features:', this.entitlements);
-                
-                // Force update UI immediately
-                setTimeout(() => this.updateUI(), 500);
-                break;
-            case 'unpaid':
-            case 'free':
-            default:
-                // UNPAID plan - no features available
-                console.log('❌ UNPAID/FREE PLAN - No features available');
-                this.setUnpaidPlanEntitlements();
-                return;
-        }
+        // ALL USERS GET ALL FEATURES - No restrictions
+        this.entitlements = {
+            pos: true,
+            inventory: true,
+            employees: true,
+            rooms: true,
+            dashboard: 'full',
+            chatbot: true,
+            cloudBackup: true,
+            analytics: true,
+            multiUser: true,
+            support: 'priority'
+        };
+        
+        console.log('✅ ALL FEATURES ENABLED FOR ALL USERS!');
+        console.log('📋 Available Features:', this.entitlements);
+        
+        // Force update UI immediately
+        setTimeout(() => this.updateUI(), 500);
         console.log(`✅ Set ${plan} plan entitlements successfully`);
     }
 
-    // Set unpaid plan entitlements (basic features only)
+    // Set unpaid plan entitlements - NOW GIVES ALL FEATURES
     setUnpaidPlanEntitlements() {
         this.currentPlan = 'unpaid';
+        // ALL USERS GET ALL FEATURES
         this.entitlements = {
-            pos: true,              // Basic POS access
-            inventory: false,       // No inventory management
-            employees: false,       // No employee management
-            dashboard: true,        // Basic dashboard access
-            chatbot: false,         // No AI assistant
-            cloudBackup: false,     // No cloud backup
-            analytics: false,       // No analytics
-            multiUser: false,       // No multi-user
-            support: false          // No support
+            pos: true,              // Full POS access
+            inventory: true,        // Full inventory management
+            employees: true,        // Full employee management
+            dashboard: 'full',      // Full dashboard access
+            chatbot: true,          // Full AI assistant
+            cloudBackup: true,      // Full cloud backup
+            analytics: true,        // Full analytics
+            multiUser: true,        // Full multi-user
+            support: 'priority',    // Full support
+            rooms: true             // Full rooms access
         };
         console.log('Set unpaid plan entitlements - basic features only (POS + Dashboard)');
     }
@@ -161,59 +153,36 @@ class EntitlementsSystem {
         this.setUnpaidPlanEntitlements();
     }
 
-    // Force update UI elements based on current entitlements
+    // Force update UI elements - ALL FEATURES ENABLED
     updateUI() {
-        console.log('🔄 Updating UI with entitlements:', this.entitlements);
+        console.log('🔄 Updating UI - all features enabled for all users');
         
-        // Update sidebar items based on data-page attributes
-        const sidebarFeatures = {
-            'inventory': this.entitlements.inventory,
-            'employees': this.entitlements.employees,
-            'rooms': this.entitlements.rooms, // Added rooms to sidebar features
-            'chatbot': this.entitlements.chatbot,
-            'products': true // Services always available
-        };
-        
-        Object.entries(sidebarFeatures).forEach(([page, enabled]) => {
-            const element = document.querySelector(`a.nav-item[data-page="${page}"]`);
+        // Enable ALL sidebar items for ALL users
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(element => {
+            // Enable everything
+            element.classList.remove('disabled', 'locked', 'premium-locked');
+            element.style.opacity = '1';
+            element.style.pointerEvents = 'auto';
             
-            if (element) {
-                if (enabled) {
-                    element.classList.remove('disabled', 'locked', 'premium-locked');
-                    element.style.opacity = '1';
-                    element.style.pointerEvents = 'auto';
-                    
-                    // Remove crown icon if present
-                    const crownIcon = element.querySelector('.crown-icon');
-                    if (crownIcon) {
-                        crownIcon.remove();
-                    }
-                    
-                    console.log(`✅ Enabled feature: ${page}`);
-                } else {
-                    element.classList.add('disabled', 'locked', 'premium-locked');
-                    element.style.opacity = '0.5';
-                    element.style.pointerEvents = 'auto'; // Allow clicks to show upgrade prompt
-                    
-                    // Add crown icon if not present
-                    if (!element.querySelector('.crown-icon')) {
-                        const crownIcon = document.createElement('i');
-                        crownIcon.className = 'fas fa-crown crown-icon';
-                        crownIcon.style.cssText = 'color: #ffd700; margin-left: 5px; font-size: 12px;';
-                        element.appendChild(crownIcon);
-                    }
-                    
-                    // Add click handler for upgrade prompt
-                    element.onclick = (e) => {
-                        e.preventDefault();
-                        this.showUpgradePrompt(page);
-                    };
-                    
-                    console.log(`❌ Disabled feature: ${page}`);
-                }
-            } else {
-                console.warn(`⚠️ Could not find sidebar element for: ${page}`);
+            // Remove crown icon if present
+            const crownIcon = element.querySelector('.crown-icon');
+            if (crownIcon) {
+                crownIcon.remove();
             }
+            
+            // Remove lock icon if present
+            const lockIcon = element.querySelector('.fa-lock');
+            if (lockIcon) {
+                lockIcon.remove();
+            }
+            
+            // Remove upgrade onclick handlers
+            if (element.onclick && element.onclick.toString().includes('showUpgradePrompt')) {
+                element.onclick = null;
+            }
+            
+            console.log(`✅ Enabled feature: ${element.dataset.page || 'unknown'}`);
         });
         
         // Update plan badge in sidebar
@@ -248,8 +217,16 @@ class EntitlementsSystem {
         }
     }
 
-    // Show upgrade prompt for locked features
+    // Show upgrade prompt - DISABLED, all features are free
     showUpgradePrompt(feature) {
+        // Don't show upgrade prompts - all features are available
+        console.log('Upgrade prompt disabled - all features are free');
+        if (window.app && window.app.navigateTo) {
+            window.app.navigateTo(feature);
+        }
+        return;
+        
+        // OLD CODE BELOW - NOT EXECUTED
         const featureNames = {
             'inventory': 'Inventory Management',
             'employees': 'Employee Management',
@@ -351,27 +328,10 @@ class EntitlementsSystem {
         return Date.now() >= decoded.exp * 1000;
     }
 
-    // Check if user can access a feature
+    // Check if user can access a feature - ALWAYS RETURNS TRUE
     can(feature, level = true) {
-        if (!this.entitlements) {
-            console.warn('Entitlements not loaded, defaulting to free plan');
-            this.setFreePlanEntitlements();
-        }
-
-        const entitlement = this.entitlements[feature];
-        
-        // Boolean check
-        if (typeof level === 'boolean') {
-            return !!entitlement === level;
-        }
-        
-        // String level check (e.g., 'lite' vs 'full')
-        if (typeof level === 'string' && typeof entitlement === 'string') {
-            return entitlement === level || (entitlement === 'full' && level === 'lite');
-        }
-        
-        // Direct value check
-        return entitlement === level;
+        // ALL USERS CAN ACCESS ALL FEATURES
+        return true;
     }
 
     // Get current plan info
@@ -397,10 +357,34 @@ class EntitlementsSystem {
         this.updateSubscriptionStatus();
     }
 
-    // Gate navigation items
+    // Gate navigation items - NO GATING, ALL FEATURES AVAILABLE
     gateNavigationItems() {
         const navItems = document.querySelectorAll('.nav-item');
         
+        navItems.forEach(item => {
+            // Enable all items - no restrictions
+            item.classList.remove('disabled', 'locked', 'premium-locked');
+            item.style.opacity = '1';
+            item.style.pointerEvents = 'auto';
+            
+            // Remove any lock icons
+            const lockIcon = item.querySelector('.fa-lock');
+            if (lockIcon) lockIcon.remove();
+            
+            // Remove crown icons
+            const crownIcon = item.querySelector('.crown-icon');
+            if (crownIcon) crownIcon.remove();
+            
+            // Remove upgrade onclick handlers
+            if (item.onclick && item.onclick.toString().includes('showUpgradePrompt')) {
+                item.onclick = null;
+            }
+        });
+        
+        console.log('✅ All navigation items enabled for all users');
+        return;
+        
+        // OLD CODE BELOW - NOT EXECUTED
         navItems.forEach(item => {
             const page = item.dataset.page;
             let canAccess = true;
@@ -408,7 +392,7 @@ class EntitlementsSystem {
             
             switch (page) {
                 case 'inventory':
-                    canAccess = this.can('inventory');
+                    canAccess = true;
                     showUpgrade = !canAccess;
                     break;
                 case 'employees':
@@ -843,9 +827,10 @@ class EntitlementsSystem {
         console.log('Subscription updated:', newPlan);
     }
 
-    // Check if feature requires upgrade
+    // Check if feature requires upgrade - ALWAYS FALSE
     requiresUpgrade(feature) {
-        return !this.can(feature);
+        // No features require upgrade - all are free
+        return false;
     }
 
     // Show feature locked message
