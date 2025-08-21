@@ -119,164 +119,68 @@ console.log('🌐 Browser compatibility fix initializing...');
         document.head.appendChild(style);
     }
     
-    // Ensure Rooms navigation works
-    function ensureRoomsNavigation() {
+    // Verify Rooms exists without breaking navigation
+    function verifyRoomsExists() {
         const roomsLink = document.querySelector('[data-page="rooms"]');
         if (!roomsLink) {
-            console.warn('Rooms link not found in DOM');
+            console.warn('Rooms link not found in DOM - may need to be added to HTML');
             return;
         }
         
-        // Remove any existing event listeners
-        const newRoomsLink = roomsLink.cloneNode(true);
-        roomsLink.parentNode.replaceChild(newRoomsLink, roomsLink);
-        
-        // Add cross-browser compatible event listener
-        function handleRoomsClick(e) {
-            e = e || window.event;
-            if (e.preventDefault) {
-                e.preventDefault();
-            } else {
-                e.returnValue = false;
-            }
-            
-            // Update active state
-            const navItems = document.querySelectorAll('.nav-item');
-            for (var i = 0; i < navItems.length; i++) {
-                navItems[i].classList.remove('active');
-            }
-            newRoomsLink.classList.add('active');
-            
-            // Hide all pages
-            const pages = document.querySelectorAll('.page');
-            for (var j = 0; j < pages.length; j++) {
-                pages[j].style.display = 'none';
-            }
-            
-            // Show rooms page
-            const roomsPage = document.getElementById('rooms');
-            if (roomsPage) {
-                roomsPage.style.display = 'block';
-            } else {
-                console.log('Rooms page not found, creating...');
-                createRoomsPage();
-                const newRoomsPage = document.getElementById('rooms');
-                if (newRoomsPage) {
-                    newRoomsPage.style.display = 'block';
-                }
-            }
-            
-            // Update app state if available
-            if (window.app && window.app.currentPage !== undefined) {
-                window.app.currentPage = 'rooms';
-            }
-            
-            return false;
+        // Just verify it's visible - don't mess with event handlers
+        if (roomsLink) {
+            roomsLink.style.display = 'flex';
+            roomsLink.style.visibility = 'visible';
+            roomsLink.style.opacity = '1';
+            console.log('✅ Rooms link verified in sidebar');
         }
-        
-        // Add event listener based on browser
-        if (newRoomsLink.addEventListener) {
-            newRoomsLink.addEventListener('click', handleRoomsClick, false);
-        } else if (newRoomsLink.attachEvent) {
-            // IE8 and below
-            newRoomsLink.attachEvent('onclick', handleRoomsClick);
-        } else {
-            newRoomsLink.onclick = handleRoomsClick;
-        }
-        
-        console.log('✅ Rooms navigation handler attached');
     }
     
-    // Create Rooms page if it doesn't exist
-    function createRoomsPage() {
-        if (document.getElementById('rooms')) {
-            return;
+    // Create Rooms page content if it doesn't exist
+    function ensureRoomsPageExists() {
+        // Check if rooms page container exists
+        let roomsPage = document.getElementById('rooms');
+        if (!roomsPage) {
+            console.log('Creating rooms page container...');
+            
+            const mainContent = document.querySelector('.main-content');
+            if (!mainContent) {
+                console.error('Main content area not found');
+                return;
+            }
+            
+            // Create basic rooms page structure
+            roomsPage = document.createElement('div');
+            roomsPage.id = 'rooms';
+            roomsPage.className = 'page';
+            roomsPage.style.display = 'none';
+            roomsPage.innerHTML = `
+                <div class="page-header">
+                    <h1>Room Management</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="addRoomBtn">
+                            <i class="fas fa-plus-circle"></i> Add Room
+                        </button>
+                    </div>
+                </div>
+                <div class="rooms-grid" id="roomsGrid"></div>
+            `;
+            
+            // Insert before settings or at the end
+            const settingsPage = document.getElementById('settings');
+            if (settingsPage) {
+                mainContent.insertBefore(roomsPage, settingsPage);
+            } else {
+                mainContent.appendChild(roomsPage);
+            }
+            
+            console.log('✅ Rooms page container created');
         }
         
-        const mainContent = document.querySelector('.main-content');
-        if (!mainContent) {
-            console.error('Main content area not found');
-            return;
+        // Initialize room manager if available
+        if (window.roomManager && typeof window.roomManager.init === 'function') {
+            window.roomManager.init();
         }
-        
-        const roomsPage = document.createElement('div');
-        roomsPage.id = 'rooms';
-        roomsPage.className = 'page';
-        roomsPage.style.display = 'none';
-        
-        // Use table-based layout for maximum compatibility
-        roomsPage.innerHTML = [
-            '<div class="page-header">',
-            '    <h1>Room Management</h1>',
-            '    <div class="header-actions">',
-            '        <button class="btn btn-primary" id="addRoomBtn">',
-            '            <i class="fas fa-plus-circle"></i> Add Room',
-            '        </button>',
-            '    </div>',
-            '</div>',
-            '<div class="rooms-container" style="padding: 20px;">',
-            '    <table style="width: 100%; border-spacing: 20px;">',
-            '        <tr>',
-            '            <td style="width: 33%; vertical-align: top;">',
-            '                <div style="background: white; border: 2px solid #27ae60; border-radius: 8px; padding: 20px;">',
-            '                    <h3 style="color: #27ae60; margin: 0 0 15px 0;">',
-            '                        <i class="fas fa-door-open"></i> Room 1',
-            '                    </h3>',
-            '                    <div style="background: #e8f5e9; padding: 8px; border-radius: 4px; margin-bottom: 15px;">',
-            '                        <strong>Status:</strong> Available',
-            '                    </div>',
-            '                    <p><strong>Type:</strong> Massage Room</p>',
-            '                    <p><strong>Capacity:</strong> 1 person</p>',
-            '                    <button class="btn btn-success" style="width: 100%; margin-top: 15px;">',
-            '                        <i class="fas fa-play"></i> Start Service',
-            '                    </button>',
-            '                </div>',
-            '            </td>',
-            '            <td style="width: 33%; vertical-align: top;">',
-            '                <div style="background: white; border: 2px solid #e74c3c; border-radius: 8px; padding: 20px;">',
-            '                    <h3 style="color: #e74c3c; margin: 0 0 15px 0;">',
-            '                        <i class="fas fa-door-closed"></i> Room 2',
-            '                    </h3>',
-            '                    <div style="background: #ffebee; padding: 8px; border-radius: 4px; margin-bottom: 15px;">',
-            '                        <strong>Status:</strong> Occupied',
-            '                    </div>',
-            '                    <div style="background: #fff5f5; padding: 15px; border-radius: 8px; margin: 15px 0; text-align: center;">',
-            '                        <i class="fas fa-clock" style="color: #e74c3c; font-size: 24px;"></i>',
-            '                        <div style="font-size: 28px; font-weight: bold; margin: 5px 0; color: #e74c3c;">15:32</div>',
-            '                        <div style="font-size: 12px; color: #999;">Elapsed Time</div>',
-            '                    </div>',
-            '                    <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; font-size: 14px;">',
-            '                        <p style="margin: 5px 0;"><strong>Client:</strong> Jane Doe</p>',
-            '                        <p style="margin: 5px 0;"><strong>Service:</strong> Swedish Massage</p>',
-            '                        <p style="margin: 5px 0;"><strong>Therapist:</strong> Maria</p>',
-            '                    </div>',
-            '                    <button class="btn btn-danger" style="width: 100%; margin-top: 15px;">',
-            '                        <i class="fas fa-stop"></i> End Service',
-            '                    </button>',
-            '                </div>',
-            '            </td>',
-            '            <td style="width: 33%; vertical-align: top;">',
-            '                <div style="background: white; border: 2px solid #27ae60; border-radius: 8px; padding: 20px;">',
-            '                    <h3 style="color: #27ae60; margin: 0 0 15px 0;">',
-            '                        <i class="fas fa-door-open"></i> Room 3',
-            '                    </h3>',
-            '                    <div style="background: #e8f5e9; padding: 8px; border-radius: 4px; margin-bottom: 15px;">',
-            '                        <strong>Status:</strong> Available',
-            '                    </div>',
-            '                    <p><strong>Type:</strong> Facial Room</p>',
-            '                    <p><strong>Capacity:</strong> 1 person</p>',
-            '                    <button class="btn btn-success" style="width: 100%; margin-top: 15px;">',
-            '                        <i class="fas fa-play"></i> Start Service',
-            '                    </button>',
-            '                </div>',
-            '            </td>',
-            '        </tr>',
-            '    </table>',
-            '</div>'
-        ].join('\n');
-        
-        mainContent.appendChild(roomsPage);
-        console.log('✅ Rooms page created');
     }
     
     // Fix entitlements to ensure all features are available
@@ -351,13 +255,11 @@ console.log('🌐 Browser compatibility fix initializing...');
         // Intercept API calls
         interceptAPIcalls();
         
-        // Create Rooms page if needed
-        createRoomsPage();
-        
-        // Setup navigation (with delay to ensure DOM is ready)
+        // Verify rooms exists (with delay to ensure DOM is ready)
         setTimeout(function() {
-            ensureRoomsNavigation();
-        }, 100);
+            verifyRoomsExists();
+            ensureRoomsPageExists();
+        }, 500);
         
         console.log('✅ Browser compatibility fixes applied');
     }
@@ -383,15 +285,6 @@ console.log('🌐 Browser compatibility fix initializing...');
     } else if (window.attachEvent) {
         window.attachEvent('onload', initialize);
     }
-    
-    // Re-apply navigation fix periodically (every 3 seconds)
-    setInterval(function() {
-        const roomsLink = document.querySelector('[data-page="rooms"]');
-        if (roomsLink && !roomsLink.hasAttribute('data-nav-fixed')) {
-            ensureRoomsNavigation();
-            roomsLink.setAttribute('data-nav-fixed', 'true');
-        }
-    }, 3000);
     
 })();
 
