@@ -1990,13 +1990,40 @@
         // testConnectionStatus(true);  // Test online state
     </script>
 
-    <!-- Final comprehensive fix - MUST LOAD FIRST -->
-    <script src="js/final-fix-all.js"></script>
-    
-    <!-- Fix stuck loading issue -->
-    <script src="js/fix-loading-stuck.js"></script>
+    <!-- Diagnostic tool to find visual bugs -->
+    <script src="js/diagnose-visual-bug.js"></script>
     
     <!-- Feature installer for settings page -->
     <script src="js/feature-installer.js"></script>
+    
+    <!-- Simple CSS fix for navigation visibility -->
+    <style>
+        /* Ensure all nav items are visible */
+        .nav-item {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            align-items: center;
+        }
+        
+        /* Fix nav menu overflow */
+        .nav-menu {
+            overflow: visible !important;
+            height: auto !important;
+        }
+        
+        /* Ensure Rooms is visible if it exists */
+        [data-page="rooms"] {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        /* Remove any max-height restrictions */
+        .sidebar nav {
+            max-height: none !important;
+            overflow-y: auto !important;
+        }
+    </style>
 </body>
 </html>
