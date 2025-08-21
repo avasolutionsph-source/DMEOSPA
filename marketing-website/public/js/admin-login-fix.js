@@ -67,6 +67,12 @@
                 localStorage.setItem('user', JSON.stringify(userData));
                 localStorage.setItem('currentUser', JSON.stringify(userData));
                 
+                console.log('📝 Auth data stored:', {
+                    token: token,
+                    user: userData.email,
+                    role: userData.role
+                });
+                
                 // Show success message
                 if (errorMsg) {
                     errorMsg.style.display = 'block';
@@ -77,11 +83,9 @@
                 // Force redirect after small delay
                 console.log('🚀 Redirecting to admin panel...');
                 setTimeout(() => {
-                    // Try multiple redirect methods
-                    window.location.href = '/admin.html';
+                    // Use location.replace to prevent back button issues
                     window.location.replace('/admin.html');
-                    window.location = '/admin.html';
-                }, 500);
+                }, 1000);
                 
                 return false;
             }
@@ -122,11 +126,11 @@
                     // Redirect based on role
                     setTimeout(() => {
                         if (data.user && (data.user.role === 'admin' || data.user.role === 'superAdmin')) {
-                            window.location.href = '/admin.html';
+                            window.location.replace('/admin.html');
                         } else {
-                            window.location.href = '/business-dashboard.html';
+                            window.location.replace('/business-dashboard.html');
                         }
-                    }, 500);
+                    }, 1000);
                 } else {
                     throw new Error('Invalid credentials');
                 }

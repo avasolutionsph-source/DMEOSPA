@@ -50,7 +50,7 @@ class BookingAPI {
     // Get business details
     async getBusinessDetails(businessId) {
         try {
-            const business = await this.request(`/businesses/${businessId}/public`);
+            const business = await this.request(`/public/business-catalog/${businessId}`);
             return business;
         } catch (error) {
             console.error('Error fetching business details:', error);

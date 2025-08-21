@@ -161,7 +161,8 @@ class UnifiedAuth {
 
         // Try marketing API as fallback
         try {
-            const response = await fetch(`${this.marketingApiUrl}/auth/validate`, {
+            const marketingApiUrl = window.appConfig?.getApiUrl('marketing') || 'https://ava-marketing-api.onrender.com';
+            const response = await fetch(`${marketingApiUrl}/auth/validate`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,

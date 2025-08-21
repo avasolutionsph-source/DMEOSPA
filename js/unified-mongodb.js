@@ -12,7 +12,9 @@
     console.log('🌐 Unified MongoDB Configuration Loading...');
     
     // Single MongoDB Backend URL - ALL frontends use this
-    const MONGODB_API_URL = 'https://ava-pwa-backend.onrender.com/api';
+    const MONGODB_API_URL = window.appConfig ? 
+        window.appConfig.getApiUrl('pwa') : 
+        'https://ava-pwa-backend.onrender.com/api';
     
     // Get auth token from any storage location
     function getAuthToken() {
@@ -385,8 +387,9 @@
         }
     };
     
-    // Override the old db object with unified MongoDB
-    window.db = window.UnifiedMongoDB;
+    // Export as cloudDB instead of db to avoid conflict with IndexedDB
+    window.cloudDB = window.UnifiedMongoDB;
+    window.mongoAPI = window.cloudDB; // Alias for compatibility
     
     // Helper function to get current business ID
     window.getCurrentBusinessId = function() {

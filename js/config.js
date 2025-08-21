@@ -58,8 +58,8 @@ class ConfigManager {
                 name: 'Production',
                 debug: false,
                 api: {
-                    pwa: 'https://ava-solutions-marketing.netlify.app/api',
-                    marketing: 'https://ava-solutions-marketing.netlify.app',
+                    pwa: 'https://ava-pwa-backend.onrender.com/api',
+                    marketing: 'https://ava-marketing-api.onrender.com',
                     booking: 'https://avaphbooking.netlify.app'
                 },
                 features: {

@@ -72,21 +72,20 @@ class EntitlementsSystem {
                 console.log('🔍 User is logged in, checking subscription plan from userData');
                 
                 // Try to get plan from userData
-                let userPlan = 'pro'; // Default to PRO for all logged-in business owners
+                let userPlan = 'unpaid'; // Default to unpaid - user must have valid subscription
                 if (userData) {
                     try {
                         const parsedUserData = JSON.parse(userData);
-                        userPlan = parsedUserData.subscriptionPlan || parsedUserData.plan || 'pro';
+                        userPlan = parsedUserData.subscriptionPlan || parsedUserData.plan || 'unpaid';
                         console.log('📋 User plan from localStorage:', userPlan);
                         
-                        // Override: All logged-in business owners get PRO access
+                        // Use actual subscription plan from user data
                         if (parsedUserData.email || parsedUserData.businessName) {
-                            userPlan = 'pro';
-                            console.log('✅ Business owner detected, upgrading to PRO plan');
+                            console.log('✅ Business owner detected, using actual subscription plan:', userPlan);
                         }
                     } catch (e) {
-                        console.log('⚠️ Could not parse userData, defaulting to PRO for logged-in users');
-                        userPlan = 'pro';
+                        console.log('⚠️ Could not parse userData, defaulting to unpaid');
+                        userPlan = 'unpaid';
                     }
                 }
                 
@@ -111,11 +110,12 @@ class EntitlementsSystem {
 
     // Set entitlements based on subscription plan
     setEntitlementsForPlan(plan) {
-        console.log(`🔍 ENTITLEMENTS DEBUG: Setting plan for "${plan}" - TESTING MODE: ALL ACCESS`);
-        this.currentPlan = 'pro'; // Force PRO for testing
+        console.log(`🔍 ENTITLEMENTS DEBUG: Setting plan for "${plan}"`);
+        this.currentPlan = plan; // Use actual plan, no override
         
-        // TESTING MODE: Give everyone full access to everything
-        this.entitlements = {
+        // Set entitlements based on actual subscription plan
+        if (plan === 'pro') {
+            this.entitlements = {
             pos: true,
             inventory: true,
             employees: true,
@@ -130,14 +130,17 @@ class EntitlementsSystem {
             services: true,
             giftcerts: true,
             payroll: true
-        };
+            };
+        } else {
+            // Unpaid plan - very limited features
+            this.setUnpaidPlanEntitlements();
+        }
         
-        console.log('🚀 TESTING MODE: ALL FEATURES UNLOCKED FOR EVERYONE!');
-        console.log('📋 All Features Enabled:', this.entitlements);
+        console.log('📋 Features Enabled:', this.entitlements);
         
         // Force update UI immediately
         setTimeout(() => this.updateUI(), 500);
-        console.log(`✅ Set FULL ACCESS entitlements for testing`);
+        console.log(`✅ Set entitlements for plan: ${plan}`);
     }
 
     // Set unpaid plan entitlements (very limited features)
@@ -404,10 +407,10 @@ class EntitlementsSystem {
             return entitlement === level || (entitlement === 'full' && level === 'lite');
         }
         
-        // Direct value check
-        // TESTING MODE: Allow everything
-        console.log(`🔓 TESTING MODE: Access granted for feature "${feature}"`);
-        return true;
+        // Direct value check - use actual entitlements
+        const hasAccess = this.entitlements[feature] || false;
+        console.log(`🔍 Access check for "${feature}": ${hasAccess}`);
+        return hasAccess;
     }
 
     // Get current plan info
@@ -773,9 +776,10 @@ class EntitlementsSystem {
     }
 
     hideSyncForUnpaidUsers() {
-        // COMPLETELY DISABLED - NO SYNC HIDING
-        console.log('🔓 TESTING MODE: Sync hiding completely disabled');
-        return;
+        // Only hide sync for truly unpaid users
+        if (this.currentPlan !== 'unpaid') {
+            return; // Don't hide for paying users
+        }
         // Hide connection status and sync indicators for unpaid users
         const connectionStatus = document.getElementById('connectionStatus');
         if (connectionStatus) {

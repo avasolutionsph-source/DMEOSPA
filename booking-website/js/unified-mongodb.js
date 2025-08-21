@@ -35,7 +35,7 @@
     window.BookingDB = {
         // Get business info
         getBusiness: async (businessId) => {
-            return mongoRequest(`/businesses/${businessId}/public`);
+            return mongoRequest(`/public/business-catalog/${businessId}`);
         },
         
         // Get available services

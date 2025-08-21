@@ -26,8 +26,12 @@ class APIClient {
     // Load settings and configuration
     async loadSettings() {
         try {
-            // Hardcoded API URL for production deployment
-            this.baseUrl = 'https://ava-marketing-api.onrender.com';
+            // Use centralized config instead of hardcoded URLs
+            if (window.appConfig) {
+                this.baseUrl = window.appConfig.getApiUrl('marketing');
+            } else {
+                this.baseUrl = 'https://ava-marketing-api.onrender.com'; // Fallback
+            }
             
             // Load token from auth system
             if (window.authSystem) {
@@ -35,7 +39,7 @@ class APIClient {
             }
         } catch (error) {
             console.error('Failed to load API settings:', error);
-            this.baseUrl = 'https://ava-marketing-api.onrender.com'; // Production API
+            this.baseUrl = 'https://ava-marketing-api.onrender.com'; // Fallback
         }
     }
 
