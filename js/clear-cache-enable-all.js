@@ -221,8 +221,13 @@ console.log('🧹 Clearing all cached data and enabling all features...');
         // Clear IndexedDB
         await clearIndexedDBRestrictions();
         
-        // Clear service worker cache
-        await clearServiceWorkerCache();
+        // Clear service worker cache - only if not recently cleared
+        const lastCacheClear = localStorage.getItem('lastCacheClear');
+        const now = Date.now();
+        if (!lastCacheClear || now - parseInt(lastCacheClear) > 60000) { // More than 1 minute ago
+            await clearServiceWorkerCache();
+            localStorage.setItem('lastCacheClear', now.toString());
+        }
         
         // Override checks
         overrideAllChecks();
@@ -231,49 +236,77 @@ console.log('🧹 Clearing all cached data and enabling all features...');
         enableAllUI();
         
         console.log('✅ All fixes applied!');
-        console.log('🔄 Refreshing in 2 seconds...');
         
         // Show success message
         showSuccessMessage();
     }
     
-    // Step 8: Show success message
+    // Step 8: Show success message (without auto-refresh)
     function showSuccessMessage() {
+        // Check if we already showed the message
+        if (sessionStorage.getItem('cacheCleared') === 'true') {
+            return; // Don't show again
+        }
+        
+        // Add animation CSS if not already added
+        if (!document.getElementById('cache-clear-styles')) {
+            const style = document.createElement('style');
+            style.id = 'cache-clear-styles';
+            style.textContent = `
+                @keyframes fadeOut {
+                    from { opacity: 1; }
+                    to { opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
         const message = document.createElement('div');
         message.style.cssText = `
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: 20px;
+            right: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 30px 40px;
+            padding: 20px 30px;
             border-radius: 12px;
             z-index: 999999;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            text-align: center;
-            font-size: 18px;
+            font-size: 16px;
         `;
         message.innerHTML = `
-            <h2 style="margin: 0 0 10px 0;">✅ All Features Enabled!</h2>
-            <p style="margin: 0;">All caches cleared. Refreshing page...</p>
+            <strong>✅ All Features Enabled!</strong><br>
+            <small>All restrictions removed</small>
         `;
         document.body.appendChild(message);
         
-        // Refresh after 2 seconds
+        // Mark as shown
+        sessionStorage.setItem('cacheCleared', 'true');
+        
+        // Remove message after 5 seconds
         setTimeout(() => {
-            location.reload(true);
-        }, 2000);
+            message.style.animation = 'fadeOut 0.5s ease';
+            setTimeout(() => message.remove(), 500);
+        }, 5000);
     }
     
-    // Execute everything
-    await executeAllFixes();
+    // Wait for page to be ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await executeAllFixes();
+        });
+    } else {
+        // DOM is already loaded
+        setTimeout(async () => {
+            await executeAllFixes();
+        }, 100);
+    }
     
-    // Continue monitoring
+    // Continue monitoring (but less frequently)
     setInterval(() => {
         enableAllUI();
         overrideAllChecks();
-    }, 1000);
+    }, 3000); // Every 3 seconds instead of 1
 })();
 
 console.log('✅ Cache clearing and feature enabling script loaded');
