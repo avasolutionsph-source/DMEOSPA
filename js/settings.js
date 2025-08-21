@@ -60,6 +60,15 @@ class SettingsManager {
             });
             forceRefreshBtn.setAttribute('data-listener', 'true');
         }
+
+        // Fix Storage button - Clears problematic storage but keeps business data
+        const fixStorageBtn = document.getElementById('fixStorageBtn');
+        if (fixStorageBtn && !fixStorageBtn.hasAttribute('data-listener')) {
+            fixStorageBtn.addEventListener('click', async () => {
+                await this.fixStorageIssues();
+            });
+            fixStorageBtn.setAttribute('data-listener', 'true');
+        }
     }
 
     addPerformanceSection() {
@@ -555,6 +564,88 @@ Type "DELETE" to confirm:`;
         } catch (error) {
             console.error('Failed to clear data:', error);
             showNotification('Failed to clear data', 'error');
+        }
+    }
+
+    // Fix storage issues while keeping business data
+    async fixStorageIssues() {
+        if (!confirm('This will fix common app issues by clearing temporary files and cache.\n\nYour business data (products, inventory, transactions, employees) will be kept safe.\n\nContinue?')) {
+            return;
+        }
+
+        try {
+            showNotification('Fixing app issues...', 'info');
+            
+            // Step 1: Save important business data
+            console.log('Backing up business data...');
+            const businessData = {
+                products: await db.getAll('products'),
+                inventory: await db.getAll('inventory'),
+                employees: await db.getAll('employees'),
+                transactions: await db.getAll('transactions'),
+                rooms: await db.getAll('rooms'),
+                activeServices: await db.getAll('activeServices'),
+                settings: await db.getAll('settings')
+            };
+            
+            // Save business name and essential settings
+            const businessName = localStorage.getItem('businessName');
+            const authToken = localStorage.getItem('authToken');
+            const userData = localStorage.getItem('userData');
+            
+            // Step 2: Clear problematic storage
+            console.log('Clearing problematic storage...');
+            
+            // Clear all localStorage except essential data
+            const keysToKeep = ['businessName', 'authToken', 'userData'];
+            const allKeys = Object.keys(localStorage);
+            allKeys.forEach(key => {
+                if (!keysToKeep.includes(key)) {
+                    localStorage.removeItem(key);
+                }
+            });
+            
+            // Clear sessionStorage
+            sessionStorage.clear();
+            
+            // Unregister service workers
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    await registration.unregister();
+                    console.log('Service worker unregistered');
+                }
+            }
+            
+            // Clear caches
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                await Promise.all(
+                    cacheNames.map(cacheName => {
+                        console.log('Deleting cache:', cacheName);
+                        return caches.delete(cacheName);
+                    })
+                );
+            }
+            
+            // Step 3: Restore essential data
+            console.log('Restoring business data...');
+            if (businessName) localStorage.setItem('businessName', businessName);
+            if (authToken) localStorage.setItem('authToken', authToken);
+            if (userData) localStorage.setItem('userData', userData);
+            
+            // Note: IndexedDB business data is already preserved (we didn't clear it)
+            
+            showNotification('App issues fixed! The page will reload...', 'success');
+            
+            // Reload after a short delay
+            setTimeout(() => {
+                window.location.reload(true); // Force reload from server
+            }, 1500);
+            
+        } catch (error) {
+            console.error('Failed to fix storage issues:', error);
+            showNotification('Failed to fix issues. Please try clearing browser cache manually.', 'error');
         }
     }
 
