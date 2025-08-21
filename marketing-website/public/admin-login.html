@@ -126,52 +126,29 @@
     </div>
 
     <script>
-        document.getElementById('adminLoginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        // Rename form to loginForm for unified-auth.js compatibility
+        document.addEventListener('DOMContentLoaded', function() {
+            const adminForm = document.getElementById('adminLoginForm');
+            if (adminForm) {
+                adminForm.id = 'loginForm';
+            }
             
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const loginBtn = document.getElementById('loginBtn');
-            const errorMessage = document.getElementById('errorMessage');
+            // Check if already logged in
+            const token = localStorage.getItem('adminToken') || localStorage.getItem('auth_token');
+            const userData = localStorage.getItem('userData');
             
-            // Reset error message
-            errorMessage.style.display = 'none';
-            
-            // Disable button
-            loginBtn.disabled = true;
-            loginBtn.textContent = 'Signing in...';
-            
-            try {
-                const response = await fetch('/api/auth/admin-login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Store token and redirect
-                    localStorage.setItem('adminToken', data.token);
-                    window.location.href = '/admin';
-                } else {
-                    throw new Error(data.error || 'Login failed');
+            if (token && userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    if (user.role === 'superAdmin' || user.role === 'admin') {
+                        // Redirect to admin panel
+                        window.location.href = '/admin.html';
+                    }
+                } catch (e) {
+                    console.error('Error checking login status:', e);
                 }
-            } catch (error) {
-                errorMessage.textContent = error.message;
-                errorMessage.style.display = 'block';
-            } finally {
-                loginBtn.disabled = false;
-                loginBtn.textContent = 'Sign In';
             }
         });
-        
-        // Check if already logged in
-        if (localStorage.getItem('adminToken')) {
-            window.location.href = '/admin';
-        }
     </script>
 <script src="/assets/unified-auth.js"></script>
 </body>

@@ -267,7 +267,10 @@
                         
                         // Redirect based on role
                         setTimeout(() => {
-                            if (result.user.role === 'admin' || result.user.role === 'superAdmin') {
+                            if (result.user.role === 'superAdmin') {
+                                // Website owner goes to admin panel
+                                window.location.href = '/admin.html';
+                            } else if (result.user.role === 'admin') {
                                 window.location.href = '/admin.html';
                             } else {
                                 window.location.href = '/business-dashboard.html';
