@@ -1,17 +1,13 @@
 // Gift Certificate Management System
-// Only define if not already defined
-(function() {
-    if (window.GiftCertificateManager) {
-        console.log('GiftCertificateManager already defined, skipping...');
-        return;
-    }
+// Check if already defined
+if (!window.GiftCertificateManager) {
 
 class GiftCertificateManager {
     constructor() {
         this.db = null;
         this.certificates = [];
         this.currentFilter = 'all';
-        this.init();
+        // Don't call init() in constructor - it's async
     }
 
     async init() {
@@ -857,7 +853,7 @@ class GiftCertificateManager {
 // Export for use in other modules
 window.GiftCertificateManager = GiftCertificateManager;
 
-})(); // End of IIFE preventing duplicate declaration
+} // End of if statement preventing duplicate declaration
 
 // Initialize the manager when the page loads
 window.loadGiftCertificates = window.loadGiftCertificates || async function() {
@@ -878,6 +874,10 @@ window.loadGiftCertificates = window.loadGiftCertificates || async function() {
         // Create new instance
         window.giftCertificateManager = new window.GiftCertificateManager();
         console.log('Gift Certificate Manager created and attached to window');
+        
+        // Initialize the manager (now done after construction)
+        await window.giftCertificateManager.init();
+        console.log('Gift Certificate Manager initialized');
         
         // Verify methods exist
         const requiredMethods = ['showCreateModal', 'showValidateModal', 'exportCertificates', 'renderCertificatesList'];
