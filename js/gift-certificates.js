@@ -337,31 +337,73 @@ class GiftCertificateManager {
         container.innerHTML = certificates.map(cert => `
             <div class="certificate-card ${cert.status}" data-id="${cert.id}">
                 <div class="certificate-preview" style="
-                    background: ${cert.design.background}; 
-                    background-image: ${cert.design.pattern};
-                    box-shadow: ${cert.design.shadowEffect || '0 10px 30px rgba(0,0,0,0.3)'};
+                    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+                    background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%23FFD700&quot; fill-opacity=&quot;0.15&quot;%3E%3Cpath d=&quot;M30 0l30 30-30 30-30-30z&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
+                    box-shadow: 0 15px 35px rgba(26, 26, 46, 0.6);
+                    border: 4px double rgba(255,215,0,0.8);
+                    position: relative;
                 ">
+                    <div class="decorative-corner top-left" style="
+                        position: absolute;
+                        top: 8px;
+                        left: 8px;
+                        width: 25px;
+                        height: 25px;
+                        background: linear-gradient(45deg, rgba(255,215,0,0.6), transparent);
+                        clip-path: polygon(0 0, 100% 0, 0 100%);
+                        z-index: 2;
+                    "></div>
+                    <div class="decorative-corner top-right" style="
+                        position: absolute;
+                        top: 8px;
+                        right: 8px;
+                        width: 25px;
+                        height: 25px;
+                        background: linear-gradient(-45deg, rgba(255,215,0,0.6), transparent);
+                        clip-path: polygon(100% 0, 100% 100%, 0 0);
+                        z-index: 2;
+                    "></div>
+                    <div class="decorative-corner bottom-left" style="
+                        position: absolute;
+                        bottom: 8px;
+                        left: 8px;
+                        width: 25px;
+                        height: 25px;
+                        background: linear-gradient(135deg, rgba(255,215,0,0.6), transparent);
+                        clip-path: polygon(0 0, 100% 100%, 0 100%);
+                        z-index: 2;
+                    "></div>
+                    <div class="decorative-corner bottom-right" style="
+                        position: absolute;
+                        bottom: 8px;
+                        right: 8px;
+                        width: 25px;
+                        height: 25px;
+                        background: linear-gradient(-135deg, rgba(255,215,0,0.6), transparent);
+                        clip-path: polygon(100% 0, 100% 100%, 0 100%);
+                        z-index: 2;
+                    "></div>
                     <div class="certificate-header">
                         <h4 style="
-                            color: ${cert.design.titleColor || '#FFFFFF'};
-                            text-shadow: ${cert.design.textShadow};
+                            color: #FFFFFF;
+                            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
                             font-weight: 300;
                             letter-spacing: 2px;
                         ">GIFT CERTIFICATE</h4>
                         <span class="control-number" style="
-                            color: ${cert.design.accentColor};
-                            text-shadow: ${cert.design.textShadow};
+                            color: #FFD700;
+                            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
                             font-weight: 600;
                         ">${cert.controlNumber}</span>
                     </div>
                     <div class="certificate-value" style="
-                        color: ${cert.design.accentColor};
-                        text-shadow: ${cert.design.textShadow};
+                        color: #FFD700;
+                        text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
                         font-weight: 700;
                     ">₱${cert.value.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>
                     <div class="certificate-recipient" style="
-                        color: ${cert.design.textColor || 'rgba(255,255,255,0.95)'};
-                        text-shadow: ${cert.design.textShadow};
+                        color: rgba(255,255,255,0.95);
+                        text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
                     ">${cert.recipientName}</div>
                 </div>
                 <div class="certificate-details">
