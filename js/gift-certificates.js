@@ -101,35 +101,34 @@ class GiftCertificateManager {
 
     async createCertificate(data) {
         const certificate = {
+            id: Date.now(), // Add ID for main database
             controlNumber: this.generateControlNumber(),
             recipientName: data.recipientName,
             recipientEmail: data.recipientEmail || '',
             value: parseFloat(data.value),
             occasion: data.occasion || 'General',
-            message: data.message || '',
+            message: data.personalMessage || '', // Use personalMessage from form
             status: 'active',
             createdDate: new Date().toISOString(),
             expiryDate: data.expiryDate || this.calculateExpiryDate(data.validityDays || 365),
             issuedBy: localStorage.getItem('userName') || 'System',
             design: await this.generateAIDesign(data),
             usageHistory: [],
-            remainingValue: parseFloat(data.value)
+            remainingValue: parseFloat(data.value),
+            type: 'gift_certificate' // Add type for main database
         };
 
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['certificates'], 'readwrite');
-            const store = transaction.objectStore('certificates');
-            const request = store.add(certificate);
-
-            request.onsuccess = () => {
-                certificate.id = request.result;
-                this.certificates.push(certificate);
-                this.updateDashboard();
-                resolve(certificate);
-            };
-
-            request.onerror = () => reject(request.error);
-        });
+        try {
+            // Use main app database add method
+            await this.db.add('products', certificate);
+            this.certificates.push(certificate);
+            this.updateDashboard();
+            this.renderCertificatesList();
+            return certificate;
+        } catch (error) {
+            console.error('Error creating certificate:', error);
+            throw error;
+        }
     }
 
     calculateExpiryDate(days) {
@@ -139,19 +138,17 @@ class GiftCertificateManager {
     }
 
     async loadCertificates() {
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['certificates'], 'readonly');
-            const store = transaction.objectStore('certificates');
-            const request = store.getAll();
-
-            request.onsuccess = () => {
-                this.certificates = request.result;
-                this.checkExpiredCertificates();
-                resolve(this.certificates);
-            };
-
-            request.onerror = () => reject(request.error);
-        });
+        try {
+            // Load gift certificates from main database
+            const allProducts = await this.db.getAll('products');
+            this.certificates = allProducts.filter(item => item.type === 'gift_certificate');
+            this.checkExpiredCertificates();
+            return this.certificates;
+        } catch (error) {
+            console.error('Error loading certificates:', error);
+            this.certificates = [];
+            return [];
+        }
     }
 
     checkExpiredCertificates() {
