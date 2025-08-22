@@ -509,6 +509,22 @@ class AuthSystem {
 
     // Set authentication state
     async setAuthState(user, token, rememberMe = false) {
+        // Ensure user has subscription plan
+        if (user && !user.subscriptionPlan && !user.plan) {
+            // Try to decode from token
+            try {
+                const parts = token.split('.');
+                if (parts.length === 3) {
+                    const payload = JSON.parse(atob(parts[1]));
+                    user.subscriptionPlan = payload.subscriptionPlan || payload.plan || 'basic';
+                    user.plan = user.subscriptionPlan;
+                }
+            } catch (e) {
+                user.subscriptionPlan = 'basic';
+                user.plan = 'basic';
+            }
+        }
+        
         // Use StateManager if available, fallback to direct properties
         if (window.StateManager && window.StateManager.initialized) {
             window.StateManager.batchUpdate({
@@ -528,14 +544,26 @@ class AuthSystem {
         if (rememberMe) {
             localStorage.setItem('authToken', token);
             localStorage.setItem('currentUser', JSON.stringify(user));
+            localStorage.setItem('userData', JSON.stringify(user)); // For entitlements compatibility
+            localStorage.setItem('subscriptionPlan', user.subscriptionPlan || user.plan || 'basic');
         } else {
             // Save to sessionStorage for session-only
             sessionStorage.setItem('authToken', token);
             sessionStorage.setItem('currentUser', JSON.stringify(user));
+            sessionStorage.setItem('userData', JSON.stringify(user)); // For entitlements compatibility
+            sessionStorage.setItem('subscriptionPlan', user.subscriptionPlan || user.plan || 'basic');
         }
+        
+        // Always save isLoggedIn flag
+        localStorage.setItem('isLoggedIn', 'true');
 
         // Update UI
         this.updateAuthUI();
+        
+        // Update entitlements system if available
+        if (window.entitlementsSystem) {
+            window.entitlementsSystem.loadEntitlements();
+        }
         
         // Add user ID to all future database operations
         await this.initializeUserData();

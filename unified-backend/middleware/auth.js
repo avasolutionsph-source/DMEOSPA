@@ -68,7 +68,12 @@ export const generateToken = (user) => {
     { 
       id: user.id || user._id,
       email: user.email,
-      businessId: user.businessId 
+      businessId: user.businessId,
+      subscriptionPlan: user.subscriptionPlan || user.plan || 'basic',
+      plan: user.subscriptionPlan || user.plan || 'basic', // Include both for compatibility
+      entitlements: {
+        plan: user.subscriptionPlan || user.plan || 'basic'
+      }
     },
     JWT_SECRET,
     { expiresIn: '7d' }

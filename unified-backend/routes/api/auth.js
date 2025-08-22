@@ -12,10 +12,34 @@ router.post('/register', async (req, res) => {
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  
+  // For now, return a mock user with subscription plan
+  // In production, this would verify credentials and fetch from database
+  const mockUser = {
+    id: 'user-123',
+    email: email || 'user@example.com',
+    name: 'John Doe',
+    businessId: 'business-123',
+    subscriptionPlan: 'pro', // This should come from database
+    plan: 'pro'
+  };
+  
+  // Import generateToken from auth middleware
+  const { generateToken } = await import('../../middleware/auth.js');
+  const token = generateToken(mockUser);
+  
   res.json({ 
-    message: 'User login placeholder',
-    token: 'placeholder-jwt-token',
-    success: true 
+    success: true,
+    message: 'Login successful',
+    token,
+    user: {
+      id: mockUser.id,
+      email: mockUser.email,
+      name: mockUser.name,
+      subscriptionPlan: mockUser.subscriptionPlan,
+      plan: mockUser.plan
+    }
   });
 });
 
