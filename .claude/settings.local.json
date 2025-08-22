@@ -5,7 +5,10 @@
       "Bash(rm:*)",
       "Bash(grep:*)",
       "Bash(test:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(node:*)",
+      "Bash(start test-integration.html)",
+      "Bash(cp:*)"
     ],
     "deny": [],
     "ask": []
