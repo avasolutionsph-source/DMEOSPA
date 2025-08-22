@@ -15,6 +15,12 @@
   force = true
 
 [[redirects]]
+  from = "/admin/*"
+  to = "https://ava-pwa-backend.onrender.com/admin/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
