@@ -26,28 +26,13 @@ class GiftCertificateManager {
     }
 
     openDatabase() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open('GiftCertificatesDB', 1);
-            
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => resolve(request.result);
-            
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                
-                if (!db.objectStoreNames.contains('certificates')) {
-                    const store = db.createObjectStore('certificates', { keyPath: 'id', autoIncrement: true });
-                    store.createIndex('controlNumber', 'controlNumber', { unique: true });
-                    store.createIndex('status', 'status', { unique: false });
-                    store.createIndex('createdDate', 'createdDate', { unique: false });
-                    store.createIndex('expiryDate', 'expiryDate', { unique: false });
-                }
-            };
-        });
+        // Use the main app database instead of separate database
+        return window.db;
     }
 
     async createTables() {
-        // Tables are created in openDatabase
+        // Tables are created by main app database initialization
+        // Gift certificates will use the main 'products' table with type: 'gift_certificate'
     }
 
     generateControlNumber() {
@@ -615,17 +600,10 @@ class GiftCertificateManager {
         console.log('Setting up Gift Certificate event listeners...');
         const self = this; // Store reference to this
         
-        // Use event delegation on the parent container for all buttons
-        const container = document.getElementById('gift-certificates');
-        if (!container) {
-            console.error('Gift certificates container not found!');
-            // Try again after a short delay
-            setTimeout(() => this.setupEventListeners(), 100);
-            return;
-        }
-        
-        // Add single delegated event listener for all clicks
-        container.addEventListener('click', function(e) {
+        // Use document-level event delegation for reliability
+        document.addEventListener('click', function(e) {
+            // Only handle clicks within gift certificates area
+            if (!e.target.closest('#gift-certificates')) return;
             console.log('Click detected in gift certificates container');
             console.log('Clicked element:', e.target);
             console.log('Clicked element tag:', e.target.tagName);
