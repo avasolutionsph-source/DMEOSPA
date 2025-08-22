@@ -5,14 +5,21 @@ const userSchema = new mongoose.Schema({
   // Basic info
   email: {
     type: String,
-    required: true,
+    required: function() {
+      // Email is required unless user signed up via social auth without email
+      return !this.googleId && !this.facebookId;
+    },
     unique: true,
+    sparse: true, // Allow multiple null values
     lowercase: true,
     trim: true
   },
   password: {
     type: String,
-    required: true,
+    required: function() {
+      // Password is not required for OAuth users
+      return !this.googleId && !this.facebookId;
+    },
     minlength: 6
   },
   firstName: {
@@ -33,6 +40,28 @@ const userSchema = new mongoose.Schema({
   phone: {
     type: String,
     trim: true
+  },
+  
+  // OAuth fields
+  googleId: {
+    type: String,
+    sparse: true
+  },
+  facebookId: {
+    type: String,
+    sparse: true
+  },
+  avatar: {
+    type: String // Profile picture URL
+  },
+  authProvider: {
+    type: String,
+    enum: ['local', 'google', 'facebook'],
+    default: 'local'
+  },
+  emailVerified: {
+    type: Boolean,
+    default: false
   },
   
   // Subscription info
@@ -126,9 +155,9 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Hash password before saving
+// Hash password before saving (only for local auth users)
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
   
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);

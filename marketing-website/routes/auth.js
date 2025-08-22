@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import User from '../models/User.js';
 import logger from '../utils/logger.js';
+import passport from '../config/passport.js';
 
 const router = express.Router();
 
@@ -278,5 +279,117 @@ router.post('/admin-login', [
     res.status(500).json({ error: 'Admin login failed' });
   }
 });
+
+// Google OAuth Routes
+router.get('/google', 
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+router.get('/google/callback', 
+  passport.authenticate('google', { failureRedirect: '/login?error=google_auth_failed' }),
+  async (req, res) => {
+    try {
+      const user = req.user;
+      
+      // Generate JWT
+      const token = jwt.sign(
+        { 
+          userId: user._id, 
+          email: user.email, 
+          role: user.role,
+          subscriptionPlan: user.subscriptionPlan,
+          businessName: user.businessName
+        },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: process.env.JWT_EXPIRE || '999y' }
+      );
+
+      // Set token in URL and redirect to frontend
+      const redirectUrl = user.role === 'superAdmin' 
+        ? `/admin?token=${token}&user=${encodeURIComponent(JSON.stringify({
+            id: user._id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            businessName: user.businessName,
+            subscriptionPlan: user.subscriptionPlan,
+            role: user.role,
+            avatar: user.avatar
+          }))}`
+        : `/business-dashboard?token=${token}&user=${encodeURIComponent(JSON.stringify({
+            id: user._id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            businessName: user.businessName,
+            subscriptionPlan: user.subscriptionPlan,
+            role: user.role,
+            avatar: user.avatar
+          }))}`;
+
+      logger.info(`Google OAuth login successful: ${user.email}`);
+      res.redirect(redirectUrl);
+    } catch (error) {
+      logger.error('Google OAuth callback error:', error);
+      res.redirect('/login?error=auth_callback_failed');
+    }
+  }
+);
+
+// Facebook OAuth Routes
+router.get('/facebook', 
+  passport.authenticate('facebook', { scope: ['email'] })
+);
+
+router.get('/facebook/callback', 
+  passport.authenticate('facebook', { failureRedirect: '/login?error=facebook_auth_failed' }),
+  async (req, res) => {
+    try {
+      const user = req.user;
+      
+      // Generate JWT
+      const token = jwt.sign(
+        { 
+          userId: user._id, 
+          email: user.email, 
+          role: user.role,
+          subscriptionPlan: user.subscriptionPlan,
+          businessName: user.businessName
+        },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: process.env.JWT_EXPIRE || '999y' }
+      );
+
+      // Set token in URL and redirect to frontend
+      const redirectUrl = user.role === 'superAdmin' 
+        ? `/admin?token=${token}&user=${encodeURIComponent(JSON.stringify({
+            id: user._id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            businessName: user.businessName,
+            subscriptionPlan: user.subscriptionPlan,
+            role: user.role,
+            avatar: user.avatar
+          }))}`
+        : `/business-dashboard?token=${token}&user=${encodeURIComponent(JSON.stringify({
+            id: user._id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            businessName: user.businessName,
+            subscriptionPlan: user.subscriptionPlan,
+            role: user.role,
+            avatar: user.avatar
+          }))}`;
+
+      logger.info(`Facebook OAuth login successful: ${user.email || user.facebookId}`);
+      res.redirect(redirectUrl);
+    } catch (error) {
+      logger.error('Facebook OAuth callback error:', error);
+      res.redirect('/login?error=auth_callback_failed');
+    }
+  }
+);
 
 export default router;
