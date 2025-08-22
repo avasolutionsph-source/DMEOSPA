@@ -431,6 +431,24 @@ class GiftCertificateManager {
                                 <i class="fas fa-check-circle"></i> Redeem
                             </button>
                         ` : ''}
+                        <button class="btn-delete" data-action="delete" data-cert-id="${cert.id}" style="
+                            background: #e74c3c;
+                            color: white;
+                            flex: 1;
+                            padding: 8px 12px;
+                            border: none;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-size: 13px;
+                            font-weight: 500;
+                            transition: all 0.2s ease;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 4px;
+                        ">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
                     </div>
                 </div>
             </div>
@@ -990,6 +1008,22 @@ class GiftCertificateManager {
                             console.log('Redeeming certificate:', controlNumber);
                             self.showRedeemModal(controlNumber);
                             break;
+                        case 'delete':
+                            const deleteCertId = target.dataset.certId;
+                            console.log('Deleting certificate:', deleteCertId);
+                            self.showDeleteConfirmation(deleteCertId);
+                            break;
+                        case 'confirm-delete':
+                            const confirmDeleteId = target.dataset.certId;
+                            console.log('Confirming deletion of certificate:', confirmDeleteId);
+                            self.deleteCertificate(confirmDeleteId).then(() => {
+                                const modal = target.closest('.modal');
+                                if (modal) modal.remove();
+                                alert('Certificate deleted successfully!');
+                            }).catch(error => {
+                                alert('Failed to delete certificate: ' + error.message);
+                            });
+                            break;
                         case 'process-redemption':
                             console.log('Processing redemption...');
                             self.processRedemption();
@@ -1152,6 +1186,70 @@ class GiftCertificateManager {
                     <p>${result.message}</p>
                 </div>
             `;
+        }
+    }
+
+    showDeleteConfirmation(certificateId) {
+        const certificate = this.certificates.find(c => c.id == certificateId);
+        if (!certificate) return;
+
+        const modal = document.createElement('div');
+        modal.className = 'modal gc-modal active';
+        modal.style.cssText = 'display: flex !important; z-index: 10000 !important;';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Delete Gift Certificate</h2>
+                    <button class="close-modal">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-error" style="margin-bottom: 20px;">
+                        <h4>⚠️ Confirm Deletion</h4>
+                        <p>Are you sure you want to delete this gift certificate?</p>
+                    </div>
+                    <div class="certificate-summary">
+                        <p><strong>Control Number:</strong> ${certificate.controlNumber}</p>
+                        <p><strong>Recipient:</strong> ${certificate.recipientName}</p>
+                        <p><strong>Value:</strong> ₱${certificate.value.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
+                        <p><strong>Status:</strong> ${certificate.status.toUpperCase()}</p>
+                    </div>
+                    <p style="color: #721c24; font-weight: bold; margin-top: 15px;">
+                        This action cannot be undone!
+                    </p>
+                    <div class="form-actions">
+                        <button class="btn-primary" data-action="confirm-delete" data-cert-id="${certificateId}" style="
+                            background: #e74c3c;
+                            border-color: #e74c3c;
+                        ">
+                            <i class="fas fa-trash"></i> Delete Certificate
+                        </button>
+                        <button class="btn-secondary" data-action="close-modal">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    async deleteCertificate(certificateId) {
+        try {
+            // Remove from database
+            await this.db.delete('products', parseInt(certificateId));
+            
+            // Remove from local array
+            this.certificates = this.certificates.filter(c => c.id != certificateId);
+            
+            // Update UI
+            this.updateDashboard();
+            this.renderCertificatesList();
+            
+            console.log('Certificate deleted successfully');
+            return true;
+        } catch (error) {
+            console.error('Error deleting certificate:', error);
+            throw error;
         }
     }
 
