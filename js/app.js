@@ -8,9 +8,12 @@ class App {
     }
 
     async init() {
+        console.log('🚀 App.init() starting...');
+        
         // Wait for database to be ready before proceeding
         try {
             await ensureDBInit();
+            console.log('✅ Database initialized');
         } catch (error) {
             console.error('Failed to initialize database:', error);
             return;
@@ -42,7 +45,9 @@ class App {
         await this.loadBusinessConfig();
         
         // Set up navigation
+        console.log('📍 About to setup navigation...');
         this.setupNavigation();
+        console.log('✅ Navigation setup complete');
         
         // Set up date/time display (throttle on low/balanced devices)
         this.updateDateTime();
