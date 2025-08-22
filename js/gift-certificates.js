@@ -1,6 +1,11 @@
 // Gift Certificate Management System
-// Prevent duplicate declaration
-if (typeof GiftCertificateManager === 'undefined') {
+// Only define if not already defined
+(function() {
+    if (window.GiftCertificateManager) {
+        console.log('GiftCertificateManager already defined, skipping...');
+        return;
+    }
+
 class GiftCertificateManager {
     constructor() {
         this.db = null;
@@ -852,27 +857,38 @@ class GiftCertificateManager {
 // Export for use in other modules
 window.GiftCertificateManager = GiftCertificateManager;
 
-} // End of if statement preventing duplicate declaration
+})(); // End of IIFE preventing duplicate declaration
 
 // Initialize the manager when the page loads
-window.loadGiftCertificates = async () => {
+window.loadGiftCertificates = window.loadGiftCertificates || async function() {
     console.log('Loading Gift Certificates...');
     try {
         // Check if class exists
-        if (typeof GiftCertificateManager === 'undefined') {
+        if (!window.GiftCertificateManager) {
             console.error('GiftCertificateManager class not defined!');
             return;
         }
         
-        // Create the manager
-        window.giftCertificateManager = new GiftCertificateManager();
+        // Destroy old instance if exists
+        if (window.giftCertificateManager) {
+            console.log('Destroying old Gift Certificate Manager instance');
+            window.giftCertificateManager = null;
+        }
+        
+        // Create new instance
+        window.giftCertificateManager = new window.GiftCertificateManager();
         console.log('Gift Certificate Manager created and attached to window');
         
-        // Double-check that the manager is attached
-        if (!window.giftCertificateManager) {
-            console.error('Failed to attach Gift Certificate Manager to window');
+        // Verify methods exist
+        const requiredMethods = ['showCreateModal', 'showValidateModal', 'exportCertificates', 'renderCertificatesList'];
+        const missingMethods = requiredMethods.filter(method => 
+            typeof window.giftCertificateManager[method] !== 'function'
+        );
+        
+        if (missingMethods.length > 0) {
+            console.error('Missing methods on manager:', missingMethods);
         } else {
-            console.log('Manager methods available:', Object.getOwnPropertyNames(Object.getPrototypeOf(window.giftCertificateManager)));
+            console.log('✅ All required methods available');
             
             // Make methods globally accessible as fallback
             window.showGCCreateModal = () => window.giftCertificateManager.showCreateModal();
