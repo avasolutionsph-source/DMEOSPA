@@ -67,7 +67,7 @@
                     </div>
                 </div>
                 <div class="auth-indicator" id="authIndicator">
-                    <button id="showLoginBtn" class="btn btn-primary" style="cursor: pointer; z-index: 10; position: relative;" onclick="console.log('🔥 MAIN LOGIN BUTTON CLICKED!'); showLoginModalDirect();">
+                    <button id="showLoginBtn" class="btn btn-primary" style="cursor: pointer; z-index: 10; position: relative;">
                         <i class="fas fa-sign-in-alt"></i> Login
                     </button>
                     <div id="userInfo" style="display: none;" class="user-info">
@@ -1360,12 +1360,17 @@
         }
 
 
-        // Test login function
+        // Test login function - Use PWA demo credentials
         function testLogin() {
-            console.log('🧪 TESTING SUPER ADMIN LOGIN - Automatic');
-            const modal = document.getElementById('authModal');
-            console.log('🧪 Test credentials: avasolutionsph@gmail.com / Ava12345');
-            performRealLogin('avasolutionsph@gmail.com', 'Ava12345', modal);
+            console.log('🧪 TESTING PWA DEMO LOGIN');
+            if (window.authSystem) {
+                document.getElementById('loginEmail').value = 'demo@spa.com';
+                document.getElementById('loginPassword').value = 'demo123';
+                console.log('🧪 Test credentials: demo@spa.com / demo123');
+                window.authSystem.handleLogin();
+            } else {
+                console.error('❌ AuthSystem not available');
+            }
         }
 
         // Debug form values
@@ -1408,16 +1413,23 @@
             }
         });
 
+        // Simplified function that uses AuthSystem properly
         function showLoginModalDirect() {
-            console.log('🚨 DIRECT LOGIN MODAL FUNCTION CALLED - BYPASSING AUTH SYSTEM 🚨');
+            console.log('🔄 Using proper AuthSystem login');
             
-            // Force close setup wizard if it's open
-            if (window.app && typeof window.app.forceCloseSetupWizard === 'function') {
-                window.app.forceCloseSetupWizard();
+            // Always use the proper AuthSystem
+            if (window.authSystem && window.authSystem.showLoginModal) {
+                window.authSystem.showLoginModal();
+                return;
+            } 
+            
+            if (window.showLoginModal) {
+                window.showLoginModal();
+                return;
             }
             
-            // BYPASS AUTH SYSTEM - directly show modal
-            console.log('Using direct modal opening (bypassing auth system)');
+            // Only continue with direct modal if AuthSystem truly not available
+            console.error('⚠️ AuthSystem not ready, showing modal directly');
             const modal = document.getElementById('authModal');
             if (modal) {
                 modal.style.display = 'flex';

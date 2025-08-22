@@ -1061,8 +1061,8 @@ window.showLoginModal = function() {
             operation: 'global_show_login_disabled'
         });
     }
-    return; // DISABLED to prevent interference
     
+    // Re-enabled to work with AuthSystem
     if (window.logger) {
         window.logger.debug('Global showLoginModal called', {
             category: 'AUTH',
