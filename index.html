@@ -1184,11 +1184,18 @@
         }
         
         // Real API login function
+        // DEPRECATED: Use AuthSystem instead
         async function performRealLogin(email, password, modal) {
+            console.log('⚠️ performRealLogin called - redirecting to AuthSystem');
+            if (window.authSystem && window.authSystem.simulateLogin) {
+                return window.authSystem.simulateLogin(email, password);
+            }
+            return; 
+            /* Rest of function disabled - use AuthSystem
             const loginBtn = document.getElementById('loginBtn');
             const originalBtnText = loginBtn ? loginBtn.innerHTML : '';
             
-            try {
+            try {*/
                 // Show loading state
                 if (loginBtn) {
                     loginBtn.disabled = true;
@@ -1307,7 +1314,7 @@
                 if (loginBtn) {
                     loginBtn.disabled = false;
                     loginBtn.innerHTML = originalBtnText || '<i class="fas fa-sign-in-alt"></i> Sign In';
-                }
+                } /* End of disabled performRealLogin */
             }
         }
         
