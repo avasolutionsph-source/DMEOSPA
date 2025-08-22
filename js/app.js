@@ -168,6 +168,7 @@ class App {
     }
 
     async loadPageData(pageName) {
+        console.log(`🔄 loadPageData called for: ${pageName}`);
         switch(pageName) {
             case 'dashboard':
                 if (window.loadDashboard) {
@@ -200,6 +201,7 @@ class App {
                 }
                 break;
             case 'gift-certificates':
+                console.log('🎁 Gift certificates case matched!');
                 // Load gift certificates content dynamically
                 await this.loadGiftCertificatesPage();
                 break;
