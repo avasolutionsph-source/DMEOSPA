@@ -103,7 +103,7 @@ class Database {
                     const settingsStore = this.db.createObjectStore('settings', { keyPath: 'key' });
                     // Add default settings
                     settingsStore.add({ key: 'businessName', value: 'Business' });
-                    settingsStore.add({ key: 'apiUrl', value: 'https://ava-marketing-api.onrender.com' }); // Marketing Website URL
+                    settingsStore.add({ key: 'apiUrl', value: 'https://ava-pwa-backend.onrender.com' }); // Unified Backend URL
                     settingsStore.add({ key: 'lastSync', value: null });
                     settingsStore.add({ key: 'currency', value: 'PHP' });
                     settingsStore.add({ key: 'currencySymbol', value: '₱' });

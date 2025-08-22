@@ -29,7 +29,7 @@ class APIClient {
                 this.baseUrl = window.API_CONFIG.BASE_URL;
             } else {
                 // Fallback to unified backend URL
-                this.baseUrl = 'https://ava-unified-backend.onrender.com';
+                this.baseUrl = 'https://ava-pwa-backend.onrender.com';
             }
             
             // Load token from auth system or API_CONFIG
@@ -40,7 +40,7 @@ class APIClient {
             }
         } catch (error) {
             console.error('Failed to load API settings:', error);
-            this.baseUrl = 'https://ava-unified-backend.onrender.com'; // Unified backend
+            this.baseUrl = 'https://ava-pwa-backend.onrender.com'; // Unified backend
         }
     }
 

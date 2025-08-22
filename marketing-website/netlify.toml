@@ -10,7 +10,7 @@
 
 [[redirects]]
   from = "/api/*"
-  to = "https://ava-unified-backend.onrender.com/api/:splat"
+  to = "https://ava-pwa-backend.onrender.com/api/:splat"
   status = 200
   force = true
 

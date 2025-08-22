@@ -1,7 +1,7 @@
 services:
   # Single Unified Backend
   - type: web
-    name: ava-unified-backend
+    name: ava-pwa-backend
     env: node
     region: singapore
     buildCommand: cd unified-backend && npm install

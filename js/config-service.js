@@ -21,7 +21,7 @@ class ConfigurationService {
         this.schema = {
             // API Configuration
             apiUrl: {
-                default: 'https://ava-marketing-api.onrender.com',
+                default: 'https://ava-pwa-backend.onrender.com',
                 sources: ['indexedDB:settings:apiUrl:value', 'hardcoded', 'localStorage:API_URL'],
                 type: 'string',
                 category: 'api'
@@ -790,7 +790,7 @@ class IndexedDBAdapter {
 class HardcodedAdapter {
     constructor() {
         this.hardcodedValues = {
-            apiUrl: 'https://ava-marketing-api.onrender.com',
+            apiUrl: 'https://ava-pwa-backend.onrender.com',
             businessName: 'Ava Solutions',
             theme: 'auto',
             performanceMode: 'auto',

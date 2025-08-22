@@ -22,7 +22,7 @@ class SyncManager {
                     this.initializeWebSocket();
                 } else {
                     // Fallback to direct URL if API_CONFIG not loaded
-                    this.apiUrl = 'https://ava-unified-backend.onrender.com';
+                    this.apiUrl = 'https://ava-pwa-backend.onrender.com';
                 }
                 
                 if (window.logger) {
