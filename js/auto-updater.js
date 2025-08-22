@@ -3,7 +3,7 @@
 
 class AutoUpdater {
     constructor() {
-        this.version = '1.0.0';
+        this.version = '1.2.0'; // Updated to latest version
         this.updateCheckInterval = 60000; // Check every minute
         this.updateUrl = 'https://raw.githubusercontent.com/avasolutionsph-source/AvaSolutionsPH-August-8/main/updates.json';
         this.pendingUpdates = [];
@@ -33,6 +33,7 @@ class AutoUpdater {
         try {
             // Get current version from localStorage
             const currentVersion = localStorage.getItem('appVersion') || '1.0.0';
+            console.log(`📱 Current version: ${currentVersion}`);
             
             // Check updates.json for available updates
             const response = await fetch(this.updateUrl + '?t=' + Date.now());
@@ -92,7 +93,8 @@ class AutoUpdater {
 
     showUpdateNotification(updates) {
         const updateCount = updates.length;
-        const updateList = updates.map(u => `• ${u.title}`).join('\n');
+        const latestUpdate = updates[updates.length - 1];
+        const updateList = updates.slice(-3).map(u => `• ${u.title}`).join('\n');
         
         // Create update notification
         const notification = document.createElement('div');
@@ -115,11 +117,18 @@ class AutoUpdater {
             <div style="display: flex; align-items: center; margin-bottom: 10px;">
                 <i class="fas fa-download" style="font-size: 24px; margin-right: 10px;"></i>
                 <strong style="font-size: 18px;">Updates Available!</strong>
+                ${latestUpdate.criticalUpdate ? '<span style="background: red; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 10px;">CRITICAL</span>' : ''}
             </div>
-            <p style="margin: 10px 0; opacity: 0.95;">${updateCount} new update(s) ready to install:</p>
+            <p style="margin: 10px 0; opacity: 0.95;">Version ${latestUpdate.version} - ${updateCount} new update(s):</p>
             <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 6px; margin: 10px 0; font-size: 14px;">
                 ${updateList.replace(/\n/g, '<br>')}
             </div>
+            ${latestUpdate.features ? `
+                <div style="font-size: 12px; opacity: 0.9; margin: 10px 0;">
+                    <strong>New Features:</strong><br>
+                    ${latestUpdate.features.slice(0, 3).map(f => `• ${f}`).join('<br>')}
+                </div>
+            ` : ''}
             <div style="display: flex; gap: 10px; margin-top: 15px;">
                 <button onclick="autoUpdater.applyUpdates()" style="
                     flex: 1;
@@ -471,6 +480,18 @@ class AutoUpdater {
 
 // Create global instance
 window.autoUpdater = new AutoUpdater();
+
+// Add manual update check function
+window.checkForUpdates = () => {
+    console.log('🔍 Manually checking for updates...');
+    window.autoUpdater.checkForUpdates();
+};
+
+// Add function to reset version for testing
+window.resetAppVersion = () => {
+    localStorage.setItem('appVersion', '1.0.0');
+    console.log('📱 App version reset to 1.0.0 - reload page to see updates');
+};
 
 // Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {

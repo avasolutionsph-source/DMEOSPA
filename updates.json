@@ -1,6 +1,6 @@
 {
-  "version": "1.1.0",
-  "lastUpdated": "2024-01-20",
+  "version": "1.2.0",
+  "lastUpdated": "2024-08-22",
   "updates": [
     {
       "version": "1.0.1",
@@ -52,8 +52,75 @@
         "Improved sync reliability",
         "Bug fixes"
       ]
+    },
+    {
+      "version": "1.1.0",
+      "title": "Gift Certificate Management Upgrade",
+      "description": "Enhanced gift certificate system with AI-powered designs",
+      "script": "js/gift-certificates.js",
+      "date": "2024-08-22",
+      "features": [
+        "AI-generated certificate designs",
+        "Control number format: GC-YYYY-XXXXXX",
+        "Real-time validation system",
+        "Export to CSV functionality",
+        "Print-ready certificates",
+        "Usage history tracking"
+      ]
+    },
+    {
+      "version": "1.1.1",
+      "title": "Gift Certificate Button Fix",
+      "description": "Fixed unclickable buttons in gift certificate system",
+      "script": null,
+      "date": "2024-08-22",
+      "features": [
+        "Direct onclick handlers for reliability",
+        "Event delegation for dynamic content",
+        "Modal display improvements",
+        "Enhanced debugging capabilities"
+      ],
+      "domChanges": [
+        {
+          "action": "modify",
+          "selector": ".gc-actions button",
+          "styles": {
+            "pointerEvents": "auto",
+            "cursor": "pointer",
+            "position": "relative",
+            "zIndex": "100"
+          }
+        }
+      ]
+    },
+    {
+      "version": "1.2.0",
+      "title": "Complete System Overhaul",
+      "description": "Major update with new features and improvements",
+      "script": null,
+      "date": "2024-08-22",
+      "features": [
+        "Setup wizard removal completed",
+        "Marketing website integration",
+        "Enhanced navigation system",
+        "Improved modal management",
+        "CSS optimization and cleanup",
+        "Better error handling",
+        "Auto-updater improvements"
+      ],
+      "criticalUpdate": true
     }
   ],
-  "criticalUpdate": false,
-  "minimumVersion": "1.0.0"
+  "criticalUpdate": true,
+  "minimumVersion": "1.0.0",
+  "changelog": {
+    "1.2.0": [
+      "🎁 Gift Certificate Management System fully operational",
+      "🔧 Fixed all button clickability issues",
+      "🎨 AI-powered certificate design generation",
+      "📊 Enhanced dashboard with real-time stats",
+      "🚀 Performance optimizations across the board",
+      "🐛 Multiple bug fixes and improvements"
+    ]
+  }
 }
