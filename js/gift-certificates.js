@@ -13,12 +13,10 @@ class GiftCertificateManager {
             this.db = await this.openDatabase();
             await this.createTables();
             await this.loadCertificates();
-            // Add a delay to ensure DOM is ready
-            setTimeout(() => {
-                this.setupEventListeners();
-                this.updateDashboard();
-                console.log('✅ Gift Certificate Manager initialized');
-            }, 500);
+            // Setup immediately, no delay needed
+            this.setupEventListeners();
+            this.updateDashboard();
+            console.log('✅ Gift Certificate Manager initialized');
         } catch (error) {
             console.error('Failed to initialize Gift Certificate Manager:', error);
         }
@@ -343,14 +341,14 @@ class GiftCertificateManager {
                         <span class="value">${new Date(cert.expiryDate).toLocaleDateString()}</span>
                     </div>
                     <div class="certificate-actions">
-                        <button class="btn-view" onclick="giftCertificateManager.viewCertificate('${cert.id}')">
+                        <button class="btn-view" onclick="window.giftCertificateManager.viewCertificate('${cert.id}')">
                             <i class="fas fa-eye"></i> View
                         </button>
-                        <button class="btn-print" onclick="giftCertificateManager.printCertificate('${cert.id}')">
+                        <button class="btn-print" onclick="window.giftCertificateManager.printCertificate('${cert.id}')">
                             <i class="fas fa-print"></i> Print
                         </button>
                         ${cert.status === 'active' ? `
-                            <button class="btn-redeem" onclick="giftCertificateManager.showRedeemModal('${cert.controlNumber}')">
+                            <button class="btn-redeem" onclick="window.giftCertificateManager.showRedeemModal('${cert.controlNumber}')">
                                 <i class="fas fa-check-circle"></i> Redeem
                             </button>
                         ` : ''}
@@ -365,7 +363,8 @@ class GiftCertificateManager {
         if (!certificate) return;
 
         const modal = document.createElement('div');
-        modal.className = 'modal gc-modal';
+        modal.className = 'modal gc-modal active';
+        modal.style.cssText = 'display: flex !important; z-index: 10000 !important;';
         modal.innerHTML = `
             <div class="modal-content large">
                 <div class="modal-header">
@@ -560,7 +559,8 @@ class GiftCertificateManager {
 
     showRedeemModal(controlNumber) {
         const modal = document.createElement('div');
-        modal.className = 'modal gc-modal';
+        modal.className = 'modal gc-modal active';
+        modal.style.cssText = 'display: flex !important; z-index: 10000 !important;';
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
@@ -577,7 +577,7 @@ class GiftCertificateManager {
                         <input type="number" id="redeem-amount" placeholder="Enter amount" step="0.01" min="0.01">
                     </div>
                     <div class="form-actions">
-                        <button class="btn-primary" onclick="giftCertificateManager.processRedemption()">
+                        <button class="btn-primary" onclick="window.giftCertificateManager.processRedemption()">
                             Redeem
                         </button>
                         <button class="btn-secondary" onclick="this.closest('.modal').remove()">
@@ -610,61 +610,82 @@ class GiftCertificateManager {
 
     setupEventListeners() {
         console.log('Setting up Gift Certificate event listeners...');
+        const self = this; // Store reference to this
         
-        // Filter buttons - use event delegation
-        const filtersContainer = document.querySelector('.gc-filters');
-        if (filtersContainer) {
-            filtersContainer.addEventListener('click', (e) => {
-                if (e.target.classList.contains('filter-btn')) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                    e.target.classList.add('active');
-                    this.currentFilter = e.target.dataset.filter;
-                    this.renderCertificatesList();
-                }
-            });
+        // Use event delegation on the parent container for all buttons
+        const container = document.getElementById('gift-certificates');
+        if (!container) {
+            console.error('Gift certificates container not found!');
+            // Try again after a short delay
+            setTimeout(() => this.setupEventListeners(), 100);
+            return;
         }
-
-        // Create certificate button
-        const createBtn = document.getElementById('create-certificate-btn');
-        if (createBtn) {
-            console.log('Create button found, adding listener');
-            createBtn.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.showCreateModal();
-            };
-        }
-
-        // Validate certificate button
-        const validateBtn = document.getElementById('validate-certificate-btn');
-        if (validateBtn) {
-            console.log('Validate button found, adding listener');
-            validateBtn.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.showValidateModal();
-            };
-        }
-
-        // Export button
-        const exportBtn = document.getElementById('export-certificates-btn');
-        if (exportBtn) {
-            console.log('Export button found, adding listener');
-            exportBtn.onclick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.exportCertificates();
-            };
-        }
+        
+        // Remove any existing listeners first
+        const newContainer = container.cloneNode(true);
+        container.parentNode.replaceChild(newContainer, container);
+        
+        // Add single delegated event listener for all clicks
+        newContainer.addEventListener('click', function(e) {
+            console.log('Click detected in gift certificates container');
+            console.log('Clicked element:', e.target);
+            console.log('Clicked element tag:', e.target.tagName);
+            console.log('Clicked element classes:', e.target.className);
+            
+            // Check if we clicked on a button or its child (like icon)
+            let target = e.target;
+            if (target.tagName === 'I' || target.tagName === 'SPAN') {
+                target = target.closest('button');
+            }
+            
+            if (!target || target.tagName !== 'BUTTON') {
+                console.log('Not a button click, ignoring');
+                return;
+            }
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Handle filter buttons
+            if (target.classList.contains('filter-btn')) {
+                console.log('Filter button clicked:', target.dataset.filter);
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                target.classList.add('active');
+                self.currentFilter = target.dataset.filter;
+                self.renderCertificatesList();
+                return;
+            }
+            
+            // Handle action buttons by ID
+            const buttonId = target.id;
+            console.log('Button clicked with ID:', buttonId);
+            
+            switch(buttonId) {
+                case 'create-certificate-btn':
+                    console.log('Opening create modal...');
+                    self.showCreateModal();
+                    break;
+                case 'validate-certificate-btn':
+                    console.log('Opening validate modal...');
+                    self.showValidateModal();
+                    break;
+                case 'export-certificates-btn':
+                    console.log('Exporting certificates...');
+                    self.exportCertificates();
+                    break;
+                default:
+                    console.log('Unknown button ID:', buttonId);
+            }
+        });
+        
+        console.log('Event delegation setup complete on container');
     }
 
     showCreateModal() {
         console.log('Opening create certificate modal');
         const modal = document.createElement('div');
-        modal.className = 'modal gc-modal';
-        modal.style.display = 'flex';
+        modal.className = 'modal gc-modal active';
+        modal.style.cssText = 'display: flex !important; z-index: 10000 !important;';
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
@@ -717,17 +738,18 @@ class GiftCertificateManager {
         
         // Add event listeners after modal is added to DOM
         modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
-
+        
+        const self = this;
         document.getElementById('create-certificate-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData);
             
             try {
-                const certificate = await this.createCertificate(data);
+                const certificate = await self.createCertificate(data);
                 alert(`Gift Certificate created successfully! Control Number: ${certificate.controlNumber}`);
                 modal.remove();
-                this.viewCertificate(certificate.id);
+                self.viewCertificate(certificate.id);
             } catch (error) {
                 alert('Failed to create certificate: ' + error.message);
             }
@@ -737,8 +759,8 @@ class GiftCertificateManager {
     showValidateModal() {
         console.log('Opening validate certificate modal');
         const modal = document.createElement('div');
-        modal.className = 'modal gc-modal';
-        modal.style.display = 'flex';
+        modal.className = 'modal gc-modal active';
+        modal.style.cssText = 'display: flex !important; z-index: 10000 !important;';
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
@@ -765,9 +787,10 @@ class GiftCertificateManager {
         document.body.appendChild(modal);
         
         // Add event listeners
+        const self = this;
         modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
         modal.querySelector('#close-validate-btn').addEventListener('click', () => modal.remove());
-        modal.querySelector('#perform-validation-btn').addEventListener('click', () => this.performValidation());
+        modal.querySelector('#perform-validation-btn').addEventListener('click', () => self.performValidation());
     }
 
     async performValidation() {
@@ -829,9 +852,21 @@ class GiftCertificateManager {
 }
 
 // Initialize the manager when the page loads
-let giftCertificateManager;
 window.loadGiftCertificates = async () => {
-    giftCertificateManager = new GiftCertificateManager();
+    console.log('Loading Gift Certificates...');
+    try {
+        window.giftCertificateManager = new GiftCertificateManager();
+        console.log('Gift Certificate Manager created and attached to window');
+        
+        // Double-check that the manager is attached
+        if (!window.giftCertificateManager) {
+            console.error('Failed to attach Gift Certificate Manager to window');
+        } else {
+            console.log('Manager methods available:', Object.getOwnPropertyNames(Object.getPrototypeOf(window.giftCertificateManager)));
+        }
+    } catch (error) {
+        console.error('Error creating Gift Certificate Manager:', error);
+    }
 };
 
 // Export for use in other modules

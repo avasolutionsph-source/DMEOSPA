@@ -62,26 +62,7 @@
             pointer-events: auto !important;
         }
 
-        .gc-actions .btn-primary {
-            background: linear-gradient(135deg, var(--purple-600, #9333EA) 0%, var(--purple-500, #A855F7) 100%);
-            color: white;
-        }
-
-        .gc-actions .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(147, 51, 234, 0.3);
-        }
-
-        .gc-actions .btn-secondary {
-            background: white;
-            color: var(--gray-700, #374151);
-            border: 1px solid var(--gray-300, #D1D5DB);
-        }
-
-        .gc-actions .btn-secondary:hover {
-            background: var(--gray-50, #F9FAFB);
-            transform: translateY(-2px);
-        }
+        /* Button styles use existing .btn-primary and .btn-secondary from styles.css */
 
         .gc-dashboard {
             display: grid;
@@ -90,7 +71,7 @@
             margin-bottom: 30px;
         }
 
-        .stat-card {
+        .gc-dashboard .stat-card {
             background: white;
             border-radius: 12px;
             padding: 24px;
@@ -101,7 +82,7 @@
             overflow: hidden;
         }
 
-        .stat-card::before {
+        .gc-dashboard .stat-card::before {
             content: '';
             position: absolute;
             top: 0;
@@ -111,23 +92,23 @@
             background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
         }
 
-        .stat-card:hover {
+        .gc-dashboard .stat-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
         }
 
-        .stat-card i {
+        .gc-dashboard .stat-card i {
             font-size: 32px;
             margin-bottom: 12px;
             display: block;
         }
 
-        .stat-card.total i { color: var(--purple-600, #9333EA); }
-        .stat-card.active i { color: var(--emerald-500, #10B981); }
-        .stat-card.redeemed i { color: var(--primary-color, #1E3A8A); }
-        .stat-card.expired i { color: var(--warning-color, #F59E0B); }
-        .stat-card.value i { color: var(--indigo, #6366F1); }
-        .stat-card.remaining i { color: var(--secondary-color, #22D3EE); }
+        .gc-dashboard .stat-card.total i { color: var(--purple-600, #9333EA); }
+        .gc-dashboard .stat-card.active i { color: var(--emerald-500, #10B981); }
+        .gc-dashboard .stat-card.redeemed i { color: var(--primary-color, #1E3A8A); }
+        .gc-dashboard .stat-card.expired i { color: var(--warning-color, #F59E0B); }
+        .gc-dashboard .stat-card.value i { color: var(--indigo, #6366F1); }
+        .gc-dashboard .stat-card.remaining i { color: var(--secondary-color, #22D3EE); }
 
         .stat-value {
             font-size: 32px;
@@ -355,26 +336,12 @@
             font-size: 15px;
         }
 
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            animation: fadeIn 0.2s ease;
+        /* Gift Certificate specific modal styles */
+        .gc-modal {
+            z-index: 10000 !important; /* Ensure it's above other modals */
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .modal-content {
+        .gc-modal .modal-content {
             background: white;
             border-radius: 16px;
             max-width: 500px;
@@ -382,13 +349,8 @@
             max-height: 90vh;
             overflow-y: auto;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: slideUp 0.3s ease;
         }
 
-        @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
 
         .modal-content.large {
             max-width: 900px;
@@ -500,11 +462,11 @@
             border-bottom: none;
         }
 
-        .form-group {
+        .gc-modal .form-group {
             margin-bottom: 20px;
         }
 
-        .form-group label {
+        .gc-modal .form-group label {
             display: block;
             margin-bottom: 6px;
             font-weight: 500;
@@ -512,9 +474,9 @@
             font-size: 14px;
         }
 
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
+        .gc-modal .form-group input,
+        .gc-modal .form-group select,
+        .gc-modal .form-group textarea {
             width: 100%;
             padding: 10px 12px;
             border: 1px solid var(--gray-300, #D1D5DB);
@@ -524,15 +486,15 @@
             background: white;
         }
 
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
+        .gc-modal .form-group input:focus,
+        .gc-modal .form-group select:focus,
+        .gc-modal .form-group textarea:focus {
             outline: none;
             border-color: var(--purple-500, #A855F7);
             box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
         }
 
-        .form-group textarea {
+        .gc-modal .form-group textarea {
             resize: vertical;
             min-height: 80px;
         }

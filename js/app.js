@@ -228,13 +228,13 @@ class App {
                 <div class="gc-header">
                     <h1><i class="fas fa-gift"></i> Gift Certificate Management</h1>
                     <div class="gc-actions">
-                        <button class="btn-primary" id="create-certificate-btn">
+                        <button class="btn-primary" id="create-certificate-btn" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
                             <i class="fas fa-plus"></i> Create Certificate
                         </button>
-                        <button class="btn-secondary" id="validate-certificate-btn">
+                        <button class="btn-secondary" id="validate-certificate-btn" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
                             <i class="fas fa-check"></i> Validate Certificate
                         </button>
-                        <button class="btn-secondary" id="export-certificates-btn">
+                        <button class="btn-secondary" id="export-certificates-btn" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
                             <i class="fas fa-download"></i> Export
                         </button>
                     </div>
@@ -309,24 +309,32 @@ class App {
         }
 
         // Load the gift certificates JavaScript
-        if (!window.giftCertificateManager) {
+        if (!window.GiftCertificateManager) {
+            // First time loading - load the script
             const script = document.createElement('script');
             script.src = 'js/gift-certificates.js';
-            script.onload = () => {
+            script.onload = async () => {
                 console.log('Gift certificates script loaded');
+                // Wait a tick for DOM to be ready
+                await new Promise(resolve => setTimeout(resolve, 0));
                 if (window.loadGiftCertificates) {
-                    window.loadGiftCertificates();
+                    await window.loadGiftCertificates();
+                    console.log('Gift Certificate Manager initialized:', window.giftCertificateManager);
                 }
             };
             document.body.appendChild(script);
         } else {
-            // Create new instance
-            window.giftCertificateManager = null;
-            setTimeout(() => {
-                if (window.loadGiftCertificates) {
-                    window.loadGiftCertificates();
-                }
-            }, 100);
+            // Script already loaded, just create new instance
+            if (window.giftCertificateManager) {
+                // Clean up old instance if exists
+                window.giftCertificateManager = null;
+            }
+            // Create new instance immediately
+            await new Promise(resolve => setTimeout(resolve, 0));
+            if (window.loadGiftCertificates) {
+                await window.loadGiftCertificates();
+                console.log('Gift Certificate Manager re-initialized:', window.giftCertificateManager);
+            }
         }
     }
 
