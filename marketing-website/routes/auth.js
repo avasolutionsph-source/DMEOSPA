@@ -23,9 +23,12 @@ router.post('/register', [
 
     const { email, password, firstName, lastName, businessName, phone, plan } = req.body;
 
+    console.log('Registration attempt:', { email, firstName, lastName, businessName });
+
     // Check if user exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      console.log('User already exists:', email);
       return res.status(400).json({ error: 'User already exists with this email' });
     }
 
@@ -71,7 +74,28 @@ router.post('/register', [
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ error: 'Registration failed' });
+    
+    // Check for specific MongoDB errors
+    if (error.code === 11000) {
+      // Duplicate key error
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({ 
+        error: `An account with this ${field} already exists` 
+      });
+    }
+    
+    // Check for validation errors
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        error: messages.join(', ') 
+      });
+    }
+    
+    // Generic error
+    res.status(500).json({ 
+      error: 'Registration failed. Please try again later.' 
+    });
   }
 });
 
