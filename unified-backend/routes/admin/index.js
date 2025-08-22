@@ -1,58 +1,50 @@
 import express from 'express';
+import User from '../../models/User.js';
 
 const router = express.Router();
-
-// Mock data for admin dashboard
-const mockUsers = [
-  {
-    id: 'user-1',
-    email: 'john@example.com',
-    firstName: 'John',
-    lastName: 'Doe',
-    businessName: 'John\'s Spa',
-    plan: 'professional',
-    status: 'active',
-    createdAt: new Date('2024-01-15'),
-    lastLogin: new Date('2024-12-20')
-  },
-  {
-    id: 'user-2',
-    email: 'jane@example.com',
-    firstName: 'Jane',
-    lastName: 'Smith',
-    businessName: 'Wellness Center',
-    plan: 'basic',
-    status: 'active',
-    createdAt: new Date('2024-02-20'),
-    lastLogin: new Date('2024-12-19')
-  },
-  {
-    id: 'user-3',
-    email: 'demo@spa.com',
-    firstName: 'Demo',
-    lastName: 'User',
-    businessName: 'Demo Business',
-    plan: 'unpaid',
-    status: 'active',
-    createdAt: new Date('2024-03-10'),
-    lastLogin: new Date('2024-12-18')
-  }
-];
 
 // GET /admin/stats - Dashboard statistics
 router.get('/stats', async (req, res) => {
   try {
-    // Mock statistics data
+    // Fetch real statistics from MongoDB
+    const totalUsers = await User.countDocuments();
+    const activeUsers = await User.countDocuments({ subscriptionStatus: 'active' });
+    
+    // Calculate plan distribution
+    const planDistribution = await User.aggregate([
+      {
+        $group: {
+          _id: '$subscriptionPlan',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    
+    // Calculate total revenue (simple calculation based on plan counts)
+    let totalRevenue = 0;
+    const planPrices = {
+      unpaid: 0,
+      basic: 1500,
+      professional: 3500,
+      enterprise: 7500
+    };
+    
+    for (const plan of planDistribution) {
+      totalRevenue += (planPrices[plan._id] || 0) * plan.count;
+    }
+    
+    // Ensure all plans are represented
+    const allPlans = ['unpaid', 'basic', 'professional', 'enterprise'];
+    const fullDistribution = allPlans.map(plan => {
+      const found = planDistribution.find(p => p._id === plan);
+      return { _id: plan, count: found ? found.count : 0 };
+    });
+
     const stats = {
-      totalUsers: mockUsers.length,
-      activeUsers: mockUsers.filter(u => u.status === 'active').length,
-      totalRevenue: 25000, // Mock revenue in PHP
-      planDistribution: [
-        { _id: 'unpaid', count: 1 },
-        { _id: 'basic', count: 1 },
-        { _id: 'professional', count: 1 },
-        { _id: 'enterprise', count: 0 }
-      ]
+      totalUsers,
+      activeUsers,
+      totalRevenue,
+      planDistribution: fullDistribution
     };
 
     res.json({ 
@@ -71,12 +63,16 @@ router.get('/stats', async (req, res) => {
 // GET /admin/users - Get all users
 router.get('/users', async (req, res) => {
   try {
-    // In production, this would fetch from database
-    // For now, return mock data
+    // Fetch real users from MongoDB
+    const users = await User.find({})
+      .select('-password') // Exclude password field
+      .sort({ createdAt: -1 }) // Most recent first
+      .lean();
+    
     res.json({ 
       success: true,
-      users: mockUsers,
-      total: mockUsers.length
+      users,
+      total: users.length
     });
   } catch (error) {
     console.error('Admin users error:', error);
@@ -90,7 +86,7 @@ router.get('/users', async (req, res) => {
 // GET /admin/user/:id - Get single user
 router.get('/user/:id', async (req, res) => {
   try {
-    const user = mockUsers.find(u => u.id === req.params.id);
+    const user = await User.findById(req.params.id).select('-password').lean();
     if (!user) {
       return res.status(404).json({ 
         success: false,
@@ -113,25 +109,33 @@ router.get('/user/:id', async (req, res) => {
 // PUT /admin/user/:id - Update user
 router.put('/user/:id', async (req, res) => {
   try {
-    const userIndex = mockUsers.findIndex(u => u.id === req.params.id);
-    if (userIndex === -1) {
+    const allowedUpdates = ['subscriptionPlan', 'subscriptionStatus', 'notes', 'firstName', 'lastName', 'businessName'];
+    const updates = {};
+    
+    // Only include allowed fields
+    for (const field of allowedUpdates) {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
+      }
+    }
+    
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true, runValidators: true }
+    ).select('-password').lean();
+    
+    if (!user) {
       return res.status(404).json({ 
         success: false,
         error: 'User not found' 
       });
     }
 
-    // Update user data
-    mockUsers[userIndex] = {
-      ...mockUsers[userIndex],
-      ...req.body,
-      id: mockUsers[userIndex].id // Preserve ID
-    };
-
     res.json({ 
       success: true,
       message: 'User updated successfully',
-      user: mockUsers[userIndex]
+      user
     });
   } catch (error) {
     console.error('Admin update user error:', error);
@@ -145,16 +149,14 @@ router.put('/user/:id', async (req, res) => {
 // DELETE /admin/user/:id - Delete user
 router.delete('/user/:id', async (req, res) => {
   try {
-    const userIndex = mockUsers.findIndex(u => u.id === req.params.id);
-    if (userIndex === -1) {
+    const user = await User.findByIdAndDelete(req.params.id);
+    
+    if (!user) {
       return res.status(404).json({ 
         success: false,
         error: 'User not found' 
       });
     }
-
-    // Remove user
-    mockUsers.splice(userIndex, 1);
 
     res.json({ 
       success: true,
