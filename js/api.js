@@ -24,16 +24,23 @@ class APIClient {
     // Load settings and configuration
     async loadSettings() {
         try {
-            // Hardcoded API URL for production deployment
-            this.baseUrl = 'https://ava-marketing-api.onrender.com';
+            // Use unified backend URL from API_CONFIG if available
+            if (window.API_CONFIG && window.API_CONFIG.BASE_URL) {
+                this.baseUrl = window.API_CONFIG.BASE_URL;
+            } else {
+                // Fallback to unified backend URL
+                this.baseUrl = 'https://ava-pwa-backend.onrender.com';
+            }
             
-            // Load token from auth system
-            if (window.authSystem) {
+            // Load token from auth system or API_CONFIG
+            if (window.API_CONFIG && window.API_CONFIG.getToken) {
+                this.token = window.API_CONFIG.getToken();
+            } else if (window.authSystem) {
                 this.token = window.authSystem.authToken;
             }
         } catch (error) {
             console.error('Failed to load API settings:', error);
-            this.baseUrl = 'https://ava-marketing-api.onrender.com'; // Production API
+            this.baseUrl = 'https://ava-pwa-backend.onrender.com'; // Unified backend
         }
     }
 
