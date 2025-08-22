@@ -564,10 +564,12 @@ class AuthSystem {
                 category: 'AUTH',
                 operation: 'load_auth_state',
                 data: {
-            hasToken: !!token,
-            hasUserData: !!userStr,
-            isLoggedIn: isLoggedIn
-        });
+                    hasToken: !!token,
+                    hasUserData: !!userStr,
+                    isLoggedIn: isLoggedIn
+                }
+            });
+        }
 
         if (token && userStr && isLoggedIn === 'true') {
             try {

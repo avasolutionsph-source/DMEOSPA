@@ -1019,17 +1019,19 @@ How can I help you today? 😊`;
                     category: 'AI',
                     operation: 'debug_data',
                     data: {
-                employeeCount: employees?.length || 0,
-                transactionCount: transactions?.length || 0,
-                employees: employees?.map(e => ({ id: e.id, idType: typeof e.id, name: e.name })),
-                sampleTransactions: transactions?.slice(0, 3).map(t => ({
-                    id: t.id,
-                    total: t.total,
-                    employeeId: t.employeeId,
-                    employeeIdType: typeof t.employeeId,
-                    date: t.date
-                }))
-            });
+                        employeeCount: employees?.length || 0,
+                        transactionCount: transactions?.length || 0,
+                        employees: employees?.map(e => ({ id: e.id, idType: typeof e.id, name: e.name })),
+                        sampleTransactions: transactions?.slice(0, 3).map(t => ({
+                            id: t.id,
+                            total: t.total,
+                            employeeId: t.employeeId,
+                            employeeIdType: typeof t.employeeId,
+                            date: t.date
+                        }))
+                    }
+                });
+            }
             
             if (!employees || employees.length === 0) {
                 return `👥 **Complete Employee Performance Analysis**\n\n❌ **No employees added yet!**\n\nTo track staff performance:\n1. Add team members in the Employee section\n2. Record which employee handles each service\n3. Track their sales and customer satisfaction\n4. Come back for detailed performance reports!\n\nOnce you have data, I'll show you:\n• Individual sales performance\n• Revenue generated per employee\n• Customer satisfaction ratings\n• Productivity comparisons\n• Coaching recommendations for each staff member`;

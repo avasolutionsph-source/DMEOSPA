@@ -27,8 +27,37 @@ class Logger {
         this.init();
     }
 
+    // Setup basic logging methods that work even when disabled
+    setupBasicMethods() {
+        const noop = () => {};
+        
+        // Add standard logging methods
+        this.info = this.isEnabled ? (message, data) => this.log({ type: 'INFO', message, data }) : noop;
+        this.warn = this.isEnabled ? (message, data) => this.log({ type: 'WARN', message, data }) : noop;
+        this.error = this.isEnabled ? (message, data) => this.log({ type: 'ERROR', message, data }) : noop;
+        this.debug = this.isEnabled ? (message, data) => this.log({ type: 'DEBUG', message, data }) : noop;
+        
+        // Ensure other methods exist even if disabled
+        if (!this.isEnabled) {
+            this.log = noop;
+            this.logStateChange = noop;
+            this.logNavigation = noop;
+            this.logDatabaseOperation = noop;
+            this.logAPICall = noop;
+            this.logComponentLifecycle = noop;
+            this.logGlobalVariableAccess = noop;
+            this.logError = noop;
+            this.getAnalytics = () => ({});
+            this.exportLogs = () => Promise.resolve([]);
+            this.clearLogs = () => Promise.resolve();
+        }
+    }
+
     // Initialize logger
     async init() {
+        // Always setup basic methods even if disabled
+        this.setupBasicMethods();
+        
         if (!this.isEnabled) {
             console.log('🔇 Logger is disabled via feature flag');
             return;
