@@ -57,7 +57,7 @@
       "version": "1.1.0",
       "title": "Gift Certificate Management Upgrade",
       "description": "Enhanced gift certificate system with AI-powered designs",
-      "script": "js/gift-certificates.js",
+      "script": null,
       "date": "2024-08-22",
       "features": [
         "AI-generated certificate designs",

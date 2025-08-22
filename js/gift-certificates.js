@@ -1,4 +1,6 @@
 // Gift Certificate Management System
+// Prevent duplicate declaration
+if (typeof GiftCertificateManager === 'undefined') {
 class GiftCertificateManager {
     constructor() {
         this.db = null;
@@ -847,10 +849,21 @@ class GiftCertificateManager {
     }
 }
 
+// Export for use in other modules
+window.GiftCertificateManager = GiftCertificateManager;
+
+} // End of if statement preventing duplicate declaration
+
 // Initialize the manager when the page loads
 window.loadGiftCertificates = async () => {
     console.log('Loading Gift Certificates...');
     try {
+        // Check if class exists
+        if (typeof GiftCertificateManager === 'undefined') {
+            console.error('GiftCertificateManager class not defined!');
+            return;
+        }
+        
         // Create the manager
         window.giftCertificateManager = new GiftCertificateManager();
         console.log('Gift Certificate Manager created and attached to window');
@@ -872,9 +885,6 @@ window.loadGiftCertificates = async () => {
         console.error('Error creating Gift Certificate Manager:', error);
     }
 };
-
-// Export for use in other modules
-window.GiftCertificateManager = GiftCertificateManager;
 
 // Add a test function to verify everything is working
 window.testGC = () => {
