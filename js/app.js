@@ -127,10 +127,15 @@ class App {
 
     setupNavigation() {
         const navItems = document.querySelectorAll('.nav-item');
+        console.log(`🧭 Setting up navigation for ${navItems.length} items`);
+        
         navItems.forEach(item => {
+            const page = item.dataset.page;
+            console.log(`📌 Adding click handler for: ${page}`);
+            
             item.addEventListener('click', (e) => {
                 e.preventDefault();
-                const page = item.dataset.page;
+                console.log(`🖱️ Nav item clicked: ${page}`);
                 this.showPage(page);
                 
                 // Update active state
