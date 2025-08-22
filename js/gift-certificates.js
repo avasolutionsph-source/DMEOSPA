@@ -9,12 +9,16 @@ class GiftCertificateManager {
 
     async init() {
         try {
+            console.log('Initializing Gift Certificate Manager...');
             this.db = await this.openDatabase();
             await this.createTables();
             await this.loadCertificates();
-            this.setupEventListeners();
-            this.updateDashboard();
-            console.log('✅ Gift Certificate Manager initialized');
+            // Add a delay to ensure DOM is ready
+            setTimeout(() => {
+                this.setupEventListeners();
+                this.updateDashboard();
+                console.log('✅ Gift Certificate Manager initialized');
+            }, 500);
         } catch (error) {
             console.error('Failed to initialize Gift Certificate Manager:', error);
         }
@@ -605,46 +609,67 @@ class GiftCertificateManager {
     }
 
     setupEventListeners() {
-        // Wait for DOM to be ready
-        setTimeout(() => {
-            // Filter buttons
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
+        console.log('Setting up Gift Certificate event listeners...');
+        
+        // Filter buttons - use event delegation
+        const filtersContainer = document.querySelector('.gc-filters');
+        if (filtersContainer) {
+            filtersContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('filter-btn')) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                     e.target.classList.add('active');
                     this.currentFilter = e.target.dataset.filter;
                     this.renderCertificatesList();
-                });
+                }
             });
+        }
 
-            // Create certificate button
-            const createBtn = document.getElementById('create-certificate-btn');
-            if (createBtn) {
-                createBtn.addEventListener('click', () => this.showCreateModal());
-            }
+        // Create certificate button
+        const createBtn = document.getElementById('create-certificate-btn');
+        if (createBtn) {
+            console.log('Create button found, adding listener');
+            createBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.showCreateModal();
+            };
+        }
 
-            // Validate certificate button
-            const validateBtn = document.getElementById('validate-certificate-btn');
-            if (validateBtn) {
-                validateBtn.addEventListener('click', () => this.showValidateModal());
-            }
+        // Validate certificate button
+        const validateBtn = document.getElementById('validate-certificate-btn');
+        if (validateBtn) {
+            console.log('Validate button found, adding listener');
+            validateBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.showValidateModal();
+            };
+        }
 
-            // Export button
-            const exportBtn = document.getElementById('export-certificates-btn');
-            if (exportBtn) {
-                exportBtn.addEventListener('click', () => this.exportCertificates());
-            }
-        }, 100);
+        // Export button
+        const exportBtn = document.getElementById('export-certificates-btn');
+        if (exportBtn) {
+            console.log('Export button found, adding listener');
+            exportBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.exportCertificates();
+            };
+        }
     }
 
     showCreateModal() {
+        console.log('Opening create certificate modal');
         const modal = document.createElement('div');
         modal.className = 'modal gc-modal';
+        modal.style.display = 'flex';
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
                     <h2>Create Gift Certificate</h2>
-                    <button class="close-modal" onclick="this.closest('.modal').remove()">×</button>
+                    <button class="close-modal">×</button>
                 </div>
                 <div class="modal-body">
                     <form id="create-certificate-form">
@@ -689,6 +714,9 @@ class GiftCertificateManager {
             </div>
         `;
         document.body.appendChild(modal);
+        
+        // Add event listeners after modal is added to DOM
+        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
 
         document.getElementById('create-certificate-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -707,13 +735,15 @@ class GiftCertificateManager {
     }
 
     showValidateModal() {
+        console.log('Opening validate certificate modal');
         const modal = document.createElement('div');
         modal.className = 'modal gc-modal';
+        modal.style.display = 'flex';
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
                     <h2>Validate Gift Certificate</h2>
-                    <button class="close-modal" onclick="this.closest('.modal').remove()">×</button>
+                    <button class="close-modal">×</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
@@ -722,10 +752,10 @@ class GiftCertificateManager {
                     </div>
                     <div id="validation-result"></div>
                     <div class="form-actions">
-                        <button class="btn-primary" onclick="giftCertificateManager.performValidation()">
+                        <button class="btn-primary" id="perform-validation-btn">
                             Validate
                         </button>
-                        <button class="btn-secondary" onclick="this.closest('.modal').remove()">
+                        <button class="btn-secondary" id="close-validate-btn">
                             Close
                         </button>
                     </div>
@@ -733,6 +763,11 @@ class GiftCertificateManager {
             </div>
         `;
         document.body.appendChild(modal);
+        
+        // Add event listeners
+        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+        modal.querySelector('#close-validate-btn').addEventListener('click', () => modal.remove());
+        modal.querySelector('#perform-validation-btn').addEventListener('click', () => this.performValidation());
     }
 
     async performValidation() {
