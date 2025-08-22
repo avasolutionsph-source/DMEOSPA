@@ -1,4 +1,7 @@
 // Main Application Controller
+// Get database reference
+const db = window.db;
+
 class App {
     constructor() {
         this.currentPage = 'dashboard';
@@ -42,7 +45,13 @@ class App {
         console.log('Setup wizard is now manual only - accessible from dashboard');
         
         // Load business configuration first
-        await this.loadBusinessConfig();
+        console.log('📊 Loading business config...');
+        try {
+            await this.loadBusinessConfig();
+            console.log('✅ Business config loaded');
+        } catch (error) {
+            console.error('❌ Failed to load business config:', error);
+        }
         
         // Set up navigation
         console.log('📍 About to setup navigation...');
