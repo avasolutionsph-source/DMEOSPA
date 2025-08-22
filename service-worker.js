@@ -125,7 +125,7 @@ self.addEventListener('fetch', (event) => {
                 });
             })
             .catch((error) => {
-                console.log('Cache match failed:', error);
+                // Cache match failed - logging disabled in service worker context
                 // Final fallback for navigation requests
                 if (event.request.mode === 'navigate') {
                     return caches.match('./index.html');

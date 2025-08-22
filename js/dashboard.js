@@ -54,7 +54,15 @@ class DashboardManager {
             this.updateStatsDisplay();
             
         } catch (error) {
-            console.error('Failed to load dashboard data:', error);
+            if (window.logger) {
+                window.logger.error('Failed to load dashboard data', {
+                    category: 'DASHBOARD',
+                    operation: 'load_data',
+                    error: error
+                });
+            } else {
+                console.error('Failed to load dashboard data:', error);
+            }
         }
     }
 
@@ -62,14 +70,29 @@ class DashboardManager {
         try {
             const token = localStorage.getItem('userToken');
             if (!token) {
-                console.log('📊 No token available, using local data only');
+                if (window.logger) {
+                    window.logger.info('No token available, using local data only', {
+                        category: 'DASHBOARD',
+                        operation: 'data_source'
+                    });
+                } else {
+                    console.log('📊 No token available, using local data only');
+                }
                 return;
             }
 
             // Hardcoded API URL for production deployment
             const apiUrl = 'https://ava-marketing-api.onrender.com';
 
-            console.log('📊 Fetching synced business stats from:', `${apiUrl}/api/business/stats`);
+            if (window.logger) {
+                window.logger.info('Fetching synced business stats', {
+                    category: 'DASHBOARD',
+                    operation: 'fetch_stats',
+                    data: { url: `${apiUrl}/api/business/stats` }
+                });
+            } else {
+                console.log('📊 Fetching synced business stats from:', `${apiUrl}/api/business/stats`);
+            }
 
             const response = await fetch(`${apiUrl}/api/business/stats`, {
                 headers: {

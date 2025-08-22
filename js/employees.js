@@ -61,7 +61,15 @@ class EmployeeManager {
             this.employees = await db.getAll('employees');
             await this.displayEmployees();
         } catch (error) {
-            console.error('Failed to load employees:', error);
+            if (window.logger) {
+                window.logger.error('Failed to load employees', {
+                    category: 'EMPLOYEES',
+                    operation: 'load_employees',
+                    error: error
+                });
+            } else {
+                console.error('Failed to load employees:', error);
+            }
         }
     }
 
@@ -159,7 +167,15 @@ class EmployeeManager {
 
             openModal('employeeModal');
         } catch (error) {
-            console.error('Failed to edit employee:', error);
+            if (window.logger) {
+                window.logger.error('Failed to edit employee', {
+                    category: 'EMPLOYEES',
+                    operation: 'edit_employee',
+                    error: error
+                });
+            } else {
+                console.error('Failed to edit employee:', error);
+            }
         }
     }
 
@@ -173,7 +189,15 @@ class EmployeeManager {
             showNotification('Employee deleted successfully', 'success');
             await this.loadEmployees();
         } catch (error) {
-            console.error('Failed to delete employee:', error);
+            if (window.logger) {
+                window.logger.error('Failed to delete employee', {
+                    category: 'EMPLOYEES',
+                    operation: 'delete_employee',
+                    error: error
+                });
+            } else {
+                console.error('Failed to delete employee:', error);
+            }
             showNotification('Failed to delete employee', 'error');
         }
     }
@@ -239,7 +263,15 @@ class EmployeeManager {
                 window.loadPOS && window.loadPOS();
             }
         } catch (error) {
-            console.error('Failed to save employee:', error);
+            if (window.logger) {
+                window.logger.error('Failed to save employee', {
+                    category: 'EMPLOYEES',
+                    operation: 'save_employee',
+                    error: error
+                });
+            } else {
+                console.error('Failed to save employee:', error);
+            }
             hideLoading();
             saveBtn.classList.remove('loading');
             saveBtn.disabled = false;

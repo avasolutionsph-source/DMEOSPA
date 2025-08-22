@@ -72,7 +72,15 @@ class InventoryManager {
             this.inventory = await db.getAll('inventory');
             this.displayInventory();
         } catch (error) {
-            console.error('Failed to load inventory:', error);
+            if (window.logger) {
+                window.logger.error('Failed to load inventory', {
+                    category: 'INVENTORY',
+                    operation: 'load_inventory',
+                    error: error
+                });
+            } else {
+                console.error('Failed to load inventory:', error);
+            }
         }
     }
 
@@ -223,7 +231,15 @@ class InventoryManager {
 
             openModal('inventoryModal');
         } catch (error) {
-            console.error('Failed to edit item:', error);
+            if (window.logger) {
+                window.logger.error('Failed to edit item', {
+                    category: 'INVENTORY',
+                    operation: 'edit_item',
+                    error: error
+                });
+            } else {
+                console.error('Failed to edit item:', error);
+            }
         }
     }
 
@@ -237,7 +253,15 @@ class InventoryManager {
             showNotification('Item deleted successfully', 'success');
             await this.loadInventory();
         } catch (error) {
-            console.error('Failed to delete item:', error);
+            if (window.logger) {
+                window.logger.error('Failed to delete item', {
+                    category: 'INVENTORY',
+                    operation: 'delete_item',
+                    error: error
+                });
+            } else {
+                console.error('Failed to delete item:', error);
+            }
             showNotification('Failed to delete item', 'error');
         }
     }
@@ -319,7 +343,15 @@ class InventoryManager {
                 window.loadPOS && window.loadPOS();
             }
         } catch (error) {
-            console.error('Failed to save inventory item:', error);
+            if (window.logger) {
+                window.logger.error('Failed to save inventory item', {
+                    category: 'INVENTORY',
+                    operation: 'save_item',
+                    error: error
+                });
+            } else {
+                console.error('Failed to save inventory item:', error);
+            }
             hideLoading();
             saveBtn.classList.remove('loading');
             saveBtn.disabled = false;

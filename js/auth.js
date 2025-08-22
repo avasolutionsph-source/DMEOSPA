@@ -65,12 +65,26 @@ class AuthSystem {
 
     // Attach event listener to main login button
     attachMainLoginButton() {
-        console.log('🚫 DISABLED: Auth.js login button handler - using direct modal instead');
+        if (window.logger && window.logger.debug) {
+            window.logger.debug('Auth.js login button handler disabled - using direct modal instead', { category: 'AUTH' });
+        } else {
+            if (window.logger) {
+                window.logger.debug('Auth.js login button handler disabled', {
+                    category: 'AUTH',
+                    operation: 'disabled_handler'
+                });
+            }
+        }
         return; // DISABLED to prevent interference
         
         const mainLoginBtn = document.getElementById('showLoginBtn');
         if (mainLoginBtn) {
-            console.log('Attaching click event to login button');
+            if (window.logger) {
+                window.logger.debug('Attaching click event to login button', {
+                    category: 'AUTH',
+                    operation: 'attach_login_handler'
+                });
+            }
             
             // Remove any existing event listeners
             mainLoginBtn.replaceWith(mainLoginBtn.cloneNode(true));
@@ -79,7 +93,12 @@ class AuthSystem {
             newBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Login button clicked!');
+                if (window.logger) {
+                    window.logger.debug('Login button clicked', {
+                        category: 'AUTH',
+                        operation: 'login_button_click'
+                    });
+                }
                 this.showLoginModal();
             });
             
@@ -87,12 +106,22 @@ class AuthSystem {
             newBtn.onclick = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Login button clicked via onclick!');
+                if (window.logger) {
+                    window.logger.debug('Login button clicked via onclick', {
+                        category: 'AUTH',
+                        operation: 'login_button_onclick'
+                    });
+                }
                 this.showLoginModal();
             };
             
         } else {
-            console.log('Login button not found, will retry...');
+            if (window.logger) {
+                window.logger.debug('Login button not found, will retry', {
+                    category: 'AUTH',
+                    operation: 'login_button_search'
+                });
+            }
             // Retry after a short delay if button not found
             setTimeout(() => {
                 this.attachMainLoginButton();
@@ -116,7 +145,12 @@ class AuthSystem {
 
         try {
             // REMOVED: Blocking code that prevented login
-            console.log('handleLogin called - but this should not be used anymore');
+            if (window.logger) {
+                window.logger.debug('handleLogin called - but this should not be used anymore', {
+                    category: 'AUTH',
+                    operation: 'deprecated_login_handler'
+                });
+            }
             
             if (loginData.success) {
                 await this.setAuthState(loginData.user, loginData.token, rememberMe);
@@ -158,7 +192,19 @@ class AuthSystem {
             }
             
         } catch (error) {
-            console.error('Login error:', error);
+            if (window.logger && window.logger.error) {
+                window.logger.error('Login error', { category: 'AUTH', error, context: { operation: 'login' } });
+            } else {
+                if (window.logger) {
+                    window.logger.error('Login error', {
+                        category: 'AUTH',
+                        operation: 'login',
+                        error: error
+                    });
+                } else {
+                    console.error('Login error:', error);
+                }
+            }
             hideLoading();
             setButtonLoading('loginBtn', false);
             showNotification(error.message || 'Login failed. Please try again.', 'error');
@@ -223,7 +269,19 @@ class AuthSystem {
             }
             
         } catch (error) {
-            console.error('Registration error:', error);
+            if (window.logger && window.logger.error) {
+                window.logger.error('Registration error', { category: 'AUTH', error, context: { operation: 'register' } });
+            } else {
+                if (window.logger) {
+                    window.logger.error('Registration error', {
+                        category: 'AUTH',
+                        operation: 'register',
+                        error: error
+                    });
+                } else {
+                    console.error('Registration error:', error);
+                }
+            }
             hideLoading();
             setButtonLoading('registerBtn', false);
             showNotification(error.message || 'Registration failed. Please try again.', 'error');
@@ -234,13 +292,29 @@ class AuthSystem {
     async simulateLogin(email, password) {
         // DISABLED: PWA backend authentication to prevent conflicts
         // The PWA now only uses the marketing website for authentication
-        console.log('simulateLogin disabled - using marketing website authentication only');
+        if (window.logger) {
+            window.logger.info('SimulateLogin disabled - using marketing website authentication only', {
+                category: 'AUTH',
+                operation: 'simulate_login_disabled'
+            });
+        }
         
         try {
             // Fallback to demo mode only if needed for offline functionality
-            console.warn('Using demo mode for offline functionality');
+            if (window.logger) {
+                window.logger.warn('Using demo mode for offline functionality', {
+                    category: 'AUTH',
+                    operation: 'demo_mode_activated'
+                });
+            }
         } catch (error) {
-            console.warn('Demo mode error:', error);
+            if (window.logger) {
+                window.logger.warn('Demo mode error', {
+                    category: 'AUTH',
+                    operation: 'demo_mode_error',
+                    error: error
+                });
+            }
         }
 
         // Fallback to demo mode for development/offline use
@@ -285,7 +359,12 @@ class AuthSystem {
         try {
             // Try real API registration first if online and API client is available
             if (navigator.onLine && window.apiClient) {
-                console.log('Attempting real API registration...');
+                if (window.logger) {
+                    window.logger.info('Attempting real API registration', {
+                        category: 'AUTH',
+                        operation: 'api_registration_attempt'
+                    });
+                }
                 
                 const userData = {
                     businessName,
@@ -313,7 +392,13 @@ class AuthSystem {
                 }
             }
         } catch (error) {
-            console.warn('API registration failed, falling back to demo mode:', error);
+            if (window.logger) {
+                window.logger.warn('API registration failed, falling back to demo mode', {
+                    category: 'AUTH',
+                    operation: 'api_registration_fallback',
+                    error: error
+                });
+            }
         }
 
         // Fallback to demo mode for development/offline use
@@ -376,7 +461,11 @@ class AuthSystem {
         let userStr = localStorage.getItem('userData') || localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
         let isLoggedIn = localStorage.getItem('isLoggedIn');
 
-        console.log('🔄 Auth system loading state:', {
+        if (window.logger) {
+            window.logger.debug('Auth system loading state', {
+                category: 'AUTH',
+                operation: 'load_auth_state',
+                data: {
             hasToken: !!token,
             hasUserData: !!userStr,
             isLoggedIn: isLoggedIn
@@ -388,7 +477,17 @@ class AuthSystem {
                 this.currentUser = JSON.parse(userStr);
                 this.isLoggedIn = true;
                 
-                console.log('✅ Auth state restored for user:', this.currentUser.email);
+                if (window.logger && window.logger.info) {
+                    window.logger.info('Auth state restored', { category: 'AUTH', context: { email: this.currentUser.email, operation: 'loadAuthState' } });
+                } else {
+                    if (window.logger) {
+                        window.logger.info('Auth state restored for user', {
+                            category: 'AUTH',
+                            operation: 'auth_state_restored',
+                            data: { email: this.currentUser.email }
+                        });
+                    }
+                }
                 
                 // Update business name in settings
                 await this.updateUserSettings();
@@ -396,11 +495,28 @@ class AuthSystem {
                 this.updateAuthUI();
                 return true;
             } catch (error) {
-                console.error('Failed to load auth state:', error);
+                if (window.logger && window.logger.error) {
+                    window.logger.error('Failed to load auth state', { category: 'AUTH', error, context: { operation: 'loadAuthState' } });
+                } else {
+                    if (window.logger) {
+                        window.logger.error('Failed to load auth state', {
+                            category: 'AUTH',
+                            operation: 'load_auth_state_error',
+                            error: error
+                        });
+                    } else {
+                        console.error('Failed to load auth state:', error);
+                    }
+                }
                 this.clearAuthState();
             }
         } else {
-            console.log('❌ No valid auth state found');
+            if (window.logger) {
+                window.logger.info('No valid auth state found', {
+                    category: 'AUTH',
+                    operation: 'auth_state_check'
+                });
+            }
         }
         return false;
     }
@@ -412,10 +528,28 @@ class AuthSystem {
         try {
             // In a real app, validate token with server
             // For now, just check if token exists and is not expired
-            console.log('Session validated for user:', this.currentUser.businessName);
+            if (window.logger) {
+                window.logger.info('Session validated', {
+                    category: 'AUTH',
+                    operation: 'session_validation',
+                    data: { businessName: this.currentUser.businessName }
+                });
+            }
             return true;
         } catch (error) {
-            console.error('Session validation failed:', error);
+            if (window.logger && window.logger.error) {
+                window.logger.error('Session validation failed', { category: 'AUTH', error, context: { operation: 'validateSession' } });
+            } else {
+                if (window.logger) {
+                    window.logger.error('Session validation failed', {
+                        category: 'AUTH',
+                        operation: 'session_validation_error',
+                        error: error
+                    });
+                } else {
+                    console.error('Session validation failed:', error);
+                }
+            }
             this.clearAuthState();
             return false;
         }
@@ -437,7 +571,12 @@ class AuthSystem {
         sessionStorage.removeItem('authToken');
         sessionStorage.removeItem('currentUser');
 
-        console.log('🧹 Cleared all auth state');
+        if (window.logger) {
+            window.logger.info('Cleared all auth state', {
+                category: 'AUTH',
+                operation: 'clear_auth_state'
+            });
+        }
         this.updateAuthUI();
     }
 
@@ -460,7 +599,19 @@ class AuthSystem {
                 this.showLoginModal();
                 
             } catch (error) {
-                console.error('Logout error:', error);
+                if (window.logger && window.logger.error) {
+                    window.logger.error('Logout error', { category: 'AUTH', error, context: { operation: 'logout' } });
+                } else {
+                    if (window.logger) {
+                        window.logger.error('Logout error', {
+                            category: 'AUTH',
+                            operation: 'logout_error',
+                            error: error
+                        });
+                    } else {
+                        console.error('Logout error:', error);
+                    }
+                }
                 hideLoading();
                 showNotification('Logout completed with sync warnings', 'warning');
                 this.clearAuthState();
@@ -481,7 +632,19 @@ class AuthSystem {
             await this.updateUserSettings();
             
         } catch (error) {
-            console.error('Failed to initialize user data:', error);
+            if (window.logger && window.logger.error) {
+                window.logger.error('Failed to initialize user data', { category: 'AUTH', error, context: { operation: 'initializeUserData' } });
+            } else {
+                if (window.logger) {
+                    window.logger.error('Failed to initialize user data', {
+                        category: 'AUTH',
+                        operation: 'init_user_data_error',
+                        error: error
+                    });
+                } else {
+                    console.error('Failed to initialize user data:', error);
+                }
+            }
         }
     }
 
@@ -496,7 +659,13 @@ class AuthSystem {
                         value: this.currentUser.businessName,
                         userId: this.currentUser.id
                     });
-                    console.log('Updated business name to:', this.currentUser.businessName);
+                    if (window.logger) {
+                        window.logger.info('Updated business name', {
+                            category: 'AUTH',
+                            operation: 'update_business_name',
+                            data: { businessName: this.currentUser.businessName }
+                        });
+                    }
                 } catch (updateError) {
                     // If update fails, try to add it
                     await db.add('settings', {
@@ -504,7 +673,13 @@ class AuthSystem {
                         value: this.currentUser.businessName,
                         userId: this.currentUser.id
                     });
-                    console.log('Added business name:', this.currentUser.businessName);
+                    if (window.logger) {
+                        window.logger.info('Added business name', {
+                            category: 'AUTH',
+                            operation: 'add_business_name',
+                            data: { businessName: this.currentUser.businessName }
+                        });
+                    }
                 }
             }
 
@@ -516,7 +691,19 @@ class AuthSystem {
             }
 
         } catch (error) {
-            console.error('Failed to update user settings:', error);
+            if (window.logger && window.logger.error) {
+                window.logger.error('Failed to update user settings', { category: 'AUTH', error, context: { operation: 'updateUserSettings' } });
+            } else {
+                if (window.logger) {
+                    window.logger.error('Failed to update user settings', {
+                        category: 'AUTH',
+                        operation: 'update_user_settings_error',
+                        error: error
+                    });
+                } else {
+                    console.error('Failed to update user settings:', error);
+                }
+            }
         }
     }
 
@@ -561,7 +748,12 @@ class AuthSystem {
     // Show login modal
     showLoginModal() {
         try {
-            console.log('showLoginModal called');
+            if (window.logger) {
+                window.logger.debug('showLoginModal called', {
+                    category: 'AUTH',
+                    operation: 'show_login_modal'
+                });
+            }
             
             // Show login form first
             this.showLoginForm();
@@ -569,7 +761,19 @@ class AuthSystem {
             // Get the modal element
             const modal = document.getElementById('authModal');
             if (!modal) {
-                console.error('Auth modal not found');
+                if (window.logger && window.logger.error) {
+                    window.logger.error('Auth modal not found', { category: 'AUTH', context: { operation: 'showLoginModal' } });
+                } else {
+                    if (window.logger) {
+                        window.logger.error('Auth modal not found', {
+                            category: 'AUTH',
+                            operation: 'show_login_modal',
+                            error: { message: 'Auth modal element not found in DOM' }
+                        });
+                    } else {
+                        console.error('Auth modal not found');
+                    }
+                }
                 return;
             }
             
@@ -579,12 +783,22 @@ class AuthSystem {
             
             // Try to use the global openModal function
             if (typeof openModal === 'function') {
-                console.log('Using openModal function');
+                if (window.logger) {
+                    window.logger.debug('Using openModal function', {
+                        category: 'AUTH',
+                        operation: 'open_modal_function'
+                    });
+                }
                 setTimeout(() => {
                     openModal('authModal');
                 }, 10);
             } else {
-                console.log('Using fallback modal opening');
+                if (window.logger) {
+                    window.logger.debug('Using fallback modal opening', {
+                        category: 'AUTH',
+                        operation: 'fallback_modal_open'
+                    });
+                }
                 // Fallback: manually show modal
                 modal.style.display = 'flex';
                 modal.style.position = 'fixed';
@@ -606,7 +820,19 @@ class AuthSystem {
                 }, 100);
             }
         } catch (error) {
-            console.error('Error showing login modal:', error);
+            if (window.logger && window.logger.error) {
+                window.logger.error('Error showing login modal', { category: 'AUTH', error, context: { operation: 'showLoginModal' } });
+            } else {
+                if (window.logger) {
+                    window.logger.error('Error showing login modal', {
+                        category: 'AUTH',
+                        operation: 'show_login_modal_error',
+                        error: error
+                    });
+                } else {
+                    console.error('Error showing login modal:', error);
+                }
+            }
         }
     }
 
@@ -643,7 +869,19 @@ class AuthSystem {
             }
 
         } catch (error) {
-            console.error('Failed to initialize user session:', error);
+            if (window.logger && window.logger.error) {
+                window.logger.error('Failed to initialize user session', { category: 'AUTH', error, context: { operation: 'initializeUserSession' } });
+            } else {
+                if (window.logger) {
+                    window.logger.error('Failed to initialize user session', {
+                        category: 'AUTH',
+                        operation: 'init_user_session_error',
+                        error: error
+                    });
+                } else {
+                    console.error('Failed to initialize user session:', error);
+                }
+            }
         }
     }
 
@@ -676,14 +914,35 @@ window.authSystem = authSystem;
 
 // Global function for HTML onclick backup
 window.showLoginModal = function() {
-    console.log('🚫 DISABLED: Global showLoginModal - using direct modal instead');
+    if (window.logger) {
+        window.logger.debug('Global showLoginModal disabled - using direct modal', {
+            category: 'AUTH',
+            operation: 'global_show_login_disabled'
+        });
+    }
     return; // DISABLED to prevent interference
     
-    console.log('Global showLoginModal called');
+    if (window.logger) {
+        window.logger.debug('Global showLoginModal called', {
+            category: 'AUTH',
+            operation: 'global_show_login_modal'
+        });
+    }
     if (window.authSystem && window.authSystem.showLoginModal) {
         window.authSystem.showLoginModal();
     } else {
-        console.error('AuthSystem not available');
+        if (window.logger && window.logger.error) {
+            window.logger.error('AuthSystem not available', { category: 'AUTH', context: { operation: 'showLoginModal' } });
+        } else {
+            if (window.logger) {
+                window.logger.error('AuthSystem not available', {
+                    category: 'AUTH',
+                    operation: 'auth_system_missing'
+                });
+            } else {
+                console.error('AuthSystem not available');
+            }
+        }
         // Ultimate fallback - directly show modal
         const modal = document.getElementById('authModal');
         if (modal) {
@@ -717,23 +976,59 @@ window.showLoginModal = function() {
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('DOM loaded, initializing auth system...');
+    if (window.logger) {
+        window.logger.info('DOM loaded, initializing auth system', {
+            category: 'AUTH',
+            operation: 'dom_init_auth'
+        });
+    }
     try {
         await authSystem.init();
-        console.log('Auth system initialized successfully');
+        if (window.logger) {
+            window.logger.info('Auth system initialized successfully', {
+                category: 'AUTH',
+                operation: 'auth_init_success'
+            });
+        }
         
         // Double-check login button after a short delay
         setTimeout(() => {
             const loginBtn = document.getElementById('showLoginBtn');
-            console.log('Login button found:', !!loginBtn);
+            if (window.logger) {
+                window.logger.debug('Login button found', {
+                    category: 'AUTH',
+                    operation: 'login_button_check',
+                    data: { found: !!loginBtn }
+                });
+            }
             if (loginBtn) {
-                console.log('Login button is visible:', loginBtn.style.display !== 'none');
-                console.log('Login button has click handler:', !!loginBtn.onclick);
+                if (window.logger) {
+                    window.logger.debug('Login button status', {
+                        category: 'AUTH',
+                        operation: 'login_button_status',
+                        data: {
+                            visible: loginBtn.style.display !== 'none',
+                            hasClickHandler: !!loginBtn.onclick
+                        }
+                    });
+                }
             }
         }, 1000);
         
     } catch (error) {
-        console.error('Auth system initialization failed:', error);
+        if (window.logger && window.logger.error) {
+            window.logger.error('Auth system initialization failed', { category: 'AUTH', error, context: { operation: 'initialize' } });
+        } else {
+            if (window.logger) {
+                window.logger.error('Auth system initialization failed', {
+                    category: 'AUTH',
+                    operation: 'init_auth_system_error',
+                    error: error
+                });
+            } else {
+                console.error('Auth system initialization failed:', error);
+            }
+        }
     }
     
     // Note: Removed automatic login modal popup
@@ -746,12 +1041,34 @@ if (document.readyState === 'loading') {
 } else {
     // DOM is already loaded, initialize immediately
     setTimeout(async () => {
-        console.log('DOM already loaded, initializing auth system...');
+        if (window.logger) {
+            window.logger.info('DOM already loaded, initializing auth system', {
+                category: 'AUTH',
+                operation: 'immediate_auth_init'
+            });
+        }
         try {
             await authSystem.init();
-            console.log('Auth system initialized successfully (immediate)');
+            if (window.logger) {
+                window.logger.info('Auth system initialized successfully (immediate)', {
+                    category: 'AUTH',
+                    operation: 'immediate_auth_init_success'
+                });
+            }
         } catch (error) {
-            console.error('Auth system initialization failed (immediate):', error);
+            if (window.logger && window.logger.error) {
+                window.logger.error('Auth system initialization failed (immediate)', { category: 'AUTH', error, context: { operation: 'initialize' } });
+            } else {
+                if (window.logger) {
+                    window.logger.error('Auth system initialization failed (immediate)', {
+                        category: 'AUTH',
+                        operation: 'immediate_auth_init_error',
+                        error: error
+                    });
+                } else {
+                    console.error('Auth system initialization failed (immediate):', error);
+                }
+            }
         }
     }, 100);
 }

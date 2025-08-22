@@ -61,7 +61,13 @@ class ChatbotAssistant {
             // Calculate key business metrics
             this.updateBusinessMetrics();
         } catch (error) {
-            console.error('Error refreshing data cache:', error);
+            if (window.logger) {
+                window.logger.error('Error refreshing data cache', {
+                    category: 'AI',
+                    operation: 'refresh_data_cache',
+                    error: error
+                });
+            }
         }
     }
 
@@ -576,7 +582,13 @@ How can I help you today? 😊`;
             return response;
             
         } catch (error) {
-            console.error('Error in business analysis:', error);
+            if (window.logger) {
+                window.logger.error('Error in business analysis', {
+                    category: 'AI',
+                    operation: 'business_analysis',
+                    error: error
+                });
+            }
             return "I encountered an issue analyzing your business data. Let me refresh the data and try again. Please ask me again in a moment.";
         }
     }
@@ -728,7 +740,17 @@ How can I help you today? 😊`;
             return response;
             
         } catch (error) {
-            console.error('Error:', error);
+            if (window.logger && window.logger.error) {
+                window.logger.error('Chatbot analysis error', { category: 'AI', error, context: { operation: 'revenueAnalysis' } });
+            } else {
+                if (window.logger) {
+                    window.logger.error('Chatbot error', {
+                        category: 'AI',
+                        operation: 'process_response',
+                        error: error
+                    });
+                }
+            }
             return `📊 **Revenue Analysis Error**\n\n❌ Sorry, I couldn't load your revenue data right now.\n\nPlease try:\n1. Refreshing the page\n2. Checking your internet connection\n3. Making sure sales data is saved properly\n\nThen ask me again! I'll give you a complete revenue breakdown with insights and recommendations.`;
         }
     }
@@ -975,7 +997,13 @@ How can I help you today? 😊`;
             return response;
             
         } catch (error) {
-            console.error('Financial Report Error:', error);
+            if (window.logger) {
+                window.logger.error('Financial Report Error', {
+                    category: 'AI',
+                    operation: 'financial_report',
+                    error: error
+                });
+            }
             return `📊 **Financial Report Error**\n\n❌ Sorry, I couldn't generate your financial report right now.\n\nPlease try:\n1. Refreshing the page\n2. Ensuring all data is properly saved\n3. Checking your internet connection\n\nThen ask for your "financial report" again! I'll provide a complete business overview with insights and recommendations.`;
         }
     }
@@ -986,7 +1014,11 @@ How can I help you today? 😊`;
             const transactions = this.dataCache.transactions;
             
             // Debug: Log the raw data we have
-            console.log('Chatbot Debug - Raw Data:', {
+            if (window.logger) {
+                window.logger.debug('Chatbot Debug - Raw Data', {
+                    category: 'AI',
+                    operation: 'debug_data',
+                    data: {
                 employeeCount: employees?.length || 0,
                 transactionCount: transactions?.length || 0,
                 employees: employees?.map(e => ({ id: e.id, idType: typeof e.id, name: e.name })),
@@ -1145,7 +1177,13 @@ How can I help you today? 😊`;
             return response;
             
         } catch (error) {
-            console.error('Error analyzing employees:', error);
+            if (window.logger) {
+                window.logger.error('Error analyzing employees', {
+                    category: 'AI',
+                    operation: 'analyze_employees',
+                    error: error
+                });
+            }
             return `👥 **Employee Analysis Error**\n\n❌ Sorry, I couldn't load your employee data right now.\n\nPlease try:\n1. Refreshing the page\n2. Checking your internet connection\n3. Making sure employee data is saved properly\n\nThen ask me again! I'll give you a complete team performance breakdown.`;
         }
     }
@@ -1424,7 +1462,13 @@ How can I help you today? 😊`;
             return response;
             
         } catch (error) {
-            console.error('Error analyzing best service:', error);
+            if (window.logger) {
+                window.logger.error('Error analyzing best service', {
+                    category: 'AI',
+                    operation: 'analyze_best_service',
+                    error: error
+                });
+            }
             return `🏆 **Service Analysis Error**\n\n❌ Sorry, I couldn't analyze your service data right now.\n\nPlease try:\n1. Refreshing the page\n2. Checking your internet connection\n3. Making sure POS data is saved properly\n\nThen ask me again! I'll give you a complete breakdown of your best-performing services.`;
         }
     }
@@ -1489,7 +1533,13 @@ How can I help you today? 😊`;
             return response;
             
         } catch (error) {
-            console.error('Error listing services:', error);
+            if (window.logger) {
+                window.logger.error('Error listing services', {
+                    category: 'AI',
+                    operation: 'list_services',
+                    error: error
+                });
+            }
             return `💎 **Services List Error**\n\n❌ Sorry, I couldn't load your service list right now.\n\nPlease try:\n1. Refreshing the page\n2. Checking that services are properly saved\n3. Going to the Services section to verify your services\n\nThen ask me again! I'll show you your complete spa service menu.`;
         }
     }
@@ -2156,7 +2206,13 @@ How can I help you today? 😊`;
             return response;
             
         } catch (error) {
-            console.error('Error getting sync status:', error);
+            if (window.logger) {
+                window.logger.error('Error getting sync status', {
+                    category: 'AI',
+                    operation: 'get_sync_status',
+                    error: error
+                });
+            }
             return `🔄 **Sync Status Check Failed**\n\n❌ Unable to retrieve sync information.\n\nThis might be because:\n• Database is not initialized\n• System is still loading\n• There's a technical issue\n\nTry refreshing the page or contact support if the problem persists.`;
         }
     }
@@ -2189,12 +2245,24 @@ How can I help you today? 😊`;
                 return `🔄 **Sync Completed Successfully!** ✅\n\n🎉 **Your data has been synced to the cloud!**\n\n📅 **Sync Time:** ${syncTime}\n\n📊 **What was synced:**\n• All transactions and sales data\n• Product/service information\n• Inventory levels\n• Employee data\n• Business metrics\n\n✨ **Your data is now up-to-date across all devices!**\n\nType "last sync" anytime to check your sync status.`;
                 
             } catch (syncError) {
-                console.error('Chatbot sync error:', syncError);
+                if (window.logger) {
+                    window.logger.error('Chatbot sync error', {
+                        category: 'AI',
+                        operation: 'sync_chat',
+                        error: syncError
+                    });
+                }
                 return `🔄 **Sync Failed** ❌\n\n😔 **Something went wrong during sync.**\n\n**Possible reasons:**\n• Network connection issues\n• Server temporarily unavailable\n• Authentication problems\n\n**What to try:**\n• Check your internet connection\n• Try again in a few moments\n• Use the manual sync button\n• Refresh the page if problems persist\n\n**Error details:** ${syncError.message || 'Unknown error'}`;
             }
             
         } catch (error) {
-            console.error('Error handling sync now:', error);
+            if (window.logger) {
+                window.logger.error('Error handling sync now', {
+                    category: 'AI',
+                    operation: 'handle_sync_now',
+                    error: error
+                });
+            }
             return `🔄 **Sync Error**\n\n❌ Unable to start sync process.\n\nPlease try using the sync button in the top-right corner, or refresh the page and try again.`;
         }
     }

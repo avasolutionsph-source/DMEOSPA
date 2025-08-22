@@ -16,7 +16,13 @@ class SyncManager {
             try {
                 // Hardcoded API URL for production deployment
                 this.apiUrl = 'https://ava-marketing-api.onrender.com';
-                console.log('🔄 Using production API URL:', this.apiUrl);
+                if (window.logger) {
+                    window.logger.info('Using production API URL', { 
+                        category: 'SYNC', 
+                        operation: 'init',
+                        data: { apiUrl: this.apiUrl }
+                    });
+                }
 
                 // Set up online/offline listeners
                 window.addEventListener('online', () => this.handleOnline());
@@ -39,13 +45,25 @@ class SyncManager {
                     });
                 }
             } catch (error) {
-                console.log('Sync manager initialization deferred:', error);
+                if (window.logger) {
+                    window.logger.warn('Sync manager initialization deferred', { 
+                        category: 'SYNC', 
+                        operation: 'init',
+                        error: error
+                    });
+                }
             }
         }, 1000);
     }
 
     handleOnline() {
-        console.log('Connection restored');
+        if (window.logger) {
+            window.logger.info('Connection restored', { 
+                category: 'SYNC', 
+                operation: 'connection_status',
+                data: { status: 'online' }
+            });
+        }
         this.isOnline = true;
         this.updateConnectionStatus();
         this.showNotification('Back online! Syncing data...', 'success');
@@ -56,7 +74,13 @@ class SyncManager {
     }
 
     handleOffline() {
-        console.log('Connection lost');
+        if (window.logger) {
+            window.logger.warn('Connection lost', { 
+                category: 'SYNC', 
+                operation: 'connection_status',
+                data: { status: 'offline' }
+            });
+        }
         this.isOnline = false;
         this.updateConnectionStatus();
         this.showNotification('Working offline. Changes will sync when connection is restored.', 'warning');
@@ -128,7 +152,15 @@ class SyncManager {
 
             this.showNotification('Data synced successfully', 'success');
         } catch (error) {
-            console.error('Sync failed:', error);
+            if (window.logger) {
+                window.logger.error('Sync failed', { 
+                    category: 'SYNC', 
+                    operation: 'sync_all',
+                    error: error
+                });
+            } else {
+                console.error('Sync failed:', error);
+            }
             this.showNotification('Sync failed. Will retry later.', 'error');
         } finally {
             this.syncInProgress = false;
@@ -141,7 +173,13 @@ class SyncManager {
             // Get ALL products to ensure complete sync
             const allProducts = await db.getAll('products');
             
-            console.log(`🛍️ Found ${allProducts.length} total products/services to sync`);
+            if (window.logger) {
+                window.logger.info('Products ready for sync', { 
+                    category: 'SYNC', 
+                    operation: 'sync_products',
+                    data: { count: allProducts.length }
+                });
+            }
             
             // Always send sync request with all products
             const response = await this.sendToServer('/api/products/sync', {
@@ -153,7 +191,13 @@ class SyncManager {
             });
 
             if (response.ok) {
-                console.log('✅ Products sync successful');
+                if (window.logger) {
+                    window.logger.info('Products sync successful', { 
+                        category: 'SYNC', 
+                        operation: 'sync_products',
+                        data: { status: 'success' }
+                    });
+                }
                 // Mark all products as synced
                 for (const product of allProducts) {
                     if (product.syncStatus !== 'synced') {
@@ -162,10 +206,26 @@ class SyncManager {
                     }
                 }
             } else {
-                console.error('❌ Products sync failed:', response.status);
+                if (window.logger) {
+                    window.logger.error('Products sync failed', { 
+                        category: 'SYNC', 
+                        operation: 'sync_products',
+                        error: { status: response.status }
+                    });
+                } else {
+                    console.error('❌ Products sync failed:', response.status);
+                }
             }
         } catch (error) {
-            console.error('❌ Product sync failed:', error);
+            if (window.logger) {
+                window.logger.error('Product sync failed', { 
+                    category: 'SYNC', 
+                    operation: 'sync_products',
+                    error: error
+                });
+            } else {
+                console.error('❌ Product sync failed:', error);
+            }
         }
     }
 
@@ -174,7 +234,15 @@ class SyncManager {
             // Get ALL inventory items to provide complete data to Business Dashboard
             const allInventory = await db.getAll('inventory');
             
-            console.log(`📦 Found ${allInventory.length} total inventory items for sync`);
+            if (window.logger) {
+                window.logger.info('Found inventory items for sync', {
+                    category: 'SYNC',
+                    operation: 'inventory_sync_count',
+                    data: { count: allInventory.length }
+                });
+            } else {
+                console.log(`📦 Found ${allInventory.length} total inventory items for sync`);
+            }
             console.log('📦 Inventory details:', allInventory.map(item => ({ 
                 name: item.name, 
                 sku: item.sku,
@@ -183,7 +251,14 @@ class SyncManager {
             })));
 
             if (allInventory.length === 0) {
-                console.log('⚠️ No inventory items to sync');
+                if (window.logger) {
+                    window.logger.warn('No inventory items to sync', {
+                        category: 'SYNC',
+                        operation: 'inventory_sync_empty'
+                    });
+                } else {
+                    console.log('⚠️ No inventory items to sync');
+                }
                 return;
             }
 
@@ -213,7 +288,15 @@ class SyncManager {
                 lastRestocked: item.lastRestocked || null
             }));
 
-            console.log('📤 Sending processed inventory:', processedInventory);
+            if (window.logger) {
+                window.logger.debug('Sending processed inventory', {
+                    category: 'SYNC',
+                    operation: 'inventory_sync_send',
+                    data: { items: processedInventory }
+                });
+            } else {
+                console.log('📤 Sending processed inventory:', processedInventory);
+            }
 
             // Send all inventory with summary data
             const response = await this.sendToServer('/api/inventory/sync', {
@@ -226,7 +309,14 @@ class SyncManager {
             });
 
             if (response.ok) {
-                console.log('✅ Inventory sync successful');
+                if (window.logger) {
+                    window.logger.info('Inventory sync successful', {
+                        category: 'SYNC',
+                        operation: 'inventory_sync_success'
+                    });
+                } else {
+                    console.log('✅ Inventory sync successful');
+                }
                 // Mark all inventory as synced
                 for (const item of allInventory) {
                     if (item.syncStatus !== 'synced') {
@@ -234,10 +324,25 @@ class SyncManager {
                         await db.update('inventory', item);
                     }
                 }
-                console.log('✅ All inventory items marked as synced');
+                if (window.logger) {
+                    window.logger.info('All inventory items marked as synced', {
+                        category: 'SYNC',
+                        operation: 'inventory_mark_synced'
+                    });
+                } else {
+                    console.log('✅ All inventory items marked as synced');
+                }
             } else {
                 const errorText = await response.text();
-                console.error('❌ Inventory sync failed:', response.status, errorText);
+                if (window.logger) {
+                    window.logger.error('Inventory sync failed', {
+                        category: 'SYNC',
+                        operation: 'inventory_sync_error',
+                        error: { status: response.status, message: errorText }
+                    });
+                } else {
+                    console.error('❌ Inventory sync failed:', response.status, errorText);
+                }
             }
         } catch (error) {
             console.error('❌ Inventory sync failed:', error);
@@ -429,7 +534,15 @@ class SyncManager {
                 console.log('✅ All transactions marked as synced');
             }
         } catch (error) {
-            console.error('Transaction sync failed:', error);
+            if (window.logger) {
+                window.logger.error('Transaction sync failed', { 
+                    category: 'SYNC', 
+                    operation: 'sync_transactions',
+                    error: error
+                });
+            } else {
+                console.error('Transaction sync failed:', error);
+            }
         }
     }
 

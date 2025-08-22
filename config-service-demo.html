@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration Service Demo - Ava Solutions</title>
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #1e293b;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .demo-section h3 {
+            color: #1e293b;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 120px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .status-display {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .config-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .config-key {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 5px;
+        }
+
+        .config-value {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #64748b;
+            word-break: break-word;
+        }
+
+        .config-category {
+            display: inline-block;
+            background: #ddd6fe;
+            color: #5b21b6;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 500;
+            margin-top: 8px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background: #eff6ff;
+            border-color: #3b82f6;
+            color: #1d4ed8;
+        }
+
+        .alert-success {
+            background: #ecfdf5;
+            border-color: #10b981;
+            color: #047857;
+        }
+
+        .alert-warning {
+            background: #fffbeb;
+            border-color: #f59e0b;
+            color: #d97706;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            border-color: #ef4444;
+            color: #dc2626;
+        }
+
+        .migration-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .migration-item {
+            padding: 10px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .migration-complete {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .migration-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .live-demo {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+
+        .live-demo h3 {
+            margin-bottom: 15px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-cogs"></i> Configuration Service Demo</h1>
+            <p>Test and explore the unified configuration system for Ava Solutions PWA</p>
+        </div>
+
+        <!-- Live Demo Section -->
+        <div class="live-demo">
+            <h3><i class="fas fa-magic"></i> Live Configuration Demo</h3>
+            <p>Watch how changes propagate across different storage systems in real-time</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px;">
+                <div>
+                    <label style="color: white; margin-bottom: 10px; display: block;">Business Name:</label>
+                    <input type="text" id="liveBusiness" class="form-input" placeholder="Enter business name">
+                </div>
+                <div>
+                    <label style="color: white; margin-bottom: 10px; display: block;">Theme:</label>
+                    <select id="liveTheme" class="form-select">
+                        <option value="auto">Auto</option>
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="color: white; margin-bottom: 10px; display: block;">Performance:</label>
+                    <select id="livePerformance" class="form-select">
+                        <option value="auto">Auto</option>
+                        <option value="low">Low</option>
+                        <option value="balanced">Balanced</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="checkbox-group" style="color: white; margin-top: 15px;">
+                <input type="checkbox" id="liveLogging">
+                <label for="liveLogging">Enable Logging</label>
+            </div>
+        </div>
+
+        <!-- Demo Grid -->
+        <div class="demo-grid">
+            <!-- Basic Operations -->
+            <div class="demo-section">
+                <h3><i class="fas fa-play"></i> Basic Operations</h3>
+                
+                <div class="form-group">
+                    <label>Configuration Key:</label>
+                    <select id="configKey" class="form-select">
+                        <option value="businessName">businessName</option>
+                        <option value="apiUrl">apiUrl</option>
+                        <option value="theme">theme</option>
+                        <option value="performanceMode">performanceMode</option>
+                        <option value="userToken">userToken</option>
+                        <option value="subscriptionPlan">subscriptionPlan</option>
+                        <option value="loggingEnabled">loggingEnabled</option>
+                        <option value="debugMode">debugMode</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Value:</label>
+                    <input type="text" id="configValue" class="form-input" placeholder="Enter value">
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="testGet()">
+                        <i class="fas fa-eye"></i> Get
+                    </button>
+                    <button class="btn btn-success" onclick="testSet()">
+                        <i class="fas fa-save"></i> Set
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearCache()">
+                        <i class="fas fa-trash"></i> Clear Cache
+                    </button>
+                </div>
+
+                <div class="status-display" id="basicResult">Ready for testing...</div>
+            </div>
+
+            <!-- Batch Operations -->
+            <div class="demo-section">
+                <h3><i class="fas fa-layer-group"></i> Batch Operations</h3>
+                
+                <div class="form-group">
+                    <label>Multiple Configurations (JSON):</label>
+                    <textarea id="batchConfig" class="form-textarea" placeholder='{"businessName": "My Spa", "theme": "dark"}'></textarea>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="testGetMultiple()">
+                        <i class="fas fa-list"></i> Get Multiple
+                    </button>
+                    <button class="btn btn-success" onclick="testSetMultiple()">
+                        <i class="fas fa-save"></i> Set Multiple
+                    </button>
+                    <button class="btn btn-warning" onclick="testGetCategory()">
+                        <i class="fas fa-tags"></i> Get by Category
+                    </button>
+                </div>
+
+                <div class="status-display" id="batchResult">Ready for batch testing...</div>
+            </div>
+
+            <!-- Export/Import -->
+            <div class="demo-section">
+                <h3><i class="fas fa-exchange-alt"></i> Export/Import</h3>
+                
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="exportConfig()">
+                        <i class="fas fa-download"></i> Export Config
+                    </button>
+                    <button class="btn btn-secondary" onclick="importConfig()">
+                        <i class="fas fa-upload"></i> Import Config
+                    </button>
+                    <button class="btn btn-warning" onclick="resetToDefaults()">
+                        <i class="fas fa-undo"></i> Reset to Defaults
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <label>Import Data (JSON):</label>
+                    <textarea id="importData" class="form-textarea" placeholder="Paste configuration JSON here..."></textarea>
+                </div>
+
+                <div class="status-display" id="exportResult">Export/import results will appear here...</div>
+            </div>
+
+            <!-- Current Configuration -->
+            <div class="demo-section">
+                <h3><i class="fas fa-cog"></i> Current Configuration</h3>
+                
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="refreshConfig()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                    <button class="btn btn-secondary" onclick="showSchema()">
+                        <i class="fas fa-info-circle"></i> Show Schema
+                    </button>
+                </div>
+
+                <div class="config-grid" id="currentConfig">
+                    <div class="config-item">
+                        <div class="config-key">Loading...</div>
+                        <div class="config-value">Please wait while loading configuration...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Migration Status -->
+        <div class="demo-section">
+            <h3><i class="fas fa-database"></i> Migration Status</h3>
+            
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="checkMigrations()">
+                    <i class="fas fa-search"></i> Check Migrations
+                </button>
+                <button class="btn btn-warning" onclick="forceMigration()">
+                    <i class="fas fa-play"></i> Force Migration
+                </button>
+            </div>
+
+            <div class="migration-status" id="migrationStatus">
+                <div class="migration-item migration-pending">Checking migrations...</div>
+            </div>
+        </div>
+
+        <!-- Storage Comparison -->
+        <div class="demo-section">
+            <h3><i class="fas fa-balance-scale"></i> Storage Comparison</h3>
+            
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="compareStorages()">
+                    <i class="fas fa-search"></i> Compare Storages
+                </button>
+                <button class="btn btn-secondary" onclick="showBackwardCompatibility()">
+                    <i class="fas fa-link"></i> Test Backward Compatibility
+                </button>
+            </div>
+
+            <div class="status-display" id="storageComparison">Click "Compare Storages" to see differences between storage systems...</div>
+        </div>
+
+        <!-- Event Listeners Demo -->
+        <div class="demo-section">
+            <h3><i class="fas fa-broadcast-tower"></i> Event Listeners</h3>
+            
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="setupListeners()">
+                    <i class="fas fa-headphones"></i> Setup Listeners
+                </button>
+                <button class="btn btn-danger" onclick="clearListeners()">
+                    <i class="fas fa-times"></i> Clear Listeners
+                </button>
+            </div>
+
+            <div class="status-display" id="listenerEvents">Event listener activity will appear here...</div>
+        </div>
+    </div>
+
+    <!-- Include Dependencies -->
+    <script src="js/database.js"></script>
+    <script src="js/logger.js"></script>
+    <script src="js/config-service.js"></script>
+
+    <script>
+        let eventListeners = [];
+        let configReady = false;
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Wait for config service to initialize
+                await waitForConfig();
+                configReady = true;
+                
+                // Load initial configuration
+                await refreshConfig();
+                await checkMigrations();
+                
+                // Setup live demo
+                setupLiveDemo();
+                
+                showAlert('success', 'Configuration service loaded successfully!');
+            } catch (error) {
+                console.error('Failed to initialize demo:', error);
+                showAlert('error', 'Failed to initialize configuration service: ' + error.message);
+            }
+        });
+
+        async function waitForConfig() {
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const maxAttempts = 50;
+                
+                const checkConfig = () => {
+                    attempts++;
+                    if (window.config && window.config.isInitialized) {
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        reject(new Error('Configuration service failed to initialize'));
+                    } else {
+                        setTimeout(checkConfig, 100);
+                    }
+                };
+                
+                checkConfig();
+            });
+        }
+
+        // Basic Operations
+        async function testGet() {
+            if (!configReady) return;
+            
+            try {
+                const key = document.getElementById('configKey').value;
+                const value = await window.config.get(key);
+                
+                document.getElementById('basicResult').textContent = 
+                    `GET ${key}: ${JSON.stringify(value, null, 2)}`;
+                    
+                // Update input with current value
+                document.getElementById('configValue').value = 
+                    typeof value === 'object' ? JSON.stringify(value) : String(value || '');
+                    
+            } catch (error) {
+                document.getElementById('basicResult').textContent = 
+                    `Error: ${error.message}`;
+            }
+        }
+
+        async function testSet() {
+            if (!configReady) return;
+            
+            try {
+                const key = document.getElementById('configKey').value;
+                let value = document.getElementById('configValue').value;
+                
+                // Try to parse as JSON first
+                try {
+                    if (value.startsWith('{') || value.startsWith('[') || value === 'true' || value === 'false') {
+                        value = JSON.parse(value);
+                    }
+                } catch {
+                    // Keep as string
+                }
+                
+                const success = await window.config.set(key, value);
+                
+                document.getElementById('basicResult').textContent = 
+                    `SET ${key}: ${success ? 'SUCCESS' : 'FAILED'}\nValue: ${JSON.stringify(value, null, 2)}`;
+                    
+                // Refresh current config display
+                await refreshConfig();
+                
+            } catch (error) {
+                document.getElementById('basicResult').textContent = 
+                    `Error: ${error.message}`;
+            }
+        }
+
+        function clearCache() {
+            if (!configReady) return;
+            
+            window.config.clearCache();
+            document.getElementById('basicResult').textContent = 'Cache cleared successfully';
+        }
+
+        // Batch Operations
+        async function testGetMultiple() {
+            if (!configReady) return;
+            
+            try {
+                const keys = ['businessName', 'theme', 'performanceMode', 'apiUrl'];
+                const values = await window.config.getMultiple(keys);
+                
+                document.getElementById('batchResult').textContent = 
+                    `GET MULTIPLE:\n${JSON.stringify(values, null, 2)}`;
+                    
+            } catch (error) {
+                document.getElementById('batchResult').textContent = 
+                    `Error: ${error.message}`;
+            }
+        }
+
+        async function testSetMultiple() {
+            if (!configReady) return;
+            
+            try {
+                const configText = document.getElementById('batchConfig').value;
+                const configs = JSON.parse(configText);
+                
+                const success = await window.config.setMultiple(configs);
+                
+                document.getElementById('batchResult').textContent = 
+                    `SET MULTIPLE: ${success ? 'SUCCESS' : 'FAILED'}\n${JSON.stringify(configs, null, 2)}`;
+                    
+                // Refresh current config display
+                await refreshConfig();
+                
+            } catch (error) {
+                document.getElementById('batchResult').textContent = 
+                    `Error: ${error.message}`;
+            }
+        }
+
+        async function testGetCategory() {
+            if (!configReady) return;
+            
+            try {
+                const categories = ['business', 'ui', 'auth', 'performance'];
+                let result = 'GET BY CATEGORY:\n\n';
+                
+                for (const category of categories) {
+                    const configs = await window.config.getCategory(category);
+                    result += `${category.toUpperCase()}:\n${JSON.stringify(configs, null, 2)}\n\n`;
+                }
+                
+                document.getElementById('batchResult').textContent = result;
+                
+            } catch (error) {
+                document.getElementById('batchResult').textContent = 
+                    `Error: ${error.message}`;
+            }
+        }
+
+        // Export/Import
+        async function exportConfig() {
+            if (!configReady) return;
+            
+            try {
+                const exported = await window.config.exportConfig();
+                
+                // Create download link
+                const blob = new Blob([JSON.stringify(exported, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ava-config-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                document.getElementById('exportResult').textContent = 
+                    `EXPORT SUCCESS:\n${JSON.stringify(exported, null, 2)}`;
+                    
+            } catch (error) {
+                document.getElementById('exportResult').textContent = 
+                    `Error: ${error.message}`;
+            }
+        }
+
+        async function importConfig() {
+            if (!configReady) return;
+            
+            try {
+                const importText = document.getElementById('importData').value;
+                if (!importText.trim()) {
+                    throw new Error('No import data provided');
+                }
+                
+                const importData = JSON.parse(importText);
+                const success = await window.config.importConfig(importData);
+                
+                document.getElementById('exportResult').textContent = 
+                    `IMPORT: ${success ? 'SUCCESS' : 'FAILED'}`;
+                    
+                if (success) {
+                    await refreshConfig();
+                }
+                
+            } catch (error) {
+                document.getElementById('exportResult').textContent = 
+                    `Error: ${error.message}`;
+            }
+        }
+
+        async function resetToDefaults() {
+            if (!confirm('Reset all configurations to defaults?')) return;
+            if (!configReady) return;
+            
+            try {
+                // Get all schema keys and reset to defaults
+                const schema = window.config.schema;
+                const resets = {};
+                
+                for (const [key, config] of Object.entries(schema)) {
+                    if (!config.sensitive) {
+                        resets[key] = config.default;
+                    }
+                }
+                
+                const success = await window.config.setMultiple(resets);
+                
+                document.getElementById('exportResult').textContent = 
+                    `RESET TO DEFAULTS: ${success ? 'SUCCESS' : 'FAILED'}`;
+                    
+                if (success) {
+                    await refreshConfig();
+                }
+                
+            } catch (error) {
+                document.getElementById('exportResult').textContent = 
+                    `Error: ${error.message}`;
+            }
+        }
+
+        // Current Configuration Display
+        async function refreshConfig() {
+            if (!configReady) return;
+            
+            try {
+                const container = document.getElementById('currentConfig');
+                const schema = window.config.schema;
+                
+                container.innerHTML = '';
+                
+                for (const [key, config] of Object.entries(schema)) {
+                    if (!config.sensitive) {
+                        const value = await window.config.get(key);
+                        
+                        const item = document.createElement('div');
+                        item.className = 'config-item';
+                        item.innerHTML = `
+                            <div class="config-key">${key}</div>
+                            <div class="config-value">${JSON.stringify(value)}</div>
+                            <div class="config-category">${config.category}</div>
+                        `;
+                        
+                        container.appendChild(item);
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Failed to refresh config:', error);
+                document.getElementById('currentConfig').innerHTML = 
+                    `<div class="config-item"><div class="config-key">Error</div><div class="config-value">${error.message}</div></div>`;
+            }
+        }
+
+        function showSchema() {
+            if (!configReady) return;
+            
+            const schema = window.config.schema;
+            const popup = window.open('', '_blank', 'width=800,height=600');
+            popup.document.write(`
+                <html>
+                    <head><title>Configuration Schema</title></head>
+                    <body style="font-family: monospace; padding: 20px;">
+                        <h2>Configuration Schema</h2>
+                        <pre>${JSON.stringify(schema, null, 2)}</pre>
+                    </body>
+                </html>
+            `);
+        }
+
+        // Migration Status
+        async function checkMigrations() {
+            if (!configReady) return;
+            
+            try {
+                const container = document.getElementById('migrationStatus');
+                container.innerHTML = '';
+                
+                const migrations = [
+                    'localStorage_to_unified_v1',
+                    'theme_settings_v1',
+                    'performance_settings_v1'
+                ];
+                
+                for (const migration of migrations) {
+                    const isComplete = await window.config.isMigrationComplete(migration);
+                    
+                    const item = document.createElement('div');
+                    item.className = `migration-item ${isComplete ? 'migration-complete' : 'migration-pending'}`;
+                    item.innerHTML = `
+                        <i class="fas fa-${isComplete ? 'check' : 'clock'}"></i><br>
+                        ${migration}<br>
+                        <strong>${isComplete ? 'Complete' : 'Pending'}</strong>
+                    `;
+                    
+                    container.appendChild(item);
+                }
+                
+            } catch (error) {
+                document.getElementById('migrationStatus').innerHTML = 
+                    `<div class="migration-item"><strong>Error:</strong> ${error.message}</div>`;
+            }
+        }
+
+        async function forceMigration() {
+            if (!confirm('Force run all migrations?')) return;
+            if (!configReady) return;
+            
+            try {
+                await window.config.runMigrations();
+                await checkMigrations();
+                showAlert('success', 'Migrations completed successfully');
+            } catch (error) {
+                showAlert('error', 'Migration failed: ' + error.message);
+            }
+        }
+
+        // Storage Comparison
+        async function compareStorages() {
+            if (!configReady) return;
+            
+            try {
+                let comparison = 'STORAGE COMPARISON:\n\n';
+                
+                const testKeys = ['businessName', 'theme', 'performanceMode', 'userToken'];
+                
+                for (const key of testKeys) {
+                    comparison += `${key}:\n`;
+                    
+                    // Get from localStorage
+                    const localValue = localStorage.getItem(key);
+                    comparison += `  localStorage: ${localValue || 'null'}\n`;
+                    
+                    // Get from config service
+                    const configValue = await window.config.get(key);
+                    comparison += `  config service: ${JSON.stringify(configValue)}\n`;
+                    
+                    // Get from IndexedDB if exists
+                    if (window.database) {
+                        try {
+                            const dbValue = await window.database.get('settings', key);
+                            comparison += `  IndexedDB: ${JSON.stringify(dbValue)}\n`;
+                        } catch {
+                            comparison += `  IndexedDB: not found\n`;
+                        }
+                    }
+                    
+                    comparison += '\n';
+                }
+                
+                document.getElementById('storageComparison').textContent = comparison;
+                
+            } catch (error) {
+                document.getElementById('storageComparison').textContent = 
+                    `Error: ${error.message}`;
+            }
+        }
+
+        async function showBackwardCompatibility() {
+            if (!configReady) return;
+            
+            try {
+                // Test setting via config service and reading from old sources
+                const testValue = 'Test-' + Date.now();
+                await window.config.set('businessName', testValue);
+                
+                // Check if it appears in localStorage
+                const localValue = localStorage.getItem('businessName');
+                
+                // Check if it appears in IndexedDB
+                let dbValue = null;
+                if (window.database) {
+                    try {
+                        const record = await window.database.get('settings', 'businessName');
+                        dbValue = record ? record.value : null;
+                    } catch (error) {
+                        dbValue = 'error';
+                    }
+                }
+                
+                const result = `BACKWARD COMPATIBILITY TEST:
+                
+Set via config service: "${testValue}"
+
+Reading from old sources:
+- localStorage.businessName: "${localValue}"
+- IndexedDB.settings.businessName: "${dbValue}"
+
+Backward compatibility: ${localValue === testValue ? '✅ WORKING' : '❌ FAILED'}`;
+
+                document.getElementById('storageComparison').textContent = result;
+                
+            } catch (error) {
+                document.getElementById('storageComparison').textContent = 
+                    `Error: ${error.message}`;
+            }
+        }
+
+        // Event Listeners
+        function setupListeners() {
+            if (!configReady) return;
+            
+            clearListeners();
+            
+            const keys = ['businessName', 'theme', 'performanceMode'];
+            const container = document.getElementById('listenerEvents');
+            
+            keys.forEach(key => {
+                const unsubscribe = window.config.listen(key, (value, changedKey) => {
+                    const timestamp = new Date().toLocaleTimeString();
+                    const event = `[${timestamp}] ${changedKey} changed to: ${JSON.stringify(value)}\n`;
+                    container.textContent += event;
+                    container.scrollTop = container.scrollHeight;
+                });
+                
+                eventListeners.push(unsubscribe);
+            });
+            
+            container.textContent = 'Event listeners setup for: ' + keys.join(', ') + '\n\n';
+        }
+
+        function clearListeners() {
+            eventListeners.forEach(unsubscribe => unsubscribe());
+            eventListeners = [];
+            document.getElementById('listenerEvents').textContent = 'Event listeners cleared\n';
+        }
+
+        // Live Demo
+        function setupLiveDemo() {
+            const businessInput = document.getElementById('liveBusiness');
+            const themeSelect = document.getElementById('liveTheme');
+            const performanceSelect = document.getElementById('livePerformance');
+            const loggingCheck = document.getElementById('liveLogging');
+
+            // Load current values
+            window.config.get('businessName').then(value => {
+                businessInput.value = value || '';
+            });
+            
+            window.config.get('theme').then(value => {
+                themeSelect.value = value || 'auto';
+            });
+            
+            window.config.get('performanceMode').then(value => {
+                performanceSelect.value = value || 'auto';
+            });
+            
+            window.config.get('loggingEnabled').then(value => {
+                loggingCheck.checked = Boolean(value);
+            });
+
+            // Setup live updates
+            businessInput.addEventListener('change', async (e) => {
+                await window.config.set('businessName', e.target.value);
+            });
+
+            themeSelect.addEventListener('change', async (e) => {
+                await window.config.set('theme', e.target.value);
+            });
+
+            performanceSelect.addEventListener('change', async (e) => {
+                await window.config.set('performanceMode', e.target.value);
+            });
+
+            loggingCheck.addEventListener('change', async (e) => {
+                await window.config.set('loggingEnabled', e.target.checked);
+            });
+        }
+
+        // Utility Functions
+        function showAlert(type, message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : 'info'}-circle"></i> ${message}`;
+            
+            document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.demo-grid'));
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

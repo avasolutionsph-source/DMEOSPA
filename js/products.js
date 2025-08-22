@@ -57,7 +57,15 @@ class ProductsManager {
             this.products = await db.getAll('products');
             this.displayProducts();
         } catch (error) {
-            console.error('Failed to load products:', error);
+            if (window.logger) {
+                window.logger.error('Failed to load products', {
+                    category: 'PRODUCTS',
+                    operation: 'load_products',
+                    error: error
+                });
+            } else {
+                console.error('Failed to load products:', error);
+            }
         }
     }
 
@@ -135,7 +143,15 @@ class ProductsManager {
 
             openModal('productModal');
         } catch (error) {
-            console.error('Failed to edit product:', error);
+            if (window.logger) {
+                window.logger.error('Failed to edit product', {
+                    category: 'PRODUCTS',
+                    operation: 'edit_product',
+                    error: error
+                });
+            } else {
+                console.error('Failed to edit product:', error);
+            }
         }
     }
 
@@ -149,7 +165,15 @@ class ProductsManager {
             showNotification('Product deleted successfully', 'success');
             await this.loadProducts();
         } catch (error) {
-            console.error('Failed to delete product:', error);
+            if (window.logger) {
+                window.logger.error('Failed to delete product', {
+                    category: 'PRODUCTS',
+                    operation: 'delete_product',
+                    error: error
+                });
+            } else {
+                console.error('Failed to delete product:', error);
+            }
             showNotification('Failed to delete product', 'error');
         }
     }
@@ -217,7 +241,15 @@ class ProductsManager {
                 window.loadPOS && window.loadPOS();
             }
         } catch (error) {
-            console.error('Failed to save product:', error);
+            if (window.logger) {
+                window.logger.error('Failed to save product', {
+                    category: 'PRODUCTS',
+                    operation: 'save_product',
+                    error: error
+                });
+            } else {
+                console.error('Failed to save product:', error);
+            }
             hideLoading();
             saveBtn.classList.remove('loading');
             saveBtn.disabled = false;

@@ -120,7 +120,13 @@ class POSSystem {
                 });
             }
         } catch (error) {
-            console.error('Failed to load employees:', error);
+            if (window.logger) {
+                window.logger.error('Failed to load employees', {
+                    category: 'POS',
+                    operation: 'load_employees',
+                    error: error
+                });
+            }
         }
     }
 
@@ -146,7 +152,13 @@ class POSSystem {
             // Combine and display
             this.displayProducts();
         } catch (error) {
-            console.error('Failed to load products:', error);
+            if (window.logger) {
+                window.logger.error('Failed to load products', {
+                    category: 'POS',
+                    operation: 'load_products',
+                    error: error
+                });
+            }
         }
     }
 
@@ -197,6 +209,13 @@ class POSSystem {
 
     async addToCart(itemId, itemType) {
         try {
+            if (window.logger) {
+                window.logger.debug('Adding item to cart', {
+                    category: 'POS',
+                    operation: 'add_to_cart',
+                    data: { itemId: itemId, itemType: itemType }
+                });
+            }
             let item;
             if (itemType === 'inventory') {
                 item = await db.get('inventory', itemId);
@@ -236,8 +255,35 @@ class POSSystem {
 
             this.updateCartDisplay();
             showNotification(`${item.name} added to cart`, 'success');
+            
+            if (window.logger) {
+                window.logger.info('Item added to cart successfully', {
+                    category: 'POS',
+                    operation: 'add_to_cart_success',
+                    data: { 
+                        itemName: item.name, 
+                        itemId: itemId, 
+                        price: item.price || item.unitPrice || 0,
+                        cartSize: this.cart.length 
+                    }
+                });
+            }
         } catch (error) {
-            console.error('Failed to add item to cart:', error);
+            if (window.logger) {
+                window.logger.error('Failed to add item to cart', {
+                    category: 'POS',
+                    operation: 'add_to_cart_error',
+                    error: error
+                });
+            } else {
+                if (window.logger) {
+                    window.logger.error('Failed to add item to cart', {
+                        category: 'POS',
+                        operation: 'add_to_cart',
+                        error: error
+                    });
+                }
+            }
         }
     }
 
@@ -457,7 +503,13 @@ class POSSystem {
             this.updateCheckoutTotals();
             
         } catch (error) {
-            console.error('GC validation error:', error);
+            if (window.logger) {
+                window.logger.error('Gift certificate validation error', {
+                    category: 'POS',
+                    operation: 'validate_gift_certificate',
+                    error: error
+                });
+            }
             statusDiv.innerHTML = '<span style="color: red;">Error validating gift certificate</span>';
         }
     }
@@ -580,7 +632,13 @@ class POSSystem {
                 }
             }
         } catch (error) {
-            console.error('Failed to load employees for checkout:', error);
+            if (window.logger) {
+                window.logger.error('Failed to load employees for checkout', {
+                    category: 'POS',
+                    operation: 'load_checkout_employees',
+                    error: error
+                });
+            }
         }
     }
     
@@ -601,7 +659,13 @@ class POSSystem {
                 });
             }
         } catch (error) {
-            console.error('Failed to load rooms for checkout:', error);
+            if (window.logger) {
+                window.logger.error('Failed to load rooms for checkout', {
+                    category: 'POS',
+                    operation: 'load_checkout_rooms',
+                    error: error
+                });
+            }
         }
     }
     
@@ -620,6 +684,17 @@ class POSSystem {
         // Prevent duplicate checkouts
         if (this.isProcessingCheckout) {
             return;
+        }
+        
+        if (window.logger) {
+            window.logger.info('Starting checkout process', {
+                category: 'POS',
+                operation: 'checkout_start',
+                data: { 
+                    cartItems: this.cart.length,
+                    cartTotal: this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+                }
+            });
         }
         
         // Get employee from checkout modal
@@ -760,13 +835,18 @@ class POSSystem {
             };
 
             // Debug: Log transaction data being saved
-            console.log('POS: Saving transaction:', {
-                total: transaction.total,
-                employeeId: transaction.employeeId,
-                employeeIdType: typeof transaction.employeeId,
-                selectedEmployee: this.selectedEmployee,
-                items: transaction.items.length
-            });
+            if (window.logger && window.logger.info) {
+                window.logger.info('POS transaction being saved', { 
+                    category: 'POS', 
+                    context: {
+                        total: transaction.total,
+                        employeeId: transaction.employeeId,
+                        employeeIdType: typeof transaction.employeeId,
+                        selectedEmployee: this.selectedEmployee,
+                        items: transaction.items.length
+                    }
+                });
+            }
 
             // Save transaction
             const transactionId = await db.add('transactions', transaction);
@@ -820,8 +900,32 @@ class POSSystem {
                 if (employee && employee.commissionRate) {
                     const commission = total * (employee.commissionRate / 100);
                     // You might want to track commissions separately
-                    console.log(`Commission for ${employee.name}: ${app.formatCurrency(commission)}`);
+                    if (window.logger) {
+                        window.logger.debug('Commission calculated', {
+                            category: 'POS',
+                            operation: 'calculate_commission',
+                            data: {
+                                employeeName: employee.name,
+                                commission: commission
+                            }
+                        });
+                    }
                 }
+            }
+
+            // Log successful transaction
+            if (window.logger) {
+                window.logger.info('Transaction completed successfully', {
+                    category: 'POS',
+                    operation: 'checkout_success',
+                    data: {
+                        transactionId: transactionId,
+                        total: transaction.total,
+                        paymentMethod: paymentMethod,
+                        employeeId: transaction.employeeId,
+                        itemCount: transaction.items.length
+                    }
+                });
             }
 
             // Clear cart
@@ -844,7 +948,17 @@ class POSSystem {
             }
 
         } catch (error) {
-            console.error('Checkout failed:', error);
+            if (window.logger && window.logger.error) {
+                window.logger.error('Checkout failed', { category: 'POS', error, context: { operation: 'checkout' } });
+            } else {
+                if (window.logger) {
+                    window.logger.error('Checkout failed', {
+                        category: 'POS',
+                        operation: 'checkout',
+                        error: error
+                    });
+                }
+            }
             hideLoading();
             setButtonLoading('confirmCheckoutBtn', false);
             showNotification('Checkout failed. Please try again.', 'error');
@@ -878,7 +992,13 @@ class POSSystem {
                 );
             }
         } catch (error) {
-            console.error('Failed to process service supply usage:', error);
+            if (window.logger) {
+                window.logger.error('Failed to process service supply usage', {
+                    category: 'POS',
+                    operation: 'process_supply_usage',
+                    error: error
+                });
+            }
         }
     }
 
@@ -923,10 +1043,27 @@ class POSSystem {
             // Save updated inventory item
             await db.update('inventory', inventoryItem);
 
-            console.log(`Auto-tracked: ${usageAmount} ${inventoryItem.unit || 'units'} of ${inventoryItem.name} used in ${serviceName}`);
+            if (window.logger) {
+                window.logger.info('Auto-tracked supply usage', {
+                    category: 'POS',
+                    operation: 'auto_track_supply',
+                    data: {
+                        amount: usageAmount,
+                        unit: inventoryItem.unit || 'units',
+                        itemName: inventoryItem.name,
+                        serviceName: serviceName
+                    }
+                });
+            }
             
         } catch (error) {
-            console.error('Failed to update inventory with usage tracking:', error);
+            if (window.logger) {
+                window.logger.error('Failed to update inventory with usage tracking', {
+                    category: 'POS',
+                    operation: 'update_inventory_usage',
+                    error: error
+                });
+            }
         }
     }
 
@@ -979,7 +1116,13 @@ class POSSystem {
 
         // Show modal (you'd need to implement this modal in your HTML)
         // For now, just log the usage
-        console.log('Supply usage tracking available for:', serviceItem.name);
+        if (window.logger) {
+            window.logger.debug('Supply usage tracking available', {
+                category: 'POS',
+                operation: 'check_supply_tracking',
+                data: { serviceName: serviceItem.name }
+            });
+        }
     }
 }
 

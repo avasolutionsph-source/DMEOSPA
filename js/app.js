@@ -8,14 +8,33 @@ class App {
     }
 
     async init() {
-        console.log('🚀 App.init() starting...');
+        if (window.logger) {
+            window.logger.info('App initialization starting', { 
+                category: 'APP', 
+                operation: 'init_start'
+            });
+        }
         
         // Wait for database to be ready before proceeding
         try {
             await ensureDBInit();
-            console.log('✅ Database initialized');
+            if (window.logger) {
+                window.logger.info('Database initialized successfully', { 
+                    category: 'APP', 
+                    operation: 'database_init',
+                    data: { status: 'success' }
+                });
+            }
         } catch (error) {
-            console.error('Failed to initialize database:', error);
+            if (window.logger) {
+                window.logger.error('Failed to initialize database', { 
+                    category: 'APP', 
+                    operation: 'database_init',
+                    error: error
+                });
+            } else {
+                console.error('Failed to initialize database:', error);
+            }
             return;
         }
         
@@ -31,7 +50,12 @@ class App {
         
         // If user is logged in, restore their UI state first
         if (isUserLoggedIn) {
-            console.log('User is logged in, restoring UI state');
+            if (window.logger) {
+                window.logger.info('User logged in, restoring UI state', { 
+                    category: 'APP', 
+                    operation: 'restore_ui_state'
+                });
+            }
             // Call the checkLoginState function from index.html to restore UI
             if (typeof window.checkLoginState === 'function') {
                 window.checkLoginState();
@@ -39,15 +63,30 @@ class App {
         }
         
         // REMOVED: Automatic setup wizard - now manual only
-        console.log('Setup wizard is now manual only - accessible from dashboard');
+        if (window.logger) {
+            window.logger.debug('Setup wizard is manual only', { 
+                category: 'APP', 
+                operation: 'setup_wizard_info'
+            });
+        }
         
         // Load business configuration first
         await this.loadBusinessConfig();
         
         // Set up navigation
-        console.log('📍 About to setup navigation...');
+        if (window.logger) {
+            window.logger.debug('Setting up navigation', { 
+                category: 'APP', 
+                operation: 'navigation_setup_start'
+            });
+        }
         this.setupNavigation();
-        console.log('✅ Navigation setup complete');
+        if (window.logger) {
+            window.logger.info('Navigation setup complete', { 
+                category: 'APP', 
+                operation: 'navigation_setup_complete'
+            });
+        }
         
         // Set up date/time display (throttle on low/balanced devices)
         this.updateDateTime();
@@ -127,20 +166,66 @@ class App {
 
     defer(fn) {
         const ric = window.requestIdleCallback || function(cb){ return setTimeout(() => cb({ timeRemaining: () => 0 }), 1); };
-        try { ric(() => { try { fn(); } catch(e) { console.error(e); } }); } catch(_e) { setTimeout(fn, 0); }
+        try { 
+            ric(() => { 
+                try { 
+                    fn(); 
+                } catch(e) { 
+                    if (window.logger) {
+                        window.logger.error('Deferred function error', {
+                            category: 'APP',
+                            operation: 'defer_execution',
+                            error: e
+                        });
+                    } else {
+                        console.error(e);
+                    }
+                } 
+            }); 
+        } catch(_e) { 
+            setTimeout(fn, 0); 
+        }
     }
 
     setupNavigation() {
         const navItems = document.querySelectorAll('.nav-item');
-        console.log(`🧭 Setting up navigation for ${navItems.length} items`);
+        if (window.logger) {
+            window.logger.debug('Setting up navigation items', { 
+                category: 'APP', 
+                operation: 'navigation_setup',
+                data: { itemCount: navItems.length }
+            });
+        } else {
+            if (window.logger) {
+                window.logger.info('Setting up navigation', {
+                    category: 'APP',
+                    operation: 'navigation_setup',
+                    data: { itemCount: navItems.length }
+                });
+            } else {
+                console.log(`🧭 Setting up navigation for ${navItems.length} items`);
+            }
+        }
         
         navItems.forEach(item => {
             const page = item.dataset.page;
-            console.log(`📌 Adding click handler for: ${page}`);
+            if (window.logger) {
+                window.logger.debug('Adding navigation click handler', { 
+                    category: 'APP', 
+                    operation: 'add_nav_handler',
+                    data: { page: page }
+                });
+            }
             
             item.addEventListener('click', (e) => {
                 e.preventDefault();
-                console.log(`🖱️ Nav item clicked: ${page}`);
+                if (window.logger) {
+                    window.logger.debug('Navigation item clicked', { 
+                        category: 'APP', 
+                        operation: 'nav_click',
+                        data: { page: page }
+                    });
+                }
                 this.showPage(page);
                 
                 // Update active state
@@ -151,7 +236,13 @@ class App {
     }
 
     showPage(pageName) {
-        console.log(`Navigating to page: ${pageName}`);
+        if (window.logger) {
+            window.logger.info('Navigating to page', { 
+                category: 'APP', 
+                operation: 'page_navigation',
+                data: { page: pageName }
+            });
+        }
         
         // Close all modals first
         document.querySelectorAll('.modal').forEach(modal => {
@@ -173,12 +264,26 @@ class App {
             // Load page-specific data
             this.loadPageData(pageName);
         } else {
-            console.error(`Page element not found: ${pageName}`);
+            if (window.logger) {
+                window.logger.error('Page element not found', { 
+                    category: 'APP', 
+                    operation: 'page_navigation',
+                    error: { message: 'Page element not found', page: pageName }
+                });
+            } else {
+                console.error(`Page element not found: ${pageName}`);
+            }
         }
     }
 
     async loadPageData(pageName) {
-        console.log(`🔄 loadPageData called for: ${pageName}`);
+        if (window.logger) {
+            window.logger.debug('Loading page data', { 
+                category: 'APP', 
+                operation: 'load_page_data',
+                data: { page: pageName }
+            });
+        }
         switch(pageName) {
             case 'dashboard':
                 if (window.loadDashboard) {
@@ -211,7 +316,15 @@ class App {
                 }
                 break;
             case 'gift-certificates':
-                console.log('🎁 Gift certificates case matched!');
+                if (window.logger) {
+                    window.logger.debug('Gift certificates case matched', {
+                        category: 'APP',
+                        operation: 'route_match',
+                        data: { page: 'giftcertificates' }
+                    });
+                } else {
+                    console.log('🎁 Gift certificates case matched!');
+                }
                 // Load gift certificates content dynamically
                 await this.loadGiftCertificatesPage();
                 break;
@@ -227,13 +340,35 @@ class App {
     }
 
     async loadGiftCertificatesPage() {
-        console.log('🎁 Loading Gift Certificates page...');
+        if (window.logger) {
+            window.logger.info('Loading Gift Certificates page', {
+                category: 'APP',
+                operation: 'load_gift_certificates'
+            });
+        } else {
+            console.log('🎁 Loading Gift Certificates page...');
+        }
         const container = document.getElementById('gift-certificates');
         if (!container) {
-            console.error('❌ Gift certificates container not found!');
+            if (window.logger) {
+                window.logger.error('Gift certificates container not found', {
+                    category: 'APP',
+                    operation: 'load_gift_certificates',
+                    error: { message: 'Container element not found' }
+                });
+            } else {
+                console.error('❌ Gift certificates container not found!');
+            }
             return;
         }
-        console.log('✅ Container found');
+        if (window.logger) {
+            window.logger.debug('Container found', {
+                category: 'APP',
+                operation: 'load_gift_certificates'
+            });
+        } else {
+            console.log('✅ Container found');
+        }
 
         // Clear container and inject HTML directly
         container.innerHTML = `
@@ -322,17 +457,42 @@ class App {
         }
 
         // Load the gift certificates JavaScript
-        console.log('📦 Checking for GiftCertificateManager class...');
-        console.log('window.GiftCertificateManager exists?', !!window.GiftCertificateManager);
-        console.log('window.giftCertificateManager exists?', !!window.giftCertificateManager);
+        if (window.logger) {
+            window.logger.debug('Checking for GiftCertificateManager class', {
+                category: 'APP',
+                operation: 'check_gift_manager',
+                data: {
+                    classExists: !!window.GiftCertificateManager,
+                    instanceExists: !!window.giftCertificateManager
+                }
+            });
+        } else {
+            console.log('📦 Checking for GiftCertificateManager class...');
+            console.log('window.GiftCertificateManager exists?', !!window.GiftCertificateManager);
+            console.log('window.giftCertificateManager exists?', !!window.giftCertificateManager);
+        }
         
         if (!window.GiftCertificateManager) {
-            console.log('🔄 Class not found, loading script...');
+            if (window.logger) {
+                window.logger.info('GiftCertificateManager class not found, loading script', {
+                    category: 'APP',
+                    operation: 'load_gift_script'
+                });
+            } else {
+                console.log('🔄 Class not found, loading script...');
+            }
             
             // Check if script is already in DOM
             const existingScript = document.querySelector('script[src*="gift-certificates.js"]');
             if (existingScript) {
-                console.log('⚠️ Script already in DOM, removing it');
+                if (window.logger) {
+                    window.logger.warn('Script already in DOM, removing it', {
+                        category: 'APP',
+                        operation: 'script_cleanup'
+                    });
+                } else {
+                    console.log('⚠️ Script already in DOM, removing it');
+                }
                 existingScript.remove();
             }
             
@@ -342,7 +502,14 @@ class App {
             script.id = 'gift-certificates-script';
             
             script.onload = async () => {
-                console.log('✅ Script loaded successfully');
+                if (window.logger) {
+                    window.logger.info('Script loaded successfully', {
+                        category: 'APP',
+                        operation: 'script_load_success'
+                    });
+                } else {
+                    console.log('✅ Script loaded successfully');
+                }
                 console.log('Checking what was loaded:', {
                     GiftCertificateManager: !!window.GiftCertificateManager,
                     loadGiftCertificates: !!window.loadGiftCertificates
@@ -416,7 +583,15 @@ class App {
                 document.title = `${setting.value} - Business Management System`;
             }
         } catch (error) {
-            console.error('Failed to load business name:', error);
+            if (window.logger) {
+                window.logger.error('Failed to load business name', { 
+                    category: 'APP', 
+                    operation: 'load_business_name',
+                    error: error
+                });
+            } else {
+                console.error('Failed to load business name:', error);
+            }
         }
     }
 
@@ -445,7 +620,15 @@ class App {
             // Apply feature flags to UI
             this.applyFeatureFlags();
         } catch (error) {
-            console.error('Failed to load business config:', error);
+            if (window.logger) {
+                window.logger.error('Failed to load business config', { 
+                    category: 'APP', 
+                    operation: 'load_business_config',
+                    error: error
+                });
+            } else {
+                console.error('Failed to load business config:', error);
+            }
         }
     }
 

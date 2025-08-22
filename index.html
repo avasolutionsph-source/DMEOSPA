@@ -1066,18 +1066,36 @@
                         };
                     }
                     
-                    console.log('Restored login state for:', user.businessName || user.email);
+                    if (window.logger) {
+                        window.logger.info('Restored login state', {
+                            category: 'SYSTEM',
+                            operation: 'restore_login_state',
+                            data: { user: user.businessName || user.email }
+                        });
+                    }
                     
                     // Also restore entitlements system
                     if (window.entitlementsSystem && user.subscriptionPlan) {
-                        console.log('Restoring entitlements with plan:', user.subscriptionPlan);
+                        if (window.logger) {
+                            window.logger.info('Restoring entitlements', {
+                                category: 'SYSTEM',
+                                operation: 'restore_entitlements',
+                                data: { plan: user.subscriptionPlan }
+                            });
+                        }
                         window.entitlementsSystem.currentPlan = user.subscriptionPlan;
                         localStorage.setItem('subscriptionPlan', user.subscriptionPlan);
                         window.entitlementsSystem.applyFeatureGates();
                         window.entitlementsSystem.updateSubscriptionStatus();
                     }
                 } catch (error) {
-                    console.error('Error restoring login state:', error);
+                    if (window.logger) {
+                        window.logger.error('Error restoring login state', {
+                            category: 'SYSTEM',
+                            operation: 'restore_login_state',
+                            error: error
+                        });
+                    }
                     // Clear corrupted data
                     localStorage.removeItem('isLoggedIn');
                     localStorage.removeItem('userData');
@@ -1485,6 +1503,23 @@
         }
     </script>
     
+    <!-- Config Service - Load First -->
+    <script src="js/config-service.js"></script>
+    
+    <!-- Sophisticated Logging System -->
+    <script src="js/logger-complete.js"></script>
+    <script src="js/logger-loader.js"></script>
+    
+    <!-- Error Recovery and Safety Systems -->
+    <script src="js/error-recovery.js"></script>
+    <script src="js/backup-system.js"></script>
+    <script src="js/feature-flags.js"></script>
+    
+    <!-- Legacy Logger Support (for compatibility) -->
+    <script src="js/logger.js"></script>
+    <script src="js/logger-utils.js"></script>
+    
+    <!-- Main Application Scripts -->
     <script src="js/database.js"></script>
     <script src="js/api.js"></script>
     <script src="js/entitlements.js"></script>
@@ -1503,6 +1538,10 @@
     <script src="js/chatbot.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/settings.js"></script>
+    
+    <!-- Logger Initialization and Console Replacement -->
+    <script src="js/console-log-replacer.js"></script>
+    <script src="js/logger-init.js"></script>
     <script>
         // Custom Dropdown Handler
         function handleDropdownChange(selectElement, customInputId) {

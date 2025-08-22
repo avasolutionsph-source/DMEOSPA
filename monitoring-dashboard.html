@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ava Solutions - Monitoring Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 20%, rgba(59, 130, 246, 0.15), transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(16, 185, 129, 0.15), transparent 50%);
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            color: #f1f5f9;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            color: #cbd5e1;
+            font-size: 1.1rem;
+        }
+
+        .system-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .status-operational {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .status-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+        }
+
+        .status-critical {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 25px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #64748b, #475569);
+            color: white;
+            box-shadow: 0 4px 15px rgba(100, 116, 139, 0.3);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .widget {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .widget::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #10b981, #f59e0b);
+        }
+
+        .widget h3 {
+            color: #f1f5f9;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.3rem;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        .metric-change {
+            font-size: 0.8rem;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        .metric-change.positive {
+            color: #10b981;
+        }
+
+        .metric-change.negative {
+            color: #ef4444;
+        }
+
+        .chart-container {
+            height: 200px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px 0;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chart-placeholder {
+            color: #64748b;
+            text-align: center;
+        }
+
+        .status-list {
+            list-style: none;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #e2e8f0;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-healthy {
+            background: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+
+        .status-warning {
+            background: #f59e0b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        }
+
+        .status-error {
+            background: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+
+        .status-value {
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .log-container {
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 5px;
+            border-radius: 4px;
+            word-break: break-word;
+        }
+
+        .log-info {
+            color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .log-warning {
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .log-error {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .log-success {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .progress-ring {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto;
+        }
+
+        .progress-ring-circle {
+            transition: stroke-dasharray 0.3s ease;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        .feature-flags-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .flag-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .flag-name {
+            font-size: 12px;
+            color: #e2e8f0;
+        }
+
+        .flag-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .flag-enabled {
+            background: #10b981;
+        }
+
+        .flag-disabled {
+            background: #64748b;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+            color: #93c5fd;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: #f59e0b;
+            color: #fbbf24;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: #10b981;
+            color: #6ee7b7;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .quick-action {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .quick-action:hover {
+            background: rgba(0, 0, 0, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .quick-action i {
+            font-size: 24px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #64748b;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #3b82f6;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #64748b;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-chart-line"></i> Monitoring Dashboard</h1>
+                <p>Real-time monitoring and performance analytics for Ava Solutions PWA</p>
+                
+                <div class="system-status status-operational" id="overallStatus">
+                    <i class="fas fa-check-circle"></i>
+                    <span>All Systems Operational</span>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="refreshAllData()">
+                        <i class="fas fa-sync-alt"></i> Refresh All
+                    </button>
+                    
+                    <button class="btn btn-success" onclick="window.open('health-check.html', '_blank')">
+                        <i class="fas fa-heartbeat"></i> Health Check
+                    </button>
+                    
+                    <button class="btn btn-warning" onclick="exportMonitoringData()">
+                        <i class="fas fa-download"></i> Export Data
+                    </button>
+                    
+                    <button class="btn btn-danger" onclick="showEmergencyPanel()">
+                        <i class="fas fa-exclamation-triangle"></i> Emergency
+                    </button>
+                    
+                    <a href="index.html" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to App
+                    </a>
+                </div>
+
+                <div class="auto-refresh">
+                    <span>Auto-refresh:</span>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="autoRefreshToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <span id="refreshStatus">Every 30s</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div class="dashboard-grid">
+            <!-- System Performance -->
+            <div class="widget">
+                <h3><i class="fas fa-tachometer-alt"></i> System Performance</h3>
+                
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-value" id="cpuUsage">-</div>
+                        <div class="metric-label">CPU Usage</div>
+                        <div class="metric-change" id="cpuChange">-</div>
+                    </div>
+                    
+                    <div class="metric-item">
+                        <div class="metric-value" id="memoryUsage">-</div>
+                        <div class="metric-label">Memory (MB)</div>
+                        <div class="metric-change" id="memoryChange">-</div>
+                    </div>
+                    
+                    <div class="metric-item">
+                        <div class="metric-value" id="loadTime">-</div>
+                        <div class="metric-label">Load Time (ms)</div>
+                        <div class="metric-change" id="loadTimeChange">-</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-placeholder">
+                        <i class="fas fa-chart-area"></i>
+                        <div>Performance Chart</div>
+                        <small>Real-time performance metrics visualization</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Database Health -->
+            <div class="widget">
+                <h3><i class="fas fa-database"></i> Database Health</h3>
+                
+                <ul class="status-list">
+                    <li class="status-item">
+                        <div class="status-label">
+                            <div class="status-indicator status-healthy" id="dbConnectionStatus"></div>
+                            <span>Connection Status</span>
+                        </div>
+                        <div class="status-value" id="dbConnectionValue">Connected</div>
+                    </li>
+                    
+                    <li class="status-item">
+                        <div class="status-label">
+                            <div class="status-indicator status-healthy" id="dbSizeStatus"></div>
+                            <span>Database Size</span>
+                        </div>
+                        <div class="status-value" id="dbSizeValue">-</div>
+                    </li>
+                    
+                    <li class="status-item">
+                        <div class="status-label">
+                            <div class="status-indicator status-healthy" id="dbPerformanceStatus"></div>
+                            <span>Query Performance</span>
+                        </div>
+                        <div class="status-value" id="dbPerformanceValue">-</div>
+                    </li>
+                    
+                    <li class="status-item">
+                        <div class="status-label">
+                            <div class="status-indicator status-healthy" id="backupStatus"></div>
+                            <span>Last Backup</span>
+                        </div>
+                        <div class="status-value" id="backupValue">-</div>
+                    </li>
+                </ul>
+
+                <div class="quick-actions">
+                    <div class="quick-action" onclick="testDatabasePerformance()">
+                        <i class="fas fa-flask"></i>
+                        <div>Test DB</div>
+                    </div>
+                    
+                    <div class="quick-action" onclick="createBackup()">
+                        <i class="fas fa-shield-alt"></i>
+                        <div>Backup</div>
+                    </div>
+                    
+                    <div class="quick-action" onclick="optimizeDatabase()">
+                        <i class="fas fa-magic"></i>
+                        <div>Optimize</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Monitoring -->
+            <div class="widget">
+                <h3><i class="fas fa-exchange-alt"></i> API Monitoring</h3>
+                
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-value" id="apiCalls">-</div>
+                        <div class="metric-label">API Calls (24h)</div>
+                        <div class="metric-change positive" id="apiCallsChange">-</div>
+                    </div>
+                    
+                    <div class="metric-item">
+                        <div class="metric-value" id="apiErrors">-</div>
+                        <div class="metric-label">Errors</div>
+                        <div class="metric-change" id="apiErrorsChange">-</div>
+                    </div>
+                    
+                    <div class="metric-item">
+                        <div class="metric-value" id="avgResponseTime">-</div>
+                        <div class="metric-label">Avg Response (ms)</div>
+                        <div class="metric-change" id="responseTimeChange">-</div>
+                    </div>
+                </div>
+
+                <ul class="status-list">
+                    <li class="status-item">
+                        <div class="status-label">
+                            <div class="status-indicator status-healthy" id="marketingApiStatus"></div>
+                            <span>Marketing API</span>
+                        </div>
+                        <div class="status-value" id="marketingApiValue">Online</div>
+                    </li>
+                    
+                    <li class="status-item">
+                        <div class="status-label">
+                            <div class="status-indicator status-warning" id="pwaApiStatus"></div>
+                            <span>PWA Backend</span>
+                        </div>
+                        <div class="status-value" id="pwaApiValue">Optional</div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- User Activity -->
+            <div class="widget">
+                <h3><i class="fas fa-users"></i> User Activity</h3>
+                
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-value" id="activeUsers">-</div>
+                        <div class="metric-label">Active Users</div>
+                        <div class="metric-change" id="activeUsersChange">-</div>
+                    </div>
+                    
+                    <div class="metric-item">
+                        <div class="metric-value" id="sessionDuration">-</div>
+                        <div class="metric-label">Avg Session (min)</div>
+                        <div class="metric-change" id="sessionDurationChange">-</div>
+                    </div>
+                    
+                    <div class="metric-item">
+                        <div class="metric-value" id="pageViews">-</div>
+                        <div class="metric-label">Page Views</div>
+                        <div class="metric-change positive" id="pageViewsChange">-</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-placeholder">
+                        <i class="fas fa-chart-line"></i>
+                        <div>User Activity Timeline</div>
+                        <small>Session activity and engagement metrics</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Tracking -->
+            <div class="widget">
+                <h3><i class="fas fa-bug"></i> Error Tracking</h3>
+                
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-value" id="totalErrors">-</div>
+                        <div class="metric-label">Total Errors (24h)</div>
+                        <div class="metric-change" id="totalErrorsChange">-</div>
+                    </div>
+                    
+                    <div class="metric-item">
+                        <div class="metric-value" id="criticalErrors">-</div>
+                        <div class="metric-label">Critical</div>
+                        <div class="metric-change" id="criticalErrorsChange">-</div>
+                    </div>
+                    
+                    <div class="metric-item">
+                        <div class="metric-value" id="errorRate">-</div>
+                        <div class="metric-label">Error Rate (%)</div>
+                        <div class="metric-change" id="errorRateChange">-</div>
+                    </div>
+                </div>
+
+                <div class="log-container" id="recentErrors">
+                    <div class="log-entry log-info">Loading recent errors...</div>
+                </div>
+            </div>
+
+            <!-- Feature Flags -->
+            <div class="widget">
+                <h3><i class="fas fa-flag"></i> Feature Flags</h3>
+                
+                <div class="feature-flags-grid" id="featureFlagsGrid">
+                    <div class="flag-item">
+                        <span class="flag-name">Loading...</span>
+                        <div class="flag-status flag-disabled"></div>
+                    </div>
+                </div>
+
+                <div class="quick-actions">
+                    <div class="quick-action" onclick="window.open('feature-flags-dashboard.html', '_blank')">
+                        <i class="fas fa-cog"></i>
+                        <div>Manage</div>
+                    </div>
+                    
+                    <div class="quick-action" onclick="emergencyDisableAll()">
+                        <i class="fas fa-power-off"></i>
+                        <div>Kill All</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Resources -->
+            <div class="widget">
+                <h3><i class="fas fa-server"></i> System Resources</h3>
+                
+                <ul class="status-list">
+                    <li class="status-item">
+                        <div class="status-label">
+                            <div class="status-indicator status-healthy" id="storageStatus"></div>
+                            <span>Storage Usage</span>
+                        </div>
+                        <div class="status-value" id="storageValue">-</div>
+                    </li>
+                    
+                    <li class="status-item">
+                        <div class="status-label">
+                            <div class="status-indicator status-healthy" id="cacheStatus"></div>
+                            <span>Cache Size</span>
+                        </div>
+                        <div class="status-value" id="cacheValue">-</div>
+                    </li>
+                    
+                    <li class="status-item">
+                        <div class="status-label">
+                            <div class="status-indicator status-healthy" id="networkStatus"></div>
+                            <span>Network</span>
+                        </div>
+                        <div class="status-value" id="networkValue">Online</div>
+                    </li>
+                    
+                    <li class="status-item">
+                        <div class="status-label">
+                            <div class="status-indicator status-healthy" id="serviceWorkerStatus"></div>
+                            <span>Service Worker</span>
+                        </div>
+                        <div class="status-value" id="serviceWorkerValue">-</div>
+                    </li>
+                </ul>
+
+                <div class="quick-actions">
+                    <div class="quick-action" onclick="clearCaches()">
+                        <i class="fas fa-broom"></i>
+                        <div>Clear Cache</div>
+                    </div>
+                    
+                    <div class="quick-action" onclick="updateServiceWorker()">
+                        <i class="fas fa-sync"></i>
+                        <div>Update SW</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="widget">
+                <h3><i class="fas fa-history"></i> Recent Activity</h3>
+                
+                <div class="log-container" id="recentActivity">
+                    <div class="log-entry log-info">Loading recent activity...</div>
+                </div>
+
+                <div class="quick-actions">
+                    <div class="quick-action" onclick="window.open('logging-dashboard.html', '_blank')">
+                        <i class="fas fa-external-link-alt"></i>
+                        <div>Full Logs</div>
+                    </div>
+                    
+                    <div class="quick-action" onclick="clearLogs()">
+                        <i class="fas fa-trash"></i>
+                        <div>Clear Logs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts Container -->
+        <div id="alertsContainer"></div>
+    </div>
+
+    <!-- Include required scripts -->
+    <script src="js/logger.js"></script>
+    <script src="js/backup-system.js"></script>
+    <script src="js/feature-flags.js"></script>
+    <script src="js/rollback-system.js"></script>
+
+    <script>
+        class MonitoringDashboard {
+            constructor() {
+                this.refreshInterval = 30000; // 30 seconds
+                this.autoRefreshEnabled = true;
+                this.refreshTimer = null;
+                this.metrics = {
+                    performance: {},
+                    database: {},
+                    api: {},
+                    users: {},
+                    errors: {},
+                    resources: {}
+                };
+                
+                this.init();
+            }
+
+            async init() {
+                console.log('📊 Initializing Monitoring Dashboard...');
+                
+                // Setup event listeners
+                this.setupEventListeners();
+                
+                // Initial data load
+                await this.refreshAllData();
+                
+                // Start auto-refresh
+                this.startAutoRefresh();
+                
+                console.log('✅ Monitoring Dashboard initialized');
+            }
+
+            setupEventListeners() {
+                // Auto-refresh toggle
+                const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+                autoRefreshToggle.addEventListener('change', (e) => {
+                    this.autoRefreshEnabled = e.target.checked;
+                    const status = document.getElementById('refreshStatus');
+                    
+                    if (this.autoRefreshEnabled) {
+                        this.startAutoRefresh();
+                        status.textContent = 'Every 30s';
+                    } else {
+                        this.stopAutoRefresh();
+                        status.textContent = 'Disabled';
+                    }
+                });
+
+                // Network status monitoring
+                window.addEventListener('online', () => {
+                    this.updateNetworkStatus(true);
+                });
+                
+                window.addEventListener('offline', () => {
+                    this.updateNetworkStatus(false);
+                });
+            }
+
+            startAutoRefresh() {
+                this.stopAutoRefresh();
+                if (this.autoRefreshEnabled) {
+                    this.refreshTimer = setInterval(() => {
+                        this.refreshAllData();
+                    }, this.refreshInterval);
+                }
+            }
+
+            stopAutoRefresh() {
+                if (this.refreshTimer) {
+                    clearInterval(this.refreshTimer);
+                    this.refreshTimer = null;
+                }
+            }
+
+            async refreshAllData() {
+                try {
+                    console.log('🔄 Refreshing all monitoring data...');
+                    
+                    // Run all checks in parallel
+                    await Promise.all([
+                        this.updatePerformanceMetrics(),
+                        this.updateDatabaseHealth(),
+                        this.updateAPIMonitoring(),
+                        this.updateUserActivity(),
+                        this.updateErrorTracking(),
+                        this.updateFeatureFlags(),
+                        this.updateSystemResources(),
+                        this.updateRecentActivity()
+                    ]);
+                    
+                    // Update overall system status
+                    this.updateOverallStatus();
+                    
+                    console.log('✅ All monitoring data refreshed');
+                    
+                } catch (error) {
+                    console.error('Failed to refresh monitoring data:', error);
+                    this.showAlert('error', 'Failed to refresh monitoring data', error.message);
+                }
+            }
+
+            async updatePerformanceMetrics() {
+                try {
+                    // CPU usage simulation (since we can't get real CPU data)
+                    const cpuUsage = Math.floor(Math.random() * 30) + 10; // 10-40%
+                    
+                    // Memory usage
+                    let memoryUsage = 0;
+                    if (performance.memory) {
+                        memoryUsage = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
+                    }
+                    
+                    // Load time
+                    const loadTime = Math.round(performance.now());
+                    
+                    // Update UI
+                    document.getElementById('cpuUsage').textContent = `${cpuUsage}%`;
+                    document.getElementById('memoryUsage').textContent = memoryUsage || '-';
+                    document.getElementById('loadTime').textContent = loadTime;
+                    
+                    // Calculate changes (simulated)
+                    this.updateMetricChange('cpuChange', cpuUsage, this.metrics.performance.cpu);
+                    this.updateMetricChange('memoryChange', memoryUsage, this.metrics.performance.memory);
+                    this.updateMetricChange('loadTimeChange', loadTime, this.metrics.performance.loadTime);
+                    
+                    // Store for next comparison
+                    this.metrics.performance = { cpu: cpuUsage, memory: memoryUsage, loadTime };
+                    
+                } catch (error) {
+                    console.error('Failed to update performance metrics:', error);
+                }
+            }
+
+            async updateDatabaseHealth() {
+                try {
+                    let dbConnected = false;
+                    let dbSize = 0;
+                    let dbPerformance = 0;
+                    
+                    if (window.database && window.database.db) {
+                        dbConnected = true;
+                        
+                        // Test database performance
+                        const startTime = performance.now();
+                        try {
+                            await window.database.getAll('products');
+                            dbPerformance = Math.round(performance.now() - startTime);
+                        } catch (error) {
+                            dbPerformance = -1;
+                        }
+                        
+                        // Estimate database size
+                        try {
+                            const stores = ['products', 'inventory', 'employees', 'transactions'];
+                            let totalSize = 0;
+                            
+                            for (const store of stores) {
+                                try {
+                                    const data = await window.database.getAll(store);
+                                    if (data) {
+                                        totalSize += JSON.stringify(data).length;
+                                    }
+                                } catch (e) {
+                                    // Store might not exist
+                                }
+                            }
+                            
+                            dbSize = Math.round(totalSize / 1024 / 1024 * 100) / 100; // MB
+                        } catch (error) {
+                            dbSize = -1;
+                        }
+                    }
+                    
+                    // Update connection status
+                    const connectionStatus = document.getElementById('dbConnectionStatus');
+                    const connectionValue = document.getElementById('dbConnectionValue');
+                    
+                    if (dbConnected) {
+                        connectionStatus.className = 'status-indicator status-healthy';
+                        connectionValue.textContent = 'Connected';
+                    } else {
+                        connectionStatus.className = 'status-indicator status-error';
+                        connectionValue.textContent = 'Disconnected';
+                    }
+                    
+                    // Update size
+                    document.getElementById('dbSizeValue').textContent = dbSize > 0 ? `${dbSize} MB` : 'Unknown';
+                    
+                    // Update performance
+                    const perfValue = document.getElementById('dbPerformanceValue');
+                    const perfStatus = document.getElementById('dbPerformanceStatus');
+                    
+                    if (dbPerformance > 0) {
+                        perfValue.textContent = `${dbPerformance}ms`;
+                        
+                        if (dbPerformance < 50) {
+                            perfStatus.className = 'status-indicator status-healthy';
+                        } else if (dbPerformance < 200) {
+                            perfStatus.className = 'status-indicator status-warning';
+                        } else {
+                            perfStatus.className = 'status-indicator status-error';
+                        }
+                    } else {
+                        perfValue.textContent = 'Error';
+                        perfStatus.className = 'status-indicator status-error';
+                    }
+                    
+                    // Update backup status
+                    const backupValue = document.getElementById('backupValue');
+                    const backupStatus = document.getElementById('backupStatus');
+                    
+                    if (window.backupSystem) {
+                        try {
+                            const stats = await window.backupSystem.getBackupStats();
+                            if (stats && stats.newestBackup) {
+                                const backupDate = new Date(stats.newestBackup);
+                                const hoursSince = (Date.now() - backupDate.getTime()) / (1000 * 60 * 60);
+                                
+                                backupValue.textContent = `${Math.round(hoursSince)}h ago`;
+                                
+                                if (hoursSince < 24) {
+                                    backupStatus.className = 'status-indicator status-healthy';
+                                } else if (hoursSince < 72) {
+                                    backupStatus.className = 'status-indicator status-warning';
+                                } else {
+                                    backupStatus.className = 'status-indicator status-error';
+                                }
+                            } else {
+                                backupValue.textContent = 'None';
+                                backupStatus.className = 'status-indicator status-warning';
+                            }
+                        } catch (error) {
+                            backupValue.textContent = 'Error';
+                            backupStatus.className = 'status-indicator status-error';
+                        }
+                    } else {
+                        backupValue.textContent = 'Unavailable';
+                        backupStatus.className = 'status-indicator status-warning';
+                    }
+                    
+                } catch (error) {
+                    console.error('Failed to update database health:', error);
+                }
+            }
+
+            async updateAPIMonitoring() {
+                try {
+                    // Simulate API metrics (in real app, this would come from logs)
+                    const apiCalls = Math.floor(Math.random() * 100) + 50;
+                    const apiErrors = Math.floor(Math.random() * 5);
+                    const avgResponseTime = Math.floor(Math.random() * 500) + 200;
+                    
+                    document.getElementById('apiCalls').textContent = apiCalls;
+                    document.getElementById('apiErrors').textContent = apiErrors;
+                    document.getElementById('avgResponseTime').textContent = `${avgResponseTime}ms`;
+                    
+                    // Test Marketing API
+                    const marketingApiStatus = document.getElementById('marketingApiStatus');
+                    const marketingApiValue = document.getElementById('marketingApiValue');
+                    
+                    try {
+                        const response = await fetch('https://ava-marketing-api.onrender.com/api/health', {
+                            method: 'HEAD',
+                            timeout: 5000
+                        });
+                        
+                        if (response.ok) {
+                            marketingApiStatus.className = 'status-indicator status-healthy';
+                            marketingApiValue.textContent = 'Online';
+                        } else {
+                            marketingApiStatus.className = 'status-indicator status-warning';
+                            marketingApiValue.textContent = `HTTP ${response.status}`;
+                        }
+                    } catch (error) {
+                        marketingApiStatus.className = 'status-indicator status-error';
+                        marketingApiValue.textContent = 'Offline';
+                    }
+                    
+                    // PWA Backend (optional)
+                    const pwaApiStatus = document.getElementById('pwaApiStatus');
+                    const pwaApiValue = document.getElementById('pwaApiValue');
+                    pwaApiStatus.className = 'status-indicator status-warning';
+                    pwaApiValue.textContent = 'Optional';
+                    
+                } catch (error) {
+                    console.error('Failed to update API monitoring:', error);
+                }
+            }
+
+            async updateUserActivity() {
+                try {
+                    // Simulate user activity metrics
+                    const activeUsers = Math.floor(Math.random() * 10) + 1;
+                    const sessionDuration = Math.floor(Math.random() * 45) + 15;
+                    const pageViews = Math.floor(Math.random() * 50) + 20;
+                    
+                    document.getElementById('activeUsers').textContent = activeUsers;
+                    document.getElementById('sessionDuration').textContent = `${sessionDuration}min`;
+                    document.getElementById('pageViews').textContent = pageViews;
+                    
+                    // Calculate changes
+                    this.updateMetricChange('activeUsersChange', activeUsers, this.metrics.users.active);
+                    this.updateMetricChange('sessionDurationChange', sessionDuration, this.metrics.users.duration);
+                    this.updateMetricChange('pageViewsChange', pageViews, this.metrics.users.pageViews);
+                    
+                    this.metrics.users = { active: activeUsers, duration: sessionDuration, pageViews };
+                    
+                } catch (error) {
+                    console.error('Failed to update user activity:', error);
+                }
+            }
+
+            async updateErrorTracking() {
+                try {
+                    let totalErrors = 0;
+                    let criticalErrors = 0;
+                    let recentErrors = [];
+                    
+                    if (window.logger) {
+                        try {
+                            const logs = await window.logger.exportLogs();
+                            const errorLogs = logs.filter(log => 
+                                log.level === 'ERROR' || log.level === 'CRITICAL'
+                            );
+                            
+                            // Count errors from last 24 hours
+                            const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+                            const recentErrorLogs = errorLogs.filter(log => log.timestamp > oneDayAgo);
+                            
+                            totalErrors = recentErrorLogs.length;
+                            criticalErrors = recentErrorLogs.filter(log => log.level === 'CRITICAL').length;
+                            recentErrors = recentErrorLogs.slice(-10).reverse(); // Last 10 errors
+                            
+                        } catch (error) {
+                            console.warn('Failed to get error logs:', error);
+                        }
+                    }
+                    
+                    document.getElementById('totalErrors').textContent = totalErrors;
+                    document.getElementById('criticalErrors').textContent = criticalErrors;
+                    
+                    // Calculate error rate (simulated)
+                    const errorRate = totalErrors > 0 ? ((totalErrors / 1000) * 100).toFixed(2) : 0;
+                    document.getElementById('errorRate').textContent = `${errorRate}%`;
+                    
+                    // Update recent errors display
+                    const errorsContainer = document.getElementById('recentErrors');
+                    if (recentErrors.length === 0) {
+                        errorsContainer.innerHTML = '<div class="log-entry log-success">No recent errors found</div>';
+                    } else {
+                        errorsContainer.innerHTML = recentErrors.map(error => {
+                            const time = new Date(error.timestamp).toLocaleTimeString();
+                            const level = error.level.toLowerCase();
+                            return `<div class="log-entry log-${level === 'critical' ? 'error' : level}">[${time}] ${error.message}</div>`;
+                        }).join('');
+                    }
+                    
+                } catch (error) {
+                    console.error('Failed to update error tracking:', error);
+                }
+            }
+
+            async updateFeatureFlags() {
+                try {
+                    const container = document.getElementById('featureFlagsGrid');
+                    
+                    if (window.featureFlags) {
+                        const flags = window.featureFlags.getAllFlags();
+                        const flagEntries = Object.entries(flags).slice(0, 12); // Show first 12 flags
+                        
+                        container.innerHTML = flagEntries.map(([name, config]) => {
+                            const statusClass = config.isEnabledForUser ? 'flag-enabled' : 'flag-disabled';
+                            const displayName = name.replace(/-/g, ' ').substring(0, 15);
+                            
+                            return `
+                                <div class="flag-item">
+                                    <span class="flag-name" title="${name}">${displayName}</span>
+                                    <div class="flag-status ${statusClass}"></div>
+                                </div>
+                            `;
+                        }).join('');
+                    } else {
+                        container.innerHTML = `
+                            <div class="flag-item">
+                                <span class="flag-name">Feature flags unavailable</span>
+                                <div class="flag-status flag-disabled"></div>
+                            </div>
+                        `;
+                    }
+                    
+                } catch (error) {
+                    console.error('Failed to update feature flags:', error);
+                }
+            }
+
+            async updateSystemResources() {
+                try {
+                    // Storage usage
+                    let storageUsed = 0;
+                    let storageQuota = 0;
+                    
+                    if ('storage' in navigator && 'estimate' in navigator.storage) {
+                        try {
+                            const estimate = await navigator.storage.estimate();
+                            storageUsed = Math.round(estimate.usage / 1024 / 1024);
+                            storageQuota = Math.round(estimate.quota / 1024 / 1024);
+                        } catch (error) {
+                            console.warn('Failed to get storage estimate:', error);
+                        }
+                    }
+                    
+                    const storageStatus = document.getElementById('storageStatus');
+                    const storageValue = document.getElementById('storageValue');
+                    
+                    if (storageQuota > 0) {
+                        const percentage = (storageUsed / storageQuota) * 100;
+                        storageValue.textContent = `${storageUsed}MB / ${storageQuota}MB`;
+                        
+                        if (percentage < 70) {
+                            storageStatus.className = 'status-indicator status-healthy';
+                        } else if (percentage < 90) {
+                            storageStatus.className = 'status-indicator status-warning';
+                        } else {
+                            storageStatus.className = 'status-indicator status-error';
+                        }
+                    } else {
+                        storageValue.textContent = 'Unknown';
+                        storageStatus.className = 'status-indicator status-warning';
+                    }
+                    
+                    // Cache size (estimated)
+                    const cacheValue = document.getElementById('cacheValue');
+                    const cacheStatus = document.getElementById('cacheStatus');
+                    
+                    if ('caches' in window) {
+                        try {
+                            const cacheNames = await caches.keys();
+                            cacheValue.textContent = `${cacheNames.length} caches`;
+                            cacheStatus.className = 'status-indicator status-healthy';
+                        } catch (error) {
+                            cacheValue.textContent = 'Unknown';
+                            cacheStatus.className = 'status-indicator status-warning';
+                        }
+                    } else {
+                        cacheValue.textContent = 'Not supported';
+                        cacheStatus.className = 'status-indicator status-warning';
+                    }
+                    
+                    // Service Worker status
+                    const swStatus = document.getElementById('serviceWorkerStatus');
+                    const swValue = document.getElementById('serviceWorkerValue');
+                    
+                    if ('serviceWorker' in navigator) {
+                        try {
+                            const registration = await navigator.serviceWorker.getRegistration();
+                            if (registration) {
+                                swValue.textContent = 'Active';
+                                swStatus.className = 'status-indicator status-healthy';
+                            } else {
+                                swValue.textContent = 'Not registered';
+                                swStatus.className = 'status-indicator status-warning';
+                            }
+                        } catch (error) {
+                            swValue.textContent = 'Error';
+                            swStatus.className = 'status-indicator status-error';
+                        }
+                    } else {
+                        swValue.textContent = 'Not supported';
+                        swStatus.className = 'status-indicator status-warning';
+                    }
+                    
+                } catch (error) {
+                    console.error('Failed to update system resources:', error);
+                }
+            }
+
+            async updateRecentActivity() {
+                try {
+                    const container = document.getElementById('recentActivity');
+                    
+                    if (window.logger) {
+                        try {
+                            const logs = await window.logger.exportLogs();
+                            const recentLogs = logs
+                                .filter(log => log.level !== 'DEBUG') // Exclude debug logs
+                                .slice(-15) // Last 15 logs
+                                .reverse();
+                            
+                            if (recentLogs.length === 0) {
+                                container.innerHTML = '<div class="log-entry log-info">No recent activity</div>';
+                            } else {
+                                container.innerHTML = recentLogs.map(log => {
+                                    const time = new Date(log.timestamp).toLocaleTimeString();
+                                    const level = log.level.toLowerCase();
+                                    const levelClass = level === 'error' ? 'error' : 
+                                                     level === 'warn' ? 'warning' : 
+                                                     level === 'critical' ? 'error' : 'info';
+                                    
+                                    return `<div class="log-entry log-${levelClass}">[${time}] ${log.type}/${log.category}: ${log.message}</div>`;
+                                }).join('');
+                            }
+                            
+                        } catch (error) {
+                            container.innerHTML = '<div class="log-entry log-error">Failed to load activity logs</div>';
+                        }
+                    } else {
+                        container.innerHTML = '<div class="log-entry log-warning">Logger not available</div>';
+                    }
+                    
+                } catch (error) {
+                    console.error('Failed to update recent activity:', error);
+                }
+            }
+
+            updateMetricChange(elementId, current, previous) {
+                const element = document.getElementById(elementId);
+                if (!element || previous === undefined) {
+                    element.textContent = '-';
+                    return;
+                }
+                
+                const change = current - previous;
+                const percentage = previous !== 0 ? ((change / previous) * 100).toFixed(1) : 0;
+                
+                element.textContent = `${change > 0 ? '+' : ''}${percentage}%`;
+                element.className = 'metric-change ' + (change > 0 ? 'positive' : change < 0 ? 'negative' : '');
+            }
+
+            updateNetworkStatus(isOnline) {
+                const networkStatus = document.getElementById('networkStatus');
+                const networkValue = document.getElementById('networkValue');
+                
+                if (isOnline) {
+                    networkStatus.className = 'status-indicator status-healthy';
+                    networkValue.textContent = 'Online';
+                } else {
+                    networkStatus.className = 'status-indicator status-error';
+                    networkValue.textContent = 'Offline';
+                }
+            }
+
+            updateOverallStatus() {
+                const statusElement = document.getElementById('overallStatus');
+                
+                // Count status indicators
+                const healthy = document.querySelectorAll('.status-healthy').length;
+                const warning = document.querySelectorAll('.status-warning').length;
+                const error = document.querySelectorAll('.status-error').length;
+                
+                if (error > 0) {
+                    statusElement.className = 'system-status status-critical';
+                    statusElement.innerHTML = '<i class="fas fa-exclamation-triangle"></i><span>System Issues Detected</span>';
+                } else if (warning > 2) {
+                    statusElement.className = 'system-status status-warning';
+                    statusElement.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>Minor Issues Detected</span>';
+                } else {
+                    statusElement.className = 'system-status status-operational';
+                    statusElement.innerHTML = '<i class="fas fa-check-circle"></i><span>All Systems Operational</span>';
+                }
+            }
+
+            showAlert(type, title, message) {
+                const container = document.getElementById('alertsContainer');
+                const alertId = 'alert_' + Date.now();
+                
+                const alert = document.createElement('div');
+                alert.id = alertId;
+                alert.className = `alert alert-${type}`;
+                alert.innerHTML = `
+                    <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 
+                                     type === 'warning' ? 'exclamation-circle' : 
+                                     type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+                    <div>
+                        <strong>${title}</strong>
+                        ${message ? `<br><small>${message}</small>` : ''}
+                    </div>
+                    <button onclick="document.getElementById('${alertId}').remove()" style="margin-left: auto; background: none; border: none; color: inherit; cursor: pointer;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                
+                container.appendChild(alert);
+                
+                // Auto-remove after 10 seconds
+                setTimeout(() => {
+                    if (document.getElementById(alertId)) {
+                        alert.remove();
+                    }
+                }, 10000);
+            }
+        }
+
+        // Global functions
+        async function refreshAllData() {
+            if (window.monitoringDashboard) {
+                await window.monitoringDashboard.refreshAllData();
+            }
+        }
+
+        async function exportMonitoringData() {
+            try {
+                const data = {
+                    timestamp: Date.now(),
+                    date: new Date().toISOString(),
+                    metrics: window.monitoringDashboard?.metrics || {},
+                    systemInfo: {
+                        userAgent: navigator.userAgent,
+                        platform: navigator.platform,
+                        language: navigator.language,
+                        cookieEnabled: navigator.cookieEnabled,
+                        onLine: navigator.onLine
+                    }
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ava-monitoring-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+            } catch (error) {
+                console.error('Failed to export monitoring data:', error);
+                alert('Failed to export monitoring data');
+            }
+        }
+
+        function showEmergencyPanel() {
+            const emergencyActions = [
+                'data-corruption',
+                'feature-failure', 
+                'performance-issue',
+                'security-breach',
+                'sync-failure',
+                'complete-restore'
+            ];
+            
+            const action = prompt(`Emergency Rollback Options:\n${emergencyActions.map((a, i) => `${i + 1}. ${a}`).join('\n')}\n\nEnter number (1-${emergencyActions.length}) or cancel:`);
+            
+            if (action && !isNaN(action)) {
+                const selectedAction = emergencyActions[parseInt(action) - 1];
+                if (selectedAction && confirm(`Execute emergency rollback: ${selectedAction}?`)) {
+                    window.emergencyRollback(selectedAction)
+                        .then(() => alert('Emergency rollback completed'))
+                        .catch(error => alert(`Emergency rollback failed: ${error.message}`));
+                }
+            }
+        }
+
+        async function testDatabasePerformance() {
+            try {
+                if (!window.database) {
+                    alert('Database not available');
+                    return;
+                }
+                
+                const startTime = performance.now();
+                await window.database.getAll('products');
+                const duration = performance.now() - startTime;
+                
+                alert(`Database performance test: ${duration.toFixed(2)}ms`);
+            } catch (error) {
+                alert(`Database test failed: ${error.message}`);
+            }
+        }
+
+        async function createBackup() {
+            try {
+                if (!window.backupSystem) {
+                    alert('Backup system not available');
+                    return;
+                }
+                
+                const result = await window.backupSystem.createFullBackup('manual', 'Manual backup from monitoring dashboard');
+                alert(`Backup created successfully (ID: ${result.id})`);
+            } catch (error) {
+                alert(`Backup failed: ${error.message}`);
+            }
+        }
+
+        async function optimizeDatabase() {
+            try {
+                // This would implement database optimization
+                alert('Database optimization not yet implemented');
+            } catch (error) {
+                alert(`Optimization failed: ${error.message}`);
+            }
+        }
+
+        async function emergencyDisableAll() {
+            if (confirm('This will disable ALL feature flags. Continue?')) {
+                try {
+                    if (window.featureFlags) {
+                        await window.featureFlags.emergencyDisableAll();
+                        alert('All feature flags disabled');
+                        await refreshAllData();
+                    } else {
+                        alert('Feature flag system not available');
+                    }
+                } catch (error) {
+                    alert(`Failed to disable flags: ${error.message}`);
+                }
+            }
+        }
+
+        async function clearCaches() {
+            try {
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    alert(`Cleared ${cacheNames.length} caches`);
+                } else {
+                    alert('Cache API not supported');
+                }
+            } catch (error) {
+                alert(`Failed to clear caches: ${error.message}`);
+            }
+        }
+
+        async function updateServiceWorker() {
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registration = await navigator.serviceWorker.getRegistration();
+                    if (registration) {
+                        await registration.update();
+                        alert('Service worker updated');
+                    } else {
+                        alert('No service worker registered');
+                    }
+                } else {
+                    alert('Service worker not supported');
+                }
+            } catch (error) {
+                alert(`Failed to update service worker: ${error.message}`);
+            }
+        }
+
+        async function clearLogs() {
+            if (confirm('Clear all application logs?')) {
+                try {
+                    if (window.logger) {
+                        await window.logger.clearLogs();
+                        alert('Logs cleared');
+                        await refreshAllData();
+                    } else {
+                        alert('Logger not available');
+                    }
+                } catch (error) {
+                    alert(`Failed to clear logs: ${error.message}`);
+                }
+            }
+        }
+
+        // Initialize monitoring dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            window.monitoringDashboard = new MonitoringDashboard();
+        });
+    </script>
+</body>
+</html>

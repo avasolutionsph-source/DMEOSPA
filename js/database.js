@@ -12,13 +12,21 @@ class Database {
             const request = indexedDB.open(this.dbName, this.version);
 
             request.onerror = () => {
-                console.error('Database failed to open');
+                if (window.logger && window.logger.error) {
+                    window.logger.error('Database failed to open', { category: 'DATABASE', context: { dbName: this.dbName, version: this.version } });
+                } else {
+                    console.error('Database failed to open');
+                }
                 reject('Database failed to open');
             };
 
             request.onsuccess = () => {
                 this.db = request.result;
-                console.log('Database opened successfully');
+                if (window.logger && window.logger.info) {
+                    window.logger.info('Database opened successfully', { category: 'DATABASE', context: { dbName: this.dbName, version: this.version } });
+                } else {
+                    console.log('Database opened successfully');
+                }
                 resolve(this.db);
             };
 
@@ -131,7 +139,11 @@ class Database {
                     syncStore.createIndex('status', 'status', { unique: false });
                 }
 
-                console.log('Database setup complete');
+                if (window.logger && window.logger.info) {
+                    window.logger.info('Database setup complete', { category: 'DATABASE', context: { dbName: this.dbName, version: this.version, stores: this.db.objectStoreNames.length } });
+                } else {
+                    console.log('Database setup complete');
+                }
             };
         });
     }
@@ -334,7 +346,11 @@ class Database {
     triggerLowStockAlert(item) {
         // Create notification or alert
         const alertMessage = `Low stock alert: ${item.name} (${item.currentStock} remaining)`;
-        console.warn(alertMessage);
+        if (window.logger && window.logger.warn) {
+            window.logger.warn(alertMessage, { category: 'DATABASE', context: { itemId: item.id, itemName: item.name, currentStock: item.currentStock, minStock: item.minStock } });
+        } else {
+            console.warn(alertMessage);
+        }
         
         // Update dashboard if it's active
         if (document.querySelector('#dashboard.active')) {
@@ -392,7 +408,11 @@ class Database {
             
             return true;
         } catch (error) {
-            console.error('Import failed:', error);
+            if (window.logger && window.logger.error) {
+                window.logger.error('Import failed', { category: 'DATABASE', error, context: { operation: 'importData' } });
+            } else {
+                console.error('Import failed:', error);
+            }
             return false;
         }
     }
@@ -410,9 +430,17 @@ let dbInitPromise = null;
 function ensureDBInit() {
     if (!dbInitPromise) {
         dbInitPromise = db.init().then(() => {
-            console.log('Database initialized for better performance');
+            if (window.logger && window.logger.info) {
+                window.logger.info('Database initialized for better performance', { category: 'DATABASE', context: { dbName: db.dbName, version: db.version } });
+            } else {
+                console.log('Database initialized for better performance');
+            }
         }).catch((error) => {
-            console.error('Database initialization failed:', error);
+            if (window.logger && window.logger.error) {
+                window.logger.error('Database initialization failed', { category: 'DATABASE', error, context: { dbName: db.dbName, version: db.version } });
+            } else {
+                console.error('Database initialization failed:', error);
+            }
             dbInitPromise = null; // Reset on failure so it can retry
             throw error;
         });

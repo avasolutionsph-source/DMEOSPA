@@ -55,7 +55,15 @@ class RoomManager {
             this.rooms = rooms;
             this.displayRooms();
         } catch (error) {
-            console.error('Failed to load rooms:', error);
+            if (window.logger) {
+                window.logger.error('Failed to load rooms', {
+                    category: 'ROOMS',
+                    operation: 'load_rooms',
+                    error: error
+                });
+            } else {
+                console.error('Failed to load rooms:', error);
+            }
         }
     }
 
@@ -74,7 +82,15 @@ class RoomManager {
                 }
             }
         } catch (error) {
-            console.error('Failed to load active services:', error);
+            if (window.logger) {
+                window.logger.error('Failed to load active services', {
+                    category: 'ROOMS',
+                    operation: 'load_active_services',
+                    error: error
+                });
+            } else {
+                console.error('Failed to load active services:', error);
+            }
         }
     }
 
@@ -359,7 +375,15 @@ class RoomManager {
             closeModal('roomModal');
             await this.loadRooms();
         } catch (error) {
-            console.error('Failed to save room:', error);
+            if (window.logger) {
+                window.logger.error('Failed to save room', {
+                    category: 'ROOMS',
+                    operation: 'save_room',
+                    error: error
+                });
+            } else {
+                console.error('Failed to save room:', error);
+            }
             showNotification('Failed to save room', 'error');
         }
     }
@@ -372,7 +396,15 @@ class RoomManager {
             showNotification('Room deleted successfully', 'success');
             await this.loadRooms();
         } catch (error) {
-            console.error('Failed to delete room:', error);
+            if (window.logger) {
+                window.logger.error('Failed to delete room', {
+                    category: 'ROOMS',
+                    operation: 'delete_room',
+                    error: error
+                });
+            } else {
+                console.error('Failed to delete room:', error);
+            }
             showNotification('Failed to delete room', 'error');
         }
     }
