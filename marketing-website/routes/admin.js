@@ -89,7 +89,8 @@ router.get('/users', requireAdmin, async (req, res) => {
   try {
     const { page = 1, limit = 20, search, plan, status } = req.query;
     
-    const query = { role: 'customer' }; // Only show customers, not other admins
+    // Show all users except super admins (role might be undefined for older users)
+    const query = { $or: [{ role: 'customer' }, { role: { $exists: false } }, { role: null }] };
     
     if (search) {
       query.$or = [
@@ -235,10 +236,13 @@ router.put('/users/:userId/subscription', requireAdmin, [
 // Get dashboard stats
 router.get('/stats', requireAdmin, async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments({ role: 'customer' });
+    // Count all users except super admins
+    const totalUsers = await User.countDocuments({ 
+      $or: [{ role: 'customer' }, { role: { $exists: false } }, { role: null }] 
+    });
     
     const planStats = await User.aggregate([
-      { $match: { role: 'customer' } },
+      { $match: { $or: [{ role: 'customer' }, { role: { $exists: false } }, { role: null }] } },
       { $group: { 
         _id: '$subscriptionPlan', 
         count: { $sum: 1 },
@@ -257,16 +261,20 @@ router.get('/stats', requireAdmin, async (req, res) => {
       }}
     ]);
 
-    const recentUsers = await User.find({ role: 'customer' })
+    const recentUsers = await User.find({ 
+      $or: [{ role: 'customer' }, { role: { $exists: false } }, { role: null }] 
+    })
       .select('-password')
       .sort({ createdAt: -1 })
       .limit(5);
 
     const activeUsers = await User.countDocuments({ 
-      role: 'customer',
-      'businessMetrics.lastActiveDate': { 
-        $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
-      }
+      $and: [
+        { $or: [{ role: 'customer' }, { role: { $exists: false } }, { role: null }] },
+        { 'businessMetrics.lastActiveDate': { 
+          $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
+        }}
+      ]
     });
 
     res.json({
