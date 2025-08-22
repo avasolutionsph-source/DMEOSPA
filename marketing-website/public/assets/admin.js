@@ -36,7 +36,8 @@ document.getElementById('adminLoginForm').addEventListener('submit', async funct
     const password = formData.get('password');
     
     try {
-        const response = await fetch('/api/admin/super-login', {
+        const apiBase = 'https://ava-pwa-backend.onrender.com';
+        const response = await fetch(`${apiBase}/api/admin/super-login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -71,9 +72,16 @@ async function loadDashboard() {
     try {
         const token = localStorage.getItem('adminToken');
         
+        // Temporary fix: Use direct backend URL until Netlify proxy is deployed
+        const apiBase = 'https://ava-pwa-backend.onrender.com';
+        
         // Load stats
-        const statsResponse = await fetch('/api/admin/stats', {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const statsResponse = await fetch(`${apiBase}/api/admin/stats`, {
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            mode: 'cors'
         });
         
         if (statsResponse.ok) {
@@ -104,8 +112,16 @@ function updateDashboardStats(stats) {
 async function loadUsers() {
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/admin/users', {
-            headers: { 'Authorization': `Bearer ${token}` }
+        
+        // Temporary fix: Use direct backend URL until Netlify proxy is deployed
+        const apiBase = 'https://ava-pwa-backend.onrender.com';
+        
+        const response = await fetch(`${apiBase}/api/admin/users`, {
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            mode: 'cors'
         });
         
         if (response.ok) {
@@ -369,7 +385,8 @@ async function cleanupOldSyncs() {
 
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/admin/cleanup-syncs', {
+        const apiBase = 'https://ava-pwa-backend.onrender.com';
+        const response = await fetch(`${apiBase}/api/admin/cleanup-syncs`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -390,7 +407,8 @@ async function cleanupOldSyncs() {
 async function loadSyncStats() {
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/admin/sync-stats', {
+        const apiBase = 'https://ava-pwa-backend.onrender.com';
+        const response = await fetch(`${apiBase}/api/admin/sync-stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
