@@ -11,7 +11,8 @@
       "Bash(cp:*)",
       "Bash(touch:*)",
       "Bash(mkdir:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
