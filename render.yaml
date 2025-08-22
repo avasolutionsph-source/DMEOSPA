@@ -1,11 +1,11 @@
 services:
-  # Marketing Website Backend API
+  # Single Unified Backend
   - type: web
-    name: ava-marketing-backend
+    name: ava-unified-backend
     env: node
     region: singapore
-    buildCommand: cd marketing-website && npm install
-    startCommand: cd marketing-website && npm start
+    buildCommand: cd unified-backend && npm install
+    startCommand: cd unified-backend && npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -18,36 +18,11 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRE
-        value: 7d
-      - key: SUPER_ADMIN_EMAIL
-        value: avasolutionsph@gmail.com
-      - key: SUPER_ADMIN_PASSWORD
-        value: Ava12345
-      - key: ALLOWED_ORIGINS
-        value: https://ava-solutions-marketing.netlify.app,https://ava-solutions-pwa.netlify.app,https://ava-pwa-app.netlify.app
-
-  # PWA Backend API (if needed)
-  - type: web
-    name: ava-pwa-backend  
-    env: node
-    region: singapore
-    buildCommand: cd unified-backend && npm install
-    startCommand: cd unified-backend && npm start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 10001
-      - key: MONGODB_URI
-        fromDatabase:
-          name: ava-mongodb
-          property: connectionString
-      - key: JWT_SECRET
+        value: 999y
+      - key: SESSION_SECRET
         generateValue: true
-      - key: JWT_EXPIRE
-        value: 7d
       - key: ALLOWED_ORIGINS
-        value: https://ava-solutions-marketing.netlify.app,https://ava-solutions-pwa.netlify.app,https://ava-pwa-app.netlify.app
+        value: https://ava-solutions-pwa.netlify.app,https://ava-solutions-marketing.netlify.app
 
 databases:
   - name: ava-mongodb

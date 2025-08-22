@@ -180,6 +180,31 @@ if (process.env.NODE_ENV !== 'production') {
 // Serve marketing website static files
 app.use('/marketing', express.static(path.join(__dirname, '../marketing-website/public')));
 
+// Marketing website routes (static serving)
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../marketing-website/public/index.html'));
+});
+
+app.get('/pricing', (req, res) => {
+  res.sendFile(path.join(__dirname, '../marketing-website/public/pricing.html'));
+});
+
+app.get('/features', (req, res) => {
+  res.sendFile(path.join(__dirname, '../marketing-website/public/features.html'));
+});
+
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, '../marketing-website/public/login.html'));
+});
+
+app.get('/register', (req, res) => {
+  res.sendFile(path.join(__dirname, '../marketing-website/public/register.html'));
+});
+
+app.get('/business-dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, '../marketing-website/public/business-dashboard.html'));
+});
+
 // Serve PWA static files
 app.use('/pwa', express.static(path.join(__dirname, '../public')));
 

@@ -5,11 +5,12 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon server.js",
-    "start": "node server.js",
+    "start": "echo 'Marketing website is now static - served by unified backend'",
+    "dev": "echo 'Use unified backend for development'",
+    "build": "echo 'Static build complete'",
     "seed": "node scripts/seed.js",
     "cleanup": "node scripts/cleanup-sample-users.js",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "echo 'No tests specified' && exit 0"
   },
   "dependencies": {
     "express": "^4.19.2",

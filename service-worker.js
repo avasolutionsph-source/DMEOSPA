@@ -90,7 +90,7 @@ self.addEventListener('fetch', (event) => {
     // Handle API requests with intelligent caching for unified backend
     if (event.request.url.includes('/api/')) {
         // Check if it's a unified backend URL
-        const isUnifiedBackend = event.request.url.includes('ava-pwa-backend.onrender.com') ||
+        const isUnifiedBackend = event.request.url.includes('ava-unified-backend.onrender.com') ||
                                 event.request.url.includes('localhost:4000');
         
         event.respondWith(

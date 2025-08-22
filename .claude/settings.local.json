@@ -10,7 +10,8 @@
       "Bash(start test-integration.html)",
       "Bash(cp:*)",
       "Bash(touch:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": []

@@ -322,7 +322,7 @@ class AuthSystem {
             }
             
             // Fallback to direct API call
-            const apiUrl = 'https://ava-pwa-backend.onrender.com';
+            const apiUrl = 'https://ava-unified-backend.onrender.com';
             const response = await fetch(`${apiUrl}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

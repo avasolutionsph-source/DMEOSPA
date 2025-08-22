@@ -12,12 +12,12 @@
     const API_CONFIG = {
         // Base URLs
         BASE_URL: isProduction 
-            ? 'https://ava-pwa-backend.onrender.com'
+            ? 'https://ava-unified-backend.onrender.com'
             : 'http://localhost:4000',
         
         // WebSocket URL for real-time updates
         WS_URL: isProduction
-            ? 'wss://ava-pwa-backend.onrender.com'
+            ? 'wss://ava-unified-backend.onrender.com'
             : 'ws://localhost:4000',
         
         // API Version
