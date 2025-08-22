@@ -75,8 +75,8 @@ class AuthSystem {
                 });
             }
         }
-        return; // DISABLED to prevent interference
         
+        // Continue with login button setup
         const mainLoginBtn = document.getElementById('showLoginBtn');
         if (mainLoginBtn) {
             if (window.logger) {
@@ -1056,19 +1056,12 @@ window.authSystem = authSystem;
 // Global function for HTML onclick backup
 window.showLoginModal = function() {
     if (window.logger) {
-        window.logger.debug('Global showLoginModal disabled - using direct modal', {
-            category: 'AUTH',
-            operation: 'global_show_login_disabled'
-        });
-    }
-    
-    // Re-enabled to work with AuthSystem
-    if (window.logger) {
-        window.logger.debug('Global showLoginModal called', {
+        window.logger.debug('Global showLoginModal routing to AuthSystem', {
             category: 'AUTH',
             operation: 'global_show_login_modal'
         });
     }
+    
     if (window.authSystem && window.authSystem.showLoginModal) {
         window.authSystem.showLoginModal();
     } else {

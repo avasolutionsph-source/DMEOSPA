@@ -14,6 +14,7 @@ import settingsRoutes from './settings.js';
 import analyticsRoutes from './analytics.js';
 import entitlementsRoutes from './entitlements.js';
 import chatbotRoutes from './chatbot.js';
+import syncRoutes from './sync.js';
 import { authenticateJWT, optionalAuth } from '../../middleware/auth.js';
 import { apiRequestLogger } from '../../middleware/requestLogger.js';
 import logger from '../../utils/logger.js';
@@ -73,6 +74,7 @@ router.use('/settings', authenticateJWT, settingsRoutes);
 router.use('/analytics', authenticateJWT, analyticsRoutes);
 router.use('/entitlements', optionalAuth, entitlementsRoutes);
 router.use('/chatbot', optionalAuth, chatbotRoutes);
+router.use('/sync', optionalAuth, syncRoutes);
 
 // Log unhandled API routes
 router.use('*', (req, res) => {
