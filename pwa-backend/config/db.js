@@ -3,13 +3,12 @@ import logger from '../utils/logger.js';
 
 const connectDB = async () => {
   try {
-    if (!process.env.MONGODB_URI) {
-      logger.warn('MONGODB_URI not found in environment variables');
-      logger.info('Running in demo mode without MongoDB');
-      return;
-    }
+    // Get MongoDB URI with fallback
+    const mongoUri = process.env.MONGODB_URI || 
+                    process.env.DATABASE_URL || 
+                    'mongodb://localhost:27017/ava-solutions';
 
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+    const conn = await mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 30000, // 30 seconds
       socketTimeoutMS: 45000, // 45 seconds
       bufferMaxEntries: 0,
