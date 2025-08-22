@@ -288,14 +288,90 @@ class AuthSystem {
         }
     }
 
+    // Login using unified backend
+    async loginWithUnifiedBackend(email, password) {
+        try {
+            // Use API_CONFIG if available
+            if (window.API_CONFIG) {
+                const response = await window.API_CONFIG.request(
+                    window.API_CONFIG.ENDPOINTS.AUTH.LOGIN,
+                    {
+                        method: 'POST',
+                        body: { email, password }
+                    }
+                );
+                
+                if (response.success) {
+                    // Store token
+                    window.API_CONFIG.setToken(response.token);
+                    
+                    // Update state
+                    if (window.StateManager && window.StateManager.initialized) {
+                        window.StateManager.batchUpdate({
+                            'auth.currentUser': response.user,
+                            'auth.authToken': response.token,
+                            'auth.isLoggedIn': true,
+                            'auth.lastLogin': Date.now()
+                        });
+                    }
+                    
+                    return response;
+                }
+                
+                return { success: false, message: response.error || 'Login failed' };
+            }
+            
+            // Fallback to direct API call
+            const apiUrl = 'https://ava-pwa-backend.onrender.com';
+            const response = await fetch(`${apiUrl}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            
+            const data = await response.json();
+            if (response.ok && data.success) {
+                // Store token
+                localStorage.setItem('authToken', data.token);
+                
+                // Update state
+                if (window.StateManager && window.StateManager.initialized) {
+                    window.StateManager.batchUpdate({
+                        'auth.currentUser': data.user,
+                        'auth.authToken': data.token,
+                        'auth.isLoggedIn': true
+                    });
+                }
+                
+                return data;
+            }
+            
+            return { success: false, message: data.error || 'Login failed' };
+            
+        } catch (error) {
+            if (window.logger) {
+                window.logger.error('Login error', {
+                    category: 'AUTH',
+                    error: error.message
+                });
+            }
+            return { success: false, message: error.message };
+        }
+    }
+    
     // Login with real API or simulate if offline
     async simulateLogin(email, password) {
-        // DISABLED: PWA backend authentication to prevent conflicts
-        // The PWA now only uses the marketing website for authentication
+        // Try unified backend first
+        const result = await this.loginWithUnifiedBackend(email, password);
+        if (result.success) {
+            return result;
+        }
+        
+        // Fallback message
         if (window.logger) {
-            window.logger.info('SimulateLogin disabled - using marketing website authentication only', {
+            window.logger.info('Login attempt via unified backend', {
                 category: 'AUTH',
-                operation: 'simulate_login_disabled'
+                operation: 'simulate_login_unified'
             });
         }
         

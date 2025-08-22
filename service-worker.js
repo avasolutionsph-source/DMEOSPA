@@ -1,5 +1,5 @@
-// Service Worker for Offline Functionality - Updated with Enhanced Chatbot
-const CACHE_NAME = 'ava-solutions-v1.6.6';
+// Service Worker for Offline Functionality - Updated with State Management & Unified Backend
+const CACHE_NAME = 'ava-solutions-v1.7.0';
 const urlsToCache = [
     './',
     './index.html',
@@ -14,6 +14,13 @@ const urlsToCache = [
     './js/dashboard.js',
     './js/settings.js',
     './js/sync.js',
+    './js/auth.js',
+    './js/api-config.js',
+    './js/state-manager.js',
+    './js/state-ui-binding.js',
+    './js/state-helpers.js',
+    './js/config-service.js',
+    './js/logger-complete.js',
     'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
     'https://cdn.jsdelivr.net/npm/chart.js'
@@ -80,15 +87,52 @@ self.addEventListener('fetch', (event) => {
         return; // Don't handle requests for other origins/ports
     }
 
-    // Handle API requests differently: do not cache authenticated API responses
+    // Handle API requests with intelligent caching for unified backend
     if (event.request.url.includes('/api/')) {
+        // Check if it's a unified backend URL
+        const isUnifiedBackend = event.request.url.includes('ava-pwa-backend.onrender.com') ||
+                                event.request.url.includes('localhost:4000');
+        
         event.respondWith(
-            fetch(event.request).catch(() => {
-                return new Response(JSON.stringify({ error: 'Offline', message: 'API not available while offline' }), {
-                    status: 503,
-                    headers: { 'Content-Type': 'application/json' }
-                });
-            })
+            fetch(event.request)
+                .then(response => {
+                    // Cache successful GET requests for offline use
+                    if (event.request.method === 'GET' && response.ok && isUnifiedBackend) {
+                        const responseToCache = response.clone();
+                        caches.open(CACHE_NAME).then(cache => {
+                            // Only cache non-sensitive endpoints
+                            if (!event.request.url.includes('/auth/') && 
+                                !event.request.url.includes('/user/')) {
+                                cache.put(event.request, responseToCache);
+                            }
+                        });
+                    }
+                    return response;
+                })
+                .catch(() => {
+                    // Try to return cached response for GET requests
+                    if (event.request.method === 'GET') {
+                        return caches.match(event.request).then(cachedResponse => {
+                            if (cachedResponse) {
+                                return cachedResponse;
+                            }
+                            return new Response(JSON.stringify({ 
+                                error: 'Offline', 
+                                message: 'API not available while offline' 
+                            }), {
+                                status: 503,
+                                headers: { 'Content-Type': 'application/json' }
+                            });
+                        });
+                    }
+                    return new Response(JSON.stringify({ 
+                        error: 'Offline', 
+                        message: 'Request will be synced when online' 
+                    }), {
+                        status: 503,
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                })
         );
         return;
     }

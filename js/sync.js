@@ -1,11 +1,12 @@
-// Sync Manager for offline/online synchronization with MERN backend
+// Sync Manager for offline/online synchronization with unified backend
 class SyncManager {
     constructor() {
-        this.apiUrl = ''; // Will be set from settings
+        this.apiUrl = ''; // Will be set from API_CONFIG
         this.isOnline = navigator.onLine;
         this.syncInProgress = false;
         this.syncInterval = null;
         this.pendingSync = [];
+        this.socket = null; // WebSocket connection
         
         this.init();
     }
@@ -14,10 +15,18 @@ class SyncManager {
         // Delayed initialization to prevent blocking
         setTimeout(async () => {
             try {
-                // Hardcoded API URL for production deployment
-                this.apiUrl = 'https://ava-marketing-api.onrender.com';
+                // Use unified backend API configuration
+                if (window.API_CONFIG) {
+                    this.apiUrl = window.API_CONFIG.BASE_URL;
+                    // Initialize WebSocket for real-time sync
+                    this.initializeWebSocket();
+                } else {
+                    // Fallback to direct URL if API_CONFIG not loaded
+                    this.apiUrl = 'https://ava-pwa-backend.onrender.com';
+                }
+                
                 if (window.logger) {
-                    window.logger.info('Using production API URL', { 
+                    window.logger.info('Using unified backend API', { 
                         category: 'SYNC', 
                         operation: 'init',
                         data: { apiUrl: this.apiUrl }
@@ -56,6 +65,77 @@ class SyncManager {
         }, 1000);
     }
 
+    initializeWebSocket() {
+        if (!window.API_CONFIG || !window.API_CONFIG.ENABLE_WEBSOCKETS) return;
+        
+        try {
+            // Initialize WebSocket connection
+            this.socket = window.API_CONFIG.initWebSocket();
+            
+            if (this.socket) {
+                // Listen for real-time state updates
+                this.socket.on('state:update', (data) => {
+                    this.handleRealtimeStateUpdate(data);
+                });
+                
+                // Listen for data changes from other devices
+                this.socket.on('data:updated', (data) => {
+                    this.handleRealtimeDataUpdate(data);
+                });
+                
+                // Listen for sync requests from server
+                this.socket.on('sync:request', () => {
+                    this.syncAll();
+                });
+                
+                if (window.logger) {
+                    window.logger.info('WebSocket initialized for real-time sync', {
+                        category: 'SYNC',
+                        operation: 'websocket_init'
+                    });
+                }
+            }
+        } catch (error) {
+            if (window.logger) {
+                window.logger.error('Failed to initialize WebSocket', {
+                    category: 'SYNC',
+                    error: error.message
+                });
+            }
+        }
+    }
+    
+    handleRealtimeStateUpdate(data) {
+        // Update StateManager with real-time changes
+        if (window.StateManager && window.StateManager.initialized) {
+            Object.keys(data).forEach(path => {
+                window.StateManager.setState(path, data[path]);
+            });
+        }
+    }
+    
+    handleRealtimeDataUpdate(data) {
+        // Handle real-time data updates from other devices
+        if (window.logger) {
+            window.logger.info('Real-time data update received', {
+                category: 'SYNC',
+                types: data.types,
+                timestamp: data.timestamp
+            });
+        }
+        
+        // Trigger UI refresh if needed
+        if (data.types.includes('inventory')) {
+            window.loadInventory && window.loadInventory();
+        }
+        if (data.types.includes('products')) {
+            window.loadProducts && window.loadProducts();
+        }
+        if (data.types.includes('transactions')) {
+            window.loadDashboard && window.loadDashboard();
+        }
+    }
+    
     handleOnline() {
         if (window.logger) {
             window.logger.info('Connection restored', { 
@@ -67,6 +147,11 @@ class SyncManager {
         this.isOnline = true;
         this.updateConnectionStatus();
         this.showNotification('Back online! Syncing data...', 'success');
+        
+        // Reconnect WebSocket if needed
+        if (this.socket && !this.socket.connected) {
+            this.socket.connect();
+        }
         
         // Start syncing immediately
         this.syncAll();
@@ -182,7 +267,7 @@ class SyncManager {
             }
             
             // Always send sync request with all products
-            const response = await this.sendToServer('/api/products/sync', {
+            const response = await this.sendToServer(window.API_CONFIG ? window.API_CONFIG.ENDPOINTS.SYNC.PRODUCTS : '/api/sync/products', {
                 products: allProducts || [],
                 productsSummary: {
                     totalProducts: allProducts.length,
@@ -299,7 +384,7 @@ class SyncManager {
             }
 
             // Send all inventory with summary data
-            const response = await this.sendToServer('/api/inventory/sync', {
+            const response = await this.sendToServer(window.API_CONFIG ? window.API_CONFIG.ENDPOINTS.SYNC.INVENTORY : '/api/sync/inventory', {
                 inventory: processedInventory,
                 inventorySummary: {
                     totalItems: allInventory.length,
@@ -419,7 +504,7 @@ class SyncManager {
             console.log('📤 Sending processed employees:', processedEmployees);
 
             // Send all employees with their performance data
-            const response = await this.sendToServer('/api/employees/sync', {
+            const response = await this.sendToServer(window.API_CONFIG ? window.API_CONFIG.ENDPOINTS.SYNC.EMPLOYEES : '/api/sync/employees', {
                 employees: processedEmployees
             });
 
@@ -508,7 +593,7 @@ class SyncManager {
             console.log(`   📆 Month: ₱${monthSales} (${monthTransactions} transactions)`);
             console.log(`   🗓️ Year: ₱${yearSales} (${yearTransactions} transactions)`);
 
-            const response = await this.sendToServer('/api/transactions/sync', {
+            const response = await this.sendToServer(window.API_CONFIG ? window.API_CONFIG.ENDPOINTS.SYNC.TRANSACTIONS : '/api/sync/transactions', {
                 transactions: summaries,
                 businessSummary: {
                     totalSales: totalSales,
@@ -624,36 +709,61 @@ class SyncManager {
     }
 
     async sendToServer(endpoint, data) {
-        // This will be implemented when MERN backend is ready
-        // For now, simulate the API call
         if (!this.apiUrl) {
             // Simulate successful response when no API URL is set
             return { ok: true };
         }
 
         try {
-            // Get authentication token with priority order
-            const token = localStorage.getItem('userToken') || localStorage.getItem('authToken') || localStorage.getItem('token');
-            
-            const headers = {
+            // Use API_CONFIG for authentication if available
+            let headers = {
                 'Content-Type': 'application/json',
             };
             
-            // Add authentication headers
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-                console.log('🔑 Sending sync request with JWT token');
+            if (window.API_CONFIG) {
+                // Get auth headers from API_CONFIG
+                headers = {
+                    ...headers,
+                    ...window.API_CONFIG.getAuthHeader()
+                };
+                
+                const token = window.API_CONFIG.getToken();
+                if (!token) {
+                    console.warn('⚠️ No authentication token found! Please login first.');
+                    // Try to get user to login
+                    if (window.authSystem && !window.authSystem.isLoggedIn) {
+                        window.authSystem.showLoginModal();
+                        return { ok: false, error: 'Authentication required' };
+                    }
+                }
             } else {
-                // Fallback to demo user for sync (this might cause issues)
-                headers['x-user-id'] = 'demo-user';
-                console.warn('⚠️ No authentication token found! Using demo user fallback.');
-                console.warn('⚠️ This might cause sync failures. Please login to PWA.');
+                // Fallback to manual token retrieval
+                const token = localStorage.getItem('authToken') || 
+                           localStorage.getItem('userToken') || 
+                           sessionStorage.getItem('authToken');
+                
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                } else {
+                    console.warn('⚠️ No authentication token found!');
+                    return { ok: false, error: 'Authentication required' };
+                }
             }
             
-            console.log(`📡 Syncing to: ${this.apiUrl}${endpoint}`);
-            console.log('📦 Sync data:', data);
+            // Build full URL
+            const url = endpoint.startsWith('http') 
+                ? endpoint 
+                : `${this.apiUrl}${endpoint}`;
+            
+            if (window.logger) {
+                window.logger.debug('Syncing data to backend', {
+                    category: 'SYNC',
+                    url,
+                    dataSize: JSON.stringify(data).length
+                });
+            }
 
-            const response = await fetch(`${this.apiUrl}${endpoint}`, {
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify(data)
