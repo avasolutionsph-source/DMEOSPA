@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>State Integration Test - Ava Solutions</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .test-section h2 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .test-case {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .test-case h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+        }
+        
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .warning {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
+        .reactive-display {
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        
+        .reactive-display h4 {
+            margin-top: 0;
+            color: #1565c0;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-ok { background: #4caf50; }
+        .status-error { background: #f44336; }
+        .status-pending { background: #ff9800; }
+        
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 State Management Integration Test</h1>
+    
+    <!-- Backward Compatibility Tests -->
+    <div class="test-section">
+        <h2>1. Backward Compatibility Tests</h2>
+        <p>Test that old window.* properties still work via state proxies</p>
+        
+        <div class="test-grid">
+            <div class="test-case">
+                <h3>window.currentUser</h3>
+                <button onclick="testCurrentUser()">Test Read/Write</button>
+                <div id="currentUserResult" class="result"></div>
+            </div>
+            
+            <div class="test-case">
+                <h3>window.app.cart</h3>
+                <button onclick="testAppCart()">Test Cart Access</button>
+                <div id="appCartResult" class="result"></div>
+            </div>
+            
+            <div class="test-case">
+                <h3>window.posSystem.selectedEmployee</h3>
+                <button onclick="testPosEmployee()">Test Employee</button>
+                <div id="posEmployeeResult" class="result"></div>
+            </div>
+            
+            <div class="test-case">
+                <h3>window.businessName</h3>
+                <button onclick="testBusinessName()">Test Business</button>
+                <div id="businessNameResult" class="result"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Component Integration Tests -->
+    <div class="test-section">
+        <h2>2. Component Integration Tests</h2>
+        <p>Test that auth.js, pos.js, and app.js work with StateHelpers</p>
+        
+        <div class="test-grid">
+            <div class="test-case">
+                <h3>Auth Operations</h3>
+                <button onclick="testAuthIntegration()">Test Auth Flow</button>
+                <div id="authIntegrationResult" class="result"></div>
+            </div>
+            
+            <div class="test-case">
+                <h3>POS Cart Operations</h3>
+                <button onclick="testPosIntegration()">Test Cart Flow</button>
+                <div id="posIntegrationResult" class="result"></div>
+            </div>
+            
+            <div class="test-case">
+                <h3>Navigation</h3>
+                <button onclick="testNavigationIntegration()">Test Navigation</button>
+                <div id="navIntegrationResult" class="result"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reactive UI Updates -->
+    <div class="test-section">
+        <h2>3. Reactive UI Updates</h2>
+        <p>Elements below should update automatically when state changes</p>
+        
+        <div class="reactive-display">
+            <h4>Live State Display</h4>
+            <div>
+                <strong>Current User:</strong> 
+                <span class="username-display">Guest</span>
+            </div>
+            <div>
+                <strong>Business Name:</strong> 
+                <span class="business-name">Not Set</span>
+            </div>
+            <div>
+                <strong>Cart Items:</strong> 
+                <span class="cart-count">0</span> | 
+                <strong>Total:</strong> 
+                <span class="cart-total">₱0.00</span>
+            </div>
+            <div>
+                <strong>Current Page:</strong> 
+                <span class="ui-currentPage">dashboard</span>
+            </div>
+            <div>
+                <strong>Selected Employee:</strong> 
+                <span class="pos-selectedEmployee">None</span>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <button onclick="updateStateForReactivity()">Trigger State Changes</button>
+            <button onclick="batchStateUpdates()">Batch Updates</button>
+        </div>
+    </div>
+    
+    <!-- State Synchronization Test -->
+    <div class="test-section">
+        <h2>4. State Synchronization</h2>
+        <p>Test that state changes propagate correctly</p>
+        
+        <div class="test-grid">
+            <div class="test-case">
+                <h3>Direct State Update</h3>
+                <button onclick="directStateUpdate()">Update via StateManager</button>
+                <div id="directUpdateResult" class="result"></div>
+            </div>
+            
+            <div class="test-case">
+                <h3>Legacy Update</h3>
+                <button onclick="legacyUpdate()">Update via window.*</button>
+                <div id="legacyUpdateResult" class="result"></div>
+            </div>
+            
+            <div class="test-case">
+                <h3>Helper Update</h3>
+                <button onclick="helperUpdate()">Update via StateHelpers</button>
+                <div id="helperUpdateResult" class="result"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Performance Test -->
+    <div class="test-section">
+        <h2>5. Performance & Batching</h2>
+        <div class="test-case">
+            <h3>Batch Performance Test</h3>
+            <button onclick="performanceTest()">Run 1000 Updates</button>
+            <div id="performanceResult" class="result"></div>
+        </div>
+    </div>
+    
+    <!-- Status Dashboard -->
+    <div class="test-section">
+        <h2>System Status</h2>
+        <div id="statusDashboard" class="result"></div>
+    </div>
+    
+    <!-- Include all required scripts -->
+    <script src="js/config-service.js"></script>
+    <script src="js/logger-complete.js"></script>
+    <script src="js/database.js"></script>
+    <script src="js/state-manager.js"></script>
+    <script src="js/state-ui-binding.js"></script>
+    <script src="js/state-helpers.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/pos.js"></script>
+    <script src="js/app.js"></script>
+    
+    <script>
+        // Wait for everything to initialize
+        async function waitForInit() {
+            return new Promise((resolve) => {
+                const checkInterval = setInterval(() => {
+                    if (window.StateManager && 
+                        window.StateManager.initialized && 
+                        window.StateHelpers &&
+                        window.StateUIBinding) {
+                        clearInterval(checkInterval);
+                        resolve();
+                    }
+                }, 100);
+            });
+        }
+        
+        // Initialize and update status
+        async function init() {
+            await waitForInit();
+            updateStatus();
+            setupReactiveBindings();
+        }
+        
+        function updateStatus() {
+            const status = document.getElementById('statusDashboard');
+            status.innerHTML = `
+                <div><span class="status-indicator ${window.StateManager ? 'status-ok' : 'status-error'}"></span>StateManager: ${window.StateManager ? 'Ready' : 'Not Ready'}</div>
+                <div><span class="status-indicator ${window.StateHelpers ? 'status-ok' : 'status-error'}"></span>StateHelpers: ${window.StateHelpers ? 'Ready' : 'Not Ready'}</div>
+                <div><span class="status-indicator ${window.StateUIBinding ? 'status-ok' : 'status-error'}"></span>StateUIBinding: ${window.StateUIBinding ? 'Ready' : 'Not Ready'}</div>
+                <div><span class="status-indicator ${window.authSystem ? 'status-ok' : 'status-error'}"></span>Auth System: ${window.authSystem ? 'Ready' : 'Not Ready'}</div>
+                <div><span class="status-indicator ${window.posSystem ? 'status-ok' : 'status-error'}"></span>POS System: ${window.posSystem ? 'Ready' : 'Not Ready'}</div>
+                <div><span class="status-indicator ${window.app ? 'status-ok' : 'status-error'}"></span>App Controller: ${window.app ? 'Ready' : 'Not Ready'}</div>
+            `;
+        }
+        
+        function setupReactiveBindings() {
+            // Additional reactive bindings for testing
+            if (window.StateManager) {
+                window.StateManager.subscribe('pos.selectedEmployee', () => {
+                    const employee = window.StateManager.getState('pos.selectedEmployee');
+                    document.querySelectorAll('.pos-selectedEmployee').forEach(el => {
+                        el.textContent = employee || 'None';
+                    });
+                });
+                
+                window.StateManager.subscribe('ui.currentPage', () => {
+                    const page = window.StateManager.getState('ui.currentPage');
+                    document.querySelectorAll('.ui-currentPage').forEach(el => {
+                        el.textContent = page || 'unknown';
+                    });
+                });
+            }
+        }
+        
+        // Test Functions
+        function testCurrentUser() {
+            const result = document.getElementById('currentUserResult');
+            try {
+                // Test read
+                const oldValue = window.currentUser;
+                result.innerHTML = `Read: ${JSON.stringify(oldValue)}<br>`;
+                
+                // Test write
+                window.currentUser = { id: 'test123', username: 'testuser' };
+                result.innerHTML += `Write: Set to testuser<br>`;
+                
+                // Verify via StateManager
+                const stateValue = window.StateManager.getState('auth.currentUser');
+                result.innerHTML += `State: ${JSON.stringify(stateValue)}<br>`;
+                
+                // Check if values match
+                const match = JSON.stringify(window.currentUser) === JSON.stringify(stateValue);
+                result.innerHTML += `<strong class="${match ? 'success' : 'error'}">Match: ${match}</strong>`;
+                result.className = 'result ' + (match ? 'success' : 'error');
+            } catch (error) {
+                result.innerHTML = `Error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+        
+        function testAppCart() {
+            const result = document.getElementById('appCartResult');
+            try {
+                // Test read
+                const oldCart = window.app.cart;
+                result.innerHTML = `Read: ${oldCart ? oldCart.length + ' items' : 'undefined'}<br>`;
+                
+                // Test write
+                window.app.cart = [{ id: 1, name: 'Test Item', price: 100, quantity: 1 }];
+                result.innerHTML += `Write: Added test item<br>`;
+                
+                // Verify via StateManager
+                const stateCart = window.StateManager.getState('pos.cart');
+                result.innerHTML += `State: ${stateCart.length} items<br>`;
+                
+                // Check if values match
+                const match = window.app.cart.length === stateCart.length;
+                result.innerHTML += `<strong class="${match ? 'success' : 'error'}">Match: ${match}</strong>`;
+                result.className = 'result ' + (match ? 'success' : 'error');
+            } catch (error) {
+                result.innerHTML = `Error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+        
+        function testPosEmployee() {
+            const result = document.getElementById('posEmployeeResult');
+            try {
+                // Test read
+                const oldEmployee = window.posSystem ? window.posSystem.selectedEmployee : undefined;
+                result.innerHTML = `Read: ${oldEmployee || 'null'}<br>`;
+                
+                // Test write
+                if (window.posSystem) {
+                    window.posSystem.selectedEmployee = 'emp001';
+                    result.innerHTML += `Write: Set to emp001<br>`;
+                } else {
+                    result.innerHTML += `Write: posSystem not available<br>`;
+                }
+                
+                // Verify via StateManager
+                const stateEmployee = window.StateManager.getState('pos.selectedEmployee');
+                result.innerHTML += `State: ${stateEmployee || 'null'}<br>`;
+                
+                // Check if values match
+                const match = window.posSystem && window.posSystem.selectedEmployee === stateEmployee;
+                result.innerHTML += `<strong class="${match ? 'success' : 'warning'}">Match: ${match}</strong>`;
+                result.className = 'result ' + (match ? 'success' : 'warning');
+            } catch (error) {
+                result.innerHTML = `Error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+        
+        function testBusinessName() {
+            const result = document.getElementById('businessNameResult');
+            try {
+                // Test read
+                const oldName = window.businessName;
+                result.innerHTML = `Read: ${oldName || 'null'}<br>`;
+                
+                // Test write
+                window.businessName = 'Test Business';
+                result.innerHTML += `Write: Set to 'Test Business'<br>`;
+                
+                // Verify via StateManager
+                const stateName = window.StateManager.getState('business.name');
+                result.innerHTML += `State: ${stateName}<br>`;
+                
+                // Check if values match
+                const match = window.businessName === stateName;
+                result.innerHTML += `<strong class="${match ? 'success' : 'error'}">Match: ${match}</strong>`;
+                result.className = 'result ' + (match ? 'success' : 'error');
+            } catch (error) {
+                result.innerHTML = `Error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+        
+        function testAuthIntegration() {
+            const result = document.getElementById('authIntegrationResult');
+            try {
+                // Test auth state setting
+                if (window.authSystem) {
+                    const testUser = { id: 'auth123', username: 'authtest', email: 'test@example.com' };
+                    window.authSystem.setAuthState(testUser, 'test_token', false);
+                    result.innerHTML = 'Auth state set via authSystem<br>';
+                    
+                    // Check if state updated
+                    const stateUser = window.StateManager.getState('auth.currentUser');
+                    result.innerHTML += `State user: ${stateUser ? stateUser.username : 'null'}<br>`;
+                    
+                    const match = stateUser && stateUser.username === 'authtest';
+                    result.innerHTML += `<strong class="${match ? 'success' : 'error'}">Integration: ${match ? 'Working' : 'Failed'}</strong>`;
+                    result.className = 'result ' + (match ? 'success' : 'error');
+                } else {
+                    result.innerHTML = 'Auth system not available';
+                    result.className = 'result warning';
+                }
+            } catch (error) {
+                result.innerHTML = `Error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+        
+        function testPosIntegration() {
+            const result = document.getElementById('posIntegrationResult');
+            try {
+                if (window.posSystem) {
+                    // Clear cart first
+                    window.posSystem.clearCart();
+                    result.innerHTML = 'Cart cleared<br>';
+                    
+                    // Add item using POS system
+                    const testItem = { id: 'pos1', name: 'POS Item', price: 50 };
+                    window.posSystem.cart.push(testItem);
+                    result.innerHTML += 'Added item via posSystem<br>';
+                    
+                    // Check state
+                    const stateCart = window.StateManager.getState('pos.cart');
+                    result.innerHTML += `State cart: ${stateCart ? stateCart.length : 0} items<br>`;
+                    
+                    const match = stateCart && stateCart.length > 0;
+                    result.innerHTML += `<strong class="${match ? 'success' : 'warning'}">Integration: ${match ? 'Working' : 'Partial'}</strong>`;
+                    result.className = 'result ' + (match ? 'success' : 'warning');
+                } else {
+                    result.innerHTML = 'POS system not available';
+                    result.className = 'result warning';
+                }
+            } catch (error) {
+                result.innerHTML = `Error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+        
+        function testNavigationIntegration() {
+            const result = document.getElementById('navIntegrationResult');
+            try {
+                if (window.app) {
+                    // Navigate using app
+                    window.app.showPage('products');
+                    result.innerHTML = 'Navigated to products via app.showPage()<br>';
+                    
+                    // Check state
+                    const statePage = window.StateManager.getState('ui.currentPage');
+                    result.innerHTML += `State page: ${statePage}<br>`;
+                    
+                    // Check app property
+                    const appPage = window.app.currentPage;
+                    result.innerHTML += `App page: ${appPage}<br>`;
+                    
+                    const match = statePage === 'products' || appPage === 'products';
+                    result.innerHTML += `<strong class="${match ? 'success' : 'error'}">Integration: ${match ? 'Working' : 'Failed'}</strong>`;
+                    result.className = 'result ' + (match ? 'success' : 'error');
+                } else {
+                    result.innerHTML = 'App controller not available';
+                    result.className = 'result warning';
+                }
+            } catch (error) {
+                result.innerHTML = `Error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+        
+        function updateStateForReactivity() {
+            // Trigger various state changes to test reactive updates
+            window.StateManager.batchUpdate({
+                'auth.currentUser': { username: 'ReactiveUser' },
+                'business.name': 'Reactive Business',
+                'pos.cart': [
+                    { id: 1, name: 'Item 1', price: 100, quantity: 2 },
+                    { id: 2, name: 'Item 2', price: 50, quantity: 1 }
+                ],
+                'ui.currentPage': 'inventory',
+                'pos.selectedEmployee': 'emp_reactive'
+            });
+        }
+        
+        function batchStateUpdates() {
+            // Test batch updates
+            const updates = {};
+            for (let i = 0; i < 10; i++) {
+                updates[`performance.metrics.test${i}`] = Math.random();
+            }
+            window.StateManager.batchUpdate(updates);
+            alert('Batch update completed - check console for timing');
+        }
+        
+        function directStateUpdate() {
+            const result = document.getElementById('directUpdateResult');
+            try {
+                const testValue = 'Direct_' + Date.now();
+                window.StateManager.setState('business.name', testValue);
+                
+                // Check all access methods
+                const stateValue = window.StateManager.getState('business.name');
+                const windowValue = window.businessName;
+                
+                result.innerHTML = `Set to: ${testValue}<br>`;
+                result.innerHTML += `State: ${stateValue}<br>`;
+                result.innerHTML += `Window: ${windowValue}<br>`;
+                
+                const match = stateValue === testValue && windowValue === testValue;
+                result.innerHTML += `<strong class="${match ? 'success' : 'error'}">All match: ${match}</strong>`;
+                result.className = 'result ' + (match ? 'success' : 'error');
+            } catch (error) {
+                result.innerHTML = `Error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+        
+        function legacyUpdate() {
+            const result = document.getElementById('legacyUpdateResult');
+            try {
+                const testValue = 'Legacy_' + Date.now();
+                window.businessName = testValue;
+                
+                // Check all access methods
+                const stateValue = window.StateManager.getState('business.name');
+                const windowValue = window.businessName;
+                
+                result.innerHTML = `Set to: ${testValue}<br>`;
+                result.innerHTML += `State: ${stateValue}<br>`;
+                result.innerHTML += `Window: ${windowValue}<br>`;
+                
+                const match = stateValue === testValue && windowValue === testValue;
+                result.innerHTML += `<strong class="${match ? 'success' : 'error'}">All match: ${match}</strong>`;
+                result.className = 'result ' + (match ? 'success' : 'error');
+            } catch (error) {
+                result.innerHTML = `Error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+        
+        function helperUpdate() {
+            const result = document.getElementById('helperUpdateResult');
+            try {
+                const testValue = { name: 'Helper Business', type: 'spa' };
+                window.StateHelpers.updateBusinessInfo(testValue);
+                
+                // Check all access methods
+                const stateName = window.StateManager.getState('business.name');
+                const stateType = window.StateManager.getState('business.type');
+                const windowName = window.businessName;
+                const windowType = window.businessType;
+                
+                result.innerHTML = `Set name to: ${testValue.name}<br>`;
+                result.innerHTML += `Set type to: ${testValue.type}<br>`;
+                result.innerHTML += `State: ${stateName} / ${stateType}<br>`;
+                result.innerHTML += `Window: ${windowName} / ${windowType}<br>`;
+                
+                const match = stateName === testValue.name && windowName === testValue.name;
+                result.innerHTML += `<strong class="${match ? 'success' : 'error'}">All match: ${match}</strong>`;
+                result.className = 'result ' + (match ? 'success' : 'error');
+            } catch (error) {
+                result.innerHTML = `Error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+        
+        async function performanceTest() {
+            const result = document.getElementById('performanceResult');
+            try {
+                const startTime = performance.now();
+                
+                // Test 1000 individual updates
+                for (let i = 0; i < 1000; i++) {
+                    window.StateManager.setState(`performance.metrics.perf${i}`, Math.random());
+                }
+                
+                const individualTime = performance.now() - startTime;
+                
+                // Test 1000 batched updates
+                const batchStart = performance.now();
+                const batchUpdates = {};
+                for (let i = 0; i < 1000; i++) {
+                    batchUpdates[`performance.metrics.batch${i}`] = Math.random();
+                }
+                window.StateManager.batchUpdate(batchUpdates);
+                
+                const batchTime = performance.now() - batchStart;
+                
+                result.innerHTML = `Individual updates (1000): ${individualTime.toFixed(2)}ms<br>`;
+                result.innerHTML += `Batched updates (1000): ${batchTime.toFixed(2)}ms<br>`;
+                result.innerHTML += `<strong class="success">Improvement: ${(individualTime / batchTime).toFixed(2)}x faster</strong>`;
+                result.className = 'result success';
+            } catch (error) {
+                result.innerHTML = `Error: ${error.message}`;
+                result.className = 'result error';
+            }
+        }
+        
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>

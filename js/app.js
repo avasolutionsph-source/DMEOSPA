@@ -1,9 +1,18 @@
 // Main Application Controller
 class App {
     constructor() {
-        this.currentPage = 'dashboard';
-        this.cart = [];
-        this.selectedEmployee = null;
+        // Initialize with StateManager if available, fallback to local properties
+        if (window.StateManager && window.StateManager.initialized) {
+            // Properties will proxy to state
+            this.currentPage = window.StateManager.getState('ui.currentPage') || 'dashboard';
+            this.cart = window.StateManager.getState('pos.cart') || [];
+            this.selectedEmployee = window.StateManager.getState('pos.selectedEmployee');
+        } else {
+            // Fallback to local properties (will proxy to state when StateManager loads)
+            this.currentPage = 'dashboard';
+            this.cart = [];
+            this.selectedEmployee = null;
+        }
         // REMOVED: setup-related properties - manual setup wizard doesn't need state tracking
     }
 
@@ -244,6 +253,18 @@ class App {
             });
         }
         
+        // Use StateHelpers if available for navigation
+        if (window.StateHelpers) {
+            // StateHelpers.navigate will handle state update and history
+            window.StateHelpers.navigate(pageName);
+        } else if (window.StateManager && window.StateManager.initialized) {
+            // Use StateManager directly if StateHelpers not available
+            window.StateManager.setState('ui.currentPage', pageName);
+        } else {
+            // Fallback to direct property (will proxy to state when available)
+            this.currentPage = pageName;
+        }
+        
         // Close all modals first
         document.querySelectorAll('.modal').forEach(modal => {
             modal.classList.remove('active');
@@ -259,7 +280,6 @@ class App {
         const selectedPage = document.getElementById(pageName);
         if (selectedPage) {
             selectedPage.classList.add('active');
-            this.currentPage = pageName;
             
             // Load page-specific data
             this.loadPageData(pageName);

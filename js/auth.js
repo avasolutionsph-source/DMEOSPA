@@ -433,9 +433,20 @@ class AuthSystem {
 
     // Set authentication state
     async setAuthState(user, token, rememberMe = false) {
-        this.currentUser = user;
-        this.authToken = token;
-        this.isLoggedIn = true;
+        // Use StateManager if available, fallback to direct properties
+        if (window.StateManager && window.StateManager.initialized) {
+            window.StateManager.batchUpdate({
+                'auth.currentUser': user,
+                'auth.authToken': token,
+                'auth.isLoggedIn': true,
+                'auth.lastLogin': Date.now()
+            });
+        } else {
+            // Fallback to direct properties (will still proxy to state if StateManager loads later)
+            this.currentUser = user;
+            this.authToken = token;
+            this.isLoggedIn = true;
+        }
 
         // Save to localStorage if remember me is checked
         if (rememberMe) {
@@ -456,7 +467,18 @@ class AuthSystem {
 
     // Load saved authentication state
     async loadAuthState() {
-        // Check all possible token storage locations
+        // Try to load from StateManager first if available
+        if (window.StateManager && window.StateManager.initialized) {
+            const authState = window.StateManager.getState('auth');
+            if (authState && authState.currentUser) {
+                this.currentUser = authState.currentUser;
+                this.authToken = authState.authToken;
+                this.isLoggedIn = authState.isLoggedIn;
+                return;
+            }
+        }
+        
+        // Fallback to checking storage locations
         let token = localStorage.getItem('userToken') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
         let userStr = localStorage.getItem('userData') || localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
         let isLoggedIn = localStorage.getItem('isLoggedIn');
@@ -557,9 +579,22 @@ class AuthSystem {
 
     // Clear authentication state
     clearAuthState() {
-        this.currentUser = null;
-        this.authToken = null;
-        this.isLoggedIn = false;
+        // Use StateHelpers if available for proper logout
+        if (window.StateHelpers) {
+            window.StateHelpers.logout();
+        } else if (window.StateManager && window.StateManager.initialized) {
+            // Use StateManager directly if StateHelpers not available
+            window.StateManager.batchUpdate({
+                'auth.currentUser': null,
+                'auth.authToken': null,
+                'auth.isLoggedIn': false
+            });
+        } else {
+            // Fallback to direct properties
+            this.currentUser = null;
+            this.authToken = null;
+            this.isLoggedIn = false;
+        }
 
         // Clear ALL possible storage locations
         localStorage.removeItem('userToken');

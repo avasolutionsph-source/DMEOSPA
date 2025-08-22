@@ -1,8 +1,16 @@
 // POS System Management
 class POSSystem {
     constructor() {
-        this.cart = [];
-        this.selectedEmployee = null;
+        // Initialize with StateManager if available, fallback to local properties
+        if (window.StateManager && window.StateManager.initialized) {
+            // Properties will proxy to state
+            this.cart = window.StateManager.getState('pos.cart') || [];
+            this.selectedEmployee = window.StateManager.getState('pos.selectedEmployee');
+        } else {
+            // Fallback to local properties (will proxy to state when StateManager loads)
+            this.cart = [];
+            this.selectedEmployee = null;
+        }
         this.currentCategory = 'all';
         this.products = [];
         this.inventory = [];
@@ -29,7 +37,14 @@ class POSSystem {
         const employeeSelect = document.getElementById('employeeSelect');
         if (employeeSelect) {
             employeeSelect.addEventListener('change', (e) => {
-                this.selectedEmployee = e.target.value;
+                // Use StateHelpers if available
+                if (window.StateHelpers) {
+                    window.StateHelpers.selectEmployee(e.target.value);
+                } else if (window.StateManager && window.StateManager.initialized) {
+                    window.StateManager.setState('pos.selectedEmployee', e.target.value);
+                } else {
+                    this.selectedEmployee = e.target.value;
+                }
                 
                 // Update checkout button appearance based on employee selection
                 const checkoutBtn = document.getElementById('checkoutBtn');
@@ -243,14 +258,25 @@ class POSSystem {
                 }
                 existingItem.quantity++;
             } else {
-                this.cart.push({
+                const newItem = {
                     id: itemId,
                     type: itemType,
                     name: item.name,
                     price: item.price || item.unitPrice || 0,
                     quantity: 1,
                     maxStock: item.currentStock
-                });
+                };
+                
+                // Use StateHelpers if available for better state management
+                if (window.StateHelpers) {
+                    window.StateHelpers.addToCart(newItem, 1);
+                } else {
+                    this.cart.push(newItem);
+                    // Update state if StateManager available
+                    if (window.StateManager && window.StateManager.initialized) {
+                        window.StateManager.setState('pos.cart', [...this.cart]);
+                    }
+                }
             }
 
             this.updateCartDisplay();
@@ -290,7 +316,16 @@ class POSSystem {
     removeFromCart(index) {
         const item = this.cart[index];
         if (confirm(`Remove ${item.name} from cart?`)) {
-            this.cart.splice(index, 1);
+            // Use StateHelpers if available
+            if (window.StateHelpers && item.id) {
+                window.StateHelpers.removeFromCart(item.id);
+            } else {
+                this.cart.splice(index, 1);
+                // Update state if StateManager available
+                if (window.StateManager && window.StateManager.initialized) {
+                    window.StateManager.setState('pos.cart', [...this.cart]);
+                }
+            }
             this.updateCartDisplay();
             showNotification(`${item.name} removed from cart`, 'info');
         }
@@ -311,7 +346,24 @@ class POSSystem {
     }
 
     clearCart() {
-        this.cart = [];
+        // Use StateHelpers if available
+        if (window.StateHelpers) {
+            window.StateHelpers.clearCart();
+        } else if (window.StateManager && window.StateManager.initialized) {
+            window.StateManager.setState('pos.cart', []);
+            window.StateManager.setState('pos.discounts', []);
+            window.StateManager.setState('pos.currentTransaction', null);
+        } else {
+            this.cart = [];
+        }
+        
+        // Reset discount tracking
+        this.appliedGiftCertificate = null;
+        this.appliedSeniorPWDDiscount = null;
+        this.appliedPromoDiscount = null;
+        this.discountAmount = 0;
+        this.gcAmount = 0;
+        
         this.updateCartDisplay();
         showNotification('Cart cleared', 'info');
     }
