@@ -1,7 +1,4 @@
 // Main Application Controller
-// Get database reference
-const db = window.db;
-
 class App {
     constructor() {
         this.currentPage = 'dashboard';
@@ -45,13 +42,7 @@ class App {
         console.log('Setup wizard is now manual only - accessible from dashboard');
         
         // Load business configuration first
-        console.log('📊 Loading business config...');
-        try {
-            await this.loadBusinessConfig();
-            console.log('✅ Business config loaded');
-        } catch (error) {
-            console.error('❌ Failed to load business config:', error);
-        }
+        await this.loadBusinessConfig();
         
         // Set up navigation
         console.log('📍 About to setup navigation...');
@@ -419,7 +410,7 @@ class App {
 
     async loadBusinessName() {
         try {
-            const setting = await db.get('settings', 'businessName');
+            const setting = await window.db.get('settings', 'businessName');
             if (setting && setting.value) {
                 document.getElementById('businessName').textContent = setting.value;
                 document.title = `${setting.value} - Business Management System`;
@@ -431,7 +422,7 @@ class App {
 
     async loadBusinessConfig() {
         try {
-            const config = await db.get('settings', 'businessConfig');
+            const config = await window.db.get('settings', 'businessConfig');
             this.businessConfig = config?.value || {
                 businessType: 'spa',
                 modules: {
