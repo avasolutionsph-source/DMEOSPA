@@ -392,10 +392,17 @@ async function loadSyncStats() {
 
         if (response.ok) {
             const stats = await response.json();
-            document.getElementById('totalSyncs').textContent = stats.totalSyncs || 0;
-            document.getElementById('activeSyncs').textContent = stats.activeSyncs || 0;
-            document.getElementById('oldSyncs').textContent = stats.oldSyncs || 0;
-            document.getElementById('storageUsed').textContent = `${stats.storageUsed || 0} MB`;
+            
+            // Safe element updates - check if elements exist first
+            const totalSyncs = document.getElementById('totalSyncs');
+            const activeSyncs = document.getElementById('activeSyncs');
+            const oldSyncs = document.getElementById('oldSyncs');
+            const storageUsed = document.getElementById('storageUsed');
+            
+            if (totalSyncs) totalSyncs.textContent = stats.totalSyncs || 0;
+            if (activeSyncs) activeSyncs.textContent = stats.activeSyncs || 0;
+            if (oldSyncs) oldSyncs.textContent = stats.oldSyncs || 0;
+            if (storageUsed) storageUsed.textContent = `${stats.storageUsed || 0} MB`;
         }
     } catch (error) {
         console.error('Failed to load sync stats:', error);
