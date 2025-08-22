@@ -215,12 +215,13 @@ class App {
     }
 
     async loadGiftCertificatesPage() {
-        console.log('Loading Gift Certificates page...');
+        console.log('🎁 Loading Gift Certificates page...');
         const container = document.getElementById('gift-certificates');
         if (!container) {
-            console.error('Gift certificates container not found!');
+            console.error('❌ Gift certificates container not found!');
             return;
         }
+        console.log('✅ Container found');
 
         // Clear container and inject HTML directly
         container.innerHTML = `
@@ -309,11 +310,17 @@ class App {
         }
 
         // Load the gift certificates JavaScript
+        console.log('📦 Checking for GiftCertificateManager class...');
+        console.log('window.GiftCertificateManager exists?', !!window.GiftCertificateManager);
+        console.log('window.giftCertificateManager exists?', !!window.giftCertificateManager);
+        
         if (!window.GiftCertificateManager) {
+            console.log('🔄 Class not found, loading script...');
+            
             // Check if script is already in DOM
             const existingScript = document.querySelector('script[src*="gift-certificates.js"]');
             if (existingScript) {
-                console.log('Gift certificates script already in DOM, removing it');
+                console.log('⚠️ Script already in DOM, removing it');
                 existingScript.remove();
             }
             
@@ -321,31 +328,51 @@ class App {
             const script = document.createElement('script');
             script.src = 'js/gift-certificates.js?t=' + Date.now(); // Add timestamp to force reload
             script.id = 'gift-certificates-script';
+            
             script.onload = async () => {
-                console.log('Gift certificates script loaded');
+                console.log('✅ Script loaded successfully');
+                console.log('Checking what was loaded:', {
+                    GiftCertificateManager: !!window.GiftCertificateManager,
+                    loadGiftCertificates: !!window.loadGiftCertificates
+                });
+                
                 // Wait a tick for DOM to be ready
-                await new Promise(resolve => setTimeout(resolve, 0));
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
                 if (window.loadGiftCertificates) {
+                    console.log('🚀 Calling loadGiftCertificates...');
                     await window.loadGiftCertificates();
-                    console.log('Gift Certificate Manager initialized:', window.giftCertificateManager);
+                    console.log('✅ Manager initialized:', window.giftCertificateManager);
+                } else {
+                    console.error('❌ loadGiftCertificates function not found!');
                 }
             };
+            
             script.onerror = (error) => {
-                console.error('Failed to load gift certificates script:', error);
+                console.error('❌ Failed to load script:', error);
             };
+            
+            console.log('📎 Appending script to body...');
             document.body.appendChild(script);
+            
         } else {
             // Script already loaded, just create new instance
-            console.log('Gift Certificate class already exists, creating new instance');
+            console.log('♻️ Class already exists, creating new instance');
+            
             if (window.giftCertificateManager) {
-                // Clean up old instance if exists
+                console.log('🗑️ Destroying old instance');
                 window.giftCertificateManager = null;
             }
+            
             // Create new instance immediately
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
             if (window.loadGiftCertificates) {
+                console.log('🚀 Calling loadGiftCertificates...');
                 await window.loadGiftCertificates();
-                console.log('Gift Certificate Manager re-initialized:', window.giftCertificateManager);
+                console.log('✅ Manager re-initialized:', window.giftCertificateManager);
+            } else {
+                console.error('❌ loadGiftCertificates function not found!');
             }
         }
     }
