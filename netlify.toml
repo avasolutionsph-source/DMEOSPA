@@ -1,0 +1,23 @@
+# PWA Configuration
+[build]
+  publish = "."
+  command = "echo 'PWA static deployment'"
+
+# Service Worker
+[[headers]]
+  for = "/service-worker.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# JavaScript files
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+    Content-Type = "application/javascript"
+
+# SPA Routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html" 
+  status = 200
