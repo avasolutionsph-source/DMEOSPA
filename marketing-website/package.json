@@ -5,8 +5,8 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "echo 'Marketing website is now static - served by unified backend'",
-    "dev": "echo 'Use unified backend for development'",
+    "start": "node server.js",
+    "dev": "nodemon server.js",
     "build": "echo 'Static build complete'",
     "seed": "node scripts/seed.js",
     "cleanup": "node scripts/cleanup-sample-users.js",
