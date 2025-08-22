@@ -985,6 +985,7 @@ class FixedLogger {
 
 // Create and initialize the logger instance
 window.logger = new FixedLogger();
+window.CompleteLogger = FixedLogger;  // ✅ Add alias for compatibility
 
 // Export for module usage
 if (typeof module !== 'undefined' && module.exports) {
