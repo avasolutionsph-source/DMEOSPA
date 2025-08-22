@@ -1,126 +1,28 @@
 {
-  "version": "1.2.0",
-  "lastUpdated": "2024-08-22",
-  "updates": [
-    {
-      "version": "1.0.1",
-      "title": "Rooms Management System",
-      "description": "Room tracking with real-time timers and occupancy management",
-      "script": "quick-rooms-fix.js",
-      "date": "2024-01-20",
-      "features": [
-        "Room status tracking (Available/Occupied)",
-        "Live service timers",
-        "Room assignment in POS",
-        "Service tracking per room"
-      ]
-    },
-    {
-      "version": "1.0.2",
-      "title": "Gift Certificate System",
-      "description": "Complete gift certificate management with control numbers",
-      "script": "update-gift-certificates.js",
-      "date": "2024-01-20",
-      "features": [
-        "Unique control number generation",
-        "Prevent double use",
-        "Full audit trail",
-        "Print certificates"
-      ]
-    },
-    {
-      "version": "1.0.3",
-      "title": "Enhanced POS Discounts",
-      "description": "Senior/PWD and promotional discount system",
-      "script": "update-pos-discounts.js",
-      "date": "2024-01-20",
-      "features": [
-        "Senior Citizen/PWD discounts with ID tracking",
-        "Custom promotional discounts",
-        "Discount audit logging",
-        "Employee assignment in checkout"
-      ]
-    },
-    {
-      "version": "1.0.4",
-      "title": "Database Optimization",
-      "description": "Performance improvements and bug fixes",
-      "script": "update-database-v2.js",
-      "date": "2024-01-20",
-      "features": [
-        "Faster data loading",
-        "Improved sync reliability",
-        "Bug fixes"
-      ]
-    },
-    {
-      "version": "1.1.0",
-      "title": "Gift Certificate Management Upgrade",
-      "description": "Enhanced gift certificate system with AI-powered designs",
-      "script": null,
-      "date": "2024-08-22",
-      "features": [
-        "AI-generated certificate designs",
-        "Control number format: GC-YYYY-XXXXXX",
-        "Real-time validation system",
-        "Export to CSV functionality",
-        "Print-ready certificates",
-        "Usage history tracking"
-      ]
-    },
-    {
-      "version": "1.1.1",
-      "title": "Gift Certificate Button Fix",
-      "description": "Fixed unclickable buttons in gift certificate system",
-      "script": null,
-      "date": "2024-08-22",
-      "features": [
-        "Direct onclick handlers for reliability",
-        "Event delegation for dynamic content",
-        "Modal display improvements",
-        "Enhanced debugging capabilities"
-      ],
-      "domChanges": [
-        {
-          "action": "modify",
-          "selector": ".gc-actions button",
-          "styles": {
-            "pointerEvents": "auto",
-            "cursor": "pointer",
-            "position": "relative",
-            "zIndex": "100"
-          }
-        }
-      ]
-    },
-    {
-      "version": "1.2.0",
-      "title": "Complete System Overhaul",
-      "description": "Major update with new features and improvements",
-      "script": null,
-      "date": "2024-08-22",
-      "features": [
-        "Setup wizard removal completed",
-        "Marketing website integration",
-        "Enhanced navigation system",
-        "Improved modal management",
-        "CSS optimization and cleanup",
-        "Better error handling",
-        "Auto-updater improvements"
-      ],
-      "criticalUpdate": true
-    }
+  "version": "1.0.0",
+  "releaseDate": "2025-01-20",
+  "changelog": [
+    "Initial release of Ava Solutions PWA",
+    "Complete POS system",
+    "Inventory management",
+    "Employee management",
+    "Room management",
+    "Gift certificates",
+    "Analytics dashboard",
+    "AI-powered chatbot",
+    "Cloud sync capabilities"
   ],
-  "criticalUpdate": true,
   "minimumVersion": "1.0.0",
-  "changelog": {
-    "1.2.0": [
-      "🎁 Gift Certificate Management System fully operational",
-      "🔧 Fixed all button clickability issues",
-      "🎨 AI-powered certificate design generation",
-      "📊 Enhanced dashboard with real-time stats",
-      "🚀 Performance optimizations across the board",
-      "🐛 Multiple bug fixes and improvements"
-    ]
+  "downloadUrl": "https://ava-solutions-pwa.netlify.app/",
+  "mandatory": false,
+  "features": {
+    "pos": true,
+    "inventory": true,
+    "employees": true,
+    "rooms": true,
+    "giftCertificates": true,
+    "analytics": true,
+    "chatbot": true,
+    "cloudSync": true
   }
 }
