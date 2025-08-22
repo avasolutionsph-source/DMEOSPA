@@ -302,6 +302,10 @@ document.getElementById('editUserForm').addEventListener('submit', async functio
                 loadUsers();
             }, 1500);
         } else {
+            // Log validation details to console for debugging
+            if (data.details) {
+                console.error('Validation details:', data.details);
+            }
             showError('modalError', data.error || 'Update failed');
         }
     } catch (error) {
