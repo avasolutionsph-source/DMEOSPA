@@ -310,9 +310,17 @@ class App {
 
         // Load the gift certificates JavaScript
         if (!window.GiftCertificateManager) {
+            // Check if script is already in DOM
+            const existingScript = document.querySelector('script[src*="gift-certificates.js"]');
+            if (existingScript) {
+                console.log('Gift certificates script already in DOM, removing it');
+                existingScript.remove();
+            }
+            
             // First time loading - load the script
             const script = document.createElement('script');
-            script.src = 'js/gift-certificates.js';
+            script.src = 'js/gift-certificates.js?t=' + Date.now(); // Add timestamp to force reload
+            script.id = 'gift-certificates-script';
             script.onload = async () => {
                 console.log('Gift certificates script loaded');
                 // Wait a tick for DOM to be ready
@@ -322,9 +330,13 @@ class App {
                     console.log('Gift Certificate Manager initialized:', window.giftCertificateManager);
                 }
             };
+            script.onerror = (error) => {
+                console.error('Failed to load gift certificates script:', error);
+            };
             document.body.appendChild(script);
         } else {
             // Script already loaded, just create new instance
+            console.log('Gift Certificate class already exists, creating new instance');
             if (window.giftCertificateManager) {
                 // Clean up old instance if exists
                 window.giftCertificateManager = null;
