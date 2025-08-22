@@ -228,11 +228,11 @@ router.get('/revenue', async (req, res) => {
 // GET /admin/dashboard - Legacy dashboard route
 router.get('/dashboard', (req, res) => {
   res.json({ 
-    message: 'Admin dashboard - use /admin/stats for statistics',
+    message: 'Admin dashboard - use /api/admin/stats for statistics',
     endpoints: {
-      stats: '/admin/stats',
-      users: '/admin/users',
-      revenue: '/admin/revenue'
+      stats: '/api/admin/stats',
+      users: '/api/admin/users',
+      revenue: '/api/admin/revenue'
     }
   });
 });
@@ -243,10 +243,10 @@ router.get('/', (req, res) => {
     message: 'Admin API',
     version: '1.0.0',
     endpoints: {
-      stats: '/admin/stats',
-      users: '/admin/users',
-      user: '/admin/user/:id',
-      revenue: '/admin/revenue'
+      stats: '/api/admin/stats',
+      users: '/api/admin/users',
+      user: '/api/admin/user/:id',
+      revenue: '/api/admin/revenue'
     }
   });
 });

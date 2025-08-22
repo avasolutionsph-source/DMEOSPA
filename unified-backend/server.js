@@ -180,7 +180,7 @@ if (process.env.NODE_ENV !== 'production') {
 // Serve marketing website static files
 app.use('/marketing', express.static(path.join(__dirname, '../marketing-website/public')));
 
-// Marketing website routes (static serving)
+// Marketing website routes (static serving) - MUST come before API routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../marketing-website/public/index.html'));
 });
@@ -203,6 +203,11 @@ app.get('/register', (req, res) => {
 
 app.get('/business-dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, '../marketing-website/public/business-dashboard.html'));
+});
+
+// Admin page route - MUST come before /admin API router
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '../marketing-website/public/admin.html'));
 });
 
 // Serve PWA static files
@@ -247,8 +252,8 @@ app.get('/api/version', (req, res) => {
 app.use('/api', apiRouter);           // Main API endpoints for PWA
 app.use('/api/sync', syncRouter);     // Sync endpoints for PWA data
 app.use('/api/realtime', realtimeRouter); // Real-time updates via Socket.IO
+app.use('/api/admin', adminRouter);   // Admin API endpoints
 app.use('/marketing', marketingRouter); // Marketing website specific endpoints
-app.use('/admin', adminRouter);       // Admin panel endpoints
 
 // ============================================
 // SOCKET.IO REAL-TIME EVENTS
