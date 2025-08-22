@@ -76,13 +76,15 @@
     const initializeCompleteLogger = () => {
         console.log('📝 Initializing Complete Logger System...');
         
-        // The CompleteLogger should already be loaded by logger-complete.js
-        if (typeof CompleteLogger !== 'undefined') {
+        // The FixedLogger/CompleteLogger should already be loaded by logger-complete.js
+        const LoggerClass = window.FixedLogger || window.CompleteLogger;
+        
+        if (LoggerClass) {
             // Backup existing logger
             backupExistingLogger();
             
             // Create new complete logger instance
-            window.logger = new CompleteLogger();
+            window.logger = new LoggerClass();
             
             console.log('✅ Complete Logger System initialized and ready');
             
@@ -94,7 +96,7 @@
             }
             
         } else {
-            console.error('❌ CompleteLogger class not found. Make sure logger-complete.js is loaded first.');
+            console.error('❌ FixedLogger/CompleteLogger class not found. Make sure logger-complete.js is loaded first.');
         }
     };
 
