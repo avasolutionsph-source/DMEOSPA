@@ -12,7 +12,8 @@
       "Bash(touch:*)",
       "Bash(mkdir:*)",
       "Bash(mv:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npm start)"
     ],
     "deny": [],
     "ask": []
