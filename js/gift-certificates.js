@@ -48,37 +48,59 @@ class GiftCertificateManager {
             {
                 template: 'elegant',
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                fontFamily: 'Georgia, serif',
-                borderStyle: 'double',
-                pattern: 'url("data:image/svg+xml,%3Csvg width="20" height="20" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%239C92AC" fill-opacity="0.1"%3E%3Cpath d="M0 0h20L0 20z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
+                fontFamily: 'Playfair Display, serif',
+                borderStyle: '8px double rgba(255,255,255,0.6)',
+                pattern: 'url("data:image/svg+xml,%3Csvg width="60" height="60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23FFFFFF" fill-opacity="0.08"%3E%3Cpath d="M30 0l30 30-30 30-30-30z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+                decorativeCorners: true,
+                shadowEffect: '0 15px 35px rgba(102, 126, 234, 0.4)',
+                textShadow: '2px 2px 8px rgba(0,0,0,0.4)',
+                accentColor: '#FFD700'
             },
             {
                 template: 'modern',
-                background: 'linear-gradient(to right, #fa709a 0%, #fee140 100%)',
-                fontFamily: 'Helvetica, Arial, sans-serif',
-                borderStyle: 'solid',
-                pattern: 'url("data:image/svg+xml,%3Csvg width="40" height="40" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%239C92AC" fill-opacity="0.05"%3E%3Cpath d="M0 40L40 0H20L0 20z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+                fontFamily: 'Inter, sans-serif',
+                borderStyle: '4px solid rgba(255,255,255,0.4)',
+                pattern: 'url("data:image/svg+xml,%3Csvg width="80" height="80" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23FFFFFF" fill-opacity="0.06"%3E%3Ccircle cx="40" cy="40" r="20"/%3E%3Ccircle cx="0" cy="0" r="20"/%3E%3Ccircle cx="80" cy="80" r="20"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+                decorativeCorners: false,
+                shadowEffect: '0 20px 40px rgba(240, 147, 251, 0.3)',
+                textShadow: '1px 1px 4px rgba(0,0,0,0.3)',
+                accentColor: '#FFFFFF'
             },
             {
                 template: 'luxury',
-                background: 'linear-gradient(to right, #0f0c29, #302b63, #24243e)',
-                fontFamily: 'Playfair Display, serif',
-                borderStyle: 'ridge',
-                pattern: 'url("data:image/svg+xml,%3Csvg width="60" height="60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23FFD700" fill-opacity="0.03"%3E%3Cpath d="M30 30l15-15 15 15-15 15z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
+                background: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
+                fontFamily: 'Cinzel, serif',
+                borderStyle: '6px ridge #FFD700',
+                pattern: 'url("data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23FFD700" fill-opacity="0.08"%3E%3Cpath d="M50 0l25 25-25 25-25-25z M0 50l25 25-25 25-25-25z M100 50l25 25-25 25-25-25z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+                decorativeCorners: true,
+                shadowEffect: '0 25px 50px rgba(15, 12, 41, 0.6)',
+                textShadow: '3px 3px 6px rgba(0,0,0,0.6)',
+                accentColor: '#FFD700',
+                luxuryFrame: true
             },
             {
                 template: 'festive',
-                background: 'linear-gradient(to top, #a8edea 0%, #fed6e3 100%)',
+                background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%)',
                 fontFamily: 'Dancing Script, cursive',
-                borderStyle: 'dotted',
-                pattern: 'url("data:image/svg+xml,%3Csvg width="20" height="20" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23FF69B4" fill-opacity="0.1"%3E%3Ccircle cx="10" cy="10" r="3"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
+                borderStyle: '5px dashed rgba(255,255,255,0.8)',
+                pattern: 'url("data:image/svg+xml,%3Csvg width="50" height="50" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23FF69B4" fill-opacity="0.15"%3E%3Ccircle cx="25" cy="25" r="8"/%3E%3Ccircle cx="0" cy="0" r="4"/%3E%3Ccircle cx="50" cy="50" r="4"/%3E%3Cstar cx="12" cy="38" r="3"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+                decorativeCorners: false,
+                shadowEffect: '0 15px 30px rgba(255, 154, 158, 0.4)',
+                textShadow: '2px 2px 4px rgba(0,0,0,0.2)',
+                accentColor: '#FF1493',
+                celebrationTheme: true
             },
             {
-                template: 'minimalist',
-                background: 'linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%)',
-                fontFamily: 'Montserrat, sans-serif',
-                borderStyle: 'none',
-                pattern: 'none'
+                template: 'professional',
+                background: 'linear-gradient(135deg, #2c3e50 0%, #3498db 100%)',
+                fontFamily: 'Roboto, sans-serif',
+                borderStyle: '3px solid rgba(255,255,255,0.5)',
+                pattern: 'url("data:image/svg+xml,%3Csvg width="120" height="120" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23FFFFFF" fill-opacity="0.04"%3E%3Cpath d="M0 0h60v60H0zM60 60h60v60H60z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+                decorativeCorners: false,
+                shadowEffect: '0 12px 24px rgba(44, 62, 80, 0.3)',
+                textShadow: '1px 1px 3px rgba(0,0,0,0.4)',
+                accentColor: '#3498db'
             }
         ];
 
@@ -357,26 +379,116 @@ class GiftCertificateManager {
                     <button class="close-modal">×</button>
                 </div>
                 <div class="modal-body">
-                    <div class="certificate-full-preview" style="background: ${certificate.design.background}; background-image: ${certificate.design.pattern}; font-family: ${certificate.design.fontFamily};">
-                        <div class="certificate-border" style="border-style: ${certificate.design.borderStyle};">
-                            <h1>GIFT CERTIFICATE</h1>
-                            <div class="control-number">${certificate.controlNumber}</div>
-                            <div class="recipient-section">
-                                <p>This certificate is presented to</p>
-                                <h2>${certificate.recipientName}</h2>
+                    <div class="certificate-full-preview" style="
+                        background: ${certificate.design.background}; 
+                        background-image: ${certificate.design.pattern}; 
+                        font-family: ${certificate.design.fontFamily};
+                        box-shadow: ${certificate.design.shadowEffect || '0 10px 30px rgba(0,0,0,0.3)'};
+                        position: relative;
+                        border-radius: 15px;
+                        overflow: hidden;
+                    ">
+                        ${certificate.design.decorativeCorners ? `
+                            <div class="decorative-corner top-left"></div>
+                            <div class="decorative-corner top-right"></div>
+                            <div class="decorative-corner bottom-left"></div>
+                            <div class="decorative-corner bottom-right"></div>
+                        ` : ''}
+                        <div class="certificate-border" style="
+                            border: ${certificate.design.borderStyle};
+                            ${certificate.design.luxuryFrame ? 'background: linear-gradient(45deg, rgba(255,215,0,0.1), transparent, rgba(255,215,0,0.1));' : ''}
+                        ">
+                            <div class="certificate-header-elegant">
+                                <h1 style="
+                                    text-shadow: ${certificate.design.textShadow};
+                                    color: white;
+                                    font-size: 42px;
+                                    margin-bottom: 8px;
+                                    letter-spacing: 4px;
+                                    font-weight: 300;
+                                ">GIFT CERTIFICATE</h1>
+                                <div class="control-number" style="
+                                    color: ${certificate.design.accentColor};
+                                    font-size: 16px;
+                                    font-weight: 600;
+                                    letter-spacing: 2px;
+                                    margin-bottom: 30px;
+                                    text-shadow: ${certificate.design.textShadow};
+                                ">${certificate.controlNumber}</div>
                             </div>
-                            <div class="value-section">
-                                <p>In the amount of</p>
-                                <h1>₱${certificate.value.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</h1>
+                            
+                            <div class="recipient-section" style="margin: 25px 0;">
+                                <p style="
+                                    color: rgba(255,255,255,0.9);
+                                    font-size: 18px;
+                                    margin-bottom: 10px;
+                                    font-style: italic;
+                                ">This certificate is presented to</p>
+                                <h2 style="
+                                    color: ${certificate.design.accentColor};
+                                    font-size: 32px;
+                                    margin: 15px 0;
+                                    text-shadow: ${certificate.design.textShadow};
+                                    font-weight: 400;
+                                    text-decoration: underline;
+                                    text-decoration-color: rgba(255,255,255,0.3);
+                                ">${certificate.recipientName}</h2>
                             </div>
+                            
+                            <div class="value-section" style="margin: 30px 0;">
+                                <p style="
+                                    color: rgba(255,255,255,0.9);
+                                    font-size: 18px;
+                                    margin-bottom: 15px;
+                                    font-style: italic;
+                                ">In the amount of</p>
+                                <h1 style="
+                                    color: ${certificate.design.accentColor};
+                                    font-size: 56px;
+                                    margin: 20px 0;
+                                    text-shadow: ${certificate.design.textShadow};
+                                    font-weight: 700;
+                                    letter-spacing: 2px;
+                                ">₱${certificate.value.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</h1>
+                            </div>
+                            
                             ${certificate.message ? `
-                                <div class="message-section">
-                                    <p>${certificate.message}</p>
+                                <div class="message-section" style="
+                                    margin: 25px 0;
+                                    padding: 15px;
+                                    background: rgba(255,255,255,0.1);
+                                    border-radius: 10px;
+                                    border: 1px solid rgba(255,255,255,0.2);
+                                ">
+                                    <p style="
+                                        color: white;
+                                        font-size: 16px;
+                                        font-style: italic;
+                                        line-height: 1.6;
+                                        text-shadow: ${certificate.design.textShadow};
+                                    ">"${certificate.message}"</p>
                                 </div>
                             ` : ''}
-                            <div class="footer-section">
-                                <p>Valid until ${new Date(certificate.expiryDate).toLocaleDateString()}</p>
-                                <p>Issued by ${certificate.issuedBy}</p>
+                            
+                            <div class="footer-section" style="margin-top: 30px;">
+                                <div style="
+                                    display: flex;
+                                    justify-content: space-between;
+                                    align-items: center;
+                                    padding: 20px 0;
+                                    border-top: 2px solid rgba(255,255,255,0.3);
+                                ">
+                                    <p style="
+                                        color: rgba(255,255,255,0.8);
+                                        font-size: 14px;
+                                        margin: 0;
+                                    ">Valid until ${new Date(certificate.expiryDate).toLocaleDateString()}</p>
+                                    <p style="
+                                        color: rgba(255,255,255,0.8);
+                                        font-size: 14px;
+                                        margin: 0;
+                                    ">Issued by ${certificate.issuedBy}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -440,6 +552,7 @@ class GiftCertificateManager {
             <html>
             <head>
                 <title>Gift Certificate - ${certificate.controlNumber}</title>
+                <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@300;400;700&family=Inter:wght@300;400;600&family=Cinzel:wght@400;600&family=Dancing+Script:wght@400;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
                 <style>
                     * {
                         margin: 0;
@@ -453,64 +566,152 @@ class GiftCertificateManager {
                         align-items: center;
                         min-height: 100vh;
                         background: #f0f0f0;
+                        padding: 20px;
                     }
                     .certificate {
-                        width: 800px;
-                        height: 500px;
+                        width: 900px;
+                        height: 600px;
                         background: ${certificate.design.background};
                         background-image: ${certificate.design.pattern};
-                        padding: 40px;
-                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                        padding: 50px;
+                        box-shadow: ${certificate.design.shadowEffect || '0 25px 50px rgba(0,0,0,0.4)'};
                         position: relative;
+                        border-radius: 15px;
+                        overflow: hidden;
+                    }
+                    .decorative-corner {
+                        position: absolute;
+                        width: 60px;
+                        height: 60px;
+                        background: linear-gradient(45deg, ${certificate.design.accentColor}40, transparent);
+                        z-index: 1;
+                    }
+                    .decorative-corner.top-left {
+                        top: 0;
+                        left: 0;
+                        clip-path: polygon(0 0, 100% 0, 0 100%);
+                    }
+                    .decorative-corner.top-right {
+                        top: 0;
+                        right: 0;
+                        clip-path: polygon(100% 0, 100% 100%, 0 0);
+                    }
+                    .decorative-corner.bottom-left {
+                        bottom: 0;
+                        left: 0;
+                        clip-path: polygon(0 0, 100% 100%, 0 100%);
+                    }
+                    .decorative-corner.bottom-right {
+                        bottom: 0;
+                        right: 0;
+                        clip-path: polygon(100% 0, 100% 100%, 0 100%);
                     }
                     .certificate-border {
-                        border: 5px ${certificate.design.borderStyle} rgba(255,255,255,0.3);
+                        border: ${certificate.design.borderStyle};
                         height: 100%;
-                        padding: 30px;
+                        padding: 40px;
                         text-align: center;
                         display: flex;
                         flex-direction: column;
                         justify-content: space-between;
+                        position: relative;
+                        border-radius: 10px;
+                        ${certificate.design.luxuryFrame ? 'background: linear-gradient(45deg, rgba(255,215,0,0.1), transparent, rgba(255,215,0,0.1));' : ''}
                     }
-                    h1 {
+                    .certificate-header h1 {
                         color: white;
-                        font-size: 36px;
-                        margin-bottom: 10px;
-                        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                        font-size: 48px;
+                        margin-bottom: 15px;
+                        text-shadow: ${certificate.design.textShadow};
+                        letter-spacing: 6px;
+                        font-weight: 300;
                     }
                     .control-number {
+                        color: ${certificate.design.accentColor};
+                        font-size: 18px;
+                        margin-bottom: 30px;
+                        font-weight: 600;
+                        letter-spacing: 3px;
+                        text-shadow: ${certificate.design.textShadow};
+                    }
+                    .recipient-section p {
                         color: rgba(255,255,255,0.9);
-                        font-size: 14px;
-                        margin-bottom: 20px;
+                        font-size: 20px;
+                        margin-bottom: 15px;
+                        font-style: italic;
                     }
                     .recipient-section h2 {
-                        color: white;
-                        font-size: 28px;
-                        margin: 10px 0;
+                        color: ${certificate.design.accentColor};
+                        font-size: 36px;
+                        margin: 15px 0;
+                        text-shadow: ${certificate.design.textShadow};
+                        font-weight: 400;
+                        text-decoration: underline;
+                        text-decoration-color: rgba(255,255,255,0.3);
+                    }
+                    .value-section p {
+                        color: rgba(255,255,255,0.9);
+                        font-size: 20px;
+                        margin-bottom: 20px;
+                        font-style: italic;
                     }
                     .value-section h1 {
-                        color: #FFD700;
-                        font-size: 48px;
-                        margin: 20px 0;
+                        color: ${certificate.design.accentColor};
+                        font-size: 64px;
+                        margin: 25px 0;
+                        text-shadow: ${certificate.design.textShadow};
+                        font-weight: 700;
+                        letter-spacing: 3px;
                     }
-                    p {
-                        color: rgba(255,255,255,0.9);
+                    .message-section {
+                        margin: 30px 0;
+                        padding: 20px;
+                        background: rgba(255,255,255,0.1);
+                        border-radius: 12px;
+                        border: 1px solid rgba(255,255,255,0.2);
+                    }
+                    .message-section p {
+                        color: white;
+                        font-size: 18px;
+                        font-style: italic;
+                        line-height: 1.6;
+                        text-shadow: ${certificate.design.textShadow};
+                    }
+                    .footer {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 25px 0;
+                        border-top: 2px solid rgba(255,255,255,0.3);
+                        margin-top: 20px;
+                    }
+                    .footer p {
+                        color: rgba(255,255,255,0.8);
                         font-size: 16px;
                     }
                     @media print {
                         body {
                             background: white;
+                            padding: 0;
                         }
                         .certificate {
                             box-shadow: none;
+                            width: 100%;
+                            height: 100vh;
                         }
                     }
                 </style>
             </head>
             <body>
                 <div class="certificate">
+                    ${certificate.design.decorativeCorners ? `
+                        <div class="decorative-corner top-left"></div>
+                        <div class="decorative-corner top-right"></div>
+                        <div class="decorative-corner bottom-left"></div>
+                        <div class="decorative-corner bottom-right"></div>
+                    ` : ''}
                     <div class="certificate-border">
-                        <div>
+                        <div class="certificate-header">
                             <h1>GIFT CERTIFICATE</h1>
                             <div class="control-number">${certificate.controlNumber}</div>
                         </div>
@@ -524,10 +725,10 @@ class GiftCertificateManager {
                         </div>
                         ${certificate.message ? `
                             <div class="message-section">
-                                <p>${certificate.message}</p>
+                                <p>"${certificate.message}"</p>
                             </div>
                         ` : ''}
-                        <div>
+                        <div class="footer">
                             <p>Valid until ${new Date(certificate.expiryDate).toLocaleDateString()}</p>
                             <p>Issued by ${certificate.issuedBy}</p>
                         </div>
