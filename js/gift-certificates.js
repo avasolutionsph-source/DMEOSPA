@@ -621,12 +621,8 @@ class GiftCertificateManager {
             return;
         }
         
-        // Remove any existing listeners first
-        const newContainer = container.cloneNode(true);
-        container.parentNode.replaceChild(newContainer, container);
-        
         // Add single delegated event listener for all clicks
-        newContainer.addEventListener('click', function(e) {
+        container.addEventListener('click', function(e) {
             console.log('Click detected in gift certificates container');
             console.log('Clicked element:', e.target);
             console.log('Clicked element tag:', e.target.tagName);
@@ -855,6 +851,7 @@ class GiftCertificateManager {
 window.loadGiftCertificates = async () => {
     console.log('Loading Gift Certificates...');
     try {
+        // Create the manager
         window.giftCertificateManager = new GiftCertificateManager();
         console.log('Gift Certificate Manager created and attached to window');
         
@@ -863,6 +860,13 @@ window.loadGiftCertificates = async () => {
             console.error('Failed to attach Gift Certificate Manager to window');
         } else {
             console.log('Manager methods available:', Object.getOwnPropertyNames(Object.getPrototypeOf(window.giftCertificateManager)));
+            
+            // Make methods globally accessible as fallback
+            window.showGCCreateModal = () => window.giftCertificateManager.showCreateModal();
+            window.showGCValidateModal = () => window.giftCertificateManager.showValidateModal();
+            window.exportGCCertificates = () => window.giftCertificateManager.exportCertificates();
+            
+            console.log('Global helper functions created');
         }
     } catch (error) {
         console.error('Error creating Gift Certificate Manager:', error);
@@ -871,3 +875,22 @@ window.loadGiftCertificates = async () => {
 
 // Export for use in other modules
 window.GiftCertificateManager = GiftCertificateManager;
+
+// Add a test function to verify everything is working
+window.testGC = () => {
+    console.log('Testing Gift Certificate System...');
+    console.log('Manager exists?', !!window.giftCertificateManager);
+    if (window.giftCertificateManager) {
+        console.log('Manager type:', window.giftCertificateManager.constructor.name);
+        console.log('Methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(window.giftCertificateManager)));
+        console.log('Testing showCreateModal...');
+        try {
+            window.giftCertificateManager.showCreateModal();
+            console.log('✅ Modal opened successfully!');
+        } catch (error) {
+            console.error('❌ Error opening modal:', error);
+        }
+    } else {
+        console.error('❌ Gift Certificate Manager not found!');
+    }
+};

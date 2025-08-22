@@ -228,13 +228,13 @@ class App {
                 <div class="gc-header">
                     <h1><i class="fas fa-gift"></i> Gift Certificate Management</h1>
                     <div class="gc-actions">
-                        <button class="btn-primary" id="create-certificate-btn" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
+                        <button class="btn-primary" id="create-certificate-btn" onclick="if(window.giftCertificateManager) window.giftCertificateManager.showCreateModal(); else console.error('Manager not loaded');" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
                             <i class="fas fa-plus"></i> Create Certificate
                         </button>
-                        <button class="btn-secondary" id="validate-certificate-btn" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
+                        <button class="btn-secondary" id="validate-certificate-btn" onclick="if(window.giftCertificateManager) window.giftCertificateManager.showValidateModal(); else console.error('Manager not loaded');" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
                             <i class="fas fa-check"></i> Validate Certificate
                         </button>
-                        <button class="btn-secondary" id="export-certificates-btn" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
+                        <button class="btn-secondary" id="export-certificates-btn" onclick="if(window.giftCertificateManager) window.giftCertificateManager.exportCertificates(); else console.error('Manager not loaded');" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
                             <i class="fas fa-download"></i> Export
                         </button>
                     </div>
@@ -274,10 +274,10 @@ class App {
                 </div>
 
                 <div class="gc-filters">
-                    <button class="filter-btn active" data-filter="all">All Certificates</button>
-                    <button class="filter-btn" data-filter="active">Active</button>
-                    <button class="filter-btn" data-filter="redeemed">Redeemed</button>
-                    <button class="filter-btn" data-filter="expired">Expired</button>
+                    <button class="filter-btn active" data-filter="all" onclick="if(window.giftCertificateManager) { window.giftCertificateManager.currentFilter = 'all'; window.giftCertificateManager.renderCertificatesList(); document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); this.classList.add('active'); }">All Certificates</button>
+                    <button class="filter-btn" data-filter="active" onclick="if(window.giftCertificateManager) { window.giftCertificateManager.currentFilter = 'active'; window.giftCertificateManager.renderCertificatesList(); document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); this.classList.add('active'); }">Active</button>
+                    <button class="filter-btn" data-filter="redeemed" onclick="if(window.giftCertificateManager) { window.giftCertificateManager.currentFilter = 'redeemed'; window.giftCertificateManager.renderCertificatesList(); document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); this.classList.add('active'); }">Redeemed</button>
+                    <button class="filter-btn" data-filter="expired" onclick="if(window.giftCertificateManager) { window.giftCertificateManager.currentFilter = 'expired'; window.giftCertificateManager.renderCertificatesList(); document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); this.classList.add('active'); }">Expired</button>
                 </div>
 
                 <div id="certificates-list">
