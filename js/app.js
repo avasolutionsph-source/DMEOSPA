@@ -241,13 +241,13 @@ class App {
                 <div class="gc-header">
                     <h1><i class="fas fa-gift"></i> Gift Certificate Management</h1>
                     <div class="gc-actions">
-                        <button class="btn-primary" id="create-certificate-btn" onclick="if(window.giftCertificateManager) window.giftCertificateManager.showCreateModal(); else console.error('Manager not loaded');" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
+                        <button class="btn-primary" id="create-certificate-btn" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
                             <i class="fas fa-plus"></i> Create Certificate
                         </button>
-                        <button class="btn-secondary" id="validate-certificate-btn" onclick="if(window.giftCertificateManager) window.giftCertificateManager.showValidateModal(); else console.error('Manager not loaded');" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
+                        <button class="btn-secondary" id="validate-certificate-btn" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
                             <i class="fas fa-check"></i> Validate Certificate
                         </button>
-                        <button class="btn-secondary" id="export-certificates-btn" onclick="if(window.giftCertificateManager) window.giftCertificateManager.exportCertificates(); else console.error('Manager not loaded');" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
+                        <button class="btn-secondary" id="export-certificates-btn" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
                             <i class="fas fa-download"></i> Export
                         </button>
                     </div>

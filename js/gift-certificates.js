@@ -877,21 +877,4 @@ window.loadGiftCertificates = window.loadGiftCertificates || async function() {
     }
 };
 
-// Add a test function to verify everything is working
-window.testGC = () => {
-    console.log('Testing Gift Certificate System...');
-    console.log('Manager exists?', !!window.giftCertificateManager);
-    if (window.giftCertificateManager) {
-        console.log('Manager type:', window.giftCertificateManager.constructor.name);
-        console.log('Methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(window.giftCertificateManager)));
-        console.log('Testing showCreateModal...');
-        try {
-            window.giftCertificateManager.showCreateModal();
-            console.log('✅ Modal opened successfully!');
-        } catch (error) {
-            console.error('❌ Error opening modal:', error);
-        }
-    } else {
-        console.error('❌ Gift Certificate Manager not found!');
-    }
-};
+// Gift Certificate System Ready
