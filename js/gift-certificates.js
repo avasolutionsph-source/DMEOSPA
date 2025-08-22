@@ -326,14 +326,14 @@ class GiftCertificateManager {
                         <span class="value">${new Date(cert.expiryDate).toLocaleDateString()}</span>
                     </div>
                     <div class="certificate-actions">
-                        <button class="btn-view" onclick="window.giftCertificateManager.viewCertificate('${cert.id}')">
+                        <button class="btn-view" data-action="view" data-cert-id="${cert.id}">
                             <i class="fas fa-eye"></i> View
                         </button>
-                        <button class="btn-print" onclick="window.giftCertificateManager.printCertificate('${cert.id}')">
+                        <button class="btn-print" data-action="print" data-cert-id="${cert.id}">
                             <i class="fas fa-print"></i> Print
                         </button>
                         ${cert.status === 'active' ? `
-                            <button class="btn-redeem" onclick="window.giftCertificateManager.showRedeemModal('${cert.controlNumber}')">
+                            <button class="btn-redeem" data-action="redeem" data-control-number="${cert.controlNumber}">
                                 <i class="fas fa-check-circle"></i> Redeem
                             </button>
                         ` : ''}
@@ -354,7 +354,7 @@ class GiftCertificateManager {
             <div class="modal-content large">
                 <div class="modal-header">
                     <h2>Gift Certificate Details</h2>
-                    <button class="close-modal" onclick="this.closest('.modal').remove()">×</button>
+                    <button class="close-modal">×</button>
                 </div>
                 <div class="modal-body">
                     <div class="certificate-full-preview" style="background: ${certificate.design.background}; background-image: ${certificate.design.pattern}; font-family: ${certificate.design.fontFamily};">
@@ -550,7 +550,7 @@ class GiftCertificateManager {
             <div class="modal-content">
                 <div class="modal-header">
                     <h2>Redeem Gift Certificate</h2>
-                    <button class="close-modal" onclick="this.closest('.modal').remove()">×</button>
+                    <button class="close-modal">×</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
@@ -562,10 +562,10 @@ class GiftCertificateManager {
                         <input type="number" id="redeem-amount" placeholder="Enter amount" step="0.01" min="0.01">
                     </div>
                     <div class="form-actions">
-                        <button class="btn-primary" onclick="window.giftCertificateManager.processRedemption()">
+                        <button class="btn-primary" data-action="process-redemption">
                             Redeem
                         </button>
-                        <button class="btn-secondary" onclick="this.closest('.modal').remove()">
+                        <button class="btn-secondary" data-action="close-modal">
                             Cancel
                         </button>
                     </div>
@@ -609,8 +609,8 @@ class GiftCertificateManager {
         
         // Use document-level event delegation for reliability
         document.addEventListener('click', function(e) {
-            // Only handle clicks within gift certificates area
-            if (!e.target.closest('#gift-certificates')) return;
+            // Handle clicks within gift certificates area OR within gc-modal
+            if (!e.target.closest('#gift-certificates') && !e.target.closest('.gc-modal')) return;
             console.log('Click detected in gift certificates container');
             console.log('Clicked element:', e.target);
             console.log('Clicked element tag:', e.target.tagName);
@@ -640,10 +640,12 @@ class GiftCertificateManager {
                 return;
             }
             
-            // Handle action buttons by ID
+            // Handle action buttons by ID or data-action
             const buttonId = target.id;
-            console.log('Button clicked with ID:', buttonId);
+            const action = target.dataset.action;
+            console.log('Button clicked with ID:', buttonId, 'Action:', action);
             
+            // Handle main buttons by ID
             switch(buttonId) {
                 case 'create-certificate-btn':
                     console.log('Opening create modal...');
@@ -657,8 +659,66 @@ class GiftCertificateManager {
                     console.log('Exporting certificates...');
                     self.exportCertificates();
                     break;
+                case 'perform-validation-btn':
+                    console.log('Performing validation...');
+                    self.performValidation();
+                    break;
                 default:
-                    console.log('Unknown button ID:', buttonId);
+                    // Handle data-action buttons
+                    switch(action) {
+                        case 'view':
+                            const certId = target.dataset.certId;
+                            console.log('Viewing certificate:', certId);
+                            self.viewCertificate(certId);
+                            break;
+                        case 'print':
+                            const printCertId = target.dataset.certId;
+                            console.log('Printing certificate:', printCertId);
+                            self.printCertificate(printCertId);
+                            break;
+                        case 'redeem':
+                            const controlNumber = target.dataset.controlNumber;
+                            console.log('Redeeming certificate:', controlNumber);
+                            self.showRedeemModal(controlNumber);
+                            break;
+                        case 'process-redemption':
+                            console.log('Processing redemption...');
+                            self.processRedemption();
+                            break;
+                        case 'close-modal':
+                            console.log('Closing modal...');
+                            const modal = target.closest('.modal');
+                            if (modal) modal.remove();
+                            break;
+                        default:
+                            console.log('Unknown action:', action);
+                    }
+            }
+            
+            // Handle close modal buttons
+            if (target.classList.contains('close-modal')) {
+                console.log('Closing modal via close button...');
+                const modal = target.closest('.modal');
+                if (modal) modal.remove();
+            }
+            
+            // Handle form submissions
+            if (target.type === 'submit' && target.closest('form')) {
+                const form = target.closest('form');
+                if (form.id === 'create-certificate-form') {
+                    console.log('Processing certificate creation...');
+                    const formData = new FormData(form);
+                    const data = Object.fromEntries(formData);
+                    
+                    self.createCertificate(data).then(certificate => {
+                        alert(`Gift Certificate created successfully! Control Number: ${certificate.controlNumber}`);
+                        const modal = target.closest('.modal');
+                        if (modal) modal.remove();
+                        self.viewCertificate(certificate.id);
+                    }).catch(error => {
+                        alert('Failed to create certificate: ' + error.message);
+                    });
+                }
             }
         });
         
@@ -712,32 +772,13 @@ class GiftCertificateManager {
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="btn-primary">Create Certificate</button>
-                            <button type="button" class="btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+                            <button type="button" class="btn-secondary" data-action="close-modal">Cancel</button>
                         </div>
                     </form>
                 </div>
             </div>
         `;
         document.body.appendChild(modal);
-        
-        // Add event listeners after modal is added to DOM
-        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
-        
-        const self = this;
-        document.getElementById('create-certificate-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData);
-            
-            try {
-                const certificate = await self.createCertificate(data);
-                alert(`Gift Certificate created successfully! Control Number: ${certificate.controlNumber}`);
-                modal.remove();
-                self.viewCertificate(certificate.id);
-            } catch (error) {
-                alert('Failed to create certificate: ' + error.message);
-            }
-        });
     }
 
     showValidateModal() {
@@ -769,12 +810,6 @@ class GiftCertificateManager {
             </div>
         `;
         document.body.appendChild(modal);
-        
-        // Add event listeners
-        const self = this;
-        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
-        modal.querySelector('#close-validate-btn').addEventListener('click', () => modal.remove());
-        modal.querySelector('#perform-validation-btn').addEventListener('click', () => self.performValidation());
     }
 
     async performValidation() {
