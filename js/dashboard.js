@@ -81,8 +81,8 @@ class DashboardManager {
                 return;
             }
 
-            // Hardcoded API URL for production deployment
-            const apiUrl = 'https://ava-marketing-api.onrender.com';
+            // Use unified backend through API_CONFIG
+            const apiUrl = window.API_CONFIG?.BASE_URL || 'https://ava-pwa-backend.onrender.com';
 
             if (window.logger) {
                 window.logger.info('Fetching synced business stats', {
@@ -94,15 +94,11 @@ class DashboardManager {
                 console.log('📊 Fetching synced business stats from:', `${apiUrl}/api/business/stats`);
             }
 
-            const response = await fetch(`${apiUrl}/api/business/stats`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
+            const syncedStats = await window.API_CONFIG.request('/api/business/stats', {
+                method: 'GET'
             });
 
-            if (response.ok) {
-                const syncedStats = await response.json();
+            if (syncedStats) {
                 console.log('📊 Synced stats received:', syncedStats);
 
                 // Use synced data if available (overrides local data)

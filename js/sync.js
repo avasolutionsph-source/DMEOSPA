@@ -750,33 +750,49 @@ class SyncManager {
                 }
             }
             
-            // Build full URL
-            const url = endpoint.startsWith('http') 
-                ? endpoint 
-                : `${this.apiUrl}${endpoint}`;
-            
-            if (window.logger) {
-                window.logger.debug('Syncing data to backend', {
-                    category: 'SYNC',
-                    url,
-                    dataSize: JSON.stringify(data).length
+            // Use API_CONFIG if available for better error handling and retries
+            if (window.API_CONFIG) {
+                try {
+                    const result = await window.API_CONFIG.request(endpoint, {
+                        method: 'POST',
+                        body: data
+                    });
+                    
+                    console.log(`📡 Sync successful`);
+                    return { ok: true, data: result };
+                } catch (error) {
+                    console.error('❌ Sync failed:', error.message);
+                    return { ok: false, error: error.message };
+                }
+            } else {
+                // Fallback to direct fetch
+                const url = endpoint.startsWith('http') 
+                    ? endpoint 
+                    : `${this.apiUrl}${endpoint}`;
+                
+                if (window.logger) {
+                    window.logger.debug('Syncing data to backend', {
+                        category: 'SYNC',
+                        url,
+                        dataSize: JSON.stringify(data).length
+                    });
+                }
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(data)
                 });
-            }
+                
+                console.log(`📡 Sync response: ${response.status} ${response.statusText}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Sync failed:', response.status, errorText);
+                }
 
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(data)
-            });
-            
-            console.log(`📡 Sync response: ${response.status} ${response.statusText}`);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('❌ Sync failed:', response.status, errorText);
+                return response;
             }
-
-            return response;
         } catch (error) {
             console.error('❌ Server request failed:', error);
             throw error;

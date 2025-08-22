@@ -932,20 +932,15 @@ class EntitlementsSystem {
                 return;
             }
 
-            // Use unified backend URL
-            const apiUrl = window.API_CONFIG?.BASE_URL || 'https://ava-pwa-backend.onrender.com';
-
+            // Use unified backend through API_CONFIG
             console.log('🔄 Checking subscription status from server...');
             
-            const response = await fetch(`${apiUrl}/api/user/subscription`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            if (window.API_CONFIG) {
+                const data = await window.API_CONFIG.request('/api/user/subscription', {
+                    method: 'GET'
+                });
 
-            if (response.ok) {
-                const data = await response.json();
+                if (data) {
                 console.log('📊 Current subscription from server:', data.subscriptionPlan);
                 
                 // Check if subscription has changed
@@ -976,8 +971,9 @@ class EntitlementsSystem {
                     // Show notification to user
                     this.showSubscriptionChangeNotification(currentPlan, serverPlan);
                 }
-            } else {
-                console.log('⚠️ Could not check subscription status:', response.status);
+                } else {
+                    console.log('⚠️ Could not check subscription status');
+                }
             }
         } catch (error) {
             console.log('⚠️ Error checking subscription status:', error.message);

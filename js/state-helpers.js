@@ -9,15 +9,31 @@ class StateHelpers {
     // Auth Helpers
     async login(username, password) {
         try {
-            // Call your existing auth API
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
+            // Use API_CONFIG if available, otherwise fallback to direct fetch
+            let data;
+            if (window.API_CONFIG) {
+                data = await window.API_CONFIG.request(
+                    window.API_CONFIG.ENDPOINTS.AUTH.LOGIN,
+                    {
+                        method: 'POST',
+                        body: { username, password }
+                    }
+                );
+            } else {
+                // Fallback to direct fetch
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Login failed');
+                }
+                data = await response.json();
+            }
             
-            if (response.ok) {
-                const data = await response.json();
+            if (data && data.token) {
                 
                 // Update state
                 this.state.batchUpdate({

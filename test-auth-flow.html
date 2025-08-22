@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Authentication Flow</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Authentication Flow Test</h1>
+    
+    <div class="test-section">
+        <h2>1. API Configuration Status</h2>
+        <button onclick="checkAPIConfig()">Check API Config</button>
+        <div id="api-config-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Backend Health Check</h2>
+        <button onclick="checkBackendHealth()">Check Backend Health</button>
+        <div id="health-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test Login</h2>
+        <div>
+            <input type="email" id="test-email" placeholder="Email" value="test@example.com">
+            <input type="password" id="test-password" placeholder="Password" value="password123">
+            <br>
+            <button onclick="testLogin()">Test Login</button>
+            <button onclick="testLoginWithAuth()">Test Login (auth.js)</button>
+        </div>
+        <div id="login-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Test Authenticated Request</h2>
+        <button onclick="testAuthenticatedRequest()">Get User Profile</button>
+        <button onclick="testSubscription()">Check Subscription</button>
+        <button onclick="testBusinessStats()">Get Business Stats</button>
+        <div id="auth-request-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Token Management</h2>
+        <button onclick="checkToken()">Check Stored Token</button>
+        <button onclick="clearToken()">Clear Token</button>
+        <div id="token-status"></div>
+    </div>
+
+    <!-- Load required scripts -->
+    <script src="js/api-config.js"></script>
+    <script src="js/logger.js"></script>
+    <script src="js/state-manager.js"></script>
+    <script src="js/auth.js"></script>
+    
+    <script>
+        // Helper function to display status
+        function showStatus(elementId, message, type = 'info', data = null) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `
+                <div class="status ${type}">
+                    <strong>${message}</strong>
+                    ${data ? `<pre>${JSON.stringify(data, null, 2)}</pre>` : ''}
+                </div>
+            `;
+        }
+
+        // 1. Check API Configuration
+        async function checkAPIConfig() {
+            try {
+                if (window.API_CONFIG) {
+                    const config = {
+                        baseUrl: window.API_CONFIG.BASE_URL,
+                        wsUrl: window.API_CONFIG.WS_URL,
+                        endpoints: Object.keys(window.API_CONFIG.ENDPOINTS),
+                        hasToken: !!window.API_CONFIG.getToken()
+                    };
+                    showStatus('api-config-status', 'API Configuration loaded successfully', 'success', config);
+                } else {
+                    showStatus('api-config-status', 'API_CONFIG not found!', 'error');
+                }
+            } catch (error) {
+                showStatus('api-config-status', 'Error checking API config: ' + error.message, 'error');
+            }
+        }
+
+        // 2. Check Backend Health
+        async function checkBackendHealth() {
+            try {
+                showStatus('health-status', 'Checking backend health...', 'info');
+                
+                if (window.API_CONFIG) {
+                    const health = await window.API_CONFIG.checkHealth();
+                    if (health.healthy) {
+                        showStatus('health-status', 'Backend is healthy!', 'success', health);
+                    } else {
+                        showStatus('health-status', 'Backend is unhealthy', 'error', health);
+                    }
+                } else {
+                    showStatus('health-status', 'API_CONFIG not available', 'error');
+                }
+            } catch (error) {
+                showStatus('health-status', 'Health check failed: ' + error.message, 'error');
+            }
+        }
+
+        // 3. Test Login
+        async function testLogin() {
+            try {
+                const email = document.getElementById('test-email').value;
+                const password = document.getElementById('test-password').value;
+                
+                showStatus('login-status', 'Attempting login...', 'info');
+                
+                if (window.API_CONFIG) {
+                    const response = await window.API_CONFIG.request(
+                        window.API_CONFIG.ENDPOINTS.AUTH.LOGIN,
+                        {
+                            method: 'POST',
+                            body: { email, password }
+                        }
+                    );
+                    
+                    if (response.token) {
+                        window.API_CONFIG.setToken(response.token);
+                        showStatus('login-status', 'Login successful!', 'success', {
+                            user: response.user,
+                            token: response.token.substring(0, 20) + '...'
+                        });
+                    } else {
+                        showStatus('login-status', 'Login failed', 'error', response);
+                    }
+                } else {
+                    showStatus('login-status', 'API_CONFIG not available', 'error');
+                }
+            } catch (error) {
+                showStatus('login-status', 'Login error: ' + error.message, 'error');
+            }
+        }
+
+        // Test login using auth.js
+        async function testLoginWithAuth() {
+            try {
+                const email = document.getElementById('test-email').value;
+                const password = document.getElementById('test-password').value;
+                
+                showStatus('login-status', 'Attempting login via auth.js...', 'info');
+                
+                if (window.authSystem) {
+                    const result = await window.authSystem.loginWithUnifiedBackend(email, password);
+                    
+                    if (result.success) {
+                        showStatus('login-status', 'Login successful via auth.js!', 'success', {
+                            user: result.user,
+                            token: result.token ? result.token.substring(0, 20) + '...' : 'stored'
+                        });
+                    } else {
+                        showStatus('login-status', 'Login failed', 'error', result);
+                    }
+                } else {
+                    showStatus('login-status', 'authSystem not available', 'error');
+                }
+            } catch (error) {
+                showStatus('login-status', 'Login error: ' + error.message, 'error');
+            }
+        }
+
+        // 4. Test Authenticated Requests
+        async function testAuthenticatedRequest() {
+            try {
+                showStatus('auth-request-status', 'Fetching user profile...', 'info');
+                
+                if (window.API_CONFIG) {
+                    const profile = await window.API_CONFIG.request(
+                        window.API_CONFIG.ENDPOINTS.USER.PROFILE,
+                        { method: 'GET' }
+                    );
+                    
+                    showStatus('auth-request-status', 'Profile fetched successfully!', 'success', profile);
+                } else {
+                    showStatus('auth-request-status', 'API_CONFIG not available', 'error');
+                }
+            } catch (error) {
+                showStatus('auth-request-status', 'Request failed: ' + error.message, 'error');
+            }
+        }
+
+        async function testSubscription() {
+            try {
+                showStatus('auth-request-status', 'Checking subscription...', 'info');
+                
+                if (window.API_CONFIG) {
+                    const subscription = await window.API_CONFIG.request(
+                        '/api/user/subscription',
+                        { method: 'GET' }
+                    );
+                    
+                    showStatus('auth-request-status', 'Subscription fetched!', 'success', subscription);
+                } else {
+                    showStatus('auth-request-status', 'API_CONFIG not available', 'error');
+                }
+            } catch (error) {
+                showStatus('auth-request-status', 'Request failed: ' + error.message, 'error');
+            }
+        }
+
+        async function testBusinessStats() {
+            try {
+                showStatus('auth-request-status', 'Fetching business stats...', 'info');
+                
+                if (window.API_CONFIG) {
+                    const stats = await window.API_CONFIG.request(
+                        '/api/business/stats',
+                        { method: 'GET' }
+                    );
+                    
+                    showStatus('auth-request-status', 'Stats fetched!', 'success', stats);
+                } else {
+                    showStatus('auth-request-status', 'API_CONFIG not available', 'error');
+                }
+            } catch (error) {
+                showStatus('auth-request-status', 'Request failed: ' + error.message, 'error');
+            }
+        }
+
+        // 5. Token Management
+        function checkToken() {
+            try {
+                const tokens = {
+                    apiConfig: window.API_CONFIG ? window.API_CONFIG.getToken() : null,
+                    localStorage_authToken: localStorage.getItem('authToken'),
+                    localStorage_userToken: localStorage.getItem('userToken'),
+                    sessionStorage: sessionStorage.getItem('authToken')
+                };
+                
+                // Truncate tokens for display
+                for (let key in tokens) {
+                    if (tokens[key]) {
+                        tokens[key] = tokens[key].substring(0, 20) + '...';
+                    }
+                }
+                
+                showStatus('token-status', 'Token status', 'info', tokens);
+            } catch (error) {
+                showStatus('token-status', 'Error checking tokens: ' + error.message, 'error');
+            }
+        }
+
+        function clearToken() {
+            try {
+                if (window.API_CONFIG) {
+                    window.API_CONFIG.clearToken();
+                }
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userToken');
+                sessionStorage.removeItem('authToken');
+                
+                showStatus('token-status', 'All tokens cleared!', 'success');
+            } catch (error) {
+                showStatus('token-status', 'Error clearing tokens: ' + error.message, 'error');
+            }
+        }
+
+        // Auto-check API config on load
+        window.addEventListener('load', () => {
+            setTimeout(checkAPIConfig, 500);
+        });
+    </script>
+</body>
+</html>
