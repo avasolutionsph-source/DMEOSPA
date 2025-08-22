@@ -856,7 +856,7 @@
                                 Remember me on this device
                             </label>
                         </div>
-                        <button type="submit" id="loginBtn" class="btn btn-primary btn-full" onclick="console.log('🔥 LOGIN BUTTON CLICKED');">
+                        <button type="submit" id="loginBtn" class="btn btn-primary btn-full">
                             <i class="fas fa-sign-in-alt"></i> Sign In
                         </button>
                         <button type="button" onclick="testLogin()" class="btn btn-secondary btn-full" style="margin-top: 10px;">
@@ -1183,12 +1183,11 @@
             }
         }
         
-        // Real API login function
-        // DEPRECATED: Use AuthSystem instead
+        // Login handled by AuthSystem
         async function performRealLogin(email, password, modal) {
-            console.log('⚠️ performRealLogin called - redirecting to AuthSystem');
-            if (window.authSystem && window.authSystem.simulateLogin) {
-                return window.authSystem.simulateLogin(email, password);
+            // Redirect all login attempts to AuthSystem
+            if (window.authSystem && window.authSystem.handleLogin) {
+                window.authSystem.handleLogin();
             }
             return; 
             /* Rest of function disabled - use AuthSystem
