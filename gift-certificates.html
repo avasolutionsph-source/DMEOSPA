@@ -12,6 +12,8 @@
             max-width: 1400px;
             margin: 0 auto;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            position: relative;
+            z-index: 1;
         }
 
         .gc-header {
@@ -55,6 +57,9 @@
             align-items: center;
             gap: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 10;
+            pointer-events: auto !important;
         }
 
         .gc-actions .btn-primary {

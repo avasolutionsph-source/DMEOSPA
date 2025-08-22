@@ -222,59 +222,111 @@ class App {
             return;
         }
 
-        try {
-            // Load the gift certificates HTML content
+        // Clear container and inject HTML directly
+        container.innerHTML = `
+            <div class="gift-certificates-container">
+                <div class="gc-header">
+                    <h1><i class="fas fa-gift"></i> Gift Certificate Management</h1>
+                    <div class="gc-actions">
+                        <button class="btn-primary" id="create-certificate-btn">
+                            <i class="fas fa-plus"></i> Create Certificate
+                        </button>
+                        <button class="btn-secondary" id="validate-certificate-btn">
+                            <i class="fas fa-check"></i> Validate Certificate
+                        </button>
+                        <button class="btn-secondary" id="export-certificates-btn">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+
+                <div class="gc-dashboard">
+                    <div class="stat-card total">
+                        <i class="fas fa-certificate"></i>
+                        <div class="stat-value" id="gc-total-count">0</div>
+                        <div class="stat-label">Total Certificates</div>
+                    </div>
+                    <div class="stat-card active">
+                        <i class="fas fa-check-circle"></i>
+                        <div class="stat-value" id="gc-active-count">0</div>
+                        <div class="stat-label">Active</div>
+                    </div>
+                    <div class="stat-card redeemed">
+                        <i class="fas fa-shopping-cart"></i>
+                        <div class="stat-value" id="gc-redeemed-count">0</div>
+                        <div class="stat-label">Redeemed</div>
+                    </div>
+                    <div class="stat-card expired">
+                        <i class="fas fa-clock"></i>
+                        <div class="stat-value" id="gc-expired-count">0</div>
+                        <div class="stat-label">Expired</div>
+                    </div>
+                    <div class="stat-card value">
+                        <i class="fas fa-coins"></i>
+                        <div class="stat-value" id="gc-total-value">₱0.00</div>
+                        <div class="stat-label">Total Value</div>
+                    </div>
+                    <div class="stat-card remaining">
+                        <i class="fas fa-wallet"></i>
+                        <div class="stat-value" id="gc-remaining-value">₱0.00</div>
+                        <div class="stat-label">Remaining Value</div>
+                    </div>
+                </div>
+
+                <div class="gc-filters">
+                    <button class="filter-btn active" data-filter="all">All Certificates</button>
+                    <button class="filter-btn" data-filter="active">Active</button>
+                    <button class="filter-btn" data-filter="redeemed">Redeemed</button>
+                    <button class="filter-btn" data-filter="expired">Expired</button>
+                </div>
+
+                <div id="certificates-list">
+                    <div class="empty-state">
+                        <i class="fas fa-gift"></i>
+                        <h3>No Gift Certificates</h3>
+                        <p>Create your first gift certificate to get started</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Load styles if not present
+        if (!document.getElementById('gift-certificates-styles')) {
             const response = await fetch('gift-certificates.html');
             if (response.ok) {
                 const html = await response.text();
-                // Extract only the main content (not the full HTML)
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
-                const content = doc.querySelector('.gift-certificates-container');
                 const styles = doc.querySelector('style');
                 
-                if (content) {
-                    container.innerHTML = '';
-                    
-                    // Add the styles if not already present
-                    if (styles && !document.getElementById('gift-certificates-styles')) {
-                        const styleElement = document.createElement('style');
-                        styleElement.id = 'gift-certificates-styles';
-                        styleElement.textContent = styles.textContent;
-                        document.head.appendChild(styleElement);
-                        console.log('Gift certificates styles injected');
-                    }
-                    
-                    container.appendChild(content);
-                    console.log('Gift certificates content loaded');
-                    
-                    // Load the gift certificates JavaScript
-                    if (!window.giftCertificateManager) {
-                        const script = document.createElement('script');
-                        script.src = 'js/gift-certificates.js';
-                        script.onload = () => {
-                            console.log('Gift certificates script loaded');
-                            if (window.loadGiftCertificates) {
-                                window.loadGiftCertificates();
-                            }
-                        };
-                        document.body.appendChild(script);
-                    } else {
-                        // Manager already loaded, just reinitialize
-                        console.log('Reinitializing gift certificate manager');
-                        if (window.loadGiftCertificates) {
-                            window.loadGiftCertificates();
-                        }
-                    }
-                } else {
-                    console.error('Gift certificates content not found in HTML');
+                if (styles) {
+                    const styleElement = document.createElement('style');
+                    styleElement.id = 'gift-certificates-styles';
+                    styleElement.textContent = styles.textContent;
+                    document.head.appendChild(styleElement);
                 }
-            } else {
-                console.error('Failed to fetch gift-certificates.html:', response.status);
             }
-        } catch (error) {
-            console.error('Failed to load gift certificates page:', error);
-            container.innerHTML = '<div class="error-message">Failed to load gift certificates. Please refresh the page.</div>';
+        }
+
+        // Load the gift certificates JavaScript
+        if (!window.giftCertificateManager) {
+            const script = document.createElement('script');
+            script.src = 'js/gift-certificates.js';
+            script.onload = () => {
+                console.log('Gift certificates script loaded');
+                if (window.loadGiftCertificates) {
+                    window.loadGiftCertificates();
+                }
+            };
+            document.body.appendChild(script);
+        } else {
+            // Create new instance
+            window.giftCertificateManager = null;
+            setTimeout(() => {
+                if (window.loadGiftCertificates) {
+                    window.loadGiftCertificates();
+                }
+            }, 100);
         }
     }
 
