@@ -402,22 +402,11 @@ class App {
         return hasLoginData;
     }
 
-    // Force close setup wizard (simplified for manual use)
-    forceCloseSetupWizard() {
-        const setupModal = document.getElementById('setupWizardModal');
-        if (setupModal) {
-            setupModal.style.display = 'none';
-            setupModal.classList.add('setup-completed');
-            console.log('Setup wizard closed');
-        }
-    }
 
     // Handle login state change - called when user logs in successfully
     onUserLoggedIn() {
         console.log('User logged in - updating app state');
         
-        // Close setup wizard if it's open (manual setup wizard doesn't need persistence)
-        this.forceCloseSetupWizard();
         
         // Update login detection state
         const isLoggedIn = this.checkIfUserLoggedIn();
