@@ -13,37 +13,46 @@ const mockAdminData = {
     },
     users: [
         {
+            _id: 'user-1',
             id: 'user-1',
             email: 'john@example.com',
             firstName: 'John',
             lastName: 'Doe',
             businessName: 'John\'s Spa',
-            plan: 'professional',
-            status: 'active',
+            subscriptionPlan: 'professional',
+            subscriptionStatus: 'active',
             createdAt: new Date('2024-01-15').toISOString(),
-            lastLogin: new Date('2024-12-20').toISOString()
+            businessMetrics: {
+                lastActiveDate: new Date('2024-12-20').toISOString()
+            }
         },
         {
+            _id: 'user-2',
             id: 'user-2',
             email: 'jane@example.com',
             firstName: 'Jane',
             lastName: 'Smith',
             businessName: 'Wellness Center',
-            plan: 'basic',
-            status: 'active',
+            subscriptionPlan: 'basic',
+            subscriptionStatus: 'active',
             createdAt: new Date('2024-02-20').toISOString(),
-            lastLogin: new Date('2024-12-19').toISOString()
+            businessMetrics: {
+                lastActiveDate: new Date('2024-12-19').toISOString()
+            }
         },
         {
+            _id: 'user-3',
             id: 'user-3',
             email: 'demo@spa.com',
             firstName: 'Demo',
             lastName: 'User',
             businessName: 'Demo Business',
-            plan: 'unpaid',
-            status: 'active',
+            subscriptionPlan: 'unpaid',
+            subscriptionStatus: 'active',
             createdAt: new Date('2024-03-10').toISOString(),
-            lastLogin: new Date('2024-12-18').toISOString()
+            businessMetrics: {
+                lastActiveDate: new Date('2024-12-18').toISOString()
+            }
         }
     ]
 };
@@ -60,7 +69,11 @@ window.fetch = function(...args) {
             return Promise.resolve({
                 ok: true,
                 status: 200,
-                json: () => Promise.resolve({ success: true, stats: mockAdminData.stats })
+                statusText: 'OK',
+                headers: new Headers({'content-type': 'application/json'}),
+                json: () => Promise.resolve({ success: true, stats: mockAdminData.stats }),
+                text: () => Promise.resolve(JSON.stringify({ success: true, stats: mockAdminData.stats })),
+                clone: function() { return this; }
             });
         }
         
@@ -69,11 +82,19 @@ window.fetch = function(...args) {
             return Promise.resolve({
                 ok: true,
                 status: 200,
+                statusText: 'OK',
+                headers: new Headers({'content-type': 'application/json'}),
                 json: () => Promise.resolve({ 
                     success: true, 
                     users: mockAdminData.users,
                     total: mockAdminData.users.length
-                })
+                }),
+                text: () => Promise.resolve(JSON.stringify({ 
+                    success: true, 
+                    users: mockAdminData.users,
+                    total: mockAdminData.users.length
+                })),
+                clone: function() { return this; }
             });
         }
         
