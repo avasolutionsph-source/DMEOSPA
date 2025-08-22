@@ -287,10 +287,10 @@ class App {
                 </div>
 
                 <div class="gc-filters">
-                    <button class="filter-btn active" data-filter="all" onclick="if(window.giftCertificateManager) { window.giftCertificateManager.currentFilter = 'all'; window.giftCertificateManager.renderCertificatesList(); document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); this.classList.add('active'); }">All Certificates</button>
-                    <button class="filter-btn" data-filter="active" onclick="if(window.giftCertificateManager) { window.giftCertificateManager.currentFilter = 'active'; window.giftCertificateManager.renderCertificatesList(); document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); this.classList.add('active'); }">Active</button>
-                    <button class="filter-btn" data-filter="redeemed" onclick="if(window.giftCertificateManager) { window.giftCertificateManager.currentFilter = 'redeemed'; window.giftCertificateManager.renderCertificatesList(); document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); this.classList.add('active'); }">Redeemed</button>
-                    <button class="filter-btn" data-filter="expired" onclick="if(window.giftCertificateManager) { window.giftCertificateManager.currentFilter = 'expired'; window.giftCertificateManager.renderCertificatesList(); document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active')); this.classList.add('active'); }">Expired</button>
+                    <button class="filter-btn active" data-filter="all">All Certificates</button>
+                    <button class="filter-btn" data-filter="active">Active</button>
+                    <button class="filter-btn" data-filter="redeemed">Redeemed</button>
+                    <button class="filter-btn" data-filter="expired">Expired</button>
                 </div>
 
                 <div id="certificates-list">

@@ -595,7 +595,17 @@ class GiftCertificateManager {
 
     setupEventListeners() {
         console.log('Setting up Gift Certificate event listeners...');
+        
+        // Prevent multiple event listeners - check if already attached
+        if (window.gcEventListenerAttached) {
+            console.log('Event listeners already attached, skipping...');
+            return;
+        }
+        
         const self = this; // Store reference to this
+        
+        // Mark as attached
+        window.gcEventListenerAttached = true;
         
         // Use document-level event delegation for reliability
         document.addEventListener('click', function(e) {
@@ -843,6 +853,8 @@ window.loadGiftCertificates = window.loadGiftCertificates || async function() {
         // Destroy old instance if exists
         if (window.giftCertificateManager) {
             console.log('Destroying old Gift Certificate Manager instance');
+            // Reset event listener flag to allow reattachment
+            window.gcEventListenerAttached = false;
             window.giftCertificateManager = null;
         }
         
