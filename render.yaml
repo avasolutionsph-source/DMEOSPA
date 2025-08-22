@@ -24,7 +24,7 @@ services:
       - key: SUPER_ADMIN_PASSWORD
         value: Ava12345
       - key: ALLOWED_ORIGINS
-        value: https://ava-solutions-marketing.netlify.app,https://ava-solutions-pwa.netlify.app
+        value: https://ava-solutions-marketing.netlify.app,https://ava-solutions-pwa.netlify.app,https://ava-pwa-app.netlify.app
 
   # PWA Backend API (if needed)
   - type: web
@@ -46,6 +46,8 @@ services:
         generateValue: true
       - key: JWT_EXPIRE
         value: 7d
+      - key: ALLOWED_ORIGINS
+        value: https://ava-solutions-marketing.netlify.app,https://ava-solutions-pwa.netlify.app,https://ava-pwa-app.netlify.app
 
 databases:
   - name: ava-mongodb
