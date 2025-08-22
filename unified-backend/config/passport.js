@@ -18,6 +18,9 @@ export function setupPassport() {
 
   // Additional passport strategies can be configured here
   console.log('Passport configuration initialized');
+  
+  // Return passport instance for middleware use
+  return passport;
 }
 
 export default passport;
