@@ -102,52 +102,130 @@ class EntitlementsSystem {
         }
     }
 
-    // Set entitlements based on subscription plan - ALL USERS GET ALL FEATURES
+    // Set entitlements based on subscription plan - ENFORCE ACTUAL RESTRICTIONS
     setEntitlementsForPlan(plan) {
-        console.log(`🔍 ENTITLEMENTS DEBUG: Setting plan for "${plan}"`);
-        this.currentPlan = plan;
+        console.log(`🔍 ENTITLEMENTS: Setting plan for "${plan}"`);
+        this.currentPlan = plan || 'unpaid';
         
-        // ALL USERS GET ALL FEATURES - No restrictions
-        this.entitlements = {
-            pos: true,
-            inventory: true,
-            employees: true,
-            rooms: true,
-            'gift-certificates': true,
-            dashboard: 'full',
-            chatbot: true,
-            cloudBackup: true,
-            analytics: true,
-            multiUser: true,
-            support: 'priority'
-        };
+        // ENFORCE PLAN-BASED RESTRICTIONS
+        switch(this.currentPlan.toLowerCase()) {
+            case 'unpaid':
+                // Unpaid: No features at all
+                this.entitlements = {
+                    pos: false,
+                    inventory: false,
+                    employees: false,
+                    rooms: false,
+                    'gift-certificates': false,
+                    dashboard: 'none',
+                    chatbot: false,
+                    cloudBackup: false,
+                    analytics: false,
+                    multiUser: false,
+                    support: 'none',
+                    analyticsHistory: 0,
+                    maxDevices: 0
+                };
+                console.log('❌ UNPAID PLAN: No features available');
+                break;
+                
+            case 'basic':
+                // Basic: ₱1,999/month - Core POS & Basic Features
+                this.entitlements = {
+                    pos: true,              // ✅ Smart POS System
+                    inventory: true,        // ✅ Basic inventory tracking
+                    employees: false,       // ❌ No employee management
+                    rooms: false,           // ❌ No room management
+                    'gift-certificates': false, // ❌ No gift certificates
+                    dashboard: 'basic',     // ✅ Basic dashboard only
+                    chatbot: false,         // ❌ No AI assistant
+                    cloudBackup: false,     // ❌ No cloud backup
+                    analytics: 'basic',     // ✅ Basic analytics only
+                    multiUser: false,       // ❌ Single device only
+                    support: 'email',       // ✅ Email support only
+                    analyticsHistory: 30,   // 30-day history limit
+                    maxDevices: 1          // Single device only
+                };
+                console.log('📦 BASIC PLAN: Core POS features only');
+                break;
+                
+            case 'professional':
+            case 'pro':  // Support legacy 'pro' naming
+                // Professional: ₱4,999/month - Full Platform + AI
+                this.entitlements = {
+                    pos: true,              // ✅ Smart POS System
+                    inventory: true,        // ✅ Advanced inventory management
+                    employees: true,        // ✅ Full employee management
+                    rooms: true,            // ✅ Room management & booking
+                    'gift-certificates': true, // ✅ Gift certificate system
+                    dashboard: 'full',      // ✅ Full dashboard access
+                    chatbot: true,          // ✅ AI Business Assistant
+                    cloudBackup: true,      // ✅ Automated cloud backup
+                    analytics: 'advanced',  // ✅ Advanced analytics
+                    multiUser: true,        // ✅ Multi-device sync
+                    support: 'priority',    // ✅ Priority support
+                    analyticsHistory: -1,   // Unlimited history
+                    maxDevices: 5          // Up to 5 devices
+                };
+                console.log('🚀 PROFESSIONAL PLAN: Full platform access with AI');
+                break;
+                
+            case 'enterprise':
+                // Enterprise: ₱9,999/month - Everything + Multi-location
+                this.entitlements = {
+                    pos: true,              // ✅ Smart POS System
+                    inventory: true,        // ✅ Advanced inventory management
+                    employees: true,        // ✅ Full employee management
+                    rooms: true,            // ✅ Room management & booking
+                    'gift-certificates': true, // ✅ Gift certificate system
+                    dashboard: 'full',      // ✅ Full dashboard access
+                    chatbot: true,          // ✅ AI Business Assistant
+                    cloudBackup: true,      // ✅ Real-time cloud backup
+                    analytics: 'custom',    // ✅ Custom analytics & reports
+                    multiUser: true,        // ✅ Unlimited devices
+                    support: 'dedicated',   // ✅ Dedicated support
+                    analyticsHistory: -1,   // Unlimited history
+                    maxDevices: -1,         // Unlimited devices
+                    multiLocation: true,    // ✅ Multi-location support
+                    whiteLabel: true,       // ✅ White-label options
+                    customIntegrations: true // ✅ API access
+                };
+                console.log('🏢 ENTERPRISE PLAN: Full platform with multi-location');
+                break;
+                
+            default:
+                // Default to unpaid if unknown plan
+                console.warn(`⚠️ Unknown plan "${this.currentPlan}", defaulting to unpaid`);
+                this.setEntitlementsForPlan('unpaid');
+                return;
+        }
         
-        console.log('✅ ALL FEATURES ENABLED FOR ALL USERS!');
-        console.log('📋 Available Features:', this.entitlements);
+        console.log('📋 Entitlements set:', this.entitlements);
         
         // Force update UI immediately
-        setTimeout(() => this.updateUI(), 500);
-        console.log(`✅ Set ${plan} plan entitlements successfully`);
+        setTimeout(() => this.updateUI(), 100);
     }
 
-    // Set unpaid plan entitlements - NOW GIVES ALL FEATURES
+    // Set unpaid plan entitlements - PROPERLY RESTRICT FEATURES
     setUnpaidPlanEntitlements() {
         this.currentPlan = 'unpaid';
-        // ALL USERS GET ALL FEATURES
+        // UNPAID USERS GET NO FEATURES
         this.entitlements = {
-            pos: true,              // Full POS access
-            inventory: true,        // Full inventory management
-            employees: true,        // Full employee management
-            dashboard: 'full',      // Full dashboard access
-            chatbot: true,          // Full AI assistant
-            cloudBackup: true,      // Full cloud backup
-            analytics: true,        // Full analytics
-            multiUser: true,        // Full multi-user
-            support: 'priority',    // Full support
-            rooms: true,            // Full rooms access
-            'gift-certificates': true  // Full gift certificates access
+            pos: false,             // ❌ No POS access
+            inventory: false,       // ❌ No inventory management
+            employees: false,       // ❌ No employee management
+            dashboard: 'none',      // ❌ No dashboard access
+            chatbot: false,         // ❌ No AI assistant
+            cloudBackup: false,     // ❌ No cloud backup
+            analytics: false,       // ❌ No analytics
+            multiUser: false,       // ❌ No multi-user
+            support: 'none',        // ❌ No support
+            rooms: false,           // ❌ No rooms access
+            'gift-certificates': false, // ❌ No gift certificates
+            analyticsHistory: 0,    // No history
+            maxDevices: 0          // No devices
         };
-        console.log('Set unpaid plan entitlements - basic features only (POS + Dashboard)');
+        console.log('❌ Set unpaid plan entitlements - NO FEATURES AVAILABLE');
     }
 
     // Legacy method for backward compatibility
@@ -155,36 +233,92 @@ class EntitlementsSystem {
         this.setUnpaidPlanEntitlements();
     }
 
-    // Force update UI elements - ALL FEATURES ENABLED
+    // Force update UI elements - ENFORCE PLAN-BASED RESTRICTIONS
     updateUI() {
-        console.log('🔄 Updating UI - all features enabled for all users');
+        console.log(`🔄 Updating UI for ${this.currentPlan} plan with restrictions`);
         
-        // Enable ALL sidebar items for ALL users
+        // Update navigation items based on entitlements
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(element => {
-            // Enable everything
-            element.classList.remove('disabled', 'locked', 'premium-locked');
-            element.style.opacity = '1';
-            element.style.pointerEvents = 'auto';
+            const page = element.dataset.page || element.getAttribute('data-page');
+            let hasAccess = false;
             
-            // Remove crown icon if present
-            const crownIcon = element.querySelector('.crown-icon');
-            if (crownIcon) {
-                crownIcon.remove();
+            // Check access based on page/feature
+            switch(page) {
+                case 'pos':
+                    hasAccess = this.entitlements.pos;
+                    break;
+                case 'inventory':
+                    hasAccess = this.entitlements.inventory;
+                    break;
+                case 'employees':
+                    hasAccess = this.entitlements.employees;
+                    break;
+                case 'rooms':
+                    hasAccess = this.entitlements.rooms;
+                    break;
+                case 'gift-certificates':
+                    hasAccess = this.entitlements['gift-certificates'];
+                    break;
+                case 'chatbot':
+                    hasAccess = this.entitlements.chatbot;
+                    break;
+                case 'dashboard':
+                    hasAccess = this.entitlements.dashboard !== 'none';
+                    break;
+                case 'products':
+                    // Products tied to inventory
+                    hasAccess = this.entitlements.inventory;
+                    break;
+                case 'settings':
+                    // Settings always accessible but with limited options
+                    hasAccess = true;
+                    break;
+                default:
+                    // Unknown features default to restricted for unpaid
+                    hasAccess = this.currentPlan !== 'unpaid';
             }
             
-            // Remove lock icon if present
-            const lockIcon = element.querySelector('.fa-lock');
-            if (lockIcon) {
-                lockIcon.remove();
+            if (!hasAccess) {
+                // Disable the feature
+                element.classList.add('disabled', 'locked', 'premium-locked');
+                element.style.opacity = '0.5';
+                element.style.pointerEvents = 'none';
+                
+                // Add lock icon if not present
+                if (!element.querySelector('.fa-lock')) {
+                    const lockIcon = document.createElement('i');
+                    lockIcon.className = 'fas fa-lock';
+                    lockIcon.style.marginLeft = '5px';
+                    element.appendChild(lockIcon);
+                }
+                
+                // Add upgrade handler
+                element.onclick = (e) => {
+                    e.preventDefault();
+                    this.showUpgradePrompt(page);
+                };
+                
+                console.log(`🔒 Locked feature: ${page}`);
+            } else {
+                // Enable the feature
+                element.classList.remove('disabled', 'locked', 'premium-locked');
+                element.style.opacity = '1';
+                element.style.pointerEvents = 'auto';
+                
+                // Remove lock icon if present
+                const lockIcon = element.querySelector('.fa-lock');
+                if (lockIcon) {
+                    lockIcon.remove();
+                }
+                
+                // Remove upgrade onclick if it was set by us
+                if (element.onclick && element.onclick.toString().includes('showUpgradePrompt')) {
+                    element.onclick = null;
+                }
+                
+                console.log(`✅ Enabled feature: ${page}`);
             }
-            
-            // Remove upgrade onclick handlers
-            if (element.onclick && element.onclick.toString().includes('showUpgradePrompt')) {
-                element.onclick = null;
-            }
-            
-            console.log(`✅ Enabled feature: ${element.dataset.page || 'unknown'}`);
         });
         
         // Update plan badge in sidebar
@@ -219,20 +353,19 @@ class EntitlementsSystem {
         }
     }
 
-    // Show upgrade prompt - DISABLED, all features are free
+    // Show upgrade prompt for locked features
     showUpgradePrompt(feature) {
-        // Don't show upgrade prompts - all features are available
-        console.log('Upgrade prompt disabled - all features are free');
-        if (window.app && window.app.navigateTo) {
-            window.app.navigateTo(feature);
-        }
-        return;
+        console.log(`💰 Showing upgrade prompt for feature: ${feature}`);
         
-        // OLD CODE BELOW - NOT EXECUTED
         const featureNames = {
+            'pos': 'POS System',
             'inventory': 'Inventory Management',
             'employees': 'Employee Management',
-            'chatbot': 'AI Assistant'
+            'rooms': 'Room Management',
+            'gift-certificates': 'Gift Certificates',
+            'chatbot': 'AI Business Assistant',
+            'dashboard': 'Dashboard & Analytics',
+            'products': 'Product Management'
         };
         
         const featureName = featureNames[feature] || feature;
@@ -266,29 +399,57 @@ class EntitlementsSystem {
             margin: 20px;
         `;
         
+        // Determine which plan is needed for this feature
+        let requiredPlan = 'Professional';
+        let planPrice = '₱4,999/month';
+        let planFeatures = [];
+        
+        // Check which plan is needed based on feature
+        if (['pos', 'inventory'].includes(feature)) {
+            requiredPlan = 'Basic';
+            planPrice = '₱1,999/month';
+            planFeatures = [
+                '✅ Smart POS System',
+                '✅ Basic Inventory Tracking',
+                '✅ Basic Dashboard',
+                '✅ 30-Day Analytics',
+                '✅ Email Support'
+            ];
+        } else if (['employees', 'rooms', 'gift-certificates', 'chatbot'].includes(feature)) {
+            requiredPlan = 'Professional';
+            planPrice = '₱4,999/month';
+            planFeatures = [
+                '✅ Everything in Basic',
+                '✅ Employee Management',
+                '✅ Room Management & Booking',
+                '✅ Gift Certificate System',
+                '✅ AI Business Assistant',
+                '✅ Cloud Backup & Multi-device',
+                '✅ Priority Support'
+            ];
+        }
+        
         prompt.innerHTML = `
             <div style="font-size: 48px; margin-bottom: 15px;">👑</div>
             <h3 style="margin-bottom: 15px; font-size: 24px;">Premium Feature</h3>
             <p style="margin-bottom: 20px; opacity: 0.9; line-height: 1.5;">
-                <strong>${featureName}</strong> is a premium feature available with our Pro plan.
+                <strong>${featureName}</strong> requires the ${requiredPlan} plan or higher.
             </p>
             <div style="margin-bottom: 20px;">
                 <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                    <h4 style="margin-bottom: 10px;">Pro Plan includes:</h4>
+                    <h4 style="margin-bottom: 10px;">${requiredPlan} Plan (${planPrice})</h4>
                     <ul style="text-align: left; list-style: none; padding: 0;">
-                        <li style="margin-bottom: 5px;">✅ Inventory Management</li>
-                        <li style="margin-bottom: 5px;">✅ Employee Management</li>
-                        <li style="margin-bottom: 5px;">✅ AI Assistant</li>
-                        <li style="margin-bottom: 5px;">✅ Advanced Analytics</li>
-                        <li style="margin-bottom: 5px;">✅ Cloud Backup</li>
+                        ${planFeatures.map(f => `<li style="margin-bottom: 5px;">${f}</li>`).join('')}
                     </ul>
                 </div>
             </div>
             <div style="display: flex; gap: 10px; justify-content: center;">
-                <button class="upgrade-btn" onclick="this.parentElement.parentElement.parentElement.remove(); window.open('https://ava-solutions-marketing.netlify.app/pricing', '_blank');">
-                    🚀 Upgrade to Pro
+                <button class="upgrade-btn" style="background: white; color: #667eea; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;" 
+                    onclick="this.parentElement.parentElement.parentElement.remove(); window.open('https://ava-solutions-marketing.netlify.app/pricing?plan=${requiredPlan.toLowerCase()}', '_blank');">
+                    🚀 Upgrade to ${requiredPlan}
                 </button>
-                <button style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;" onclick="this.parentElement.parentElement.parentElement.remove();">
+                <button style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;" 
+                    onclick="this.parentElement.parentElement.parentElement.remove();">
                     Maybe Later
                 </button>
             </div>
@@ -330,10 +491,44 @@ class EntitlementsSystem {
         return Date.now() >= decoded.exp * 1000;
     }
 
-    // Check if user can access a feature - ALWAYS RETURNS TRUE
+    // Check if user can access a feature - ENFORCE PLAN RESTRICTIONS
     can(feature, level = true) {
-        // ALL USERS CAN ACCESS ALL FEATURES
-        return true;
+        // Check entitlements based on feature
+        if (!this.entitlements) {
+            console.warn('⚠️ No entitlements loaded, denying access');
+            return false;
+        }
+        
+        // Direct feature check
+        if (typeof this.entitlements[feature] !== 'undefined') {
+            const access = this.entitlements[feature];
+            
+            // Handle boolean access
+            if (typeof access === 'boolean') {
+                return access;
+            }
+            
+            // Handle level-based access (e.g., dashboard: 'full', 'basic', 'none')
+            if (typeof access === 'string') {
+                if (access === 'none') return false;
+                if (level === true) return access !== 'none';
+                return access === level || access === 'full';
+            }
+            
+            // Handle numeric limits (e.g., analyticsHistory: 30)
+            if (typeof access === 'number') {
+                return access > 0 || access === -1; // -1 means unlimited
+            }
+        }
+        
+        // Default to restricted for unpaid users
+        if (this.currentPlan === 'unpaid') {
+            console.log(`❌ Feature "${feature}" denied for unpaid plan`);
+            return false;
+        }
+        
+        // Default to allowed for paid plans if feature not explicitly defined
+        return this.currentPlan !== 'unpaid';
     }
 
     // Get current plan info
@@ -359,84 +554,104 @@ class EntitlementsSystem {
         this.updateSubscriptionStatus();
     }
 
-    // Gate navigation items - NO GATING, ALL FEATURES AVAILABLE
+    // Gate navigation items - ENFORCE PLAN-BASED RESTRICTIONS
     gateNavigationItems() {
         const navItems = document.querySelectorAll('.nav-item');
         
         navItems.forEach(item => {
-            // Enable all items - no restrictions
-            item.classList.remove('disabled', 'locked', 'premium-locked');
-            item.style.opacity = '1';
-            item.style.pointerEvents = 'auto';
-            
-            // Remove any lock icons
-            const lockIcon = item.querySelector('.fa-lock');
-            if (lockIcon) lockIcon.remove();
-            
-            // Remove crown icons
-            const crownIcon = item.querySelector('.crown-icon');
-            if (crownIcon) crownIcon.remove();
-            
-            // Remove upgrade onclick handlers
-            if (item.onclick && item.onclick.toString().includes('showUpgradePrompt')) {
-                item.onclick = null;
-            }
-        });
-        
-        console.log('✅ All navigation items enabled for all users');
-        return;
-        
-        // OLD CODE BELOW - NOT EXECUTED
-        navItems.forEach(item => {
-            const page = item.dataset.page;
+            const page = item.dataset.page || item.getAttribute('data-page');
             let canAccess = true;
             let showUpgrade = false;
             
+            // Check access based on feature
             switch (page) {
+                case 'pos':
+                    canAccess = this.can('pos');
+                    showUpgrade = !canAccess;
+                    break;
                 case 'inventory':
-                    canAccess = true;
+                    canAccess = this.can('inventory');
                     showUpgrade = !canAccess;
                     break;
                 case 'employees':
                     canAccess = this.can('employees');
                     showUpgrade = !canAccess;
                     break;
+                case 'rooms':
+                    canAccess = this.can('rooms');
+                    showUpgrade = !canAccess;
+                    break;
+                case 'gift-certificates':
+                    canAccess = this.can('gift-certificates');
+                    showUpgrade = !canAccess;
+                    break;
                 case 'chatbot':
                     canAccess = this.can('chatbot');
                     showUpgrade = !canAccess;
                     break;
-                // POS and Dashboard are always accessible but with limitations
-                case 'pos':
                 case 'dashboard':
-                case 'products':
-                case 'settings':
-                    canAccess = true;
+                    canAccess = this.can('dashboard');
+                    showUpgrade = !canAccess;
                     break;
+                case 'products':
+                    canAccess = this.can('inventory'); // Products tied to inventory
+                    showUpgrade = !canAccess;
+                    break;
+                case 'settings':
+                    canAccess = true; // Settings always accessible
+                    break;
+                default:
+                    // Unknown features - check plan
+                    canAccess = this.currentPlan !== 'unpaid';
+                    showUpgrade = !canAccess;
             }
             
             if (!canAccess) {
+                // Disable the item
+                item.classList.add('disabled', 'locked', 'premium-locked');
                 item.style.opacity = '0.5';
-                item.style.pointerEvents = 'none';
+                item.style.cursor = 'not-allowed';
                 
-                // Add upgrade indicator
-                if (showUpgrade && !item.querySelector('.upgrade-indicator')) {
-                    const upgradeIndicator = document.createElement('span');
-                    upgradeIndicator.className = 'upgrade-indicator';
-                    upgradeIndicator.innerHTML = '<i class="fas fa-crown"></i>';
-                    upgradeIndicator.title = 'Upgrade required';
-                    item.appendChild(upgradeIndicator);
+                // Add lock icon if not present
+                if (!item.querySelector('.fa-lock') && !item.querySelector('.crown-icon')) {
+                    const lockIcon = document.createElement('i');
+                    lockIcon.className = 'fas fa-lock';
+                    lockIcon.style.marginLeft = '5px';
+                    lockIcon.style.color = '#999';
+                    item.appendChild(lockIcon);
                 }
+                
+                // Add click handler to show upgrade prompt
+                item.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.showUpgradePrompt(page);
+                };
+                
+                console.log(`🔒 Locked navigation: ${page}`);
             } else {
+                // Enable the item
+                item.classList.remove('disabled', 'locked', 'premium-locked');
                 item.style.opacity = '1';
-                item.style.pointerEvents = 'auto';
+                item.style.cursor = 'pointer';
                 
-                // Remove upgrade indicator if present
-                const upgradeIndicator = item.querySelector('.upgrade-indicator');
-                if (upgradeIndicator) {
-                    upgradeIndicator.remove();
+                // Remove lock/crown icons if present
+                const lockIcon = item.querySelector('.fa-lock');
+                if (lockIcon) lockIcon.remove();
+                
+                const crownIcon = item.querySelector('.crown-icon');
+                if (crownIcon) crownIcon.remove();
+                
+                // Remove our upgrade onclick handler
+                if (item.onclick && item.onclick.toString().includes('showUpgradePrompt')) {
+                    item.onclick = null;
                 }
+                
+                console.log(`✅ Enabled navigation: ${page}`);
             }
         });
+        
+        console.log(`📊 Navigation gating complete for ${this.currentPlan} plan`);
     }
 
     // Gate dashboard features
@@ -829,10 +1044,10 @@ class EntitlementsSystem {
         console.log('Subscription updated:', newPlan);
     }
 
-    // Check if feature requires upgrade - ALWAYS FALSE
+    // Check if feature requires upgrade
     requiresUpgrade(feature) {
-        // No features require upgrade - all are free
-        return false;
+        // Check if user can access the feature
+        return !this.can(feature);
     }
 
     // Show feature locked message

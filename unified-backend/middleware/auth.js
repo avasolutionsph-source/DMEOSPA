@@ -51,12 +51,24 @@ export const requireBusinessContext = (req, res, next) => {
 
 // Verify token helper function
 export const verifyToken = (token) => {
+  try {
+    // Synchronous version for immediate return
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return decoded;
+  } catch (err) {
+    console.error('Token verification failed:', err.message);
+    return null;
+  }
+};
+
+// Async version of verify token (returns promise)
+export const verifyTokenAsync = (token) => {
   return new Promise((resolve, reject) => {
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
       if (err) {
         reject(err);
       } else {
-        resolve(decoded.id || decoded.userId);
+        resolve(decoded);
       }
     });
   });

@@ -8,7 +8,9 @@
       "Bash(find:*)",
       "Bash(node:*)",
       "Bash(start test-integration.html)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(touch:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []

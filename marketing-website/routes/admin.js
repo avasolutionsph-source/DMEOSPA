@@ -156,7 +156,7 @@ router.get('/users/:userId', requireAdmin, async (req, res) => {
 
 // Update user subscription
 router.put('/users/:userId/subscription', requireAdmin, [
-  body('plan').isIn(['unpaid', 'pro']),
+  body('plan').isIn(['unpaid', 'basic', 'professional', 'enterprise']),
   body('status').isIn(['active', 'inactive', 'cancelled'])
 ], async (req, res) => {
   try {
@@ -176,7 +176,7 @@ router.put('/users/:userId/subscription', requireAdmin, [
     user.subscriptionPlan = plan;
     user.subscriptionStatus = status;
     
-    if (status === 'active' && plan === 'pro') {
+    if (status === 'active' && plan !== 'unpaid') {
       user.subscriptionStart = new Date();
       // Set end date (30 days from now for monthly plans)
       const endDate = new Date();
