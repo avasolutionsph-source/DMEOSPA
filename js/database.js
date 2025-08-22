@@ -400,6 +400,8 @@ class Database {
 
 // Create global database instance
 const db = new Database();
+// Make it available globally
+window.db = db;
 
 // Initialize database immediately when script loads
 let dbInitPromise = null;
