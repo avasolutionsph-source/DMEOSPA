@@ -162,11 +162,13 @@ const PWA_URL = window.location.hostname === 'localhost'
     : 'https://ava-solutions-pwa.netlify.app';  // Production PWA URL
 
 function redirectToLogin() {
-    window.location.href = PWA_URL + '/auth/login.html';
+    // Redirect to PWA main page which will show login modal
+    window.location.href = PWA_URL + '?showLogin=true';
 }
 
 function redirectToSignup() {
-    window.location.href = PWA_URL + '/auth/signup.html';
+    // Redirect to PWA main page which will show signup modal
+    window.location.href = PWA_URL + '?showSignup=true';
 }
 
 function redirectToApp() {
@@ -174,7 +176,7 @@ function redirectToApp() {
 }
 
 function startFreeTrial(plan = 'professional') {
-    window.location.href = PWA_URL + `/auth/signup.html?plan=${plan}&trial=true`;
+    window.location.href = PWA_URL + `?showSignup=true&plan=${plan}&trial=true`;
 }
 
 function requestDemo() {

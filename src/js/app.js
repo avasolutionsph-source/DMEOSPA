@@ -120,6 +120,9 @@ class App {
             this.defer(() => window.entitlementsSystem.init());
         }
         
+        // Check URL parameters for auth modal display
+        this.handleURLParameters();
+        
         // Initialize page
         this.showPage('dashboard');
         
@@ -1144,6 +1147,49 @@ class App {
             hideLoading();
             showNotification('Refresh failed. Please try a hard browser refresh (Ctrl+Shift+R)', 'error');
         }
+    }
+
+    // Handle URL parameters for showing auth modals
+    handleURLParameters() {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Check for login modal parameter
+        if (urlParams.get('showLogin') === 'true') {
+            console.log('🔑 URL parameter detected: showing login modal');
+            // Wait a bit for components to load, then show login modal
+            setTimeout(() => {
+                if (window.authSystem && window.authSystem.showLoginModal) {
+                    window.authSystem.showLoginModal();
+                } else {
+                    // Fallback to opening modal directly
+                    this.openModal('loginModal');
+                }
+                // Clear URL parameter
+                this.clearURLParameter('showLogin');
+            }, 500);
+        }
+        
+        // Check for signup modal parameter
+        if (urlParams.get('showSignup') === 'true') {
+            console.log('📝 URL parameter detected: showing signup modal');
+            setTimeout(() => {
+                if (window.authSystem && window.authSystem.showSignupModal) {
+                    window.authSystem.showSignupModal();
+                } else {
+                    // Fallback to opening modal directly
+                    this.openModal('signupModal');
+                }
+                // Clear URL parameter
+                this.clearURLParameter('showSignup');
+            }, 500);
+        }
+    }
+    
+    // Clear URL parameter without page reload
+    clearURLParameter(paramName) {
+        const url = new URL(window.location);
+        url.searchParams.delete(paramName);
+        window.history.replaceState({}, document.title, url.pathname + url.search);
     }
 
     // Utility methods
