@@ -97,7 +97,6 @@ class SyncManager {
                 operation: 'websocket_init',
                 error: error
             });
-            }
         }
     }
     
