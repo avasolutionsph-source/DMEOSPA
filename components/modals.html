@@ -1,0 +1,181 @@
+<!-- All Modal Components -->
+
+<!-- Service Modal -->
+<div id="productModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="productModalTitle">Add Spa Service</h2>
+            <button class="modal-close" onclick="closeModal('productModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="productForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Service Name</label>
+                        <input type="text" id="productName" class="form-input" required placeholder="e.g., Swedish Massage">
+                    </div>
+                    <div class="form-group">
+                        <label>Duration (minutes)</label>
+                        <select id="productDuration" class="form-input" required onchange="handleDropdownChange(this, 'productDurationCustom')">
+                            <option value="">Select Duration</option>
+                            <option value="30">30 minutes</option>
+                            <option value="45">45 minutes</option>
+                            <option value="60">1 hour</option>
+                            <option value="75">1 hour 15 minutes</option>
+                            <option value="90">1.5 hours</option>
+                            <option value="120">2 hours</option>
+                            <option value="150">2.5 hours</option>
+                            <option value="180">3 hours</option>
+                            <option value="custom">Others (specify)</option>
+                        </select>
+                        <div id="productDurationCustomContainer" class="custom-input-container" style="display: none; margin-top: 0.5rem;">
+                            <input type="number" id="productDurationCustom" class="form-input" placeholder="Enter duration in minutes" min="1" max="720">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Price (₱)</label>
+                        <input type="number" id="productPrice" class="form-input" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="productCategory" class="form-input" onchange="handleDropdownChange(this, 'productCategoryCustom')">
+                            <option value="massage">Massage</option>
+                            <option value="facial">Facial</option>
+                            <option value="body">Body Treatment</option>
+                            <option value="nails">Nails</option>
+                            <option value="wellness">Wellness</option>
+                            <option value="packages">Packages</option>
+                            <option value="custom">Others (specify)</option>
+                        </select>
+                        <div id="productCategoryCustomContainer" class="custom-input-container" style="display: none; margin-top: 0.5rem;">
+                            <input type="text" id="productCategoryCustom" class="form-input" placeholder="Enter custom category">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="productDescription" class="form-input" rows="3" placeholder="Describe the spa service..."></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('productModal')">Cancel</button>
+            <button type="submit" form="productForm" class="btn btn-primary">Save Service</button>
+        </div>
+    </div>
+</div>
+
+<!-- Authentication Modal -->
+<div id="authModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="authModalTitle">Sign In</h2>
+            <button class="modal-close" onclick="closeModal('authModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div id="loginForm">
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="loginEmail" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="loginPassword" class="form-input" required>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="rememberMe" class="form-check-input">
+                        <label for="rememberMe" class="form-check-label">Remember me</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+                </form>
+                <div class="auth-divider">
+                    <span>or</span>
+                </div>
+                <p class="text-center">
+                    Don't have an account? 
+                    <a href="#" onclick="showRegisterForm()" class="auth-form-link">Sign up</a>
+                </p>
+            </div>
+            
+            <div id="registerForm" style="display: none;">
+                <form onsubmit="handleRegister(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>First Name</label>
+                            <input type="text" id="registerFirstName" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name</label>
+                            <input type="text" id="registerLastName" class="form-input" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="registerEmail" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="registerPassword" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <input type="password" id="confirmPassword" class="form-input" required>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="agreeTerms" class="form-check-input" required>
+                        <label for="agreeTerms" class="form-check-label">
+                            I agree to the Terms of Service and Privacy Policy
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+                </form>
+                <div class="auth-divider">
+                    <span>or</span>
+                </div>
+                <p class="text-center">
+                    Already have an account? 
+                    <a href="#" onclick="showLoginForm()" class="auth-form-link">Sign in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div id="loadingModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-body text-center">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
+            </div>
+            <h3 id="loadingTitle">Processing...</h3>
+            <p id="loadingMessage">Please wait while we process your request.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="confirmTitle">Confirm Action</h2>
+            <button class="modal-close" onclick="closeModal('confirmModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p id="confirmMessage">Are you sure you want to proceed?</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('confirmModal')">Cancel</button>
+            <button type="button" id="confirmBtn" class="btn btn-danger">Confirm</button>
+        </div>
+    </div>
+</div>

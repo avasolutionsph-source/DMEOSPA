@@ -1,0 +1,71 @@
+<!-- Dashboard Page Component -->
+<div id="dashboard" class="page active">
+    <div class="page-header">
+        <h1>Dashboard</h1>
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="refreshSubscription()" title="Check for subscription updates">
+                <i class="fas fa-sync-alt"></i> Refresh Plan
+            </button>
+            <span class="date-time" id="currentDateTime"></span>
+        </div>
+    </div>
+    
+    <div class="dashboard-grid">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="fas fa-peso-sign"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Today's Sales</h3>
+                <p class="stat-value" id="todaySales">₱0</p>
+                <span class="stat-change positive">+0%</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Transactions</h3>
+                <p class="stat-value" id="todayTransactions">0</p>
+                <span class="stat-change">Today</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon orange">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Low Stock Items</h3>
+                <p class="stat-value" id="lowStockCount">0</p>
+                <span class="stat-change">Alert</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon purple">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Monthly Revenue</h3>
+                <p class="stat-value" id="monthlyRevenue">₱0</p>
+                <span class="stat-change positive">+0%</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="dashboard-charts">
+        <div class="chart-container">
+            <h3>Sales Overview</h3>
+            <canvas id="salesChart"></canvas>
+        </div>
+        <div class="recent-transactions">
+            <h3>Recent Transactions</h3>
+            <div id="recentTransactionsList"></div>
+        </div>
+    </div>
+
+    <div class="low-stock-alert">
+        <h3><i class="fas fa-exclamation-circle"></i> Low Stock Alert</h3>
+        <div id="lowStockList"></div>
+    </div>
+</div>

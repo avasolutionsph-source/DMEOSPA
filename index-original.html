@@ -1,0 +1,1716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ava Solutions - Business Management System</title>
+    <link rel="manifest" href="manifest.json?v=2">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+    <link rel="alternate icon" href="icons/icon.svg">
+    <meta name="theme-color" content="#6366f1">
+    <!-- Modular CSS Architecture -->
+    <link rel="stylesheet" href="css/main.css?v=2025082401">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span id="businessName">Loading...</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-page="pos">
+                    <i class="fas fa-cash-register"></i>
+                    <span>POS System</span>
+                </a>
+                <a href="#" class="nav-item" data-page="products">
+                    <i class="fas fa-spa"></i>
+                    <span>Services</span>
+                </a>
+                <a href="#" class="nav-item" data-page="inventory">
+                    <i class="fas fa-warehouse"></i>
+                    <span>Inventory</span>
+                </a>
+                <a href="#" class="nav-item" data-page="employees">
+                    <i class="fas fa-users"></i>
+                    <span>Employees</span>
+                </a>
+                <a href="#" class="nav-item" data-page="rooms">
+                    <i class="fas fa-door-open"></i>
+                    <span>Rooms</span>
+                </a>
+                <a href="#" class="nav-item" data-page="gift-certificates">
+                    <i class="fas fa-gift"></i>
+                    <span>Gift Certificates</span>
+                </a>
+                <a href="#" class="nav-item" data-page="chatbot">
+                    <i class="fas fa-robot"></i>
+                    <span>AI Assistant</span>
+                </a>
+                <a href="#" class="nav-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="sidebar-bottom">
+                <div class="connection-status online" id="connectionStatus">
+                    <i class="fas fa-wifi"></i>
+                    <span>Online</span>
+                    <div class="sync-indicator" id="syncIndicator">
+                        <i class="fas fa-sync-alt fa-spin" style="display: none;"></i>
+                    </div>
+                </div>
+                <div class="auth-indicator" id="authIndicator">
+                    <button id="showLoginBtn" class="btn btn-primary" style="cursor: pointer; z-index: 10; position: relative;">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                    <script>
+                        // Define login modal function immediately for button
+                        function showLoginModal() {
+                            console.log('🔐 Login button clicked - Direct modal open');
+                            const modal = document.getElementById('authModal');
+                            if (modal) {
+                                modal.style.display = 'flex';
+                                modal.style.position = 'fixed';
+                                modal.style.top = '0';
+                                modal.style.left = '0';
+                                modal.style.width = '100%';
+                                modal.style.height = '100%';
+                                modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                                modal.style.zIndex = '9999';
+                                modal.style.alignItems = 'center';
+                                modal.style.justifyContent = 'center';
+                                
+                                // Make sure the modal content is visible
+                                const modalContent = modal.querySelector('.modal-content');
+                                if (modalContent) {
+                                    modalContent.style.display = 'block';
+                                }
+                                
+                                // Show login form, hide register form
+                                const loginForm = document.getElementById('loginForm');
+                                const registerForm = document.getElementById('registerForm');
+                                if (loginForm) loginForm.style.display = 'block';
+                                if (registerForm) registerForm.style.display = 'none';
+                                
+                                setTimeout(() => {
+                                    const emailInput = document.getElementById('loginEmail');
+                                    if (emailInput) {
+                                        emailInput.focus();
+                                        emailInput.select();
+                                    }
+                                }, 100);
+                                
+                                // Add close button handler
+                                const closeBtn = modal.querySelector('.close-modal');
+                                if (closeBtn) {
+                                    closeBtn.onclick = function() {
+                                        modal.style.display = 'none';
+                                    };
+                                }
+                                
+                                // Click outside to close
+                                modal.onclick = function(e) {
+                                    if (e.target === modal) {
+                                        modal.style.display = 'none';
+                                    }
+                                };
+                            } else {
+                                console.error('Auth modal not found');
+                            }
+                            
+                            // Prevent other handlers from interfering
+                            return false;
+                        }
+                        
+                        // Override window.showLoginModal to use our version
+                        window.showLoginModal = showLoginModal;
+                        
+                        // Add click event listener immediately
+                        document.getElementById('showLoginBtn').addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showLoginModal();
+                            return false;
+                        });
+                    </script>
+                    <div id="userInfo" style="display: none;" class="user-info">
+                        <span id="userName">User</span>
+                        <button id="logoutBtn" class="btn btn-secondary">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <div id="dashboard" class="page active">
+                <div class="page-header">
+                    <h1>Dashboard</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="refreshSubscription()" title="Check for subscription updates">
+                            <i class="fas fa-sync-alt"></i> Refresh Plan
+                        </button>
+                        <span class="date-time" id="currentDateTime"></span>
+                    </div>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-peso-sign"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Today's Sales</h3>
+                            <p class="stat-value" id="todaySales">₱0</p>
+                            <span class="stat-change positive">+0%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Transactions</h3>
+                            <p class="stat-value" id="todayTransactions">0</p>
+                            <span class="stat-change">Today</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Low Stock Items</h3>
+                            <p class="stat-value" id="lowStockCount">0</p>
+                            <span class="stat-change">Alert</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Monthly Revenue</h3>
+                            <p class="stat-value" id="monthlyRevenue">₱0</p>
+                            <span class="stat-change positive">+0%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-charts">
+                    <div class="chart-container">
+                        <h3>Sales Overview</h3>
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                    <div class="recent-transactions">
+                        <h3>Recent Transactions</h3>
+                        <div id="recentTransactionsList"></div>
+                    </div>
+                </div>
+
+                <div class="low-stock-alert">
+                    <h3><i class="fas fa-exclamation-circle"></i> Low Stock Alert</h3>
+                    <div id="lowStockList"></div>
+                </div>
+            </div>
+
+            <!-- POS System Page -->
+            <div id="pos" class="page">
+                <div class="page-header">
+                    <h1>Point of Sale</h1>
+                </div>
+                <div class="pos-container">
+                    <div class="pos-products">
+                        <div class="search-bar">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="productSearch" placeholder="Search spa services...">
+                        </div>
+                        <div class="product-categories">
+                            <button class="category-btn active" data-category="all">All Services</button>
+                            <button class="category-btn" data-category="massage">Massage</button>
+                            <button class="category-btn" data-category="facial">Facial</button>
+                            <button class="category-btn" data-category="body">Body Treatment</button>
+                            <button class="category-btn" data-category="nails">Nails</button>
+                        </div>
+                        <div class="products-grid" id="posProductsGrid"></div>
+                    </div>
+                    <div class="pos-cart">
+                        <div class="cart-header">
+                            <h3>Current Sale</h3>
+                            <div class="cart-actions">
+                                <button class="btn-icon" id="clearCart" title="Clear Cart">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="cart-items" id="cartItems"></div>
+                        <div class="cart-summary">
+                            <div class="summary-row total">
+                                <span>Total:</span>
+                                <span id="cartTotal">₱0.00</span>
+                            </div>
+                        </div>
+                        <div class="employee-selection" style="margin: 1rem 0; padding: 1rem; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #856404;">
+                                <i class="fas fa-user-tie"></i> Assign to Employee <span style="color: #d73502;">*</span>
+                            </label>
+                            <select id="employeeSelect" class="form-select" style="width: 100%; padding: 0.75rem; font-size: 1rem; border: 2px solid #ffc107; border-radius: 6px; background: white;">
+                                <option value="">⚠️ Select Employee (Required)</option>
+                            </select>
+                            <small style="display: block; margin-top: 0.5rem; color: #856404;">Employee must be selected for commission tracking</small>
+                        </div>
+                        <button class="btn btn-primary btn-checkout" id="checkoutBtn">
+                            <i class="fas fa-shopping-cart"></i> Checkout
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Services Page -->
+            <div id="products" class="page">
+                <div class="page-header">
+                    <h1>Spa Services</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="addProductBtn">
+                            <i class="fas fa-plus"></i> Add Service
+                        </button>
+                    </div>
+                </div>
+                <div class="products-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Service Name</th>
+                                <th>Duration</th>
+                                <th>Price</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th>Show in POS</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Inventory Page -->
+            <div id="inventory" class="page">
+                <div class="page-header">
+                    <h1>Spa Supplies & Inventory</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="addInventoryBtn">
+                            <i class="fas fa-plus"></i> Add Supply
+                        </button>
+                    </div>
+                </div>
+                <div class="inventory-filters">
+                    <div class="filter-group">
+                        <label>Filter by Status:</label>
+                        <select id="stockFilter" class="form-select">
+                            <option value="all">All Items</option>
+                            <option value="low">Low Stock</option>
+                            <option value="out">Out of Stock</option>
+                            <option value="ok">In Stock</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="inventory-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Supply Name</th>
+                                <th>Category</th>
+                                <th>Current Stock</th>
+                                <th>Unit</th>
+                                <th>Min Stock</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Employees Page -->
+            <div id="employees" class="page">
+                <div class="page-header">
+                    <h1>Employee Management</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="addEmployeeBtn">
+                            <i class="fas fa-user-plus"></i> Add Employee
+                        </button>
+                    </div>
+                </div>
+                <div class="employees-grid" id="employeesGrid"></div>
+            </div>
+
+            <!-- Rooms Page -->
+            <div id="rooms" class="page">
+                <div class="page-header">
+                    <h1>Room Management</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="addRoomBtn">
+                            <i class="fas fa-plus-circle"></i> Add Room
+                        </button>
+                    </div>
+                </div>
+                <div class="rooms-grid" id="roomsGrid"></div>
+            </div>
+
+            <!-- Gift Certificates Page -->
+            <div id="gift-certificates" class="page">
+                <!-- Content will be loaded dynamically -->
+            </div>
+
+            <!-- Chatbot Page -->
+            <div id="chatbot" class="page">
+                <div class="page-header">
+                    <h1>AI Business Assistant</h1>
+                </div>
+                <div class="chatbot-container">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="chat-message bot">
+                            <div class="message-avatar">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="message-content">
+                                <p><strong>🌟 Welcome to your AI Business Assistant!</strong></p>
+                                <br>
+                                <p>Hello! I'm your intelligent spa management companion, here to help you grow and optimize your business! 🚀</p>
+                                <br>
+                                <p><strong>What I can do for you:</strong></p>
+                                <br>
+                                <p>💰 <strong>Smart Analytics</strong> - Ask me "Who's my best employee?" or "What's my most profitable service?"</p>
+                                <br>
+                                <p>📊 <strong>Business Intelligence</strong> - Try "How much will I earn this month?" or "Show me my revenue trends"</p>
+                                <br>
+                                <p>🎯 <strong>Personalized Tips</strong> - Say "I want to make more profit" or "Help me prevent theft"</p>
+                                <br>
+                                <p>🔍 <strong>Deep Insights</strong> - Ask "Is someone stealing?" or "When should I close?"</p>
+                                <br>
+                                <p>💡 <strong>Expert Advice</strong> - Request "Marketing tips" or "Staff management help"</p>
+                                <br>
+                                <p><strong>💬 Just talk to me naturally!</strong> I understand your questions and analyze your actual business data to give you specific, actionable advice.</p>
+                                <br>
+                                <p><em>What would you like to know about your business today? 😊</em></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input-container">
+                        <input type="text" id="chatInput" placeholder="Ask me anything about your business...">
+                        <button class="btn btn-primary" id="sendChatBtn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="settings" class="page">
+                <div class="page-header">
+                    <h1>Settings</h1>
+                </div>
+                <div class="settings-container">
+                    <div class="settings-section">
+                        <h3>Business Information</h3>
+                        <div class="form-group">
+                            <label>Business Name</label>
+                            <input type="text" id="businessNameInput" class="form-input" placeholder="Enter business name">
+                        </div>
+                        <button class="btn btn-primary" id="saveSettingsBtn">Save Changes</button>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Data Management</h3>
+                        <button class="btn btn-secondary" id="exportDataBtn">
+                            <i class="fas fa-download"></i> Export Data
+                        </button>
+                        <button class="btn btn-danger" id="clearDataBtn">
+                            <i class="fas fa-trash"></i> Clear All Data
+                        </button>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Application Updates</h3>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                            Use this to refresh the app and load the latest features when updates are available.
+                        </p>
+                        <button class="btn btn-primary" id="forceRefreshBtn">
+                            <i class="fas fa-sync-alt"></i> Refresh App & Clear Cache
+                        </button>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Troubleshooting</h3>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                            If you're experiencing issues like pages not loading correctly or features not working, use this to fix common problems.
+                        </p>
+                        <button class="btn btn-warning" id="fixStorageBtn">
+                            <i class="fas fa-tools"></i> Fix App Issues (Keep Data)
+                        </button>
+                        <p style="color: #666; font-size: 0.85rem; margin-top: 0.5rem;">
+                            <i class="fas fa-info-circle"></i> This will clear temporary files and cache but <strong>keep all your business data safe</strong>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Service Modal -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="productModalTitle">Add Spa Service</h2>
+                <button class="modal-close" onclick="closeModal('productModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="productForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Service Name</label>
+                            <input type="text" id="productName" class="form-input" required placeholder="e.g., Swedish Massage">
+                        </div>
+                        <div class="form-group">
+                            <label>Duration (minutes)</label>
+                            <select id="productDuration" class="form-input" required onchange="handleDropdownChange(this, 'productDurationCustom')">
+                                <option value="">Select Duration</option>
+                                <option value="30">30 minutes</option>
+                                <option value="45">45 minutes</option>
+                                <option value="60">1 hour</option>
+                                <option value="75">1 hour 15 minutes</option>
+                                <option value="90">1.5 hours</option>
+                                <option value="120">2 hours</option>
+                                <option value="150">2.5 hours</option>
+                                <option value="180">3 hours</option>
+                                <option value="custom">Others (specify)</option>
+                            </select>
+                            <div id="productDurationCustomContainer" class="custom-input-container" style="display: none; margin-top: 0.5rem;">
+                                <input type="number" id="productDurationCustom" class="form-input" placeholder="Enter duration in minutes" min="1" max="720">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Price (₱)</label>
+                            <input type="number" id="productPrice" class="form-input" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="productCategory" class="form-input" onchange="handleDropdownChange(this, 'productCategoryCustom')">
+                                <option value="massage">Massage</option>
+                                <option value="facial">Facial</option>
+                                <option value="body">Body Treatment</option>
+                                <option value="nails">Nails</option>
+                                <option value="wellness">Wellness</option>
+                                <option value="packages">Packages</option>
+                                <option value="custom">Others (specify)</option>
+                            </select>
+                            <div id="productCategoryCustomContainer" class="custom-input-container" style="display: none; margin-top: 0.5rem;">
+                                <input type="text" id="productCategoryCustom" class="form-input" placeholder="Enter custom category">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="productDescription" class="form-input" rows="3" placeholder="Describe the service, benefits, what's included..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Special Notes</label>
+                        <textarea id="productNotes" class="form-input" rows="2" placeholder="Special instructions, prerequisites, etc..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="productShowInPOS" checked>
+                            Show in POS System
+                        </label>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('productModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Service</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spa Supplies Modal -->
+    <div id="inventoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="inventoryModalTitle">Add Spa Supply</h2>
+                <button class="modal-close" onclick="closeModal('inventoryModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="inventoryForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Supply Name</label>
+                            <input type="text" id="inventoryName" class="form-input" required placeholder="e.g., Lavender Essential Oil">
+                        </div>
+                        <div class="form-group">
+                            <label>SKU/Code</label>
+                            <input type="text" id="inventorySku" class="form-input" placeholder="e.g., LEO-001">
+                            <small class="form-hint">Unique identifier for this item</small>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="inventoryCategory" class="form-input" onchange="handleDropdownChange(this, 'inventoryCategoryCustom')">
+                                <option value="oils">Essential Oils</option>
+                                <option value="lotions">Lotions & Creams</option>
+                                <option value="towels">Towels & Linens</option>
+                                <option value="candles">Candles & Aromatics</option>
+                                <option value="tools">Tools & Equipment</option>
+                                <option value="skincare">Skincare Products</option>
+                                <option value="cleaning">Cleaning Supplies</option>
+                                <option value="disposables">Disposable Items</option>
+                                <option value="misc">Miscellaneous</option>
+                                <option value="custom">Others (specify)</option>
+                            </select>
+                            <div id="inventoryCategoryCustomContainer" class="custom-input-container" style="display: none; margin-top: 0.5rem;">
+                                <input type="text" id="inventoryCategoryCustom" class="form-input" placeholder="Enter custom category">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Current Stock</label>
+                            <input type="number" id="inventoryStock" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Unit of Measurement</label>
+                            <select id="inventoryUnit" class="form-input" onchange="handleDropdownChange(this, 'inventoryUnitCustom')">
+                                <option value="pieces">Pieces</option>
+                                <option value="bottles">Bottles</option>
+                                <option value="ml">Milliliters (ml)</option>
+                                <option value="liters">Liters</option>
+                                <option value="grams">Grams</option>
+                                <option value="kg">Kilograms</option>
+                                <option value="sets">Sets</option>
+                                <option value="rolls">Rolls</option>
+                                <option value="packs">Packs</option>
+                                <option value="custom">Others (specify)</option>
+                            </select>
+                            <div id="inventoryUnitCustomContainer" class="custom-input-container" style="display: none; margin-top: 0.5rem;">
+                                <input type="text" id="inventoryUnitCustom" class="form-input" placeholder="Enter custom unit">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Minimum Stock Level</label>
+                            <input type="number" id="inventoryMinStock" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Unit Cost (₱)</label>
+                            <input type="number" id="inventoryPrice" class="form-input" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Usage per Service</label>
+                            <input type="number" id="inventoryUsagePerService" class="form-input" step="0.1" placeholder="Amount used per service">
+                            <small class="form-hint">How much is used per service/treatment</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Used in Services</label>
+                            <select id="inventoryUsedIn" class="form-input" onchange="handleDropdownChange(this, 'inventoryUsedInCustom')">
+                                <option value="">Select service type</option>
+                                <option value="massage">Massage Services</option>
+                                <option value="facial">Facial Services</option>
+                                <option value="body">Body Treatments</option>
+                                <option value="nails">Nail Services</option>
+                                <option value="all">All Services</option>
+                                <option value="maintenance">Facility Maintenance</option>
+                                <option value="custom">Others (specify)</option>
+                            </select>
+                            <div id="inventoryUsedInCustomContainer" class="custom-input-container" style="display: none; margin-top: 0.5rem;">
+                                <input type="text" id="inventoryUsedInCustom" class="form-input" placeholder="Specify where it's used">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea id="inventoryNotes" class="form-input" rows="2" placeholder="Brand, supplier, special storage instructions..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="inventoryLowStockAlert" checked>
+                            Enable Low Stock Alert
+                        </label>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('inventoryModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Supply</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee Modal -->
+    <div id="employeeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="employeeModalTitle">Add Employee</h2>
+                <button class="modal-close" onclick="closeModal('employeeModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="employeeForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="employeeName" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Position</label>
+                            <input type="text" id="employeePosition" class="form-input" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="employeeEmail" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" id="employeePhone" class="form-input">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Commission Rate (%)</label>
+                            <input type="number" id="employeeCommission" class="form-input" step="0.01" min="0" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Hire Date</label>
+                            <input type="date" id="employeeHireDate" class="form-input">
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('employeeModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Modal -->
+    <div id="roomModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="roomModalTitle">Add Room</h2>
+                <button class="modal-close" onclick="closeModal('roomModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="roomForm">
+                    <input type="hidden" id="roomId">
+                    <div class="form-group">
+                        <label>Room Name</label>
+                        <input type="text" id="roomName" class="form-input" required placeholder="e.g., Room 1, VIP Suite">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Room Type</label>
+                            <select id="roomType" class="form-input" required>
+                                <option value="general">General Purpose</option>
+                                <option value="massage">Massage Room</option>
+                                <option value="facial">Facial Room</option>
+                                <option value="couple">Couple's Room</option>
+                                <option value="vip">VIP Suite</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Capacity</label>
+                            <input type="number" id="roomCapacity" class="form-input" min="1" max="10" value="1" required>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('roomModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Room
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div id="checkoutModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Checkout</h2>
+                <button class="modal-close" onclick="closeModal('checkoutModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Employee & Room Assignment Section -->
+                <div class="assignment-section" style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="margin-top: 0; color: #2c3e50;"><i class="fas fa-user-check"></i> Service Assignment</h3>
+                    
+                    <!-- Employee Assignment -->
+                    <div class="form-group">
+                        <label style="font-weight: 600; color: #34495e;">
+                            <i class="fas fa-user"></i> Assign to Employee <span style="color: red;">*</span>
+                        </label>
+                        <select id="checkoutEmployeeSelect" class="form-input" style="width: 100%; padding: 10px; border: 2px solid #3498db;">
+                            <option value="">Select Employee</option>
+                        </select>
+                        <small style="color: #7f8c8d;">Employee must be selected for commission tracking</small>
+                    </div>
+                    
+                    <!-- Room Assignment (for services) -->
+                    <div class="form-group" id="roomAssignmentSection" style="display: none;">
+                        <label style="font-weight: 600; color: #34495e;">
+                            <i class="fas fa-door-open"></i> Assign Room
+                        </label>
+                        <select id="checkoutRoomSelect" class="form-input" style="width: 100%; padding: 10px;">
+                            <option value="">No Room Assignment</option>
+                        </select>
+                        <small style="color: #7f8c8d;">Assign a room for service tracking</small>
+                    </div>
+                </div>
+                
+                <div class="checkout-summary">
+                    <h3>Order Summary</h3>
+                    <div id="checkoutItems"></div>
+                    <div class="checkout-totals">
+                        <div class="summary-row subtotal">
+                            <span>Subtotal:</span>
+                            <span id="checkoutSubtotal">₱0.00</span>
+                        </div>
+                        <div class="summary-row discount" id="discountRow" style="display: none;">
+                            <span>Discount:</span>
+                            <span id="checkoutDiscount">-₱0.00</span>
+                        </div>
+                        <div class="summary-row gc" id="gcRow" style="display: none;">
+                            <span>Gift Certificate:</span>
+                            <span id="checkoutGC">-₱0.00</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Total:</span>
+                            <span id="checkoutTotal">₱0.00</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Discounts Section -->
+                <div class="discount-section">
+                    <h3>Discounts & Gift Certificates</h3>
+                    
+                    <!-- Gift Certificate -->
+                    <div class="form-group">
+                        <label><i class="fas fa-gift"></i> Gift Certificate</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="gcControlNumber" class="form-input" placeholder="Enter Control Number">
+                            <button type="button" class="btn btn-secondary" onclick="posSystem.validateGiftCertificate()">
+                                <i class="fas fa-check"></i> Validate
+                            </button>
+                        </div>
+                        <div id="gcStatus" style="margin-top: 5px; font-size: 0.9rem;"></div>
+                    </div>
+                    
+                    <!-- Senior/PWD Discount -->
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="applySeniorPWD" onchange="posSystem.toggleSeniorPWDFields()">
+                            <span class="checkmark"></span>
+                            Apply Senior Citizen / PWD Discount (20%)
+                        </label>
+                        <div id="seniorPWDFields" style="display: none; margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                            <input type="text" id="discountCardholderName" class="form-input" placeholder="Cardholder Name" style="margin-bottom: 10px;">
+                            <input type="text" id="discountIDNumber" class="form-input" placeholder="ID Number" style="margin-bottom: 10px;">
+                            <select id="discountCardType" class="form-input">
+                                <option value="">Select Card Type</option>
+                                <option value="senior">Senior Citizen</option>
+                                <option value="pwd">PWD</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Other Promo Discounts -->
+                    <div class="form-group">
+                        <label><i class="fas fa-percentage"></i> Other Promo Discounts</label>
+                        <select id="promoDiscount" class="form-input" onchange="posSystem.applyPromoDiscount()">
+                            <option value="">No Promo Applied</option>
+                            <option value="new-customer-10">New Customer (10% off)</option>
+                            <option value="loyalty-15">Loyalty Reward (15% off)</option>
+                            <option value="holiday-20">Holiday Special (20% off)</option>
+                            <option value="custom">Custom Discount...</option>
+                        </select>
+                        <div id="customDiscountField" style="display: none; margin-top: 10px;">
+                            <input type="number" id="customDiscountPercent" class="form-input" placeholder="Enter discount %" min="0" max="100" step="1">
+                            <input type="text" id="customDiscountReason" class="form-input" placeholder="Reason for discount" style="margin-top: 5px;">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="payment-section">
+                    <h3>Payment Method</h3>
+                    <div class="payment-options">
+                        <label class="payment-option">
+                            <input type="radio" name="payment" value="cash" checked>
+                            <i class="fas fa-money-bill"></i> Cash
+                        </label>
+                        <label class="payment-option">
+                            <input type="radio" name="payment" value="card">
+                            <i class="fas fa-credit-card"></i> Card
+                        </label>
+                        <label class="payment-option">
+                            <input type="radio" name="payment" value="gcash">
+                            <i class="fas fa-mobile-alt"></i> GCash
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('checkoutModal')">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmCheckoutBtn">
+                        <i class="fas fa-check"></i> Complete Sale
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Authentication Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="authModalTitle">Welcome to Ava Solutions</h2>
+                <button class="modal-close" onclick="closeModal('authModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Login Form -->
+                <div id="authLoginForm" class="auth-form">
+                    <div class="auth-header">
+                        <h3>Sign In to Your Account</h3>
+                        <p class="text-muted">Access your spa management dashboard</p>
+                    </div>
+                    <form id="loginForm" onsubmit="event.preventDefault(); if(window.authSystem && window.authSystem.handleLogin) { window.authSystem.handleLogin(); } else { console.error('AuthSystem not available'); } return false;">
+                        <div class="form-group">
+                            <label>Email Address</label>
+                            <input type="email" id="loginEmail" class="form-input" required placeholder="Enter your email">
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" id="loginPassword" class="form-input" required placeholder="Enter your password">
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="rememberMe">
+                                <span class="checkmark"></span>
+                                Remember me on this device
+                            </label>
+                        </div>
+                        <button type="submit" id="loginBtn" class="btn btn-primary btn-full" onclick="event.preventDefault(); if(window.authSystem && window.authSystem.handleLogin) { window.authSystem.handleLogin(); } else { console.error('AuthSystem not available'); } return false;">
+                            <i class="fas fa-sign-in-alt"></i> Sign In
+                        </button>
+                        <button type="button" onclick="testLogin()" class="btn btn-secondary btn-full" style="margin-top: 10px;">
+                            🧪 Test Super Admin Login
+                        </button>
+                        <button type="button" onclick="debugFormValues()" class="btn btn-outline btn-full" style="margin-top: 5px; font-size: 0.8rem;">
+                            🔍 Debug Form Values
+                        </button>
+                    </form>
+                    <div class="auth-footer">
+                        <p>Don't have an account? <a href="#" id="showRegister">Create one here</a></p>
+                        <div class="demo-login">
+                            <small class="text-muted">
+                                <strong>Demo Login:</strong><br>
+                                Email: demo@spa.com<br>
+                                Password: demo123
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Register Form -->
+                <div id="authRegisterForm" class="auth-form" style="display: none;">
+                    <div class="auth-header">
+                        <h3>Create Your Account</h3>
+                        <p class="text-muted">Start managing your spa business today</p>
+                    </div>
+                    <form id="registerForm">
+                        <div class="form-group">
+                            <label>Business Name</label>
+                            <input type="text" id="regBusinessName" class="form-input" required placeholder="Your spa business name">
+                        </div>
+                        <div class="form-group">
+                            <label>Email Address</label>
+                            <input type="email" id="regEmail" class="form-input" required placeholder="Your email address">
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" id="regPassword" class="form-input" required placeholder="Create a password">
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm Password</label>
+                            <input type="password" id="regConfirmPassword" class="form-input" required placeholder="Confirm your password">
+                        </div>
+                        <button type="submit" id="registerBtn" class="btn btn-primary btn-full">
+                            <i class="fas fa-user-plus"></i> Create Account
+                        </button>
+                    </form>
+                    <div class="auth-footer">
+                        <p>Already have an account? <a href="#" id="showLogin">Sign in here</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>window.ChartShim=class{constructor(){}};</script>
+    <script>
+        (function(){
+            var perf=(window.performanceProfile||'balanced');
+            var lazyLoadCharts=function(){
+                var s=document.createElement('script');
+                s.src='https://cdn.jsdelivr.net/npm/chart.js';
+                document.head.appendChild(s);
+            };
+            if(perf==='low'){
+                window.deferChartLoad = lazyLoadCharts;
+            } else {
+                lazyLoadCharts();
+            }
+        })();
+    </script>
+    
+    <!-- Emergency login function - available immediately -->
+    <script>
+        // These utility functions are now handled by app.js
+        // Removed duplicate function definitions to prevent conflicts
+        
+        // Global flag to prevent setup wizard from ever showing again
+        window.setupWizardDisabled = false;
+        
+        
+        // Initialize business name on page load
+        function initializeBusinessName() {
+            const businessNameElement = document.getElementById('businessName');
+            if (businessNameElement && businessNameElement.textContent === 'Loading...') {
+                // Set a temporary name while loading
+                businessNameElement.textContent = 'Business';
+            }
+        }
+
+        // Check login state on page load - Made global so App can call it
+        window.checkLoginState = function checkLoginState() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn');
+            const userData = localStorage.getItem('userData');
+            const userToken = localStorage.getItem('userToken');
+            
+            console.log('🔄 Checking login state on page load:', {
+                isLoggedIn: isLoggedIn,
+                hasUserData: !!userData,
+                hasToken: !!userToken
+            });
+            
+            if (isLoggedIn === 'true' && userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    console.log('👤 Restoring user session:', user.email);
+                    
+                    // Update UI to show logged in state
+                    const showLoginBtn = document.getElementById('showLoginBtn');
+                    const userInfo = document.getElementById('userInfo');
+                    const userName = document.getElementById('userName');
+                    
+                    if (showLoginBtn) showLoginBtn.style.display = 'none';
+                    if (userInfo) userInfo.style.display = 'block';
+                    // Prioritize business name, fallback to email-based name
+                    let displayName = user.businessName;
+                    if (!displayName || displayName === 'Ava Solutions' || displayName.includes(' Business')) {
+                        displayName = user.email.split('@')[0];
+                    }
+                    if (userName) userName.textContent = displayName;
+                    
+                    // CRITICAL: Restore entitlements and features
+                    if (window.entitlementsSystem) {
+                        console.log('🔧 Restoring user entitlements for plan:', user.subscriptionPlan || 'pro');
+                        window.entitlementsSystem.currentPlan = user.subscriptionPlan || 'pro';
+                        localStorage.setItem('subscriptionPlan', user.subscriptionPlan || 'pro');
+                        window.entitlementsSystem.loadEntitlements();
+                        setTimeout(() => {
+                            window.entitlementsSystem.updateUI();
+                        }, 100);
+                    }
+                    
+                    // Restore auth system state if available
+                    if (window.authSystem && userToken) {
+                        console.log('🔐 Restoring auth system state');
+                        window.authSystem.authToken = userToken;
+                        window.authSystem.currentUser = user;
+                        window.authSystem.isLoggedIn = true;
+                    }
+                    
+                    // Fetch and update business name from server
+                    if (userToken) {
+                        console.log('📋 Fetching latest business name from server');
+                        fetchAndUpdateBusinessName(userToken);
+                    }
+                    
+                    // Add logout functionality
+                    const logoutBtn = document.getElementById('logoutBtn');
+                    if (logoutBtn) {
+                        logoutBtn.onclick = function() {
+                            // Clear login state
+                            localStorage.removeItem('userToken');
+                            localStorage.removeItem('userData');
+                            localStorage.removeItem('isLoggedIn');
+                            
+                            // Update UI back to logged out state
+                            if (showLoginBtn) showLoginBtn.style.display = 'block';
+                            if (userInfo) userInfo.style.display = 'none';
+                            
+                            // Notify app about logout
+                            if (window.app && typeof window.app.onUserLoggedOut === 'function') {
+                                window.app.onUserLoggedOut();
+                            }
+                            
+                            alert('Logged out successfully!');
+                        };
+                    }
+                    
+                    if (window.logger) {
+                        window.logger.info('Restored login state', {
+                            category: 'SYSTEM',
+                            operation: 'restore_login_state',
+                            data: { user: user.businessName || user.email }
+                        });
+                    }
+                    
+                    // Also restore entitlements system
+                    if (window.entitlementsSystem && user.subscriptionPlan) {
+                        if (window.logger) {
+                            window.logger.info('Restoring entitlements', {
+                                category: 'SYSTEM',
+                                operation: 'restore_entitlements',
+                                data: { plan: user.subscriptionPlan }
+                            });
+                        }
+                        window.entitlementsSystem.currentPlan = user.subscriptionPlan;
+                        localStorage.setItem('subscriptionPlan', user.subscriptionPlan);
+                        window.entitlementsSystem.applyFeatureGates();
+                        window.entitlementsSystem.updateSubscriptionStatus();
+                    }
+                } catch (error) {
+                    if (window.logger) {
+                        window.logger.error('Error restoring login state', {
+                            category: 'SYSTEM',
+                            operation: 'restore_login_state',
+                            error: error
+                        });
+                    }
+                    // Clear corrupted data
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('userData');
+                    localStorage.removeItem('userToken');
+                }
+            }
+        }
+        
+        // Check login state when page loads - MOVED TO APP INITIALIZATION
+        // document.addEventListener('DOMContentLoaded', checkLoginState);
+        
+        // Also check immediately if DOM is already loaded - MOVED TO APP INITIALIZATION
+        // if (document.readyState !== 'loading') {
+        //     checkLoginState();
+        // }
+        
+        // Add ESC key handler for setup wizard
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const setupModal = document.getElementById('setupWizardModal');
+                if (setupModal && setupModal.style.display !== 'none') {
+                    closeSetupWizard();
+                }
+            }
+        });
+        
+        // Fetch real business name from database and update UI
+        async function fetchAndUpdateBusinessName(token) {
+            try {
+                console.log('Fetching real business name from database...');
+                const response = await fetch('https://ava-pwa-backend.onrender.com/api/user/business-name', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    let displayName = data.businessName;
+                    
+                    // If business name is generic or missing, use email-based name
+                    if (!displayName || displayName === 'Ava Solutions' || displayName.includes(' Business')) {
+                        displayName = data.email.split('@')[0];
+                    }
+                    
+                    console.log('Real business name from database:', displayName);
+                    
+                    // Update the business name in IndexedDB
+                    if (window.db) {
+                        try {
+                            await window.db.update('settings', {
+                                key: 'businessName',
+                                value: displayName
+                            });
+                            console.log('Updated IndexedDB business name to:', displayName);
+                        } catch (dbError) {
+                            console.error('Failed to update IndexedDB:', dbError);
+                        }
+                    }
+                    
+                    // Update ALL UI elements with business name
+                    const businessNameElement = document.getElementById('businessName');
+                    const userName = document.getElementById('userName');
+                    
+                    if (businessNameElement) {
+                        businessNameElement.textContent = displayName;
+                        console.log('Updated main business name to:', displayName);
+                    }
+                    
+                    if (userName) {
+                        userName.textContent = displayName;
+                        console.log('Updated user name to:', displayName);
+                    }
+                    
+                    // Update page title
+                    document.title = `${displayName} - Business Management System`;
+                    console.log('Updated page title to:', document.title);
+                    
+                } else {
+                    console.error('Failed to fetch business name:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Error fetching business name:', error);
+            }
+        }
+        
+        // Login handled by AuthSystem
+        async function performRealLogin(email, password, modal) {
+            // Redirect all login attempts to AuthSystem
+            if (window.authSystem && window.authSystem.handleLogin) {
+                window.authSystem.handleLogin();
+            }
+            return; 
+            /* Rest of function disabled - use AuthSystem
+            const loginBtn = document.getElementById('loginBtn');
+            const originalBtnText = loginBtn ? loginBtn.innerHTML : '';
+            
+            try {*/
+                // Show loading state
+                if (loginBtn) {
+                    loginBtn.disabled = true;
+                    loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+                }
+                
+                try {
+                    console.log('Attempting real API login for:', email);
+                    console.log('Password length:', password.length);
+                    
+                    // Call marketing website login API
+                    const response = await fetch('https://ava-pwa-backend.onrender.com/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'omit',
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('Login response:', response.status, data);
+                
+                if (response.ok && data.success) {
+                    // Successful login
+                    const userData = data.user;
+                    const token = data.token;
+                    
+                    console.log('Login successful for:', userData.email);
+                    
+                    // Store in localStorage
+                    localStorage.setItem('userToken', token);
+                    localStorage.setItem('userData', JSON.stringify(userData));
+                    localStorage.setItem('isLoggedIn', 'true');
+                    
+                    // Update UI to show logged in state
+                    const showLoginBtn = document.getElementById('showLoginBtn');
+                    const userInfo = document.getElementById('userInfo');
+                    const userName = document.getElementById('userName');
+                    
+                    if (showLoginBtn) showLoginBtn.style.display = 'none';
+                    if (userInfo) userInfo.style.display = 'block';
+                    
+                    // Create display name from user data
+                    let displayName = userData.businessName;
+                    if (!displayName || displayName === 'Ava Solutions' || displayName.includes(' Business')) {
+                        displayName = userData.firstName || userData.email.split('@')[0];
+                    }
+                    
+                    if (userName) userName.textContent = displayName;
+                    
+                    // Add logout functionality
+                    const logoutBtn = document.getElementById('logoutBtn');
+                    if (logoutBtn) {
+                        logoutBtn.onclick = function() {
+                            // Clear login state
+                            localStorage.removeItem('userToken');
+                            localStorage.removeItem('userData');
+                            localStorage.removeItem('isLoggedIn');
+                            
+                            // Update UI back to logged out state
+                            if (showLoginBtn) showLoginBtn.style.display = 'block';
+                            if (userInfo) userInfo.style.display = 'none';
+                            
+                            // Notify app about logout
+                            if (window.app && typeof window.app.onUserLoggedOut === 'function') {
+                                window.app.onUserLoggedOut();
+                            }
+                            
+                            alert('Logged out successfully!');
+                        };
+                    }
+                    
+                    // Update entitlements system with real subscription plan
+                    if (window.entitlementsSystem) {
+                        console.log('Updating entitlements with plan:', userData.subscriptionPlan || 'pro');
+                        window.entitlementsSystem.currentPlan = userData.subscriptionPlan || 'pro';
+                        localStorage.setItem('subscriptionPlan', userData.subscriptionPlan || 'pro');
+                        
+                        // Force reload entitlements to apply the new plan
+                        window.entitlementsSystem.loadEntitlements();
+                        
+                        // Also force UI update
+                        setTimeout(() => {
+                            window.entitlementsSystem.updateUI();
+                        }, 100);
+                    }
+                    
+                    // Fetch real business name from database
+                    await fetchAndUpdateBusinessName(data.token);
+                    
+                    // Notify the app that user has logged in
+                    if (window.app && typeof window.app.onUserLoggedIn === 'function') {
+                        window.app.onUserLoggedIn();
+                    }
+                    
+                    // Close modal and show success
+                    modal.style.display = 'none';
+                    alert(`Welcome back, ${displayName}!`);
+                    
+                } else {
+                    // Login failed
+                    console.error('Login failed:', data.error || data.message);
+                    console.error('Full response:', data);
+                    alert(data.error || data.message || 'Login failed. Please check your credentials.');
+                }
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                console.error('Error details:', error.message, error.stack);
+                alert('Login failed. Please check your internet connection and try again.');
+            } finally {
+                // Reset button state
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = originalBtnText || '<i class="fas fa-sign-in-alt"></i> Sign In';
+                } /* End of disabled performRealLogin */
+            }
+        }
+        
+
+        // Manually refresh subscription status
+        async function refreshSubscription() {
+            console.log('🔄 Manually refreshing subscription status...');
+            
+            if (window.entitlementsSystem && typeof window.entitlementsSystem.checkSubscriptionStatus === 'function') {
+                try {
+                    // Show loading state
+                    const refreshBtn = document.querySelector('button[onclick="refreshSubscription()"]');
+                    if (refreshBtn) {
+                        const originalHTML = refreshBtn.innerHTML;
+                        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+                        refreshBtn.disabled = true;
+                        
+                        // Check subscription status
+                        await window.entitlementsSystem.checkSubscriptionStatus();
+                        
+                        // Force UI update
+                        if (window.entitlementsSystem && typeof window.entitlementsSystem.updateUI === 'function') {
+                            window.entitlementsSystem.updateUI();
+                        }
+                        
+                        // Restore button
+                        setTimeout(() => {
+                            refreshBtn.innerHTML = originalHTML;
+                            refreshBtn.disabled = false;
+                        }, 1000);
+                    } else {
+                        await window.entitlementsSystem.checkSubscriptionStatus();
+                    }
+                    
+                    console.log('✅ Subscription refresh completed');
+                } catch (error) {
+                    console.error('❌ Error refreshing subscription:', error);
+                    
+                    // Restore button on error
+                    const refreshBtn = document.querySelector('button[onclick="refreshSubscription()"]');
+                    if (refreshBtn) {
+                        refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Plan';
+                        refreshBtn.disabled = false;
+                    }
+                }
+            } else {
+                console.error('❌ Entitlements system not available');
+                alert('Subscription refresh is not available. Please refresh the page.');
+            }
+        }
+
+
+        // Test login function - Use PWA demo credentials
+        function testLogin() {
+            console.log('🧪 TESTING PWA DEMO LOGIN');
+            if (window.authSystem) {
+                document.getElementById('loginEmail').value = 'demo@spa.com';
+                document.getElementById('loginPassword').value = 'demo123';
+                console.log('🧪 Test credentials: demo@spa.com / demo123');
+                window.authSystem.handleLogin();
+            } else {
+                console.error('❌ AuthSystem not available');
+            }
+        }
+
+        // Debug form values
+        function debugFormValues() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            console.log('🔍 FORM DEBUG:');
+            console.log('📧 Email field value:', `"${email}"`);
+            console.log('📧 Email length:', email.length);
+            console.log('📧 Email trimmed:', `"${email.trim()}"`);
+            console.log('🔑 Password field value:', `"${password}"`);
+            console.log('🔑 Password length:', password.length);
+            console.log('🔑 Password first char:', password.charAt(0));
+            console.log('🔑 Password last char:', password.charAt(password.length - 1));
+            
+            alert(`Email: "${email}"\nPassword: "${password}"\nEmail length: ${email.length}\nPassword length: ${password.length}`);
+        }
+
+        // Add hover effects to login button
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize business name first
+            initializeBusinessName();
+            
+            const loginBtn = document.querySelector('.setup-login-option .btn-outline');
+            if (loginBtn) {
+                loginBtn.addEventListener('mouseenter', function() {
+                    this.style.background = '#6366f1';
+                    this.style.color = 'white';
+                    this.style.transform = 'translateY(-2px)';
+                    this.style.boxShadow = '0 4px 16px rgba(99, 102, 241, 0.3)';
+                });
+                
+                loginBtn.addEventListener('mouseleave', function() {
+                    this.style.background = 'white';
+                    this.style.color = '#6366f1';
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = '0 2px 8px rgba(99, 102, 241, 0.2)';
+                });
+            }
+        });
+
+        // Simplified function that uses AuthSystem properly
+        function showLoginModalDirect() {
+            console.log('🔄 Using proper AuthSystem login');
+            
+            // Always use the proper AuthSystem
+            if (window.authSystem && window.authSystem.showLoginModal) {
+                window.authSystem.showLoginModal();
+                return;
+            } 
+            
+            if (window.showLoginModal) {
+                window.showLoginModal();
+                return;
+            }
+            
+            // Only continue with direct modal if AuthSystem truly not available
+            console.error('⚠️ AuthSystem not ready, showing modal directly');
+            const modal = document.getElementById('authModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.style.position = 'fixed';
+                modal.style.top = '0';
+                modal.style.left = '0';
+                modal.style.width = '100%';
+                modal.style.height = '100%';
+                modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                modal.style.zIndex = '10001'; // Higher than setup wizard
+                modal.style.alignItems = 'center';
+                modal.style.justifyContent = 'center';
+                
+                // Show login form
+                const loginForm = document.getElementById('authLoginForm');
+                const registerForm = document.getElementById('authRegisterForm');
+                if (loginForm) loginForm.style.display = 'block';
+                if (registerForm) registerForm.style.display = 'none';
+                
+                // Remove any existing handlers from the login button and form
+                const form = document.getElementById('loginForm');
+                const loginBtn = document.getElementById('loginBtn');
+                
+                if (loginBtn) {
+                    // Clone the button to remove all event listeners
+                    const newLoginBtn = loginBtn.cloneNode(true);
+                    // Ensure the onclick attribute is preserved
+                    newLoginBtn.onclick = function() {
+                        console.log('🔥 LOGIN BUTTON CLICKED (CLONED)');
+                    };
+                    loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
+                    console.log('🔄 Login button cloned to remove conflicting handlers');
+                }
+                
+                // Attach form submission handler with high priority
+                if (form && !form.hasAttribute('data-handler-attached')) {
+                    form.setAttribute('data-handler-attached', 'true');
+                    
+                    // Use capture phase to ensure our handler runs first
+                    form.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        console.log('🔥 LOGIN FORM SUBMITTED - Manual Entry (PRIORITY HANDLER)');
+                        
+                        const email = document.getElementById('loginEmail').value.trim();
+                        const password = document.getElementById('loginPassword').value;
+                        
+                        console.log('📧 Email from form:', email);
+                        console.log('🔑 Password length from form:', password.length);
+                        console.log('🔑 Password first 3 chars:', password.substring(0, 3) + '...');
+                        
+                        if (!email || !password) {
+                            console.error('❌ Missing email or password');
+                            alert('Please enter email and password');
+                            return;
+                        }
+                        
+                        console.log('✅ Calling performRealLogin with manual credentials');
+                        // Always use the real API login
+                        performRealLogin(email, password, modal);
+                    }, true); // Use capture phase
+                    
+                    console.log('✅ Form submission handler attached with priority');
+                }
+                
+                // Add close functionality
+                modal.onclick = function(e) {
+                    if (e.target === modal) {
+                        modal.style.display = 'none';
+                        document.body.classList.remove('modal-open');
+                    }
+                };
+                
+                // Focus on email input
+                setTimeout(() => {
+                    const emailInput = document.getElementById('loginEmail');
+                    if (emailInput) emailInput.focus();
+                }, 100);
+            } else {
+                console.error('Auth modal not found');
+                alert('Login modal not available. Please refresh the page.');
+            }
+        }
+    </script>
+    
+    <!-- Config Service - Load First -->
+    <script src="js/config-service.js"></script>
+    
+    <!-- Sophisticated Logging System -->
+    <script src="js/logger-complete.js"></script>
+    <script src="js/logger-loader.js"></script>
+    
+    <!-- Error Recovery and Safety Systems -->
+    <script src="js/error-recovery.js"></script>
+    <script src="js/backup-system.js"></script>
+    <script src="js/feature-flags.js"></script>
+    
+    <!-- Legacy Logger Support (for compatibility) -->
+    <!-- Missing files - commented out
+    <script src="js/logger.js"></script>
+    <script src="js/logger-utils.js"></script>
+    -->
+    
+    <!-- Unified State Management System -->
+    <script src="js/state-manager.js"></script>
+    <script src="js/state-ui-binding.js"></script>
+    <script src="js/state-helpers.js"></script>
+    
+    <!-- API Configuration & Real-time Sync -->
+    <script src="js/api-config.js"></script>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <!-- <script src="js/state-sync.js"></script> Missing file -->
+    
+    <!-- Main Application Scripts -->
+    <script src="js/database.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/entitlements.js"></script>
+    <script src="js/auth.js"></script>
+    <!-- <script src="js/cloud-sync.js"></script> Missing file -->
+    <script src="js/sync.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/pos.js"></script>
+    <script src="js/products.js"></script>
+    <script src="js/inventory.js"></script>
+    <!-- <script src="js/inventory-migration.js"></script> Missing file -->
+    <script src="js/employees.js"></script>
+    <script src="js/rooms.js"></script>
+    <!-- Gift certificate functionality built into pos.js and app.js -->
+    <!-- <script src="js/giftcertificates.js"></script> -->
+    <script src="js/auto-updater.js"></script>
+    <script src="js/chatbot.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/settings.js"></script>
+    
+    <!-- Logger Initialization and Console Replacement -->
+    <script src="js/console-log-replacer.js"></script>
+    <!-- <script src="js/logger-init.js"></script> Missing file -->
+    <script>
+        // Custom Dropdown Handler
+        function handleDropdownChange(selectElement, customInputId) {
+            const customContainer = document.getElementById(customInputId + 'Container');
+            const customInput = document.getElementById(customInputId);
+            
+            if (selectElement.value === 'custom') {
+                customContainer.style.display = 'block';
+                customInput.required = true;
+                customInput.focus();
+            } else {
+                customContainer.style.display = 'none';
+                customInput.required = false;
+                customInput.value = '';
+            }
+        }
+        
+        // Helper function to get actual value from dropdown (custom or selected)
+        function getDropdownValue(selectId, customInputId) {
+            const select = document.getElementById(selectId);
+            const customInput = document.getElementById(customInputId);
+            
+            if (select.value === 'custom' && customInput.value.trim()) {
+                return customInput.value.trim();
+            }
+            return select.value;
+        }
+        
+
+        
+        // Register Service Worker for offline functionality (only for http/https)
+        if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.protocol === 'https:')) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js', {
+                    scope: './' // Limit scope to current directory only
+                })
+                    .then(registration => {
+                        console.log('ServiceWorker registered:', registration);
+                        console.log('ServiceWorker scope:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed:', error);
+                    });
+            });
+        }
+        
+        // Helper function to test offline/online status - Remove this in production
+        window.testConnectionStatus = function(isOnline) {
+            const statusElement = document.getElementById('connectionStatus');
+            if (statusElement) {
+                const icon = statusElement.querySelector('i');
+                const text = statusElement.querySelector('span');
+                
+                if (isOnline) {
+                    icon.className = 'fas fa-wifi';
+                    text.textContent = 'Online';
+                    statusElement.classList.remove('offline');
+                    statusElement.classList.add('online');
+                    console.log('✅ Status set to ONLINE');
+                } else {
+                    icon.className = 'fas fa-wifi-slash';
+                    text.textContent = 'Offline';
+                    statusElement.classList.remove('online');
+                    statusElement.classList.add('offline');
+                    console.log('🔴 Status set to OFFLINE');
+                }
+            }
+        };
+        
+        // You can test by running these in the console:
+        // testConnectionStatus(false); // Test offline state
+        // testConnectionStatus(true);  // Test online state
+    </script>
+
+    <!-- Browser compatibility fix -->
+    <script src="js/browser-universal-fix.js"></script>
+    
+    <!-- Simple CSS fix for navigation visibility -->
+    <style>
+        /* Ensure all nav items are visible */
+        .nav-item {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            align-items: center;
+        }
+        
+        /* Fix nav menu overflow */
+        .nav-menu {
+            overflow: visible !important;
+            height: auto !important;
+        }
+        
+        /* Ensure Rooms is visible if it exists */
+        [data-page="rooms"] {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        /* Remove any max-height restrictions */
+        .sidebar nav {
+            max-height: none !important;
+            overflow-y: auto !important;
+        }
+    </style>
+</body>
+</html>

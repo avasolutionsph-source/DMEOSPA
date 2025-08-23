@@ -1,0 +1,73 @@
+<!-- Sidebar Navigation Component -->
+<aside class="sidebar">
+    <div class="logo">
+        <i class="fas fa-chart-line"></i>
+        <span id="businessName">Loading...</span>
+    </div>
+    
+    <nav class="nav-menu">
+        <a href="#" class="nav-item active" data-page="dashboard">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-item" data-page="pos">
+            <i class="fas fa-cash-register"></i>
+            <span>POS System</span>
+        </a>
+        <a href="#" class="nav-item" data-page="products">
+            <i class="fas fa-spa"></i>
+            <span>Services</span>
+        </a>
+        <a href="#" class="nav-item" data-page="inventory">
+            <i class="fas fa-warehouse"></i>
+            <span>Inventory</span>
+        </a>
+        <a href="#" class="nav-item" data-page="employees">
+            <i class="fas fa-users"></i>
+            <span>Employees</span>
+        </a>
+        <a href="#" class="nav-item" data-page="rooms">
+            <i class="fas fa-door-open"></i>
+            <span>Rooms</span>
+        </a>
+        <a href="#" class="nav-item" data-page="gift-certificates">
+            <i class="fas fa-gift"></i>
+            <span>Gift Certificates</span>
+        </a>
+        <a href="#" class="nav-item" data-page="chatbot">
+            <i class="fas fa-robot"></i>
+            <span>AI Assistant</span>
+        </a>
+        <a href="#" class="nav-item" data-page="settings">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </a>
+    </nav>
+    
+    <div class="sidebar-bottom">
+        <div class="connection-status online" id="connectionStatus">
+            <i class="fas fa-wifi"></i>
+            <span>Online</span>
+        </div>
+        
+        <!-- Auth indicator - shown when not logged in -->
+        <div class="auth-indicator" id="authIndicator" style="display: none;">
+            <button class="btn btn-primary" onclick="showAuthModal()">
+                <i class="fas fa-sign-in-alt"></i>
+                Sign In
+            </button>
+        </div>
+        
+        <!-- User info - shown when logged in -->
+        <div class="user-info" id="userInfo" style="display: none;">
+            <div class="user-details">
+                <i class="fas fa-user-circle"></i>
+                <span id="userName">User Name</span>
+            </div>
+            <button id="logoutBtn" class="btn btn-sm btn-danger" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+            </button>
+        </div>
+    </div>
+</aside>
