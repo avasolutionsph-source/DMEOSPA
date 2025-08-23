@@ -3,32 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ava Solutions - Professional Spa Management System</title>
-    <meta name="description" content="Transform your spa business with Ava Solutions - the complete management system for modern spas.">
-    <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="css/marketing.css">
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <title>Ava Solutions - AI Business Assistant</title>
+    <meta name="description" content="Intelligent business management system with AI assistant, POS, inventory management, and analytics. Works offline and grows with your business across any industry.">
+    
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="images/icon.svg">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/marketing.css">
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-brand">
-                <img src="images/icon.svg" alt="Ava Solutions" style="width: 32px; height: 32px; margin-right: 8px; vertical-align: middle;">
-                <h2 style="display: inline;">Ava Solutions</h2>
+                <i class="fas fa-spa"></i>
+                <span>Ava Solutions</span>
             </div>
-            <ul class="nav-menu">
-                <li><a href="#features">Features</a></li>
-                <li><a href="#pricing">Pricing</a></li>
-                <li><a href="#contact">Contact</a></li>
-                <li><a href="#" class="btn-login" onclick="redirectToLogin()">Login</a></li>
-            </ul>
-            <div class="hamburger">
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="pricing.html">Pricing</a>
+                <a href="#features">Features</a>
+                <a href="contact.html">Contact</a>
+                <div class="nav-auth" id="navAuth">
+                    <a href="#" onclick="redirectToLogin()" class="btn-secondary">Login</a>
+                    <a href="#" onclick="redirectToSignup()" class="btn-primary">Get Started</a>
+                </div>
+            </div>
+            <div class="nav-toggle" id="navToggle">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -38,18 +45,95 @@
 
     <!-- Hero Section -->
     <section class="hero">
-        <div class="hero-container">
-            <div class="hero-content">
-                <h1>Transform Your Spa Business</h1>
-                <p>The complete management system designed for modern spas. Streamline operations, delight customers, and grow your business.</p>
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1>Enterprise-Grade Platform<br>Starting at <span class="highlight">₱1,999/month</span></h1>
+                <p>Complete business management platform with AI intelligence, gift certificates, room booking, employee commissions, and real-time sync. Built for serious businesses ready to scale professionally.</p>
                 <div class="hero-buttons">
-                    <button class="btn-primary" onclick="startFreeTrial()">Start Free Trial</button>
-                    <button class="btn-secondary" onclick="requestDemo()">Request Demo</button>
+                    <a href="#" onclick="startFreeTrial()" class="btn-primary btn-large">Start 14-Day Free Trial</a>
+                    <a href="pricing.html" class="btn-secondary btn-large">
+                        <i class="fas fa-chart-line"></i> View Pricing
+                    </a>
+                </div>
+                <div class="hero-features">
+                    <div class="feature-badge">
+                        <i class="fas fa-wifi-slash"></i>
+                        <span>Works Offline</span>
+                    </div>
+                    <div class="feature-badge">
+                        <i class="fas fa-robot"></i>
+                        <span>AI Assistant</span>
+                    </div>
+                    <div class="feature-badge">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>Mobile App</span>
+                    </div>
+                    <div class="feature-badge">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Analytics</span>
+                    </div>
                 </div>
             </div>
-            <div class="hero-image">
-                <div class="hero-placeholder">
-                    <img src="images/icon.svg" alt="Ava Solutions Logo" style="width: 200px; height: 200px; opacity: 0.9;">
+            <div class="hero-demo">
+                <div class="laptop-device">
+                    <div class="laptop-screen">
+                        <div class="browser-bar">
+                            <div class="browser-dots">
+                                <span class="dot red"></span>
+                                <span class="dot yellow"></span>
+                                <span class="dot green"></span>
+                            </div>
+                            <div class="browser-url">
+                                <i class="fas fa-lock"></i>
+                                <span>app.avasolutions.ph</span>
+                            </div>
+                            <div class="browser-actions">
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                        <div class="app-preview">
+                            <div class="app-header">
+                                <div class="app-title">
+                                    <i class="fas fa-spa"></i>
+                                    <span>Ava Solutions</span>
+                                </div>
+                                <div class="status-indicator online"></div>
+                            </div>
+                            <div class="app-dashboard">
+                                <div class="stats-row">
+                                    <div class="stat-card">
+                                        <div class="stat-value">₱25,480</div>
+                                        <div class="stat-label">Today's Sales</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-value">42</div>
+                                        <div class="stat-label">Transactions</div>
+                                    </div>
+                                </div>
+                                <div class="quick-actions">
+                                    <div class="action-btn">
+                                        <i class="fas fa-cash-register"></i>
+                                        <span>POS</span>
+                                    </div>
+                                    <div class="action-btn">
+                                        <i class="fas fa-warehouse"></i>
+                                        <span>Inventory</span>
+                                    </div>
+                                    <div class="action-btn">
+                                        <i class="fas fa-users"></i>
+                                        <span>Staff</span>
+                                    </div>
+                                    <div class="action-btn">
+                                        <i class="fas fa-robot"></i>
+                                        <span>AI Assistant</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="laptop-base">
+                        <div class="laptop-notch"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -59,163 +143,93 @@
     <section id="features" class="features">
         <div class="container">
             <div class="section-header">
-                <h2>Everything You Need to Run Your Spa</h2>
-                <p>Powerful features designed specifically for spa businesses</p>
+                <h2>Everything You Need to Run Your Business</h2>
+                <p>Complete business management in one intelligent application</p>
             </div>
             <div class="features-grid">
                 <div class="feature-card">
                     <div class="feature-icon">
-                        <i class="fas fa-calendar-alt"></i>
+                        <i class="fas fa-cash-register"></i>
                     </div>
-                    <h3>Smart Scheduling</h3>
-                    <p>Intelligent appointment booking with automated reminders and conflict detection.</p>
+                    <h3>Smart POS System</h3>
+                    <p>Lightning-fast checkout with automatic inventory updates, commission tracking, and multiple payment methods.</p>
+                    <ul class="feature-list">
+                        <li>Services & product sales</li>
+                        <li>Employee commission tracking</li>
+                        <li>Multiple payment methods</li>
+                        <li>Receipt printing</li>
+                    </ul>
                 </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>AI Business Assistant</h3>
+                    <p>Get intelligent insights and recommendations based on your actual business data to increase profits.</p>
+                    <ul class="feature-list">
+                        <li>Profit optimization tips</li>
+                        <li>Loss prevention alerts</li>
+                        <li>Marketing recommendations</li>
+                        <li>Staff performance insights</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-warehouse"></i>
+                    </div>
+                    <h3>Inventory Management</h3>
+                    <p>Automatic stock tracking with low-stock alerts and usage calculation for your business operations.</p>
+                    <ul class="feature-list">
+                        <li>Auto stock deduction</li>
+                        <li>Low stock alerts</li>
+                        <li>Usage tracking per service</li>
+                        <li>Purchase order management</li>
+                    </ul>
+                </div>
+
                 <div class="feature-card">
                     <div class="feature-icon">
                         <i class="fas fa-users"></i>
                     </div>
-                    <h3>Customer Management</h3>
-                    <p>Complete customer profiles with treatment history and preferences.</p>
+                    <h3>Employee Management</h3>
+                    <p>Track staff performance, calculate commissions, and manage schedules efficiently.</p>
+                    <ul class="feature-list">
+                        <li>Performance tracking</li>
+                        <li>Commission calculation</li>
+                        <li>Sales analytics per employee</li>
+                        <li>Schedule management</li>
+                    </ul>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-boxes"></i>
-                    </div>
-                    <h3>Inventory Control</h3>
-                    <p>Track supplies, get low-stock alerts, and automate reordering.</p>
-                </div>
+
                 <div class="feature-card">
                     <div class="feature-icon">
                         <i class="fas fa-chart-line"></i>
                     </div>
-                    <h3>Analytics & Reports</h3>
-                    <p>Detailed insights into your business performance and growth trends.</p>
+                    <h3>Business Analytics</h3>
+                    <p>Real-time insights with beautiful charts showing sales trends, peak hours, and growth metrics.</p>
+                    <ul class="feature-list">
+                        <li>Sales trends & forecasting</li>
+                        <li>Peak hour analysis</li>
+                        <li>Customer insights</li>
+                        <li>Financial reporting</li>
+                    </ul>
                 </div>
+
                 <div class="feature-card">
                     <div class="feature-icon">
-                        <i class="fas fa-credit-card"></i>
+                        <i class="fas fa-wifi-slash"></i>
                     </div>
-                    <h3>POS System</h3>
-                    <p>Integrated point-of-sale with payment processing and receipt management.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-mobile-alt"></i>
-                    </div>
-                    <h3>Mobile Ready</h3>
-                    <p>Access your spa management system anywhere, anytime, on any device.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Pricing Section -->
-    <section id="pricing" class="pricing">
-        <div class="container">
-            <div class="section-header">
-                <h2>Simple, Transparent Pricing</h2>
-                <p>Choose the plan that's right for your spa</p>
-            </div>
-            <div class="pricing-grid">
-                <div class="pricing-card">
-                    <h3>Starter</h3>
-                    <div class="price">
-                        <span class="currency">$</span>
-                        <span class="amount">29</span>
-                        <span class="period">/month</span>
-                    </div>
-                    <ul class="features-list">
-                        <li><i class="fas fa-check"></i> Up to 100 customers</li>
-                        <li><i class="fas fa-check"></i> Basic scheduling</li>
-                        <li><i class="fas fa-check"></i> Inventory tracking</li>
-                        <li><i class="fas fa-check"></i> Basic reports</li>
+                    <h3>Offline First</h3>
+                    <p>Keep your business running even without internet. Data syncs automatically when online.</p>
+                    <ul class="feature-list">
+                        <li>Complete offline functionality</li>
+                        <li>Automatic sync when online</li>
+                        <li>No downtime</li>
+                        <li>Data backup & recovery</li>
                     </ul>
-                    <button class="btn-outline" onclick="startFreeTrial()">Start Free Trial</button>
                 </div>
-                <div class="pricing-card featured">
-                    <div class="popular-badge">Most Popular</div>
-                    <h3>Professional</h3>
-                    <div class="price">
-                        <span class="currency">$</span>
-                        <span class="amount">79</span>
-                        <span class="period">/month</span>
-                    </div>
-                    <ul class="features-list">
-                        <li><i class="fas fa-check"></i> Unlimited customers</li>
-                        <li><i class="fas fa-check"></i> Advanced scheduling</li>
-                        <li><i class="fas fa-check"></i> Full inventory management</li>
-                        <li><i class="fas fa-check"></i> Analytics & insights</li>
-                        <li><i class="fas fa-check"></i> Staff management</li>
-                        <li><i class="fas fa-check"></i> POS integration</li>
-                    </ul>
-                    <button class="btn-primary" onclick="startFreeTrial()">Start Free Trial</button>
-                </div>
-                <div class="pricing-card">
-                    <h3>Enterprise</h3>
-                    <div class="price">
-                        <span class="currency">$</span>
-                        <span class="amount">149</span>
-                        <span class="period">/month</span>
-                    </div>
-                    <ul class="features-list">
-                        <li><i class="fas fa-check"></i> Everything in Professional</li>
-                        <li><i class="fas fa-check"></i> Multi-location support</li>
-                        <li><i class="fas fa-check"></i> Custom integrations</li>
-                        <li><i class="fas fa-check"></i> Priority support</li>
-                        <li><i class="fas fa-check"></i> Custom reports</li>
-                    </ul>
-                    <button class="btn-outline" onclick="requestDemo()">Request Demo</button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contact Section -->
-    <section id="contact" class="contact">
-        <div class="container">
-            <div class="section-header">
-                <h2>Get in Touch</h2>
-                <p>Ready to transform your spa business? We're here to help.</p>
-            </div>
-            <div class="contact-grid">
-                <div class="contact-info">
-                    <h3>Contact Information</h3>
-                    <div class="contact-item">
-                        <i class="fas fa-envelope"></i>
-                        <span>hello@avasolutions.com</span>
-                    </div>
-                    <div class="contact-item">
-                        <i class="fas fa-phone"></i>
-                        <span>+1 (555) 123-4567</span>
-                    </div>
-                    <div class="contact-item">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <span>123 Business Ave, Suite 100<br>City, State 12345</span>
-                    </div>
-                </div>
-                <form class="contact-form" id="contactForm">
-                    <div class="form-group">
-                        <label for="name">Full Name</label>
-                        <input type="text" id="name" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Email Address</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="phone">Phone Number</label>
-                        <input type="tel" id="phone" name="phone">
-                    </div>
-                    <div class="form-group">
-                        <label for="business">Business Name</label>
-                        <input type="text" id="business" name="business">
-                    </div>
-                    <div class="form-group">
-                        <label for="message">Message</label>
-                        <textarea id="message" name="message" rows="4" required></textarea>
-                    </div>
-                    <button type="submit" class="btn-primary">Send Message</button>
-                </form>
             </div>
         </div>
     </section>
@@ -225,35 +239,54 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-brand">
-                    <h3>Ava Solutions</h3>
-                    <p>Transforming spa businesses worldwide</p>
+                    <div class="brand">
+                        <i class="fas fa-spa"></i>
+                        <span>Ava Solutions</span>
+                    </div>
+                    <p>Intelligent business management system that works offline and grows with your business.</p>
                 </div>
                 <div class="footer-links">
                     <div class="footer-column">
                         <h4>Product</h4>
                         <a href="#features">Features</a>
-                        <a href="#pricing">Pricing</a>
-                        <a href="#" onclick="redirectToApp()">Demo</a>
+                        <a href="pricing.html">Pricing</a>
+                        <a href="#" onclick="redirectToApp()">Download App</a>
+                        <a href="#" onclick="requestDemo()">Request Demo</a>
                     </div>
                     <div class="footer-column">
                         <h4>Company</h4>
-                        <a href="#contact">Contact</a>
-                        <a href="#" onclick="redirectToApp()">Support</a>
-                        <a href="#" onclick="redirectToApp()">Privacy</a>
+                        <a href="contact.html">About Us</a>
+                        <a href="contact.html">Contact</a>
+                        <a href="#" onclick="redirectToApp()">Careers</a>
+                        <a href="#" onclick="redirectToApp()">Blog</a>
                     </div>
                     <div class="footer-column">
-                        <h4>Connect</h4>
-                        <a href="#" onclick="redirectToLogin()">Login</a>
-                        <a href="#" onclick="redirectToSignup()">Sign Up</a>
+                        <h4>Support</h4>
+                        <a href="#" onclick="redirectToApp()">Help Center</a>
+                        <a href="#" onclick="redirectToApp()">Documentation</a>
+                        <a href="#" onclick="redirectToApp()">Training</a>
+                        <a href="#" onclick="redirectToApp()">System Status</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Legal</h4>
+                        <a href="#" onclick="redirectToApp()">Privacy Policy</a>
+                        <a href="#" onclick="redirectToApp()">Terms of Service</a>
+                        <a href="#" onclick="redirectToApp()">Security</a>
+                        <a href="#" onclick="redirectToApp()">Compliance</a>
                     </div>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 Ava Solutions. All rights reserved.</p>
+                <p>&copy; 2024 Ava Solutions Philippines. All rights reserved.</p>
+                <div class="footer-legal">
+                    <a href="#" onclick="redirectToApp()">Privacy Policy</a>
+                    <a href="#" onclick="redirectToApp()">Terms of Service</a>
+                </div>
             </div>
         </div>
     </footer>
 
+    <!-- Scripts -->
     <script src="js/main.js"></script>
 </body>
 </html>
