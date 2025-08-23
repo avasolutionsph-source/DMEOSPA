@@ -1,4 +1,4 @@
 [build]
   base = "marketing-website"
   publish = "public"
-  command = "exit 0"
+  command = ""
