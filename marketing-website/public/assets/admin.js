@@ -95,6 +95,18 @@ async function loadDashboard() {
         
     } catch (error) {
         console.error('Dashboard load error:', error);
+        
+        // Show helpful error message for backend unavailable
+        const statsGrid = document.querySelector('.stats-grid');
+        if (statsGrid) {
+            statsGrid.innerHTML = `
+                <div style="grid-column: 1/-1; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 1.5rem; text-align: center;">
+                    <h3 style="color: #856404; margin: 0 0 0.5rem 0;">⚠️ Backend Server Unavailable</h3>
+                    <p style="color: #856404; margin: 0 0 0.5rem 0;">The admin API endpoints are not accessible. The backend server needs to be redeployed.</p>
+                    <small style="color: #6c757d;">Backend URL: ava-pwa-backend.onrender.com</small>
+                </div>
+            `;
+        }
     }
 }
 
