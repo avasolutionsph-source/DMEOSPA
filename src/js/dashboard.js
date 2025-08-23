@@ -37,16 +37,21 @@ class DashboardManager {
 
     async loadDashboardData() {
         try {
+            // Wait for database to be ready
+            if (!window.db) {
+                await window.ensureDBInit();
+            }
+            
             // Get local data first (for offline capability)
-            const todayTransactions = await db.getTodayTransactions();
+            const todayTransactions = await window.db.getTodayTransactions();
             this.stats.todayTransactions = todayTransactions.length;
             this.stats.todaySales = todayTransactions.reduce((sum, t) => sum + t.total, 0);
 
             // Get monthly revenue
-            this.stats.monthlyRevenue = await db.getMonthlyRevenue();
+            this.stats.monthlyRevenue = await window.db.getMonthlyRevenue();
 
             // Get low stock count
-            const lowStockItems = await db.getLowStockItems();
+            const lowStockItems = await window.db.getLowStockItems();
             this.stats.lowStockCount = lowStockItems.length;
 
             // Try to get synced data from Marketing Website (if online and logged in)
@@ -134,7 +139,7 @@ class DashboardManager {
     async calculateGrowth() {
         try {
             // Get yesterday's data for comparison
-            const allTransactions = await db.getAll('transactions');
+            const allTransactions = await window.db.getAll('transactions');
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
             const yesterdayStr = yesterday.toDateString();
@@ -244,7 +249,7 @@ class DashboardManager {
     }
 
     async getSalesDataForChart() {
-        const transactions = await db.getAll('transactions');
+        const transactions = await window.db.getAll('transactions');
         const last7Days = [];
         const salesByDay = {};
 
@@ -276,7 +281,7 @@ class DashboardManager {
 
     async loadRecentTransactions() {
         try {
-            const transactions = await db.getAll('transactions');
+            const transactions = await window.db.getAll('transactions');
             const recentTransactions = transactions
                 .sort((a, b) => new Date(b.date) - new Date(a.date))
                 .slice(0, 5);
@@ -309,7 +314,7 @@ class DashboardManager {
 
     async loadLowStockAlerts() {
         try {
-            const lowStockItems = await db.getLowStockItems();
+            const lowStockItems = await window.db.getLowStockItems();
             const container = document.getElementById('lowStockList');
             if (!container) return;
 
@@ -356,7 +361,7 @@ class DashboardManager {
 
     // Analytics methods
     async getBestSellingProducts() {
-        const transactions = await db.getAll('transactions');
+        const transactions = await window.db.getAll('transactions');
         const productSales = {};
 
         transactions.forEach(t => {
@@ -381,9 +386,9 @@ class DashboardManager {
     }
 
     async getRevenueByCategory() {
-        const transactions = await db.getAll('transactions');
-        const products = await db.getAll('products');
-        const inventory = await db.getAll('inventory');
+        const transactions = await window.db.getAll('transactions');
+        const products = await window.db.getAll('products');
+        const inventory = await window.db.getAll('inventory');
         
         const categoryRevenue = {};
 
@@ -413,7 +418,7 @@ class DashboardManager {
     }
 
     async getPeakHours() {
-        const transactions = await db.getAll('transactions');
+        const transactions = await window.db.getAll('transactions');
         const hourlyData = {};
 
         transactions.forEach(t => {
@@ -447,6 +452,6 @@ window.loadDashboard = async function() {
 // Update low stock alerts function for other modules
 window.updateLowStockAlerts = async function() {
     await dashboardManager.loadLowStockAlerts();
-    const lowStockItems = await db.getLowStockItems();
+    const lowStockItems = await window.db.getLowStockItems();
     document.getElementById('lowStockCount').textContent = lowStockItems.length;
 };

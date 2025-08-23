@@ -1433,6 +1433,14 @@ if (!immediateAuthCheck()) {
     throw new Error('Authentication failed, redirecting to login');
 }
 
+// Global initialization function for component-loader
+window.initializeApp = async function() {
+    if (!window.app) {
+        window.app = new App();
+        await window.app.init();
+    }
+};
+
 // Initialize app when DOM is ready (only if auth check passed)
 document.addEventListener('DOMContentLoaded', async () => {
     // Double-check authentication before initializing
@@ -1440,7 +1448,5 @@ document.addEventListener('DOMContentLoaded', async () => {
         return; // Auth check will handle redirect
     }
     
-    window.app = new App();
-    // Immediate initialization for better performance since DB is pre-initialized
-    await window.app.init();
+    await window.initializeApp();
 });
