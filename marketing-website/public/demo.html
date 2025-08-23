@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Demo - Ava Solutions Spa Management</title>
+    <meta name="description" content="Experience Ava Solutions spa management system with our interactive demo">
+    <link rel="icon" type="image/svg+xml" href="images/icon.svg">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="css/marketing.css" rel="stylesheet">
+    <style>
+        .demo-hero {
+            background: var(--gradient);
+            color: white;
+            padding: 4rem 0 2rem;
+            text-align: center;
+        }
+        .demo-hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .demo-hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .demo-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        .demo-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        .demo-card:hover {
+            transform: translateY(-5px);
+        }
+        .demo-card i {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+        .demo-card h3 {
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+        }
+        .demo-card p {
+            color: var(--text-light);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        .demo-features {
+            background: var(--bg-light);
+            padding: 3rem 0;
+            margin: 3rem 0;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .feature-item i {
+            color: var(--success);
+            font-size: 1.5rem;
+        }
+        .demo-credentials {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary);
+            margin: 2rem 0;
+        }
+        .demo-credentials h3 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+        .credentials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .credential-item {
+            background: var(--bg-light);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+        .credential-item strong {
+            color: var(--text-dark);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .credential-item span {
+            color: var(--text-light);
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <img src="images/icon.svg" alt="Ava Solutions" style="width: 40px; height: 40px;">
+                <span>Ava Solutions</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="pricing.html">Pricing</a>
+                <a href="contact.html">Contact</a>
+                <button class="btn btn-primary" onclick="redirectToLogin()">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </div>
+            <button class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="demo-hero">
+        <div class="container">
+            <h1>🚀 Experience Ava Solutions</h1>
+            <p>Try our complete spa management system with real data and all features unlocked</p>
+            <button class="btn btn-primary btn-lg" onclick="startDemo()">
+                <i class="fas fa-play"></i> Launch Interactive Demo
+            </button>
+        </div>
+    </section>
+
+    <!-- Demo Options -->
+    <section class="demo-container">
+        <div class="demo-options">
+            <div class="demo-card">
+                <i class="fas fa-desktop"></i>
+                <h3>Full System Demo</h3>
+                <p>Experience the complete Ava Solutions platform with all modules: POS, scheduling, inventory, staff management, and analytics.</p>
+                <button class="btn btn-primary" onclick="startDemo('full')">
+                    <i class="fas fa-rocket"></i> Start Full Demo
+                </button>
+            </div>
+            
+            <div class="demo-card">
+                <i class="fas fa-mobile-alt"></i>
+                <h3>Mobile Experience</h3>
+                <p>See how Ava Solutions works perfectly on mobile devices for on-the-go spa management and customer service.</p>
+                <button class="btn btn-primary" onclick="startDemo('mobile')">
+                    <i class="fas fa-mobile"></i> Mobile Demo
+                </button>
+            </div>
+            
+            <div class="demo-card">
+                <i class="fas fa-video"></i>
+                <h3>Guided Tour</h3>
+                <p>Watch a guided walkthrough of key features with our interactive tutorial system and sample spa data.</p>
+                <button class="btn btn-secondary" onclick="startTour()">
+                    <i class="fas fa-play-circle"></i> Watch Tour
+                </button>
+            </div>
+        </div>
+
+        <!-- Demo Credentials -->
+        <div class="demo-credentials">
+            <h3>🔑 Demo Login Credentials</h3>
+            <p>Use these test accounts to explore different user roles and permissions:</p>
+            <div class="credentials-grid">
+                <div class="credential-item">
+                    <strong>Super Admin</strong>
+                    <span>demo@spa.com</span><br>
+                    <span>demo123</span>
+                </div>
+                <div class="credential-item">
+                    <strong>Manager</strong>
+                    <span>manager@spa.com</span><br>
+                    <span>manager123</span>
+                </div>
+                <div class="credential-item">
+                    <strong>Staff</strong>
+                    <span>staff@spa.com</span><br>
+                    <span>staff123</span>
+                </div>
+                <div class="credential-item">
+                    <strong>Reception</strong>
+                    <span>front@spa.com</span><br>
+                    <span>front123</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Preview -->
+        <div class="demo-features">
+            <div class="container">
+                <h2 style="text-align: center; margin-bottom: 2rem;">✨ What You'll Experience</h2>
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <i class="fas fa-calendar-check"></i>
+                        <div>
+                            <strong>Smart Scheduling</strong>
+                            <p>Book appointments, manage staff schedules, handle walk-ins</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-cash-register"></i>
+                        <div>
+                            <strong>Point of Sale</strong>
+                            <p>Process payments, apply discounts, manage gift certificates</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-boxes"></i>
+                        <div>
+                            <strong>Inventory Management</strong>
+                            <p>Track products, monitor stock levels, automated reordering</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-users"></i>
+                        <div>
+                            <strong>Staff Management</strong>
+                            <p>Employee profiles, payroll tracking, performance analytics</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-chart-line"></i>
+                        <div>
+                            <strong>Business Analytics</strong>
+                            <p>Revenue reports, customer insights, operational metrics</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-robot"></i>
+                        <div>
+                            <strong>AI Assistant</strong>
+                            <p>Smart business insights, automated recommendations</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA Section -->
+        <div style="text-align: center; padding: 3rem 0; background: white; border-radius: 15px; margin: 2rem 0;">
+            <h2 style="color: var(--primary); margin-bottom: 1rem;">Ready to Transform Your Spa Business?</h2>
+            <p style="color: var(--text-light); margin-bottom: 2rem; font-size: 1.1rem;">Start your free 14-day trial after the demo</p>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <button class="btn btn-primary btn-lg" onclick="startFreeTrial()">
+                    <i class="fas fa-rocket"></i> Start Free Trial
+                </button>
+                <button class="btn btn-secondary btn-lg" onclick="requestDemo()">
+                    <i class="fas fa-calendar"></i> Schedule Consultation
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <img src="images/icon.svg" alt="Ava Solutions" style="width: 40px; height: 40px;">
+                    <span>Ava Solutions</span>
+                </div>
+                <div class="footer-links">
+                    <a href="index.html">Home</a>
+                    <a href="pricing.html">Pricing</a>
+                    <a href="contact.html">Contact</a>
+                    <a href="demo.html">Demo</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Ava Solutions. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script>
+        function startDemo(type = 'full') {
+            // Track demo start
+            trackEvent('demo_started', { demo_type: type });
+            
+            // Show loading message
+            showNotification('Loading demo environment...', 'success');
+            
+            // Redirect to PWA with demo parameters
+            const PWA_URL = 'https://ava-solutions-pwa.netlify.app';
+            setTimeout(() => {
+                window.open(`${PWA_URL}?demo=true&type=${type}`, '_blank');
+            }, 1000);
+        }
+        
+        function startTour() {
+            trackEvent('tour_started');
+            showNotification('Starting guided tour...', 'success');
+            
+            // For now, redirect to demo with tour parameter
+            const PWA_URL = 'https://ava-solutions-pwa.netlify.app';
+            setTimeout(() => {
+                window.open(`${PWA_URL}?demo=true&tour=true`, '_blank');
+            }, 1000);
+        }
+        
+        // Page load tracking
+        window.addEventListener('load', function() {
+            trackEvent('demo_page_viewed');
+        });
+        
+        // Track demo interest
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.demo-card, .btn')) {
+                const element = e.target.closest('.demo-card, .btn');
+                const action = element.textContent.trim();
+                trackEvent('demo_interaction', { action });
+            }
+        });
+    </script>
+</body>
+</html>
