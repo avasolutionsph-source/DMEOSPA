@@ -31,7 +31,7 @@ class ComponentLoader {
             } else {
                 // Fetch component HTML with cache-busting
                 console.log(`📡 Fetching component: src/components/${componentName}.html`);
-                const response = await fetch(`src/components/${componentName}.html?v=20250824`);
+                const response = await fetch(`src/components/${componentName}.html?v=1.8.0`);
                 if (!response.ok) {
                     console.error(`❌ HTTP ${response.status}: Failed to fetch component: ${componentName}`);
                     throw new Error(`Failed to load component: ${componentName} (HTTP ${response.status})`);
@@ -99,7 +99,7 @@ class ComponentLoader {
         const promises = componentNames.map(async name => {
             if (!this.componentCache.has(name)) {
                 try {
-                    const response = await fetch(`src/components/${name}.html?v=20250824`);
+                    const response = await fetch(`src/components/${name}.html?v=1.8.0`);
                     if (response.ok) {
                         const html = await response.text();
                         this.componentCache.set(name, html);

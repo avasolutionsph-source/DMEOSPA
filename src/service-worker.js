@@ -1,11 +1,30 @@
 // Service Worker for Offline Functionality - Updated with State Management & Unified Backend
-const CACHE_NAME = 'ava-solutions-v1.7.0';
+const CACHE_NAME = 'ava-solutions-v1.8.0';
 const urlsToCache = [
-    './',
-    './index.html',
-    './styles.css',
+    // Core app files
+    '../',
+    '../index.html',
+    '../login.html',
+    '../register.html',
+    '../manifest.json',
+    
+    // CSS files
+    './css/main.css',
+    './css/variables.css',
+    './css/base.css',
+    './css/layout.css',
+    './css/components.css',
+    './css/dashboard.css',
+    './css/forms.css',
+    './css/buttons.css',
+    './css/navigation.css',
+    './css/utilities.css',
+    './css/auth.css',
+    
+    // JavaScript files
     './js/app.js',
     './js/database.js',
+    './js/component-loader.js',
     './js/pos.js',
     './js/products.js',
     './js/inventory.js',
@@ -16,11 +35,37 @@ const urlsToCache = [
     './js/sync.js',
     './js/auth.js',
     './js/api-config.js',
+    './js/api.js',
     './js/state-manager.js',
     './js/state-ui-binding.js',
     './js/state-helpers.js',
     './js/config-service.js',
     './js/logger-complete.js',
+    './js/token-manager.js',
+    './js/rooms.js',
+    './js/gift-certificates.js',
+    './js/entitlements.js',
+    './js/feature-flags.js',
+    './js/auto-updater.js',
+    './js/backup-system.js',
+    './js/rollback-system.js',
+    './js/error-recovery.js',
+    
+    // Component HTML files (with cache-busting)
+    './components/sidebar.html',
+    './components/main-content.html',
+    './components/dashboard.html',
+    './components/pos.html',
+    './components/products.html',
+    './components/inventory.html',
+    './components/employees.html',
+    './components/chatbot.html',
+    './components/settings.html',
+    './components/rooms.html',
+    './components/gift-certificates.html',
+    './components/modals.html',
+    
+    // External resources
     'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
     'https://cdn.jsdelivr.net/npm/chart.js'
@@ -28,34 +73,85 @@ const urlsToCache = [
 
 // Install event - cache resources
 self.addEventListener('install', (event) => {
+    console.log('🔧 Service Worker installing, version:', CACHE_NAME);
+    
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('Opened cache');
-                return cache.addAll(urlsToCache);
+            .then(async (cache) => {
+                console.log('📦 Opened cache:', CACHE_NAME);
+                console.log('📋 URLs to cache:', urlsToCache.length, 'items');
+                
+                // Cache items individually with error handling
+                const cachePromises = urlsToCache.map(async (url) => {
+                    try {
+                        await cache.add(url);
+                        console.log('✅ Cached:', url);
+                        return { url, success: true };
+                    } catch (error) {
+                        console.warn('⚠️ Failed to cache:', url, error.message);
+                        return { url, success: false, error: error.message };
+                    }
+                });
+                
+                const results = await Promise.all(cachePromises);
+                const successful = results.filter(r => r.success).length;
+                const failed = results.filter(r => !r.success);
+                
+                console.log(`📊 Cache results: ${successful}/${urlsToCache.length} successful`);
+                if (failed.length > 0) {
+                    console.warn('❌ Failed to cache:', failed);
+                }
+                
+                return results;
             })
             .catch((error) => {
-                console.error('Failed to cache:', error);
+                console.error('❌ Failed to open cache:', error);
+                throw error;
             })
     );
+    
+    // Force activate immediately
     self.skipWaiting();
+    console.log('🚀 Service Worker installed, skipping wait');
 });
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
+    console.log('🎯 Service Worker activating, version:', CACHE_NAME);
+    
     event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME) {
-                        console.log('Deleting old cache:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
+        caches.keys().then(async (cacheNames) => {
+            console.log('📋 Found caches:', cacheNames);
+            
+            const deletePromises = cacheNames.map(async (cacheName) => {
+                if (cacheName !== CACHE_NAME) {
+                    console.log('🗑️ Deleting old cache:', cacheName);
+                    return caches.delete(cacheName);
+                } else {
+                    console.log('📦 Keeping current cache:', cacheName);
+                }
+            });
+            
+            await Promise.all(deletePromises);
+            console.log('🧹 Cache cleanup complete');
+            
+            // Verify current cache contents
+            try {
+                const currentCache = await caches.open(CACHE_NAME);
+                const cachedRequests = await currentCache.keys();
+                console.log(`📊 Current cache contains ${cachedRequests.length} items:`);
+                cachedRequests.forEach(request => {
+                    console.log(`  - ${request.url}`);
+                });
+            } catch (error) {
+                console.warn('⚠️ Could not verify cache contents:', error);
+            }
         })
     );
+    
+    // Take control of all clients
     self.clients.claim();
+    console.log('✅ Service Worker activated and claimed all clients');
 });
 
 // Fetch event - serve from cache when offline

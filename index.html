@@ -11,7 +11,7 @@
     <meta name="theme-color" content="#6366f1">
     
     <!-- Modular CSS Architecture -->
-    <link rel="stylesheet" href="src/css/main.css?v=20250824">
+    <link rel="stylesheet" href="src/css/main.css?v=1.8.0">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -33,25 +33,25 @@
     </div>
 
     <!-- Component Loader - Loads all HTML components -->
-    <script type="module" src="src/js/component-loader.js?v=20250824"></script>
+    <script type="module" src="src/js/component-loader.js?v=1.8.0"></script>
     
     <!-- Core Application Scripts - Load as modules to fix import errors -->
-    <script type="module" src="src/js/database.js?v=20250824"></script>
-    <script type="module" src="src/js/token-manager.js?v=20250824"></script>
-    <script type="module" src="src/js/config-service.js?v=20250824"></script>
-    <script type="module" src="src/js/auth.js?v=20250824"></script>
-    <script type="module" src="src/js/state-manager.js?v=20250824"></script>
-    <script type="module" src="src/js/sync.js?v=20250824"></script>
-    <script type="module" src="src/js/dashboard.js?v=20250824"></script>
-    <script type="module" src="src/js/pos.js?v=20250824"></script>
-    <script type="module" src="src/js/products.js?v=20250824"></script>
-    <script type="module" src="src/js/inventory.js?v=20250824"></script>
-    <script type="module" src="src/js/employees.js?v=20250824"></script>
-    <script type="module" src="src/js/rooms.js?v=20250824"></script>
-    <script type="module" src="src/js/gift-certificates.js?v=20250824"></script>
-    <script type="module" src="src/js/chatbot.js?v=20250824"></script>
-    <script type="module" src="src/js/settings.js?v=20250824"></script>
-    <script type="module" src="src/js/app.js?v=20250824"></script>
+    <script type="module" src="src/js/database.js?v=1.8.0"></script>
+    <script type="module" src="src/js/token-manager.js?v=1.8.0"></script>
+    <script type="module" src="src/js/config-service.js?v=1.8.0"></script>
+    <script type="module" src="src/js/auth.js?v=1.8.0"></script>
+    <script type="module" src="src/js/state-manager.js?v=1.8.0"></script>
+    <script type="module" src="src/js/sync.js?v=1.8.0"></script>
+    <script type="module" src="src/js/dashboard.js?v=1.8.0"></script>
+    <script type="module" src="src/js/pos.js?v=1.8.0"></script>
+    <script type="module" src="src/js/products.js?v=1.8.0"></script>
+    <script type="module" src="src/js/inventory.js?v=1.8.0"></script>
+    <script type="module" src="src/js/employees.js?v=1.8.0"></script>
+    <script type="module" src="src/js/rooms.js?v=1.8.0"></script>
+    <script type="module" src="src/js/gift-certificates.js?v=1.8.0"></script>
+    <script type="module" src="src/js/chatbot.js?v=1.8.0"></script>
+    <script type="module" src="src/js/settings.js?v=1.8.0"></script>
+    <script type="module" src="src/js/app.js?v=1.8.0"></script>
 
     <!-- FORCE CACHE REFRESH -->
     <script>
@@ -148,6 +148,41 @@
             
             document.body.removeChild(testElement);
         }, 100);
+    </script>
+
+    <!-- Service Worker Registration -->
+    <script>
+        // Register Service Worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    console.log('🔧 Registering service worker...');
+                    const registration = await navigator.serviceWorker.register('src/service-worker.js', {
+                        scope: './'
+                    });
+                    
+                    console.log('✅ Service Worker registered successfully:', registration.scope);
+                    
+                    // Handle service worker updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        console.log('🔄 Service Worker update found');
+                        
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                console.log('📥 New service worker ready - update available');
+                                // You can add update notification here if needed
+                            }
+                        });
+                    });
+                    
+                } catch (error) {
+                    console.error('❌ Service Worker registration failed:', error);
+                }
+            });
+        } else {
+            console.log('⚠️ Service Worker not supported in this browser');
+        }
     </script>
 
     <!-- Initialize App After Components Load -->
