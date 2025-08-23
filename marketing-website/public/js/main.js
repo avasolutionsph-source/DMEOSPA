@@ -170,11 +170,11 @@ function redirectToSignup() {
 }
 
 function redirectToApp() {
-    window.location.href = PWA_URL;
+    window.location.href = 'business-dashboard.html';
 }
 
 function startFreeTrial(plan = 'professional') {
-    window.location.href = PWA_URL + `?showSignup=true&plan=${plan}&trial=true`;
+    window.location.href = 'signup.html?plan=' + plan + '&trial=true';
 }
 
 function requestDemo() {
@@ -188,7 +188,7 @@ function checkAuthStatus() {
     
     if (token && navAuth) {
         navAuth.innerHTML = `
-            <a href="${PWA_URL}" class="btn-secondary">Dashboard</a>
+            <a href="business-dashboard.html" class="btn-secondary">Dashboard</a>
             <button onclick="logout()" class="btn-primary">Logout</button>
         `;
     }
