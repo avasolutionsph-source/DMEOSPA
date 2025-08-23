@@ -76,7 +76,15 @@ async function loadDashboard() {
         // Temporary fix: Use direct backend URL until Netlify proxy is deployed
         const apiBase = 'https://ava-pwa-backend.onrender.com';
         
+        // Debug: Check if we have a token
+        console.log('Admin token check:', token ? 'Token exists' : 'No token found');
+        
+        if (!token) {
+            throw new Error('No admin token found. Please login again.');
+        }
+        
         // Load stats
+        console.log('Fetching admin stats from:', `${apiBase}/api/admin/stats`);
         const statsResponse = await fetch(`${apiBase}/api/admin/stats`, {
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -84,6 +92,9 @@ async function loadDashboard() {
             },
             mode: 'cors'
         });
+        
+        console.log('Stats response status:', statsResponse.status);
+        console.log('Stats response headers:', [...statsResponse.headers.entries()]);
         
         if (statsResponse.ok) {
             const statsData = await statsResponse.json();
@@ -129,6 +140,7 @@ async function loadUsers() {
         // Temporary fix: Use direct backend URL until Netlify proxy is deployed
         const apiBase = 'https://ava-pwa-backend.onrender.com';
         
+        console.log('Fetching admin users from:', `${apiBase}/api/admin/users`);
         const response = await fetch(`${apiBase}/api/admin/users`, {
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -136,6 +148,9 @@ async function loadUsers() {
             },
             mode: 'cors'
         });
+        
+        console.log('Users response status:', response.status);
+        console.log('Users response headers:', [...response.headers.entries()]);
         
         if (response.ok) {
             const data = await response.json();
