@@ -1,4 +1,6 @@
 // POS System Management
+import { showSuccess, showError, showWarning, showInfo } from './utils/notification-manager.js';
+
 class POSSystem {
     constructor() {
         // Initialize with StateManager if available, fallback to local properties
@@ -102,7 +104,7 @@ class POSSystem {
                     this.clearCart();
                 }
             } else {
-                showNotification('Cart is already empty', 'info');
+                showInfo('Cart is already empty');
             }
         });
 
@@ -111,7 +113,7 @@ class POSSystem {
             if (this.cart.length > 0) {
                 this.showCheckout();
             } else {
-                showNotification('Cart is empty', 'warning');
+                showWarning('Cart is empty');
             }
         });
 
@@ -236,7 +238,7 @@ class POSSystem {
                 item = await db.get('inventory', itemId);
                 // Check stock
                 if (item.currentStock <= 0) {
-                    showNotification('Item out of stock', 'error');
+                    showError('Item out of stock');
                     return;
                 }
             } else {
@@ -253,7 +255,7 @@ class POSSystem {
             if (existingItem) {
                 // Check stock before incrementing
                 if (itemType === 'inventory' && existingItem.quantity >= item.currentStock) {
-                    showNotification('Not enough stock available', 'warning');
+                    showWarning('Not enough stock available');
                     return;
                 }
                 existingItem.quantity++;
@@ -280,7 +282,7 @@ class POSSystem {
             }
 
             this.updateCartDisplay();
-            showNotification(`${item.name} added to cart`, 'success');
+            showSuccess(`${item.name} added to cart`);
             
             if (window.logger) {
                 window.logger.info('Item added to cart successfully', {
@@ -327,7 +329,7 @@ class POSSystem {
                 }
             }
             this.updateCartDisplay();
-            showNotification(`${item.name} removed from cart`, 'info');
+            showInfo(`${item.name} removed from cart`);
         }
     }
 
@@ -338,7 +340,7 @@ class POSSystem {
         if (newQuantity <= 0) {
             this.removeFromCart(index);
         } else if (item.maxStock && newQuantity > item.maxStock) {
-            showNotification('Not enough stock available', 'warning');
+            showWarning('Not enough stock available');
         } else {
             item.quantity = newQuantity;
             this.updateCartDisplay();
@@ -365,7 +367,7 @@ class POSSystem {
         this.gcAmount = 0;
         
         this.updateCartDisplay();
-        showNotification('Cart cleared', 'info');
+        showInfo('Cart cleared');
     }
 
     updateCartDisplay() {
@@ -446,7 +448,7 @@ class POSSystem {
         
         if (requireEmployee && hasServices && !this.selectedEmployee) {
             if (!confirm('You have services in your cart but no employee selected. Services require employee assignment for commission tracking. Continue anyway?')) {
-                showNotification('Please select an employee for service items', 'warning');
+                showWarning('Please select an employee for service items');
                 return;
             }
         }
@@ -772,7 +774,7 @@ class POSSystem {
                 });
             }
             
-            showNotification('Please select an employee before checkout', 'error');
+            showError('Please select an employee before checkout');
             setButtonLoading('confirmCheckoutBtn', false);
             hideLoading();
             this.isProcessingCheckout = false;
@@ -809,7 +811,7 @@ class POSSystem {
                 const cardType = document.getElementById('discountCardType').value;
                 
                 if (!cardholderName || !idNumber || !cardType) {
-                    showNotification('Please fill in all Senior/PWD discount fields', 'error');
+                    showError('Please fill in all Senior/PWD discount fields');
                     setButtonLoading('confirmCheckoutBtn', false);
                     hideLoading();
                     this.isProcessingCheckout = false;
@@ -991,7 +993,7 @@ class POSSystem {
 
             // Small delay to ensure modal closes, then show success
             setTimeout(() => {
-                showNotification('Sale completed successfully!', 'success');
+                showSuccess('Sale completed successfully!');
             }, 100);
 
             // Refresh dashboard if it's the current page
@@ -1013,7 +1015,7 @@ class POSSystem {
             }
             hideLoading();
             setButtonLoading('confirmCheckoutBtn', false);
-            showNotification('Checkout failed. Please try again.', 'error');
+            showError('Checkout failed. Please try again.');
         } finally {
             // Always reset the processing flag
             this.isProcessingCheckout = false;

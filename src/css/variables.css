@@ -33,24 +33,10 @@
     --accent-300: #FCD34D;           /* Golden orange */
     --accent-200: #FEF3C7;           /* Pale gold */
     
-    /* Enhanced Professional Palette */
-    --purple-600: #9333EA;           /* Rich purple for premium features */
-    --purple-500: #A855F7;           /* Medium purple */
-    --purple-400: #C084FC;           /* Light purple */
-    --purple-300: #D8B4FE;           /* Pale purple */
-    --purple-100: #F3E8FF;           /* Ultra light purple */
-    
-    --emerald-600: #059669;          /* Rich emerald */
-    --emerald-500: #10B981;          /* Success green */
-    --emerald-400: #34D399;          /* Light emerald */
-    --emerald-300: #6EE7B7;          /* Pale emerald */
-    --emerald-100: #D1FAE5;          /* Ultra light emerald */
-    
-    --rose-600: #E11D48;             /* Rich rose */
-    --rose-500: #F43F5E;             /* Medium rose */
-    --rose-400: #FB7185;             /* Light rose */
-    --rose-300: #FDA4AF;             /* Pale rose */
-    --rose-100: #FFE4E6;             /* Ultra light rose */
+    /* Core Professional Colors (kept for future use) */
+    --purple: #8B5CF6;               /* Primary purple accent */
+    --emerald: #10B981;              /* Primary emerald (used in success states) */
+    --rose: #F43F5E;                 /* Primary rose accent */
     
          /* Enhanced Semantic Colors */
      --danger-color: #EF4444;         

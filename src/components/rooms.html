@@ -1,0 +1,68 @@
+<!-- Room Management Page Component -->
+<div id="rooms" class="page">
+    <div class="page-header">
+        <h1>Room Management</h1>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="showRoomModal()">
+                <i class="fas fa-door-open"></i> Add Room
+            </button>
+        </div>
+    </div>
+    
+    <div class="room-filters">
+        <div class="filter-group">
+            <input type="text" id="roomSearch" placeholder="Search rooms..." class="form-input">
+        </div>
+        <div class="filter-group">
+            <select id="roomType" class="form-input">
+                <option value="">All Types</option>
+                <option value="massage">Massage Room</option>
+                <option value="facial">Facial Room</option>
+                <option value="therapy">Therapy Room</option>
+                <option value="vip">VIP Room</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <select id="roomStatus" class="form-input">
+                <option value="">All Status</option>
+                <option value="available">Available</option>
+                <option value="occupied">Occupied</option>
+                <option value="maintenance">Maintenance</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="room-stats">
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Available Rooms</h3>
+                <p class="stat-value" id="availableRooms">0</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon orange">
+                <i class="fas fa-user-friends"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Occupied Rooms</h3>
+                <p class="stat-value" id="occupiedRooms">0</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="fas fa-door-open"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Total Rooms</h3>
+                <p class="stat-value" id="totalRooms">0</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="room-grid" id="roomGrid">
+        <!-- Room cards will be populated here -->
+    </div>
+</div>

@@ -1,4 +1,7 @@
 // Inventory Management
+import { logError, logInfo } from './utils/logger-helper.js';
+import { showSuccess, showError } from './utils/notification-manager.js';
+
 class InventoryManager {
     constructor() {
         this.inventory = [];
@@ -72,8 +75,8 @@ class InventoryManager {
             this.inventory = await db.getAll('inventory');
             this.displayInventory();
         } catch (error) {
-            if (window.logger) {
-                window.logger.error('Failed to load inventory', {
+            if (// logger) {
+                // logger.error('Failed to load inventory', {
                     category: 'INVENTORY',
                     operation: 'load_inventory',
                     error: error
@@ -231,8 +234,8 @@ class InventoryManager {
 
             openModal('inventoryModal');
         } catch (error) {
-            if (window.logger) {
-                window.logger.error('Failed to edit item', {
+            if (// logger) {
+                // logger.error('Failed to edit item', {
                     category: 'INVENTORY',
                     operation: 'edit_item',
                     error: error
@@ -253,8 +256,8 @@ class InventoryManager {
             showNotification('Item deleted successfully', 'success');
             await this.loadInventory();
         } catch (error) {
-            if (window.logger) {
-                window.logger.error('Failed to delete item', {
+            if (// logger) {
+                // logger.error('Failed to delete item', {
                     category: 'INVENTORY',
                     operation: 'delete_item',
                     error: error
@@ -343,8 +346,8 @@ class InventoryManager {
                 window.loadPOS && window.loadPOS();
             }
         } catch (error) {
-            if (window.logger) {
-                window.logger.error('Failed to save inventory item', {
+            if (// logger) {
+                // logger.error('Failed to save inventory item', {
                     category: 'INVENTORY',
                     operation: 'save_item',
                     error: error

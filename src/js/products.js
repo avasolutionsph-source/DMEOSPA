@@ -1,4 +1,7 @@
 // Products and Services Management
+import { logError, logInfo, logDebug } from './utils/logger-helper.js';
+import { showSuccess, showError, showInfo } from './utils/notification-manager.js';
+
 class ProductsManager {
     constructor() {
         this.products = [];
@@ -58,7 +61,7 @@ class ProductsManager {
             this.displayProducts();
         } catch (error) {
             if (window.logger) {
-                window.logger.error('Failed to load products', {
+                logError('Failed to load products', {
                     category: 'PRODUCTS',
                     operation: 'load_products',
                     error: error
@@ -162,7 +165,7 @@ class ProductsManager {
 
         try {
             await db.delete('products', id);
-            showNotification('Product deleted successfully', 'success');
+            showSuccess('Product deleted successfully');
             await this.loadProducts();
         } catch (error) {
             if (window.logger) {
@@ -174,7 +177,7 @@ class ProductsManager {
             } else {
                 console.error('Failed to delete product:', error);
             }
-            showNotification('Failed to delete product', 'error');
+            showError('Failed to delete product');
         }
     }
 
@@ -219,7 +222,7 @@ class ProductsManager {
                 saveBtn.innerHTML = originalText;
                 
                 closeModal('productModal');
-                showNotification('Service updated successfully', 'success');
+                showSuccess('Service updated successfully');
             } else {
                 // Add new product
                 productData.createdAt = new Date().toISOString();
@@ -231,7 +234,7 @@ class ProductsManager {
                 saveBtn.innerHTML = originalText;
                 
                 closeModal('productModal');
-                showNotification('Service added successfully', 'success');
+                showSuccess('Service added successfully');
             }
 
             await this.loadProducts();
@@ -254,7 +257,7 @@ class ProductsManager {
             saveBtn.classList.remove('loading');
             saveBtn.disabled = false;
             saveBtn.innerHTML = originalText;
-            showNotification('Failed to save service', 'error');
+            showError('Failed to save service');
         } finally {
             // Always reset the saving flag
             this.isSaving = false;

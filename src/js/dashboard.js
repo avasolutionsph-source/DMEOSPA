@@ -1,4 +1,6 @@
 // Dashboard Management
+import { logError, logInfo, logDebug } from './utils/logger-helper.js';
+
 class DashboardManager {
     constructor() {
         this.salesChart = null;
@@ -54,15 +56,11 @@ class DashboardManager {
             this.updateStatsDisplay();
             
         } catch (error) {
-            if (window.logger) {
-                window.logger.error('Failed to load dashboard data', {
-                    category: 'DASHBOARD',
-                    operation: 'load_data',
-                    error: error
-                });
-            } else {
-                console.error('Failed to load dashboard data:', error);
-            }
+            logError('Failed to load dashboard data', {
+                category: 'DASHBOARD',
+                operation: 'load_data',
+                error: error
+            });
         }
     }
 

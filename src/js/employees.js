@@ -1,4 +1,7 @@
 // Employee Management
+import { logError, logInfo } from './utils/logger-helper.js';
+import { showSuccess, showError } from './utils/notification-manager.js';
+
 class EmployeeManager {
     constructor() {
         this.employees = [];
@@ -186,7 +189,7 @@ class EmployeeManager {
 
         try {
             await db.delete('employees', id);
-            showNotification('Employee deleted successfully', 'success');
+            showSuccess('Employee deleted successfully', 'success');
             await this.loadEmployees();
         } catch (error) {
             if (window.logger) {
@@ -198,7 +201,7 @@ class EmployeeManager {
             } else {
                 console.error('Failed to delete employee:', error);
             }
-            showNotification('Failed to delete employee', 'error');
+            showSuccess('Failed to delete employee', 'error');
         }
     }
 
@@ -241,7 +244,7 @@ class EmployeeManager {
                 saveBtn.innerHTML = originalText;
                 
                 closeModal('employeeModal');
-                showNotification('Employee updated successfully', 'success');
+                showSuccess('Employee updated successfully', 'success');
             } else {
                 // Add new employee
                 employeeData.createdAt = new Date().toISOString();
@@ -253,7 +256,7 @@ class EmployeeManager {
                 saveBtn.innerHTML = originalText;
                 
                 closeModal('employeeModal');
-                showNotification('Employee added successfully', 'success');
+                showSuccess('Employee added successfully', 'success');
             }
 
             await this.loadEmployees();
@@ -276,7 +279,7 @@ class EmployeeManager {
             saveBtn.classList.remove('loading');
             saveBtn.disabled = false;
             saveBtn.innerHTML = originalText;
-            showNotification('Failed to save employee', 'error');
+            showSuccess('Failed to save employee', 'error');
         } finally {
             // Always reset the saving flag
             this.isSaving = false;

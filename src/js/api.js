@@ -1,4 +1,7 @@
 // API Client for MERN Backend Communication
+import { withErrorHandling, ErrorTypes, ErrorSeverity } from './utils/error-handler.js';
+import { logError, logInfo, logDebug } from './utils/logger-helper.js';
+
 class APIClient {
     constructor() {
         this.baseUrl = null;
@@ -18,7 +21,11 @@ class APIClient {
         // Process any queued requests
         this.processRetryQueue();
         
-        console.log('API Client initialized with base URL:', this.baseUrl);
+        logInfo('API Client initialized', {
+            category: 'API',
+            operation: 'init',
+            data: { baseUrl: this.baseUrl }
+        });
     }
 
     // Load settings and configuration
@@ -39,7 +46,11 @@ class APIClient {
                 this.token = window.authSystem.authToken;
             }
         } catch (error) {
-            console.error('Failed to load API settings:', error);
+            logError('Failed to load API settings', {
+                category: 'API',
+                operation: 'load_settings',
+                error
+            });
             this.baseUrl = 'https://ava-pwa-backend.onrender.com'; // Unified backend
         }
     }

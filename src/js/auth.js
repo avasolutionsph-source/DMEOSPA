@@ -1,4 +1,7 @@
 // Authentication and User Management System
+import { logDebug, logInfo, logError, logWarn, safeAsyncOperation } from './utils/logger-helper.js';
+import { withErrorHandling, ErrorTypes } from './utils/error-handler.js';
+
 class AuthSystem {
     constructor() {
         this.currentUser = null;
@@ -14,13 +17,18 @@ class AuthSystem {
         // Check if user is already logged in
         if (this.authToken && this.currentUser) {
             // Try to validate session, but don't fail if it doesn't work
-            try {
-                await this.validateSession();
-            } catch (error) {
-                console.warn('Session validation failed, but keeping user logged in:', error);
+            await withErrorHandling(
+                () => this.validateSession(),
+                {
+                    category: 'AUTH',
+                    operation: 'validate_session',
+                    type: ErrorTypes.AUTHENTICATION,
+                    userMessage: 'Session validation failed, but you remain logged in'
+                }
+            ).catch(() => {
                 // Keep user logged in even if validation fails
                 this.isLoggedIn = true;
-            }
+            });
         }
         
         this.setupEventListeners();
@@ -72,26 +80,18 @@ class AuthSystem {
 
     // Attach event listener to main login button
     attachMainLoginButton() {
-        if (window.logger && window.logger.debug) {
-            window.logger.debug('Auth.js login button handler disabled - using direct modal instead', { category: 'AUTH' });
-        } else {
-            if (window.logger) {
-                window.logger.debug('Auth.js login button handler disabled', {
-                    category: 'AUTH',
-                    operation: 'disabled_handler'
-                });
-            }
-        }
+        logDebug('Auth.js login button handler disabled - using direct modal instead', {
+            category: 'AUTH',
+            operation: 'disabled_handler'
+        });
         
         // Continue with login button setup
         const mainLoginBtn = document.getElementById('showLoginBtn');
         if (mainLoginBtn) {
-            if (window.logger) {
-                window.logger.debug('Attaching click event to login button', {
-                    category: 'AUTH',
-                    operation: 'attach_login_handler'
-                });
-            }
+            logDebug('Attaching click event to login button', {
+                category: 'AUTH',
+                operation: 'attach_login_handler'
+            });
             
             // Remove any existing event listeners
             mainLoginBtn.replaceWith(mainLoginBtn.cloneNode(true));
@@ -100,18 +100,19 @@ class AuthSystem {
             newBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (window.logger) {
-                    window.logger.debug('Login button clicked', {
-                        category: 'AUTH',
-                        operation: 'login_button_click'
-                    });
-                }
+                logDebug('Login button clicked', {
+                    category: 'AUTH',
+                    operation: 'login_button_click'
+                });
                 
                 // Use showLoginModal directly since it's defined in HTML
                 if (typeof showLoginModal === 'function') {
                     showLoginModal();
                 } else {
-                    console.error('showLoginModal function not available');
+                    logError('showLoginModal function not available', {
+                        category: 'AUTH',
+                        operation: 'login_modal_missing'
+                    });
                 }
             });
         }
@@ -127,7 +128,10 @@ class AuthSystem {
 
     // Show login modal (called from sync system and other components)
     showLoginModal() {
-        console.log('🔐 AuthSystem.showLoginModal called');
+        logInfo('AuthSystem.showLoginModal called', {
+            category: 'AUTH',
+            operation: 'show_login_modal'
+        });
         
         // Show the auth modal
         const modal = document.getElementById('authModal');

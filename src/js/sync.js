@@ -1,4 +1,6 @@
 // Sync Manager for offline/online synchronization with unified backend
+import { logDebug, logInfo, logError, logWarn, safeAsyncOperation } from './utils/logger-helper.js';
+
 class SyncManager {
     constructor() {
         this.apiUrl = ''; // Will be set from API_CONFIG
@@ -25,13 +27,11 @@ class SyncManager {
                     this.apiUrl = 'https://ava-pwa-backend.onrender.com';
                 }
                 
-                if (window.logger) {
-                    window.logger.info('Using unified backend API', { 
-                        category: 'SYNC', 
-                        operation: 'init',
-                        data: { apiUrl: this.apiUrl }
-                    });
-                }
+                logInfo('Using unified backend API', { 
+                    category: 'SYNC', 
+                    operation: 'init',
+                    data: { apiUrl: this.apiUrl }
+                });
 
                 // Set up online/offline listeners
                 window.addEventListener('online', () => this.handleOnline());
@@ -54,13 +54,11 @@ class SyncManager {
                     });
                 }
             } catch (error) {
-                if (window.logger) {
-                    window.logger.warn('Sync manager initialization deferred', { 
-                        category: 'SYNC', 
-                        operation: 'init',
-                        error: error
-                    });
-                }
+                logWarn('Sync manager initialization deferred', { 
+                    category: 'SYNC', 
+                    operation: 'init',
+                    error: error
+                });
             }
         }, 1000);
     }
@@ -88,16 +86,16 @@ class SyncManager {
                     this.syncAll();
                 });
                 
-                if (window.logger) {
-                    window.logger.info('WebSocket initialized for real-time sync', {
-                        category: 'SYNC',
-                        operation: 'websocket_init'
-                    });
-                }
+                logInfo('WebSocket initialized for real-time sync', {
+                    category: 'SYNC',
+                    operation: 'websocket_init'
+                });
             }
         } catch (error) {
-            if (window.logger) {
-                window.logger.error('Failed to initialize WebSocket', {
+            logError('Failed to initialize WebSocket', {
+                category: 'SYNC',
+                operation: 'websocket_init',
+                error
                     category: 'SYNC',
                     error: error.message
                 });
