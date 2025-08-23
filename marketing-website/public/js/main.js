@@ -162,13 +162,11 @@ const PWA_URL = window.location.hostname === 'localhost'
     : 'https://ava-solutions-pwa.netlify.app';  // Production PWA URL
 
 function redirectToLogin() {
-    // Redirect to PWA main page which will show login modal
-    window.location.href = PWA_URL + '?showLogin=true';
+    window.location.href = 'login.html';
 }
 
 function redirectToSignup() {
-    // Redirect to PWA main page which will show signup modal
-    window.location.href = PWA_URL + '?showSignup=true';
+    window.location.href = 'signup.html';
 }
 
 function redirectToApp() {
