@@ -13,7 +13,14 @@ class AuthSystem {
         
         // Check if user is already logged in
         if (this.authToken && this.currentUser) {
-            await this.validateSession();
+            // Try to validate session, but don't fail if it doesn't work
+            try {
+                await this.validateSession();
+            } catch (error) {
+                console.warn('Session validation failed, but keeping user logged in:', error);
+                // Keep user logged in even if validation fails
+                this.isLoggedIn = true;
+            }
         }
         
         this.setupEventListeners();
@@ -360,12 +367,25 @@ class AuthSystem {
                 }
             }
 
-            // Invalid session
-            await this.logout();
-            return false;
+            // Only logout if we get a clear authentication error (401/403)
+            // Don't logout for server errors (404, 500) which might be temporary
+            if (response.status === 401 || response.status === 403) {
+                console.warn('Session expired or invalid, logging out');
+                await this.logout();
+                return false;
+            } else {
+                // For other errors (404, 500), keep user logged in but warn
+                console.warn(`Session validation failed with status ${response.status}, keeping user logged in`);
+                // Keep existing user data, just mark as validated for this session
+                this.isLoggedIn = true;
+                return true;
+            }
         } catch (error) {
             console.error('Session validation error:', error);
-            return false;
+            // For network errors, keep user logged in
+            console.warn('Network error during session validation, keeping user logged in');
+            this.isLoggedIn = true;
+            return true;
         }
     }
 
@@ -422,47 +442,68 @@ class AuthSystem {
     }
 
     // Save authentication state
-    async saveAuthState(rememberMe = false) {
-        const storage = rememberMe ? localStorage : sessionStorage;
+    async saveAuthState(rememberMe = true) {
+        // Always save to localStorage for better persistence in PWA
+        localStorage.setItem('authToken', this.authToken);
+        localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('rememberMe', rememberMe ? 'true' : 'false');
         
-        storage.setItem('authToken', this.authToken);
-        storage.setItem('currentUser', JSON.stringify(this.currentUser));
-        storage.setItem('isLoggedIn', 'true');
-        
-        // Also save to localStorage for persistence
-        if (rememberMe) {
-            localStorage.setItem('rememberMe', 'true');
-        }
+        // Also save to sessionStorage as backup
+        sessionStorage.setItem('authToken', this.authToken);
+        sessionStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+        sessionStorage.setItem('isLoggedIn', 'true');
     }
 
     // Load authentication state
     async loadAuthState() {
+        console.log('🔄 Loading auth state...');
+        
         // Check both storages
         let authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
         let currentUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
         let isLoggedIn = localStorage.getItem('isLoggedIn') || sessionStorage.getItem('isLoggedIn');
         
+        console.log('📁 Auth state found:', {
+            hasToken: !!authToken,
+            hasUser: !!currentUser,
+            isLoggedIn: isLoggedIn === 'true'
+        });
+        
         if (authToken && currentUser && isLoggedIn === 'true') {
-            this.authToken = authToken;
-            this.currentUser = JSON.parse(currentUser);
-            this.isLoggedIn = true;
-            
-            // Set API client token
-            if (window.apiClient) {
-                window.apiClient.setToken(authToken);
+            try {
+                this.authToken = authToken;
+                this.currentUser = JSON.parse(currentUser);
+                this.isLoggedIn = true;
+                
+                console.log('✅ Auth state restored:', {
+                    user: this.currentUser.firstName || this.currentUser.businessName,
+                    tokenLength: authToken.length
+                });
+                
+                // Set API client token
+                if (window.apiClient) {
+                    window.apiClient.setToken(authToken);
+                }
+                
+                // Set API_CONFIG token
+                if (window.API_CONFIG) {
+                    window.API_CONFIG.setToken(authToken);
+                }
+                
+                // Update StateManager
+                if (window.StateManager && window.StateManager.initialized) {
+                    window.StateManager.setState('auth.authToken', authToken);
+                    window.StateManager.setState('auth.currentUser', this.currentUser);
+                    window.StateManager.setState('auth.isLoggedIn', true);
+                }
+            } catch (error) {
+                console.error('❌ Failed to restore auth state:', error);
+                // Clear corrupted data
+                await this.clearAuthState();
             }
-            
-            // Set API_CONFIG token
-            if (window.API_CONFIG) {
-                window.API_CONFIG.setToken(authToken);
-            }
-            
-            // Update StateManager
-            if (window.StateManager && window.StateManager.initialized) {
-                window.StateManager.setState('auth.authToken', authToken);
-                window.StateManager.setState('auth.currentUser', this.currentUser);
-                window.StateManager.setState('auth.isLoggedIn', true);
-            }
+        } else {
+            console.log('ℹ️ No valid auth state found');
         }
     }
 
