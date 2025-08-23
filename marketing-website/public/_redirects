@@ -1,0 +1,10 @@
+# Netlify redirects for marketing website
+
+# Main routes
+/            /index.html    200
+/pricing     /pricing.html  200
+/contact     /contact.html  200
+/features    /index.html    200
+
+# Fallback for any other routes
+/*           /404.html      404
