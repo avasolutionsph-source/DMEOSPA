@@ -188,16 +188,16 @@ class ConfigurationService {
                 const db = e.target.result;
 
                 // Unified config store
-                if (!db.objectStoreNames.contains('config')) {
-                    const configStore = db.createObjectStore('config', { keyPath: 'key' });
+                if (!window.db.objectStoreNames.contains('config')) {
+                    const configStore = window.db.createObjectStore('config', { keyPath: 'key' });
                     configStore.createIndex('category', 'category', { unique: false });
                     configStore.createIndex('source', 'source', { unique: false });
                     configStore.createIndex('lastModified', 'lastModified', { unique: false });
                 }
 
                 // Migration history store
-                if (!db.objectStoreNames.contains('migrations')) {
-                    const migrationStore = db.createObjectStore('migrations', { keyPath: 'id', autoIncrement: true });
+                if (!window.db.objectStoreNames.contains('migrations')) {
+                    const migrationStore = window.db.createObjectStore('migrations', { keyPath: 'id', autoIncrement: true });
                     migrationStore.createIndex('timestamp', 'timestamp', { unique: false });
                     migrationStore.createIndex('version', 'version', { unique: false });
                 }
@@ -524,7 +524,7 @@ class ConfigurationService {
             version: 1
         };
 
-        const transaction = this.db.transaction(['config'], 'readwrite');
+        const transaction = window.db.transaction(['config'], 'readwrite');
         const store = transaction.objectStore('config');
         
         return new Promise((resolve, reject) => {
@@ -647,7 +647,7 @@ class ConfigurationService {
     async isMigrationComplete(migrationId) {
         if (!this.db) return false;
 
-        const transaction = this.db.transaction(['migrations'], 'readonly');
+        const transaction = window.db.transaction(['migrations'], 'readonly');
         const store = transaction.objectStore('migrations');
         
         return new Promise((resolve) => {
@@ -666,7 +666,7 @@ class ConfigurationService {
             version: 1
         };
 
-        const transaction = this.db.transaction(['migrations'], 'readwrite');
+        const transaction = window.db.transaction(['migrations'], 'readwrite');
         const store = transaction.objectStore('migrations');
         
         return new Promise((resolve, reject) => {

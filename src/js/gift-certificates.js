@@ -152,7 +152,7 @@ class GiftCertificateManager {
 
         try {
             // Use main app database add method
-            await this.db.add('products', certificate);
+            await window.db.add('products', certificate);
             this.certificates.push(certificate);
             this.updateDashboard();
             this.renderCertificatesList();
@@ -172,7 +172,7 @@ class GiftCertificateManager {
     async loadCertificates() {
         try {
             // Load gift certificates from main database
-            const allProducts = await this.db.getAll('products');
+            const allProducts = await window.db.getAll('products');
             this.certificates = allProducts.filter(item => item.type === 'gift_certificate');
             this.checkExpiredCertificates();
             return this.certificates;
@@ -199,7 +199,7 @@ class GiftCertificateManager {
         certificate.status = status;
 
         return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['certificates'], 'readwrite');
+            const transaction = window.db.transaction(['certificates'], 'readwrite');
             const store = transaction.objectStore('certificates');
             const request = store.put(certificate);
 
@@ -239,7 +239,7 @@ class GiftCertificateManager {
         }
 
         return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['certificates'], 'readwrite');
+            const transaction = window.db.transaction(['certificates'], 'readwrite');
             const store = transaction.objectStore('certificates');
             const request = store.put(certificate);
 
@@ -1124,7 +1124,7 @@ class GiftCertificateManager {
     async deleteCertificate(certificateId) {
         try {
             // Remove from database
-            await this.db.delete('products', parseInt(certificateId));
+            await window.db.delete('products', parseInt(certificateId));
             
             // Remove from local array
             this.certificates = this.certificates.filter(c => c.id != certificateId);

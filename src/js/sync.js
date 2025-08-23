@@ -225,7 +225,7 @@ class SyncManager {
             await this.processSyncQueue();
             
             // Update last sync time
-            await db.update('settings', {
+            await window.db.update('settings', {
                 key: 'lastSync',
                 value: new Date().toISOString()
             });
@@ -251,7 +251,7 @@ class SyncManager {
     async syncProducts() {
         try {
             // Get ALL products to ensure complete sync
-            const allProducts = await db.getAll('products');
+            const allProducts = await window.db.getAll('products');
             
             if (window.logger) {
                 window.logger.info('Products ready for sync', { 
@@ -282,7 +282,7 @@ class SyncManager {
                 for (const product of allProducts) {
                     if (product.syncStatus !== 'synced') {
                         product.syncStatus = 'synced';
-                        await db.update('products', product);
+                        await window.db.update('products', product);
                     }
                 }
             } else {
@@ -312,7 +312,7 @@ class SyncManager {
     async syncInventory() {
         try {
             // Get ALL inventory items to provide complete data to Business Dashboard
-            const allInventory = await db.getAll('inventory');
+            const allInventory = await window.db.getAll('inventory');
             
             if (window.logger) {
                 window.logger.info('Found inventory items for sync', {
@@ -401,7 +401,7 @@ class SyncManager {
                 for (const item of allInventory) {
                     if (item.syncStatus !== 'synced') {
                         item.syncStatus = 'synced';
-                        await db.update('inventory', item);
+                        await window.db.update('inventory', item);
                     }
                 }
                 if (window.logger) {
@@ -432,7 +432,7 @@ class SyncManager {
     async syncEmployees() {
         try {
             // Get ALL employees to provide complete data to Business Dashboard
-            const allEmployees = await db.getAll('employees');
+            const allEmployees = await window.db.getAll('employees');
             
             console.log(`👥 Found ${allEmployees.length} total employees for sync`);
             console.log('👥 Employee details:', allEmployees.map(emp => ({ 
@@ -448,7 +448,7 @@ class SyncManager {
             }
 
             // Get all transactions to calculate employee sales metrics
-            const allTransactions = await db.getAll('transactions');
+            const allTransactions = await window.db.getAll('transactions');
             console.log(`💰 Found ${allTransactions.length} transactions for employee metrics calculation`);
 
             // Calculate sales metrics for each employee
@@ -509,7 +509,7 @@ class SyncManager {
                 for (const employee of allEmployees) {
                     if (employee.syncStatus !== 'synced') {
                         employee.syncStatus = 'synced';
-                        await db.update('employees', employee);
+                        await window.db.update('employees', employee);
                     }
                 }
                 console.log('✅ All employees marked as synced');
@@ -525,7 +525,7 @@ class SyncManager {
     async syncTransactions() {
         try {
             // Get ALL transactions to calculate complete business summary
-            const allTransactions = await db.getAll('transactions');
+            const allTransactions = await window.db.getAll('transactions');
             
             console.log(`💰 Found ${allTransactions.length} total transactions for sync`);
 
@@ -608,7 +608,7 @@ class SyncManager {
                 for (const transaction of allTransactions) {
                     if (transaction.syncStatus !== 'synced') {
                         transaction.syncStatus = 'synced';
-                        await db.update('transactions', transaction);
+                        await window.db.update('transactions', transaction);
                     }
                 }
                 console.log('✅ All transactions marked as synced');
@@ -656,7 +656,7 @@ class SyncManager {
 
     async processSyncQueue() {
         try {
-            const queue = await db.getAll('syncQueue');
+            const queue = await window.db.getAll('syncQueue');
             
             for (const item of queue) {
                 if (item.status === 'pending') {
@@ -664,16 +664,16 @@ class SyncManager {
                         const response = await this.sendToServer(item.url, item.data);
                         
                         if (response.ok) {
-                            await db.delete('syncQueue', item.id);
+                            await window.db.delete('syncQueue', item.id);
                         } else {
                             item.retryCount = (item.retryCount || 0) + 1;
                             item.lastError = response.statusText;
-                            await db.update('syncQueue', item);
+                            await window.db.update('syncQueue', item);
                         }
                     } catch (error) {
                         item.retryCount = (item.retryCount || 0) + 1;
                         item.lastError = error.message;
-                        await db.update('syncQueue', item);
+                        await window.db.update('syncQueue', item);
                     }
                 }
             }
@@ -695,7 +695,7 @@ class SyncManager {
             url: `${this.apiUrl}/api/${entity}/${action}`
         };
 
-        await db.add('syncQueue', queueItem);
+        await window.db.add('syncQueue', queueItem);
         
         // Try to sync immediately if online
         if (this.isOnline) {
@@ -804,7 +804,7 @@ class SyncManager {
         try {
             console.log('🔧 Checking and fixing employee data...');
             
-            const employees = await db.getAll('employees');
+            const employees = await window.db.getAll('employees');
             let fixed = 0;
             
             for (const employee of employees) {
@@ -843,7 +843,7 @@ class SyncManager {
                 }
                 
                 if (needsUpdate) {
-                    await db.update('employees', employee);
+                    await window.db.update('employees', employee);
                     fixed++;
                     console.log(`🔧 Fixed employee data for: ${employee.name}`);
                 }
@@ -923,22 +923,22 @@ class SyncManager {
     async getSyncStats() {
         const stats = {
             products: {
-                pending: (await db.getByIndex('products', 'syncStatus', 'pending')).length,
-                synced: (await db.getByIndex('products', 'syncStatus', 'synced')).length
+                pending: (await window.db.getByIndex('products', 'syncStatus', 'pending')).length,
+                synced: (await window.db.getByIndex('products', 'syncStatus', 'synced')).length
             },
             inventory: {
-                pending: (await db.getByIndex('inventory', 'syncStatus', 'pending')).length,
-                synced: (await db.getByIndex('inventory', 'syncStatus', 'synced')).length
+                pending: (await window.db.getByIndex('inventory', 'syncStatus', 'pending')).length,
+                synced: (await window.db.getByIndex('inventory', 'syncStatus', 'synced')).length
             },
             employees: {
-                pending: (await db.getByIndex('employees', 'syncStatus', 'pending')).length,
-                synced: (await db.getByIndex('employees', 'syncStatus', 'synced')).length
+                pending: (await window.db.getByIndex('employees', 'syncStatus', 'pending')).length,
+                synced: (await window.db.getByIndex('employees', 'syncStatus', 'synced')).length
             },
             transactions: {
-                pending: (await db.getByIndex('transactions', 'syncStatus', 'pending')).length,
-                synced: (await db.getByIndex('transactions', 'syncStatus', 'synced')).length
+                pending: (await window.db.getByIndex('transactions', 'syncStatus', 'pending')).length,
+                synced: (await window.db.getByIndex('transactions', 'syncStatus', 'synced')).length
             },
-            queueSize: (await db.getAll('syncQueue')).length
+            queueSize: (await window.db.getAll('syncQueue')).length
         };
 
         return stats;

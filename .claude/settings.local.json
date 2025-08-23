@@ -15,7 +15,10 @@
       "Bash(curl:*)",
       "Bash(npm start)",
       "Bash(npm run build:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "Bash(for file in src/js/feature-flags.js src/js/state-helpers.js src/js/rollback-system.js src/js/backup-system.js src/js/auto-updater.js)",
+      "Bash(do sed -i 's/await db\\./await window.db./g' \"$file\")",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

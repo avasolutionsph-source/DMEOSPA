@@ -452,10 +452,10 @@ class APIClient {
                 timestamp: new Date().toISOString(),
                 period: 'daily',
                 data: {
-                    transactions_count: (await db.getAll('transactions')).length,
-                    products_count: (await db.getAll('products')).length,
-                    employees_count: (await db.getAll('employees')).length,
-                    inventory_count: (await db.getAll('inventory')).length,
+                    transactions_count: (await window.db.getAll('transactions')).length,
+                    products_count: (await window.db.getAll('products')).length,
+                    employees_count: (await window.db.getAll('employees')).length,
+                    inventory_count: (await window.db.getAll('inventory')).length,
                     // Add daily active usage
                     daily_active: true,
                     plan: window.entitlementsSystem?.currentPlan || 'free'

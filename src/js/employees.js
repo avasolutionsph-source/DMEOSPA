@@ -61,7 +61,7 @@ class EmployeeManager {
 
     async loadEmployees() {
         try {
-            this.employees = await db.getAll('employees');
+            this.employees = await window.db.getAll('employees');
             await this.displayEmployees();
         } catch (error) {
             if (window.logger) {
@@ -92,7 +92,7 @@ class EmployeeManager {
 
         // Calculate commissions for each employee
         const employeesWithStats = await Promise.all(this.employees.map(async (emp) => {
-            const transactions = await db.getByIndex('transactions', 'employeeId', emp.id.toString());
+            const transactions = await window.db.getByIndex('transactions', 'employeeId', emp.id.toString());
             const totalSales = transactions.reduce((sum, t) => sum + t.total, 0);
             const totalCommission = totalSales * (emp.commissionRate / 100);
             const transactionCount = transactions.length;
@@ -154,7 +154,7 @@ class EmployeeManager {
 
     async editEmployee(id) {
         try {
-            const employee = await db.get('employees', id);
+            const employee = await window.db.get('employees', id);
             if (!employee) return;
 
             this.editingEmployee = employee;
@@ -188,7 +188,7 @@ class EmployeeManager {
         }
 
         try {
-            await db.delete('employees', id);
+            await window.db.delete('employees', id);
             showSuccess('Employee deleted successfully', 'success');
             await this.loadEmployees();
         } catch (error) {
@@ -236,7 +236,7 @@ class EmployeeManager {
                 // Update existing employee
                 employeeData.id = this.editingEmployee.id;
                 employeeData.createdAt = this.editingEmployee.createdAt;
-                await db.update('employees', employeeData);
+                await window.db.update('employees', employeeData);
                 
                 hideLoading();
                 saveBtn.classList.remove('loading');
@@ -248,7 +248,7 @@ class EmployeeManager {
             } else {
                 // Add new employee
                 employeeData.createdAt = new Date().toISOString();
-                await db.add('employees', employeeData);
+                await window.db.add('employees', employeeData);
                 
                 hideLoading();
                 saveBtn.classList.remove('loading');
@@ -296,7 +296,7 @@ class EmployeeManager {
         const report = [];
         
         for (const emp of this.employees) {
-            const transactions = await db.getByIndex('transactions', 'employeeId', emp.id.toString());
+            const transactions = await window.db.getByIndex('transactions', 'employeeId', emp.id.toString());
             const filteredTransactions = transactions.filter(t => {
                 const date = new Date(t.date);
                 return date >= new Date(startDate) && date <= new Date(endDate);

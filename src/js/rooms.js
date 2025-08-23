@@ -33,7 +33,7 @@ class RoomManager {
     async loadRooms() {
         try {
             // Load rooms from database
-            let rooms = await db.getAll('rooms');
+            let rooms = await window.db.getAll('rooms');
             
             // If no rooms exist, create default rooms
             if (!rooms || rooms.length === 0) {
@@ -46,10 +46,10 @@ class RoomManager {
                 ];
                 
                 for (const room of defaultRooms) {
-                    await db.add('rooms', room);
+                    await window.db.add('rooms', room);
                 }
                 
-                rooms = await db.getAll('rooms');
+                rooms = await window.db.getAll('rooms');
             }
             
             this.rooms = rooms;
@@ -70,7 +70,7 @@ class RoomManager {
     async loadActiveServices() {
         try {
             // Load active services (those currently using rooms)
-            const services = await db.getAll('activeServices');
+            const services = await window.db.getAll('activeServices');
             this.activeServices = services || [];
             
             // Update room statuses based on active services
@@ -235,7 +235,7 @@ class RoomManager {
         const duration = prompt('Estimated duration in minutes (optional):');
 
         // Get employee
-        const employees = await db.getAll('employees');
+        const employees = await window.db.getAll('employees');
         const employeeOptions = employees.map(e => `${e.id}: ${e.name}`).join('\n');
         const employeeId = prompt(`Select employee ID:\n${employeeOptions}`);
         const employee = employees.find(e => e.id === parseInt(employeeId));
@@ -259,13 +259,13 @@ class RoomManager {
         };
 
         // Save to database
-        const serviceId = await db.add('activeServices', activeService);
+        const serviceId = await window.db.add('activeServices', activeService);
         activeService.id = serviceId;
 
         // Update room status
         room.status = 'occupied';
         room.currentService = activeService;
-        await db.update('rooms', room);
+        await window.db.update('rooms', room);
 
         this.displayRooms();
         showNotification(`Service started in ${room.name}`, 'success');
@@ -288,12 +288,12 @@ class RoomManager {
         room.currentService.status = 'completed';
         
         // Save to history
-        await db.update('activeServices', room.currentService);
+        await window.db.update('activeServices', room.currentService);
 
         // Clear room
         room.status = 'available';
         room.currentService = null;
-        await db.update('rooms', room);
+        await window.db.update('rooms', room);
 
         this.displayRooms();
         showNotification(`Service ended. Duration: ${durationMinutes} minutes`, 'info');
@@ -317,7 +317,7 @@ class RoomManager {
         room.currentService.extensions = (room.currentService.extensions || 0) + 1;
         room.currentService.lastExtended = new Date().toISOString();
         
-        await db.update('activeServices', room.currentService);
+        await window.db.update('activeServices', room.currentService);
         
         this.displayRooms();
         showNotification(`Service extended by ${minutes} minutes`, 'success');
@@ -364,11 +364,11 @@ class RoomManager {
             if (roomId) {
                 // Update existing room
                 roomData.id = parseInt(roomId);
-                await db.update('rooms', roomData);
+                await window.db.update('rooms', roomData);
                 showNotification('Room updated successfully', 'success');
             } else {
                 // Add new room
-                await db.add('rooms', roomData);
+                await window.db.add('rooms', roomData);
                 showNotification('Room added successfully', 'success');
             }
 
@@ -392,7 +392,7 @@ class RoomManager {
         if (!confirm('Are you sure you want to delete this room?')) return;
 
         try {
-            await db.delete('rooms', roomId);
+            await window.db.delete('rooms', roomId);
             showNotification('Room deleted successfully', 'success');
             await this.loadRooms();
         } catch (error) {
@@ -429,12 +429,12 @@ class RoomManager {
             status: 'active'
         };
 
-        const serviceId = await db.add('activeServices', activeService);
+        const serviceId = await window.db.add('activeServices', activeService);
         activeService.id = serviceId;
 
         room.status = 'occupied';
         room.currentService = activeService;
-        await db.update('rooms', room);
+        await window.db.update('rooms', room);
 
         return true;
     }

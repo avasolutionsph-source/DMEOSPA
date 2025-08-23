@@ -57,7 +57,7 @@ class ProductsManager {
 
     async loadProducts() {
         try {
-            this.products = await db.getAll('products');
+            this.products = await window.db.getAll('products');
             this.displayProducts();
         } catch (error) {
             if (window.logger) {
@@ -129,7 +129,7 @@ class ProductsManager {
 
     async editProduct(id) {
         try {
-            const product = await db.get('products', id);
+            const product = await window.db.get('products', id);
             if (!product) return;
 
             this.editingProduct = product;
@@ -164,7 +164,7 @@ class ProductsManager {
         }
 
         try {
-            await db.delete('products', id);
+            await window.db.delete('products', id);
             showSuccess('Product deleted successfully');
             await this.loadProducts();
         } catch (error) {
@@ -214,7 +214,7 @@ class ProductsManager {
                 // Update existing product
                 productData.id = this.editingProduct.id;
                 productData.createdAt = this.editingProduct.createdAt;
-                await db.update('products', productData);
+                await window.db.update('products', productData);
                 
                 hideLoading();
                 saveBtn.classList.remove('loading');
@@ -226,7 +226,7 @@ class ProductsManager {
             } else {
                 // Add new product
                 productData.createdAt = new Date().toISOString();
-                await db.add('products', productData);
+                await window.db.add('products', productData);
                 
                 hideLoading();
                 saveBtn.classList.remove('loading');

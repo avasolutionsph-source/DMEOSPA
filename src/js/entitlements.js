@@ -1140,16 +1140,16 @@ class EntitlementsSystem {
     async getCurrentCount(type) {
         switch (type) {
             case 'transactions':
-                const transactions = await db.getAll('transactions');
+                const transactions = await window.db.getAll('transactions');
                 return transactions.length;
             case 'products':
-                const products = await db.getAll('products');
+                const products = await window.db.getAll('products');
                 return products.length;
             case 'employees':
-                const employees = await db.getAll('employees');
+                const employees = await window.db.getAll('employees');
                 return employees.length;
             case 'inventory':
-                const inventory = await db.getAll('inventory');
+                const inventory = await window.db.getAll('inventory');
                 return inventory.length;
             default:
                 return 0;

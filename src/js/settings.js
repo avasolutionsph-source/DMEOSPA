@@ -372,8 +372,8 @@ class SettingsManager {
 
     async loadSettings() {
         try {
-            const businessName = await db.get('settings', 'businessName');
-            const lastSync = await db.get('settings', 'lastSync');
+            const businessName = await window.db.get('settings', 'businessName');
+            const lastSync = await window.db.get('settings', 'lastSync');
 
             if (businessName) {
                 document.getElementById('businessNameInput').value = businessName.value;
@@ -425,13 +425,13 @@ class SettingsManager {
             };
 
             // Update business name
-            await db.update('settings', {
+            await window.db.update('settings', {
                 key: 'businessName',
                 value: businessName
             });
             
             // Update business config
-            await db.update('settings', {
+            await window.db.update('settings', {
                 key: 'businessConfig',
                 value: businessConfig
             });
@@ -510,7 +510,7 @@ class SettingsManager {
 
     async loadBusinessConfigUI() {
         try {
-            const config = await db.get('settings', 'businessConfig');
+            const config = await window.db.get('settings', 'businessConfig');
             if (config && config.value) {
                 const businessConfig = config.value;
                 
@@ -594,7 +594,7 @@ class SettingsManager {
 
         try {
             const stats = await window.syncManager.getSyncStats();
-            const lastSync = await db.get('settings', 'lastSync');
+            const lastSync = await window.db.get('settings', 'lastSync');
             
             let html = '<div style="background: var(--light); padding: 1rem; border-radius: 8px;">';
             html += '<h4 style="margin-bottom: 0.75rem;">Sync Status</h4>';
@@ -679,7 +679,7 @@ class SettingsManager {
 
     async viewSyncQueue() {
         try {
-            const queue = await db.getAll('syncQueue');
+            const queue = await window.db.getAll('syncQueue');
             
             if (queue.length === 0) {
                 showNotification('Sync queue is empty', 'info');
@@ -719,7 +719,7 @@ class SettingsManager {
             }
             
             // Get all employees from IndexedDB
-            const employees = await db.getAll('employees');
+            const employees = await window.db.getAll('employees');
             if (window.logger) {
                 window.logger.debug('All employees in PWA', {
                     category: 'SETTINGS',
@@ -729,7 +729,7 @@ class SettingsManager {
             }
             
             // Get pending employees
-            const pendingEmployees = await db.getByIndex('employees', 'syncStatus', 'pending');
+            const pendingEmployees = await window.db.getByIndex('employees', 'syncStatus', 'pending');
             if (window.logger) {
                 window.logger.debug('Pending employees', {
                     category: 'SETTINGS',
@@ -739,7 +739,7 @@ class SettingsManager {
             }
             
             // Get synced employees
-            const syncedEmployees = await db.getByIndex('employees', 'syncStatus', 'synced');
+            const syncedEmployees = await window.db.getByIndex('employees', 'syncStatus', 'synced');
             if (window.logger) {
                 window.logger.debug('Synced employees', {
                     category: 'SETTINGS',
@@ -749,7 +749,7 @@ class SettingsManager {
             }
             
             // Get API URL
-            const apiUrlSetting = await db.get('settings', 'apiUrl');
+            const apiUrlSetting = await window.db.get('settings', 'apiUrl');
             const apiUrl = apiUrlSetting?.value || 'Not set';
             if (window.logger) {
                 window.logger.debug('API URL', {
@@ -823,7 +823,7 @@ class SettingsManager {
 
     async exportData() {
         try {
-            const data = await db.exportData();
+            const data = await window.db.exportData();
             const blob = new Blob([data], { type: 'application/json' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -866,22 +866,22 @@ Type "DELETE" to confirm:`;
 
         try {
             // Clear all stores
-            await db.clearStore('products');
-            await db.clearStore('inventory');
-            await db.clearStore('employees');
-            await db.clearStore('transactions');
-            await db.clearStore('syncQueue');
+            await window.db.clearStore('products');
+            await window.db.clearStore('inventory');
+            await window.db.clearStore('employees');
+            await window.db.clearStore('transactions');
+            await window.db.clearStore('syncQueue');
             
             // Reset settings to defaults
-            await db.update('settings', {
+            await window.db.update('settings', {
                 key: 'businessName',
                 value: 'Ava Solutions'
             });
-            await db.update('settings', {
+            await window.db.update('settings', {
                 key: 'apiUrl',
                 value: ''
             });
-            await db.update('settings', {
+            await window.db.update('settings', {
                 key: 'lastSync',
                 value: null
             });
@@ -921,13 +921,13 @@ Type "DELETE" to confirm:`;
                 });
             }
             const businessData = {
-                products: await db.getAll('products'),
-                inventory: await db.getAll('inventory'),
-                employees: await db.getAll('employees'),
-                transactions: await db.getAll('transactions'),
-                rooms: await db.getAll('rooms'),
-                activeServices: await db.getAll('activeServices'),
-                settings: await db.getAll('settings')
+                products: await window.db.getAll('products'),
+                inventory: await window.db.getAll('inventory'),
+                employees: await window.db.getAll('employees'),
+                transactions: await window.db.getAll('transactions'),
+                rooms: await window.db.getAll('rooms'),
+                activeServices: await window.db.getAll('activeServices'),
+                settings: await window.db.getAll('settings')
             };
             
             // Save business name and essential settings
@@ -1030,7 +1030,7 @@ Type "DELETE" to confirm:`;
 
             try {
                 const text = await file.text();
-                const success = await db.importData(text);
+                const success = await window.db.importData(text);
                 
                 if (success) {
                     showNotification('Data imported successfully', 'success');

@@ -72,7 +72,7 @@ class InventoryManager {
 
     async loadInventory() {
         try {
-            this.inventory = await db.getAll('inventory');
+            this.inventory = await window.db.getAll('inventory');
             this.displayInventory();
         } catch (error) {
             if (window.logger) {
@@ -215,7 +215,7 @@ class InventoryManager {
 
     async editItem(id) {
         try {
-            const item = await db.get('inventory', id);
+            const item = await window.db.get('inventory', id);
             if (!item) return;
 
             this.editingItem = item;
@@ -252,7 +252,7 @@ class InventoryManager {
         }
 
         try {
-            await db.delete('inventory', id);
+            await window.db.delete('inventory', id);
             showNotification('Item deleted successfully', 'success');
             await this.loadInventory();
         } catch (error) {
@@ -315,7 +315,7 @@ class InventoryManager {
                 // Update existing item
                 itemData.id = this.editingItem.id;
                 itemData.createdAt = this.editingItem.createdAt;
-                await db.update('inventory', itemData);
+                await window.db.update('inventory', itemData);
                 
                 hideLoading();
                 saveBtn.classList.remove('loading');
@@ -327,7 +327,7 @@ class InventoryManager {
             } else {
                 // Add new item
                 itemData.createdAt = new Date().toISOString();
-                await db.add('inventory', itemData);
+                await window.db.add('inventory', itemData);
                 
                 hideLoading();
                 saveBtn.classList.remove('loading');
@@ -367,7 +367,7 @@ class InventoryManager {
     }
 
     async adjustStock(id, quickAdjustment = null) {
-        const item = await db.get('inventory', id);
+        const item = await window.db.get('inventory', id);
         if (!item) return;
 
         let adjustmentValue;
@@ -434,14 +434,14 @@ class InventoryManager {
             }];
         }
 
-        await db.update('inventory', item);
+        await window.db.update('inventory', item);
         showNotification(`Stock ${adjustmentValue > 0 ? 'increased' : 'decreased'} successfully`, 'success');
         await this.loadInventory();
         this.checkLowStock();
     }
 
     async checkLowStock() {
-        const lowStockItems = await db.getLowStockItems();
+        const lowStockItems = await window.db.getLowStockItems();
         
         if (lowStockItems.length > 0) {
             // Update dashboard if it's active

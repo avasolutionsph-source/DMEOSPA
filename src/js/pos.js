@@ -125,7 +125,7 @@ class POSSystem {
 
     async loadEmployees() {
         try {
-            const employees = await db.getAll('employees');
+            const employees = await window.db.getAll('employees');
             const select = document.getElementById('employeeSelect');
             if (select) {
                 select.innerHTML = '<option value="">Select Employee</option>';
@@ -150,8 +150,8 @@ class POSSystem {
     async loadProducts() {
         try {
             // Load products and services
-            const products = await db.getAll('products');
-            const inventory = await db.getAll('inventory');
+            const products = await window.db.getAll('products');
+            const inventory = await window.db.getAll('inventory');
             
             // Filter based on business configuration
             const showAllServices = window.app?.businessConfig?.businessType === 'spa';
@@ -235,14 +235,14 @@ class POSSystem {
             }
             let item;
             if (itemType === 'inventory') {
-                item = await db.get('inventory', itemId);
+                item = await window.db.get('inventory', itemId);
                 // Check stock
                 if (item.currentStock <= 0) {
                     showError('Item out of stock');
                     return;
                 }
             } else {
-                item = await db.get('products', itemId);
+                item = await window.db.get('products', itemId);
             }
 
             if (!item) return;
@@ -526,7 +526,7 @@ class POSSystem {
 
         try {
             // Check if GC exists and is valid
-            const gcs = await db.getByIndex('giftCertificates', 'controlNumber', controlNumber);
+            const gcs = await window.db.getByIndex('giftCertificates', 'controlNumber', controlNumber);
             const gc = gcs && gcs[0];
             
             if (!gc) {
@@ -669,7 +669,7 @@ class POSSystem {
     // Load employees for checkout dropdown
     async loadEmployeesForCheckout() {
         try {
-            const employees = await db.getAll('employees');
+            const employees = await window.db.getAll('employees');
             const select = document.getElementById('checkoutEmployeeSelect');
             if (select) {
                 select.innerHTML = '<option value="">Select Employee</option>';
@@ -699,7 +699,7 @@ class POSSystem {
     // Load available rooms for checkout
     async loadAvailableRooms() {
         try {
-            const rooms = await db.getAll('rooms');
+            const rooms = await window.db.getAll('rooms');
             const availableRooms = rooms.filter(r => r.status === 'available');
             const select = document.getElementById('checkoutRoomSelect');
             
@@ -836,7 +836,7 @@ class POSSystem {
                 this.appliedGiftCertificate.status = 'used';
                 this.appliedGiftCertificate.usedDate = new Date().toISOString();
                 this.appliedGiftCertificate.usedInTransaction = null; // Will be updated after transaction is saved
-                await db.update('giftCertificates', this.appliedGiftCertificate);
+                await window.db.update('giftCertificates', this.appliedGiftCertificate);
             }
 
             // Create comprehensive transaction with audit trail
@@ -903,12 +903,12 @@ class POSSystem {
             }
 
             // Save transaction
-            const transactionId = await db.add('transactions', transaction);
+            const transactionId = await window.db.add('transactions', transaction);
             
             // Update GC with transaction reference if used
             if (this.appliedGiftCertificate) {
                 this.appliedGiftCertificate.usedInTransaction = transactionId;
-                await db.update('giftCertificates', this.appliedGiftCertificate);
+                await window.db.update('giftCertificates', this.appliedGiftCertificate);
             }
             
             // Handle room assignment for services
@@ -917,7 +917,7 @@ class POSSystem {
             
             if (hasServices && selectedRoomId) {
                 // Get employee details
-                const employee = await db.get('employees', parseInt(this.selectedEmployee));
+                const employee = await window.db.get('employees', parseInt(this.selectedEmployee));
                 
                 // Get service names
                 const serviceNames = this.cart
@@ -941,7 +941,7 @@ class POSSystem {
             // Update inventory stock and track service usage
             for (const item of this.cart) {
                 if (item.type === 'inventory') {
-                    await db.updateInventoryStock(item.id, item.quantity, 'subtract');
+                    await window.db.updateInventoryStock(item.id, item.quantity, 'subtract');
                 } else if (item.type === 'service') {
                     // Track automatic supply usage for services
                     await this.processServiceSupplyUsage(item, transactionId);
@@ -950,7 +950,7 @@ class POSSystem {
 
             // Calculate commission if employee selected
             if (this.selectedEmployee) {
-                const employee = await db.get('employees', parseInt(this.selectedEmployee));
+                const employee = await window.db.get('employees', parseInt(this.selectedEmployee));
                 if (employee && employee.commissionRate) {
                     const commission = total * (employee.commissionRate / 100);
                     // You might want to track commissions separately
@@ -1025,11 +1025,11 @@ class POSSystem {
     // Process automatic supply usage for services
     async processServiceSupplyUsage(serviceItem, transactionId) {
         try {
-            const service = await db.get('products', serviceItem.id);
+            const service = await window.db.get('products', serviceItem.id);
             if (!service || !service.supplyMappings) return;
 
             // Get inventory items
-            const inventory = await db.getAll('inventory');
+            const inventory = await window.db.getAll('inventory');
             
             for (const mapping of service.supplyMappings) {
                 const inventoryItem = inventory.find(item => item.id === mapping.inventoryId);
@@ -1095,7 +1095,7 @@ class POSSystem {
             inventoryItem.usagePerService = Math.round(averageUsage * 100) / 100; // Round to 2 decimals
 
             // Save updated inventory item
-            await db.update('inventory', inventoryItem);
+            await window.db.update('inventory', inventoryItem);
 
             if (window.logger) {
                 window.logger.info('Auto-tracked supply usage', {
@@ -1123,7 +1123,7 @@ class POSSystem {
 
     // Show supply usage modal for manual entry (fallback)
     async showSupplyUsageModal(serviceItem, transactionId) {
-        const inventory = await db.getAll('inventory');
+        const inventory = await window.db.getAll('inventory');
         const availableSupplies = inventory.filter(item => item.currentStock > 0);
 
         if (availableSupplies.length === 0) {

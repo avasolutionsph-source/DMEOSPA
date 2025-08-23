@@ -194,7 +194,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Initialize app after components are loaded
         if (typeof initializeApp === 'function') {
-            initializeApp();
+            await initializeApp();
+        }
+        
+        // Reinitialize navigation after components are loaded
+        if (window.app && window.app.setupNavigation) {
+            window.app.setupNavigation();
+            console.log('🧭 Navigation reinitialized after component loading');
         }
     } catch (error) {
         console.error('❌ Error during component initialization:', error);
@@ -350,6 +356,14 @@ function createFallbackSidebar() {
     
     appContainer.insertAdjacentHTML('beforeend', fallbackHTML);
     console.log('✅ Fallback sidebar created');
+    
+    // Reinitialize navigation for fallback sidebar
+    setTimeout(() => {
+        if (window.app && window.app.setupNavigation) {
+            window.app.setupNavigation();
+            console.log('🧭 Navigation reinitialized for fallback sidebar');
+        }
+    }, 100);
 }
 
 export default ComponentLoader;

@@ -52,10 +52,10 @@ class ChatbotAssistant {
 
     async refreshDataCache() {
         try {
-            this.dataCache.transactions = await db.getAll('transactions') || [];
-            this.dataCache.inventory = await db.getAll('inventory') || [];
-            this.dataCache.employees = await db.getAll('employees') || [];
-            this.dataCache.products = await db.getAll('products') || [];
+            this.dataCache.transactions = await window.db.getAll('transactions') || [];
+            this.dataCache.inventory = await window.db.getAll('inventory') || [];
+            this.dataCache.employees = await window.db.getAll('employees') || [];
+            this.dataCache.products = await window.db.getAll('products') || [];
             this.dataCache.lastFetch = new Date();
             
             // Calculate key business metrics
@@ -1044,7 +1044,7 @@ How can I help you today? 😊`;
             
             // Use the SAME calculation method as Employee Management screen
             const employeesWithStats = await Promise.all(employees.map(async (emp) => {
-                const transactions = await db.getByIndex('transactions', 'employeeId', emp.id.toString());
+                const transactions = await window.db.getByIndex('transactions', 'employeeId', emp.id.toString());
                 const totalSales = transactions.reduce((sum, t) => sum + t.total, 0);
                 const totalCommission = totalSales * (emp.commissionRate / 100);
                 const transactionCount = transactions.length;
@@ -2114,7 +2114,7 @@ How can I help you today? 😊`;
     async handleSyncStatus() {
         try {
             // Get sync status from IndexedDB settings
-            const lastSyncSetting = await db.get('settings', 'lastSync');
+            const lastSyncSetting = await window.db.get('settings', 'lastSync');
             const lastSyncValue = lastSyncSetting?.value;
             
             // Get sync manager status if available
@@ -2241,7 +2241,7 @@ How can I help you today? 😊`;
                 await syncManager.syncAll();
                 
                 // Get updated sync status
-                const lastSyncSetting = await db.get('settings', 'lastSync');
+                const lastSyncSetting = await window.db.get('settings', 'lastSync');
                 const syncTime = lastSyncSetting?.value ? new Date(lastSyncSetting.value).toLocaleString() : 'just now';
                 
                 return `🔄 **Sync Completed Successfully!** ✅\n\n🎉 **Your data has been synced to the cloud!**\n\n📅 **Sync Time:** ${syncTime}\n\n📊 **What was synced:**\n• All transactions and sales data\n• Product/service information\n• Inventory levels\n• Employee data\n• Business metrics\n\n✨ **Your data is now up-to-date across all devices!**\n\nType "last sync" anytime to check your sync status.`;
