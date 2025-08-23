@@ -29,6 +29,9 @@ import adminRouter from './routes/admin/index.js';
 
 // Debug: Check if admin router loaded successfully
 console.log('Admin router loaded:', !!adminRouter, typeof adminRouter);
+if (!adminRouter) {
+  console.error('CRITICAL: Admin router is undefined! Check admin/index.js export');
+}
 import syncRouter from './routes/sync/index.js';
 import realtimeRouter from './routes/realtime/index.js';
 
@@ -260,7 +263,19 @@ app.get('/api/admin/test', (req, res) => {
 app.use('/api', apiRouter);           // Main API endpoints for PWA
 app.use('/api/sync', syncRouter);     // Sync endpoints for PWA data
 app.use('/api/realtime', realtimeRouter); // Real-time updates via Socket.IO
-app.use('/api/admin', adminRouter);   // Admin API endpoints
+
+// Mount admin router with error handling
+try {
+  if (adminRouter) {
+    app.use('/api/admin', adminRouter);   // Admin API endpoints
+    console.log('✅ Admin router mounted successfully at /api/admin');
+  } else {
+    console.error('❌ Admin router is undefined, cannot mount');
+  }
+} catch (error) {
+  console.error('❌ Error mounting admin router:', error);
+}
+
 app.use('/marketing', marketingRouter); // Marketing website specific endpoints
 
 // ============================================
