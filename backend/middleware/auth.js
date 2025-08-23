@@ -81,6 +81,7 @@ export const generateToken = (user) => {
       id: user.id || user._id,
       email: user.email,
       businessId: user.businessId,
+      role: user.role || 'customer',
       subscriptionPlan: user.subscriptionPlan || user.plan || 'basic',
       plan: user.subscriptionPlan || user.plan || 'basic', // Include both for compatibility
       entitlements: {

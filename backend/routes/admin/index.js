@@ -1,7 +1,20 @@
 import express from 'express';
 import User from '../../models/User.js';
+import { authenticateJWT } from '../../middleware/auth.js';
 
 const router = express.Router();
+
+// Admin authentication middleware - check if user is admin or superAdmin
+const requireAdmin = (req, res, next) => {
+  if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'superAdmin')) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  next();
+};
+
+// Apply authentication to all admin routes
+router.use(authenticateJWT);
+router.use(requireAdmin);
 
 // GET /admin/stats - Dashboard statistics
 router.get('/stats', async (req, res) => {
