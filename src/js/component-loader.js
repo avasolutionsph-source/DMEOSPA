@@ -29,7 +29,7 @@ class ComponentLoader {
                 html = this.componentCache.get(componentName);
             } else {
                 // Fetch component HTML
-                const response = await fetch(`components/${componentName}.html`);
+                const response = await fetch(`src/components/${componentName}.html`);
                 if (!response.ok) {
                     throw new Error(`Failed to load component: ${componentName}`);
                 }
@@ -96,7 +96,7 @@ class ComponentLoader {
         const promises = componentNames.map(async name => {
             if (!this.componentCache.has(name)) {
                 try {
-                    const response = await fetch(`components/${name}.html`);
+                    const response = await fetch(`src/components/${name}.html`);
                     if (response.ok) {
                         const html = await response.text();
                         this.componentCache.set(name, html);
