@@ -67,9 +67,39 @@
                     </div>
                 </div>
                 <div class="auth-indicator" id="authIndicator">
-                    <button id="showLoginBtn" class="btn btn-primary" onclick="showLoginModal()" style="cursor: pointer; z-index: 10; position: relative;">
+                    <button id="showLoginBtn" class="btn btn-primary" style="cursor: pointer; z-index: 10; position: relative;">
                         <i class="fas fa-sign-in-alt"></i> Login
                     </button>
+                    <script>
+                        // Define login modal function immediately for button
+                        function showLoginModal() {
+                            console.log('🔐 Login button clicked');
+                            const modal = document.getElementById('authModal');
+                            if (modal) {
+                                modal.style.display = 'flex';
+                                modal.style.position = 'fixed';
+                                modal.style.top = '0';
+                                modal.style.left = '0';
+                                modal.style.width = '100%';
+                                modal.style.height = '100%';
+                                modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                                modal.style.zIndex = '9999';
+                                modal.style.alignItems = 'center';
+                                modal.style.justifyContent = 'center';
+                                
+                                setTimeout(() => {
+                                    const emailInput = document.getElementById('loginEmail');
+                                    if (emailInput) emailInput.focus();
+                                }, 100);
+                            }
+                        }
+                        
+                        // Add click event listener immediately
+                        document.getElementById('showLoginBtn').addEventListener('click', function(e) {
+                            e.preventDefault();
+                            showLoginModal();
+                        });
+                    </script>
                     <div id="userInfo" style="display: none;" class="user-info">
                         <span id="userName">User</span>
                         <button id="logoutBtn" class="btn btn-secondary">
@@ -1575,43 +1605,6 @@
     <script src="js/console-log-replacer.js"></script>
     <!-- <script src="js/logger-init.js"></script> Missing file -->
     <script>
-        // Global login modal function for the button
-        function showLoginModal() {
-            console.log('🔐 Login button clicked');
-            
-            // Try to use AuthSystem first
-            if (window.authSystem && window.authSystem.showLoginModal) {
-                console.log('Using AuthSystem login modal');
-                window.authSystem.showLoginModal();
-                return;
-            }
-            
-            // Fallback to direct modal display
-            console.log('Showing login modal directly');
-            const modal = document.getElementById('authModal');
-            if (modal) {
-                modal.style.display = 'flex';
-                modal.style.position = 'fixed';
-                modal.style.top = '0';
-                modal.style.left = '0';
-                modal.style.width = '100%';
-                modal.style.height = '100%';
-                modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-                modal.style.zIndex = '9999';
-                modal.style.alignItems = 'center';
-                modal.style.justifyContent = 'center';
-                
-                // Focus on email input
-                setTimeout(() => {
-                    const emailInput = document.getElementById('loginEmail');
-                    if (emailInput) emailInput.focus();
-                }, 100);
-            } else {
-                console.error('Auth modal not found');
-                alert('Login modal not available. Please refresh the page.');
-            }
-        }
-        
         // Custom Dropdown Handler
         function handleDropdownChange(selectElement, customInputId) {
             const customContainer = document.getElementById(customInputId + 'Container');
