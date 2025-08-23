@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Preload other components for faster navigation
     const preloadComponents = [
-        'pos', 'inventory', 'employees', 'rooms', 'settings'
+        'pos', 'products', 'inventory', 'employees', 'rooms', 'chatbot', 'gift-certificates', 'settings'
     ];
     
     await window.componentLoader.preloadComponents(preloadComponents);

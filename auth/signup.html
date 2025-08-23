@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account - Ava Solutions</title>
+    <meta name="description" content="Create your Ava Solutions spa management account">
+    <link rel="manifest" href="../manifest.json">
+    <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="../src/assets/icons/icon.svg">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="../src/css/main.css">
+    <link rel="stylesheet" href="../src/css/auth.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <img src="../src/assets/icons/icon.svg" alt="Ava Solutions" style="width: 64px; height: 64px;">
+                    <h1>Ava Solutions</h1>
+                    <p>Create your spa management account</p>
+                </div>
+            </div>
+            
+            <form id="signupForm" class="auth-form" onsubmit="event.preventDefault(); handleSignup(); return false;">
+                <div class="form-group">
+                    <label>Business Name</label>
+                    <input type="text" id="businessName" class="form-input" required placeholder="Your spa business name">
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="signupEmail" class="form-input" required placeholder="Your email address">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="signupPassword" class="form-input" required placeholder="Create a password">
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="confirmPassword" class="form-input" required placeholder="Confirm your password">
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="agreeTerms" required>
+                        <span class="checkmark"></span>
+                        I agree to the <a href="../marketing-website/public/terms.html">Terms of Service</a> and <a href="../marketing-website/public/privacy.html">Privacy Policy</a>
+                    </label>
+                </div>
+                <button type="submit" id="signupBtn" class="btn btn-primary btn-full">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </button>
+            </form>
+            
+            <div class="auth-footer">
+                <p>Already have an account? <a href="login.html">Sign in here</a></p>
+                <p><a href="../marketing-website/public/index.html">← Back to Home</a></p>
+                <div class="demo-info">
+                    <small class="text-muted">
+                        <strong>Want to try first?</strong><br>
+                        Use our <a href="login.html">demo login</a> to explore the features
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../src/js/database.js"></script>
+    <script src="../src/js/utils/unified-logger.js"></script>
+    <script src="../src/js/utils/logger-helper.js"></script>
+    <script src="../src/js/utils/notification-manager.js"></script>
+    <script src="../src/js/utils/error-handler.js"></script>
+    <script src="../src/js/auth.js"></script>
+    
+    <script>
+        // Handle signup function
+        async function handleSignup() {
+            const businessName = document.getElementById('businessName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const agreeTerms = document.getElementById('agreeTerms').checked;
+            
+            // Validation
+            if (password !== confirmPassword) {
+                alert('Passwords do not match');
+                return;
+            }
+            
+            if (!agreeTerms) {
+                alert('Please agree to the Terms of Service and Privacy Policy');
+                return;
+            }
+            
+            try {
+                // Use the auth system from auth.js
+                if (window.auth && window.auth.register) {
+                    const result = await window.auth.register(businessName, email, password);
+                    if (result.success) {
+                        alert('Account created successfully! Please sign in.');
+                        window.location.href = 'login.html';
+                    }
+                } else {
+                    console.error('Auth system not loaded');
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
