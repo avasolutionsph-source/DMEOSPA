@@ -1,13 +1,51 @@
 // Ava Solutions Marketing Website JavaScript
 // No ES6 modules - pure JavaScript for compatibility
 
-// Configuration
-const PWA_URL = 'https://ava-solutions-pwa.netlify.app';
-const API_BASE = 'https://ava-pwa-backend.onrender.com';
+// Configuration - Use environment variables with fallbacks
+const PWA_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:3002' 
+    : 'https://ava-solutions-pwa.netlify.app';
+const API_BASE = window.location.hostname === 'localhost'
+    ? 'http://localhost:3000'
+    : 'https://ava-pwa-backend.onrender.com';
 
-// Redirect to PWA application
+// Marketing website URLs
+const MARKETING_URLS = {
+    login: `${PWA_URL}/auth/login`,
+    signup: `${PWA_URL}/auth/signup`,
+    demo: `${PWA_URL}/demo`,
+    app: PWA_URL
+};
+
+// Enhanced redirect functions
 function redirectToApp() {
+    console.log('🚀 Redirecting to PWA:', PWA_URL);
+    trackEvent('cta_click', { action: 'redirect_to_app', source: 'general' });
     window.location.href = PWA_URL;
+}
+
+function redirectToLogin() {
+    console.log('🔑 Redirecting to login:', MARKETING_URLS.login);
+    trackEvent('auth_click', { action: 'login', source: 'marketing' });
+    window.location.href = MARKETING_URLS.login;
+}
+
+function redirectToSignup() {
+    console.log('📝 Redirecting to signup:', MARKETING_URLS.signup);
+    trackEvent('auth_click', { action: 'signup', source: 'marketing' });
+    window.location.href = MARKETING_URLS.signup;
+}
+
+function startFreeTrial() {
+    console.log('🎉 Starting free trial:', MARKETING_URLS.signup);
+    trackEvent('conversion', { action: 'free_trial', source: 'marketing' });
+    window.location.href = MARKETING_URLS.signup;
+}
+
+function requestDemo() {
+    console.log('👁️ Requesting demo:', MARKETING_URLS.demo);
+    trackEvent('lead_generation', { action: 'demo_request', source: 'marketing' });
+    window.location.href = MARKETING_URLS.demo;
 }
 
 // Smooth scroll to section
@@ -296,4 +334,8 @@ window.addEventListener('resize', function() {
 
 // Export functions for global access (for onclick handlers)
 window.redirectToApp = redirectToApp;
+window.redirectToLogin = redirectToLogin;
+window.redirectToSignup = redirectToSignup;
+window.startFreeTrial = startFreeTrial;
+window.requestDemo = requestDemo;
 window.scrollToSection = scrollToSection;
