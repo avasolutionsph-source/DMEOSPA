@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing - Ava Solutions</title>
+    <meta name="description" content="Simple, transparent pricing for Ava Solutions spa management system. Choose the plan that's right for your business.">
+    <link rel="stylesheet" href="css/marketing.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="index.html" style="text-decoration: none; color: inherit;">
+                    <h2>Ava Solutions</h2>
+                </a>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html#features">Features</a></li>
+                <li><a href="pricing.html">Pricing</a></li>
+                <li><a href="contact.html">Contact</a></li>
+                <li><a href="#" class="btn-login" onclick="redirectToApp()">Login</a></li>
+            </ul>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="section-header">
+                <h1>Simple, Transparent Pricing</h1>
+                <p>Choose the plan that's perfect for your spa business. All plans include a 14-day free trial.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing" style="padding-top: 0;">
+        <div class="container">
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Starter</h3>
+                    <div class="price">
+                        <span class="currency">$</span>
+                        <span class="amount">29</span>
+                        <span class="period">/month</span>
+                    </div>
+                    <p style="margin-bottom: 2rem; color: var(--gray-600);">Perfect for small spas just getting started</p>
+                    <ul class="features-list">
+                        <li><i class="fas fa-check"></i> Up to 100 customers</li>
+                        <li><i class="fas fa-check"></i> Basic appointment scheduling</li>
+                        <li><i class="fas fa-check"></i> Inventory tracking</li>
+                        <li><i class="fas fa-check"></i> Basic reports</li>
+                        <li><i class="fas fa-check"></i> Email support</li>
+                        <li><i class="fas fa-check"></i> Mobile app access</li>
+                    </ul>
+                    <button class="btn-outline" onclick="redirectToApp()">Start Free Trial</button>
+                </div>
+                
+                <div class="pricing-card featured">
+                    <div class="popular-badge">Most Popular</div>
+                    <h3>Professional</h3>
+                    <div class="price">
+                        <span class="currency">$</span>
+                        <span class="amount">79</span>
+                        <span class="period">/month</span>
+                    </div>
+                    <p style="margin-bottom: 2rem; color: var(--gray-600);">Best for growing spas with multiple staff</p>
+                    <ul class="features-list">
+                        <li><i class="fas fa-check"></i> Unlimited customers</li>
+                        <li><i class="fas fa-check"></i> Advanced scheduling & calendar</li>
+                        <li><i class="fas fa-check"></i> Full inventory management</li>
+                        <li><i class="fas fa-check"></i> Analytics & insights dashboard</li>
+                        <li><i class="fas fa-check"></i> Staff management & scheduling</li>
+                        <li><i class="fas fa-check"></i> POS system integration</li>
+                        <li><i class="fas fa-check"></i> Customer communication tools</li>
+                        <li><i class="fas fa-check"></i> Commission tracking</li>
+                        <li><i class="fas fa-check"></i> Priority email support</li>
+                        <li><i class="fas fa-check"></i> Phone support</li>
+                    </ul>
+                    <button class="btn-primary" onclick="redirectToApp()">Start Free Trial</button>
+                </div>
+                
+                <div class="pricing-card">
+                    <h3>Enterprise</h3>
+                    <div class="price">
+                        <span class="currency">$</span>
+                        <span class="amount">149</span>
+                        <span class="period">/month</span>
+                    </div>
+                    <p style="margin-bottom: 2rem; color: var(--gray-600);">For large spas and multi-location businesses</p>
+                    <ul class="features-list">
+                        <li><i class="fas fa-check"></i> Everything in Professional</li>
+                        <li><i class="fas fa-check"></i> Multi-location support</li>
+                        <li><i class="fas fa-check"></i> Advanced analytics & reporting</li>
+                        <li><i class="fas fa-check"></i> Custom integrations</li>
+                        <li><i class="fas fa-check"></i> API access</li>
+                        <li><i class="fas fa-check"></i> White-label options</li>
+                        <li><i class="fas fa-check"></i> Dedicated account manager</li>
+                        <li><i class="fas fa-check"></i> Priority phone support</li>
+                        <li><i class="fas fa-check"></i> Custom training sessions</li>
+                    </ul>
+                    <button class="btn-outline" onclick="redirectToApp()">Contact Sales</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq" style="padding: 80px 0; background: var(--white);">
+        <div class="container">
+            <div class="section-header">
+                <h2>Frequently Asked Questions</h2>
+                <p>Everything you need to know about our pricing and plans</p>
+            </div>
+            <div class="faq-grid" style="max-width: 800px; margin: 0 auto;">
+                <div class="faq-item" style="margin-bottom: 2rem; padding: 1.5rem; background: var(--gray-50); border-radius: var(--border-radius-lg);">
+                    <h3 style="margin-bottom: 1rem; color: var(--gray-900);">Is there a free trial?</h3>
+                    <p style="color: var(--gray-600);">Yes! All plans include a 14-day free trial with full access to all features. No credit card required to start.</p>
+                </div>
+                <div class="faq-item" style="margin-bottom: 2rem; padding: 1.5rem; background: var(--gray-50); border-radius: var(--border-radius-lg);">
+                    <h3 style="margin-bottom: 1rem; color: var(--gray-900);">Can I change plans anytime?</h3>
+                    <p style="color: var(--gray-600);">Absolutely! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate any billing differences.</p>
+                </div>
+                <div class="faq-item" style="margin-bottom: 2rem; padding: 1.5rem; background: var(--gray-50); border-radius: var(--border-radius-lg);">
+                    <h3 style="margin-bottom: 1rem; color: var(--gray-900);">What payment methods do you accept?</h3>
+                    <p style="color: var(--gray-600);">We accept all major credit cards (Visa, MasterCard, American Express) and PayPal. All transactions are secure and encrypted.</p>
+                </div>
+                <div class="faq-item" style="margin-bottom: 2rem; padding: 1.5rem; background: var(--gray-50); border-radius: var(--border-radius-lg);">
+                    <h3 style="margin-bottom: 1rem; color: var(--gray-900);">Is my data secure?</h3>
+                    <p style="color: var(--gray-600);">Yes! We use enterprise-grade security with SSL encryption, regular backups, and comply with industry standards to keep your data safe.</p>
+                </div>
+                <div class="faq-item" style="margin-bottom: 2rem; padding: 1.5rem; background: var(--gray-50); border-radius: var(--border-radius-lg);">
+                    <h3 style="margin-bottom: 1rem; color: var(--gray-900);">Can I cancel anytime?</h3>
+                    <p style="color: var(--gray-600);">Yes, you can cancel your subscription at any time. Your data will remain accessible until the end of your billing period.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta" style="padding: 80px 0; background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%); color: var(--white);">
+        <div class="container">
+            <div class="section-header">
+                <h2 style="color: var(--white);">Ready to Transform Your Spa?</h2>
+                <p style="color: rgba(255, 255, 255, 0.9);">Join thousands of spa owners who have streamlined their business with Ava Solutions</p>
+                <div class="hero-buttons" style="justify-content: center; margin-top: 2rem;">
+                    <button class="btn-secondary" onclick="redirectToApp()" style="background: var(--white); color: var(--primary-color);">Start Free Trial</button>
+                    <button class="btn-outline" onclick="scrollToSection('contact')" style="border-color: var(--white); color: var(--white);">Contact Sales</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3>Ava Solutions</h3>
+                    <p>Transforming spa businesses worldwide</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>Product</h4>
+                        <a href="index.html#features">Features</a>
+                        <a href="pricing.html">Pricing</a>
+                        <a href="#" onclick="redirectToApp()">Demo</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Company</h4>
+                        <a href="contact.html">Contact</a>
+                        <a href="#" onclick="redirectToApp()">Support</a>
+                        <a href="#" onclick="redirectToApp()">Privacy</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Connect</h4>
+                        <a href="#" onclick="redirectToApp()">Login</a>
+                        <a href="#" onclick="redirectToApp()">Sign Up</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Ava Solutions. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
