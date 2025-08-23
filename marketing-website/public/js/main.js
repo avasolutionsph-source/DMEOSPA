@@ -156,6 +156,31 @@ function addSmoothScrolling() {
     });
 }
 
+// Navigation Functions
+const PWA_URL = window.location.hostname === 'localhost' 
+    ? '../../../index.html'  // Local development path to PWA
+    : 'https://ava-solutions-pwa.netlify.app';  // Production PWA URL
+
+function redirectToLogin() {
+    window.location.href = PWA_URL + '/auth/login.html';
+}
+
+function redirectToSignup() {
+    window.location.href = PWA_URL + '/auth/signup.html';
+}
+
+function redirectToApp() {
+    window.location.href = PWA_URL;
+}
+
+function startFreeTrial(plan = 'professional') {
+    window.location.href = PWA_URL + `/auth/signup.html?plan=${plan}&trial=true`;
+}
+
+function requestDemo() {
+    window.location.href = 'contact.html?subject=demo';
+}
+
 // Check if user is logged in
 function checkAuthStatus() {
     const token = localStorage.getItem('userToken');
@@ -163,7 +188,7 @@ function checkAuthStatus() {
     
     if (token && navAuth) {
         navAuth.innerHTML = `
-            <a href="/dashboard" class="btn-secondary">Dashboard</a>
+            <a href="${PWA_URL}" class="btn-secondary">Dashboard</a>
             <button onclick="logout()" class="btn-primary">Logout</button>
         `;
     }
