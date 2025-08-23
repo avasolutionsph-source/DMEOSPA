@@ -1,0 +1,31 @@
+/* Main CSS File - Imports all modular styles */
+
+/* Core Foundation */
+@import 'variables.css';
+@import 'base.css';
+
+/* Layout & Structure */
+@import 'layout.css';
+@import 'navigation.css';
+
+/* Components */
+@import 'buttons.css';
+@import 'forms.css';
+@import 'components.css';
+
+/* Pages */
+@import 'dashboard.css';
+@import 'auth.css';
+
+/* Utilities */
+@import 'utilities.css';
+
+/* 
+This modular approach provides:
+- Better maintainability
+- Smaller file sizes for specific features
+- Easier debugging and development
+- Clear separation of concerns
+- Better team collaboration
+- Utility classes for rapid development
+*/
