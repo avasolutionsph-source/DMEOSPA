@@ -473,7 +473,7 @@ class StateManager {
     
     // Wait for dependencies
     async waitForDependencies() {
-        const maxAttempts = 20; // Reduced from 50 to 20 (2 seconds instead of 5)
+        const maxAttempts = 50; // Increased back to 50 (5 seconds)
         let attempts = 0;
         
         while (attempts < maxAttempts) {
@@ -481,7 +481,8 @@ class StateManager {
             const configReady = window.config && window.config.isInitialized;
             const loggerReady = window.logger && window.logger.isEnabled !== undefined;
             
-            if (dbReady) {
+            // At minimum, we need the database to be ready
+            if (dbReady || attempts > 30) { // Allow fallback after 3 seconds
                 this.db = window.db;
                 if (window.logger) {
                     window.logger.debug('StateManager: Dependencies ready', {
@@ -490,6 +491,8 @@ class StateManager {
                         configReady,
                         loggerReady
                     });
+                } else {
+                    console.log('StateManager: Dependencies ready', {dbReady, configReady, loggerReady});
                 }
                 return;
             }

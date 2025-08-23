@@ -17,9 +17,10 @@ class ComponentLoader {
      */
     async loadComponent(componentName, targetSelector, append = false) {
         try {
+            console.log(`🔍 Loading component: ${componentName} into ${targetSelector}`);
             const targetElement = document.querySelector(targetSelector);
             if (!targetElement) {
-                console.warn(`Target element not found: ${targetSelector}`);
+                console.error(`❌ Target element not found: ${targetSelector}`);
                 return false;
             }
 
@@ -29,9 +30,11 @@ class ComponentLoader {
                 html = this.componentCache.get(componentName);
             } else {
                 // Fetch component HTML
+                console.log(`📡 Fetching component: src/components/${componentName}.html`);
                 const response = await fetch(`src/components/${componentName}.html`);
                 if (!response.ok) {
-                    throw new Error(`Failed to load component: ${componentName}`);
+                    console.error(`❌ HTTP ${response.status}: Failed to fetch component: ${componentName}`);
+                    throw new Error(`Failed to load component: ${componentName} (HTTP ${response.status})`);
                 }
                 html = await response.text();
                 
@@ -130,33 +133,88 @@ window.componentLoader = new ComponentLoader();
  */
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🏗️ Loading core components...');
+    console.log('📋 DOM ready, checking app container...');
     
-    // Load essential components first
-    const coreComponents = [
-        { name: 'main-content', target: '.app-container', append: false },
-        { name: 'sidebar', target: '.app-container', append: true },
-        { name: 'modals', target: 'body', append: true }
-    ];
+    // Wait for CSS to be loaded
+    await waitForCSS();
     
-    await window.componentLoader.loadComponents(coreComponents);
+    const appContainer = document.querySelector('.app-container');
+    if (!appContainer) {
+        console.error('❌ CRITICAL: .app-container not found in DOM!');
+        return;
+    }
+    console.log('✅ App container found:', appContainer);
     
-    // Load dashboard after main-content exists
-    await window.componentLoader.loadComponent('dashboard', '.main-content', false);
-    
-    // Preload other components for faster navigation
-    const preloadComponents = [
-        'pos', 'products', 'inventory', 'employees', 'rooms', 'chatbot', 'gift-certificates', 'settings'
-    ];
-    
-    await window.componentLoader.preloadComponents(preloadComponents);
-    
-    console.log('✅ Component system initialized');
-    
-    // Initialize app after components are loaded
-    if (typeof initializeApp === 'function') {
-        initializeApp();
+    try {
+        // Load essential components first with error handling
+        const coreComponents = [
+            { name: 'main-content', target: '.app-container', append: false },
+            { name: 'sidebar', target: '.app-container', append: true },
+            { name: 'modals', target: 'body', append: true }
+        ];
+        
+        const coreResults = await window.componentLoader.loadComponents(coreComponents);
+        const coreLoaded = coreResults.filter(Boolean).length;
+        
+        if (coreLoaded < coreComponents.length) {
+            console.warn(`⚠️ Only ${coreLoaded}/${coreComponents.length} core components loaded`);
+        }
+        
+        // Wait a bit for DOM to settle
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Load dashboard after main-content exists
+        const dashboardLoaded = await window.componentLoader.loadComponent('dashboard', '.main-content', false);
+        if (!dashboardLoaded) {
+            console.error('❌ Failed to load dashboard component');
+        }
+        
+        // Preload other components for faster navigation
+        const preloadComponents = [
+            'pos', 'products', 'inventory', 'employees', 'rooms', 'chatbot', 'gift-certificates', 'settings'
+        ];
+        
+        await window.componentLoader.preloadComponents(preloadComponents);
+        
+        console.log('✅ Component system initialized');
+        
+        // Initialize app after components are loaded
+        if (typeof initializeApp === 'function') {
+            initializeApp();
+        }
+    } catch (error) {
+        console.error('❌ Error during component initialization:', error);
     }
 });
+
+/**
+ * Wait for CSS to be loaded
+ */
+async function waitForCSS() {
+    return new Promise((resolve) => {
+        const checkCSS = () => {
+            const testElement = document.createElement('div');
+            testElement.className = 'loading-overlay';
+            testElement.style.position = 'absolute';
+            testElement.style.visibility = 'hidden';
+            document.body.appendChild(testElement);
+            
+            const styles = window.getComputedStyle(testElement);
+            const hasCSS = styles.position === 'fixed'; // loading-overlay should have position: fixed
+            
+            document.body.removeChild(testElement);
+            
+            if (hasCSS) {
+                console.log('✅ CSS loaded and ready');
+                resolve();
+            } else {
+                setTimeout(checkCSS, 50);
+            }
+        };
+        
+        setTimeout(checkCSS, 10);
+    });
+}
 
 /**
  * Utility function to reload a component
