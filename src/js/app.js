@@ -817,23 +817,50 @@ class App {
 
     // Check if user is already logged in
     checkIfUserLoggedIn() {
-        // Check multiple possible login state indicators
+        // Check for valid authentication token
         const userToken = localStorage.getItem('userToken') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
         const userData = localStorage.getItem('userData') || localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
-        const isLoggedIn = localStorage.getItem('isLoggedIn');
         
-        // If any login indicators exist, user is likely logged in
-        const hasLoginData = !!(userToken || userData || isLoggedIn === 'true');
+        // Must have both token AND user data to be considered logged in
+        const hasValidLoginData = !!(userToken && userData);
         
-        if (hasLoginData) {
-            console.log('Detected existing login state:', {
-                hasToken: !!userToken,
-                hasUserData: !!userData,
-                isLoggedIn: isLoggedIn
-            });
+        console.log('Authentication check:', {
+            hasToken: !!userToken,
+            hasUserData: !!userData,
+            isValid: hasValidLoginData
+        });
+        
+        // Additional validation: check if user data is valid JSON
+        if (hasValidLoginData && userData) {
+            try {
+                const user = JSON.parse(userData);
+                if (!user.email || !user.id) {
+                    console.log('Invalid user data structure, clearing auth');
+                    this.clearAuthData();
+                    return false;
+                }
+            } catch (error) {
+                console.log('Invalid user data JSON, clearing auth');
+                this.clearAuthData();
+                return false;
+            }
         }
         
-        return hasLoginData;
+        return hasValidLoginData;
+    }
+
+    // Clear authentication data
+    clearAuthData() {
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('isLoggedIn');
+        sessionStorage.removeItem('userToken');
+        sessionStorage.removeItem('authToken');
+        sessionStorage.removeItem('userData');
+        sessionStorage.removeItem('currentUser');
+        sessionStorage.removeItem('isLoggedIn');
     }
 
 
@@ -856,16 +883,7 @@ class App {
         console.log('User logged out - resetting app state');
         
         // Clear authentication data
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userData');
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('isLoggedIn');
-        sessionStorage.removeItem('userToken');
-        sessionStorage.removeItem('authToken');
-        sessionStorage.removeItem('userData');
-        sessionStorage.removeItem('currentUser');
-        sessionStorage.removeItem('isLoggedIn');
+        this.clearAuthData();
         
         // Clear any cached business data
         this.businessConfig = null;
@@ -1272,10 +1290,31 @@ function logout() {
         window.app.onUserLoggedOut();
     } else {
         // Fallback logout
-        localStorage.clear();
-        sessionStorage.clear();
+        clearAllAuthData();
         window.location.href = 'login.html';
     }
+}
+
+// Force clear all authentication data (debug function)
+function clearAllAuthData() {
+    localStorage.removeItem('userToken');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('isLoggedIn');
+    sessionStorage.removeItem('userToken');
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('userData');
+    sessionStorage.removeItem('currentUser');
+    sessionStorage.removeItem('isLoggedIn');
+    console.log('All authentication data cleared');
+}
+
+// Force logout function (for debugging)
+function forceLogout() {
+    console.log('Forcing logout and redirect to login page');
+    clearAllAuthData();
+    window.location.href = 'login.html';
 }
 
 // Fallback notification function
