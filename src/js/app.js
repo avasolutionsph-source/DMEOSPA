@@ -24,18 +24,7 @@ class App {
             });
         }
         
-        // CRITICAL: Check authentication IMMEDIATELY - redirect to login page if not authenticated
-        const isUserLoggedIn = this.checkIfUserLoggedIn();
-        console.log('🔐 Authentication check result:', isUserLoggedIn);
-        
-        if (!isUserLoggedIn) {
-            console.log('❌ User not authenticated, redirecting to login page immediately');
-            // Force immediate redirect without any delays
-            window.location.replace('login.html');
-            return; // Stop all initialization
-        }
-        
-        console.log('✅ User authenticated, continuing with PWA initialization');
+        console.log('🚀 PWA: Starting full initialization, authentication will be checked after load');
         
         // Wait for database to be ready before proceeding
         try {
@@ -139,6 +128,17 @@ class App {
         
         // Check for updates from service worker
         this.checkForUpdates();
+        
+        // DEFERRED: Now check authentication after PWA is fully loaded
+        console.log('🛡️ PWA fully loaded, now checking authentication...');
+        setTimeout(() => {
+            if (window.checkAuthenticationAfterLoad) {
+                const isAuthenticated = window.checkAuthenticationAfterLoad();
+                if (!isAuthenticated) {
+                    console.log('🚫 Authentication failed after load, will redirect to login');
+                }
+            }
+        }, 1000); // Give PWA 1 second to fully render before auth check
     }
 
     // Heuristic performance detection (cores/memory/reduced motion)
@@ -1391,54 +1391,7 @@ window.refreshCurrentPage = async function() {
     }
 };
 
-// Immediate authentication check (before DOM ready)
-function immediateAuthCheck() {
-    const userToken = localStorage.getItem('userToken') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-    const userData = localStorage.getItem('userData') || localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
-    
-    const hasValidAuth = !!(userToken && userData);
-    
-    if (!hasValidAuth) {
-        console.log('🚫 IMMEDIATE AUTH CHECK: No valid authentication, redirecting to login');
-        window.location.replace('login.html');
-        return false;
-    }
-    
-    // Validate user data structure
-    if (userData) {
-        try {
-            const user = JSON.parse(userData);
-            if (!user.email || !user.id) {
-                console.log('🚫 IMMEDIATE AUTH CHECK: Invalid user data structure, redirecting to login');
-                // Clear invalid data
-                localStorage.removeItem('userToken');
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('userData');
-                localStorage.removeItem('currentUser');
-                localStorage.removeItem('isLoggedIn');
-                sessionStorage.clear();
-                window.location.replace('login.html');
-                return false;
-            }
-        } catch (error) {
-            console.log('🚫 IMMEDIATE AUTH CHECK: Corrupted user data, redirecting to login');
-            // Clear corrupted data
-            localStorage.clear();
-            sessionStorage.clear();
-            window.location.replace('login.html');
-            return false;
-        }
-    }
-    
-    console.log('✅ IMMEDIATE AUTH CHECK: Valid authentication found');
-    return true;
-}
-
-// Run immediate auth check
-if (!immediateAuthCheck()) {
-    // If auth check failed, don't initialize the app at all
-    throw new Error('Authentication failed, redirecting to login');
-}
+// Authentication check removed - now handled after PWA loads completely
 
 // Global initialization function for component-loader
 window.initializeApp = async function() {
@@ -1459,13 +1412,8 @@ window.setupNavigation = function() {
     }
 };
 
-// Initialize app when DOM is ready (only if auth check passed)
+// Initialize app when DOM is ready (authentication will be checked after load)
 document.addEventListener('DOMContentLoaded', async () => {
-    // Double-check authentication before initializing
-    if (!immediateAuthCheck()) {
-        return; // Auth check will handle redirect
-    }
-    
     // Give the database and other systems more time to initialize
     console.log('⏳ Waiting for systems to be ready before app initialization...');
     await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second

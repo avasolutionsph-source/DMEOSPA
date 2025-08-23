@@ -73,9 +73,11 @@
             }, 10000);
         })();
         
-        // IMMEDIATE authentication guard - runs before any other scripts
-        (function() {
-            console.log('🛡️ PWA Authentication Guard: Checking access...');
+        // DEFERRED authentication check - allow PWA to load first
+        console.log('🛡️ PWA: Allowing app to load, will check authentication after initialization');
+        
+        window.checkAuthenticationAfterLoad = function() {
+            console.log('🛡️ PWA Authentication Check: Verifying after load...');
             
             const userToken = localStorage.getItem('userToken') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
             const userData = localStorage.getItem('userData') || localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
@@ -83,12 +85,12 @@
             const hasValidAuth = !!(userToken && userData);
             
             if (!hasValidAuth) {
-                console.log('🚫 PWA Authentication Guard: No valid authentication detected');
-                console.log('🚫 Token exists:', !!userToken);
-                console.log('🚫 User data exists:', !!userData);
+                console.log('🚫 PWA Authentication: No valid authentication detected');
                 console.log('🔄 Redirecting to login page...');
-                window.location.replace('login.html');
-                return;
+                setTimeout(() => {
+                    window.location.replace('login.html');
+                }, 1000); // Give user time to see the PWA loaded
+                return false;
             }
             
             // Validate user data structure
@@ -96,61 +98,46 @@
                 try {
                     const user = JSON.parse(userData);
                     if (!user.email || !user.id) {
-                        console.log('🚫 PWA Authentication Guard: Invalid user data structure');
-                        // Only clear auth-related data, not everything
-                        localStorage.removeItem('userToken');
-                        localStorage.removeItem('authToken');
-                        localStorage.removeItem('userData');
-                        localStorage.removeItem('currentUser');
-                        localStorage.removeItem('isLoggedIn');
-                        sessionStorage.removeItem('userToken');
-                        sessionStorage.removeItem('authToken');
-                        sessionStorage.removeItem('userData');
-                        sessionStorage.removeItem('currentUser');
-                        window.location.replace('login.html');
-                        return;
+                        console.log('🚫 PWA Authentication: Invalid user data structure');
+                        setTimeout(() => {
+                            window.location.replace('login.html');
+                        }, 1000);
+                        return false;
                     }
                 } catch (error) {
-                    console.log('🚫 PWA Authentication Guard: Corrupted user data');
-                    // Only clear auth-related data, not everything
-                    localStorage.removeItem('userToken');
-                    localStorage.removeItem('authToken');
-                    localStorage.removeItem('userData');
-                    localStorage.removeItem('currentUser');
-                    localStorage.removeItem('isLoggedIn');
-                    sessionStorage.removeItem('userToken');
-                    sessionStorage.removeItem('authToken');
-                    sessionStorage.removeItem('userData');
-                    sessionStorage.removeItem('currentUser');
-                    window.location.replace('login.html');
-                    return;
+                    console.log('🚫 PWA Authentication: Corrupted user data');
+                    setTimeout(() => {
+                        window.location.replace('login.html');
+                    }, 1000);
+                    return false;
                 }
             }
             
-            console.log('✅ PWA Authentication Guard: Valid authentication confirmed, allowing access');
+            console.log('✅ PWA Authentication: Valid authentication confirmed');
+            return true;
+        };
+        
+        // Check if CSS is loading
+        setTimeout(() => {
+            const testElement = document.createElement('div');
+            testElement.className = 'app-container';
+            testElement.style.position = 'absolute';
+            testElement.style.visibility = 'hidden';
+            document.body.appendChild(testElement);
             
-            // Check if CSS is loading
-            setTimeout(() => {
-                const testElement = document.createElement('div');
-                testElement.className = 'app-container';
-                testElement.style.position = 'absolute';
-                testElement.style.visibility = 'hidden';
-                document.body.appendChild(testElement);
-                
-                const styles = window.getComputedStyle(testElement);
-                const hasCSS = styles.getPropertyValue('display') !== 'block' || 
-                              styles.getPropertyValue('margin') !== '0px' ||
-                              styles.getPropertyValue('padding') !== '0px';
-                              
-                if (!hasCSS) {
-                    console.error('❌ CSS may not be loading properly');
-                } else {
-                    console.log('✅ CSS appears to be loading');
-                }
-                
-                document.body.removeChild(testElement);
-            }, 100);
-        })();
+            const styles = window.getComputedStyle(testElement);
+            const hasCSS = styles.getPropertyValue('display') !== 'block' || 
+                          styles.getPropertyValue('margin') !== '0px' ||
+                          styles.getPropertyValue('padding') !== '0px';
+                          
+            if (!hasCSS) {
+                console.error('❌ CSS may not be loading properly');
+            } else {
+                console.log('✅ CSS appears to be loading');
+            }
+            
+            document.body.removeChild(testElement);
+        }, 100);
     </script>
 
     <!-- Initialize App After Components Load -->
