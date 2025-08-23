@@ -1,4 +1,5 @@
 # Netlify redirects for marketing website
+# Updated to ensure latest deployment
 
 # Main routes
 /            /index.html    200
