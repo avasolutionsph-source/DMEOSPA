@@ -310,22 +310,10 @@
                     Sign In
                 </button>
                 
-                <button type="button" id="testLoginBtn" class="btn-secondary">
-                    <i class="fas fa-flask"></i>
-                    Demo Login (Super Admin)
-                </button>
             </form>
             
             <div class="login-footer">
                 <p>Don't have an account? <a href="register.html">Create one here</a></p>
-                
-                <div class="demo-login">
-                    <small>
-                        <strong>Demo Credentials:</strong><br>
-                        Email: demo@spa.com<br>
-                        Password: demo123
-                    </small>
-                </div>
             </div>
         </div>
     </div>
@@ -340,7 +328,6 @@
             constructor() {
                 this.form = document.getElementById('loginForm');
                 this.loginBtn = document.getElementById('loginBtn');
-                this.testLoginBtn = document.getElementById('testLoginBtn');
                 this.errorMessage = document.getElementById('errorMessage');
                 this.successMessage = document.getElementById('successMessage');
                 
@@ -350,7 +337,6 @@
 
             setupEventListeners() {
                 this.form.addEventListener('submit', (e) => this.handleLogin(e));
-                this.testLoginBtn.addEventListener('click', () => this.handleTestLogin());
             }
 
             async checkExistingAuth() {
@@ -416,26 +402,16 @@
                 this.setLoading(false);
             }
 
-            async handleTestLogin() {
-                // Pre-fill with super admin credentials
-                document.getElementById('email').value = 'avasolutionsph@gmail.com';
-                document.getElementById('password').value = 'Ava12345';
-                
-                // Trigger the login
-                this.form.dispatchEvent(new Event('submit'));
-            }
 
             setLoading(loading) {
                 if (loading) {
                     this.loginBtn.classList.add('loading');
                     this.loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
                     this.loginBtn.disabled = true;
-                    this.testLoginBtn.disabled = true;
                 } else {
                     this.loginBtn.classList.remove('loading');
                     this.loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
                     this.loginBtn.disabled = false;
-                    this.testLoginBtn.disabled = false;
                 }
             }
 
