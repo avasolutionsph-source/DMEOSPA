@@ -24,13 +24,18 @@ class App {
             });
         }
         
-        // Check if user is authenticated FIRST - redirect to login page if not
+        // CRITICAL: Check authentication IMMEDIATELY - redirect to login page if not authenticated
         const isUserLoggedIn = this.checkIfUserLoggedIn();
+        console.log('🔐 Authentication check result:', isUserLoggedIn);
+        
         if (!isUserLoggedIn) {
-            console.log('User not authenticated, redirecting to login page');
-            window.location.href = 'login.html';
-            return; // Stop initialization
+            console.log('❌ User not authenticated, redirecting to login page immediately');
+            // Force immediate redirect without any delays
+            window.location.replace('login.html');
+            return; // Stop all initialization
         }
+        
+        console.log('✅ User authenticated, continuing with PWA initialization');
         
         // Wait for database to be ready before proceeding
         try {
@@ -1393,8 +1398,62 @@ window.refreshCurrentPage = async function() {
     }
 };
 
-// Initialize app when DOM is ready
+// Immediate authentication check (before DOM ready)
+function immediateAuthCheck() {
+    const userToken = localStorage.getItem('userToken') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    const userData = localStorage.getItem('userData') || localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+    
+    const hasValidAuth = !!(userToken && userData);
+    
+    if (!hasValidAuth) {
+        console.log('🚫 IMMEDIATE AUTH CHECK: No valid authentication, redirecting to login');
+        window.location.replace('login.html');
+        return false;
+    }
+    
+    // Validate user data structure
+    if (userData) {
+        try {
+            const user = JSON.parse(userData);
+            if (!user.email || !user.id) {
+                console.log('🚫 IMMEDIATE AUTH CHECK: Invalid user data structure, redirecting to login');
+                // Clear invalid data
+                localStorage.removeItem('userToken');
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userData');
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('isLoggedIn');
+                sessionStorage.clear();
+                window.location.replace('login.html');
+                return false;
+            }
+        } catch (error) {
+            console.log('🚫 IMMEDIATE AUTH CHECK: Corrupted user data, redirecting to login');
+            // Clear corrupted data
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.replace('login.html');
+            return false;
+        }
+    }
+    
+    console.log('✅ IMMEDIATE AUTH CHECK: Valid authentication found');
+    return true;
+}
+
+// Run immediate auth check
+if (!immediateAuthCheck()) {
+    // If auth check failed, don't initialize the app at all
+    throw new Error('Authentication failed, redirecting to login');
+}
+
+// Initialize app when DOM is ready (only if auth check passed)
 document.addEventListener('DOMContentLoaded', async () => {
+    // Double-check authentication before initializing
+    if (!immediateAuthCheck()) {
+        return; // Auth check will handle redirect
+    }
+    
     window.app = new App();
     // Immediate initialization for better performance since DB is pre-initialized
     await window.app.init();

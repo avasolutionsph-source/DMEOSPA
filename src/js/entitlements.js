@@ -64,20 +64,21 @@ class EntitlementsSystem {
                 }
             }
 
-            // If no valid token, check localStorage for user data and subscription plan
-            const isLoggedIn = localStorage.getItem('isLoggedIn');
-            const userData = localStorage.getItem('userData');
+            // If no valid token, check if app authentication system validates user as logged in
+            const isAppAuthenticated = window.app ? window.app.checkIfUserLoggedIn() : false;
             
-            if (isLoggedIn === 'true' || userData) {
-                console.log('🔍 User is logged in, checking subscription plan from userData');
+            if (isAppAuthenticated) {
+                console.log('🔍 App authentication system confirms user is logged in');
                 
-                // Try to get plan from userData
+                // Get user data from app's authentication
+                const userData = localStorage.getItem('userData') || localStorage.getItem('currentUser');
                 let userPlan = 'unpaid';
+                
                 if (userData) {
                     try {
                         const parsedUserData = JSON.parse(userData);
                         userPlan = parsedUserData.subscriptionPlan || parsedUserData.plan || 'unpaid';
-                        console.log('📋 User plan from localStorage:', userPlan);
+                        console.log('📋 User plan from app authentication:', userPlan);
                     } catch (e) {
                         console.log('⚠️ Could not parse userData, defaulting to unpaid');
                     }
@@ -92,7 +93,7 @@ class EntitlementsSystem {
                     this.updateUI();
                 }, 500);
             } else {
-                console.log('❌ No valid token and not logged in, setting unpaid plan');
+                console.log('❌ App authentication system says user is NOT logged in, setting unpaid plan');
                 this.setUnpaidPlanEntitlements();
             }
             
