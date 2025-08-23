@@ -188,16 +188,16 @@ class ConfigurationService {
                 const db = e.target.result;
 
                 // Unified config store
-                if (!window.db.objectStoreNames.contains('config')) {
-                    const configStore = window.db.createObjectStore('config', { keyPath: 'key' });
+                if (!db.objectStoreNames.contains('config')) {
+                    const configStore = db.createObjectStore('config', { keyPath: 'key' });
                     configStore.createIndex('category', 'category', { unique: false });
                     configStore.createIndex('source', 'source', { unique: false });
                     configStore.createIndex('lastModified', 'lastModified', { unique: false });
                 }
 
                 // Migration history store
-                if (!window.db.objectStoreNames.contains('migrations')) {
-                    const migrationStore = window.db.createObjectStore('migrations', { keyPath: 'id', autoIncrement: true });
+                if (!db.objectStoreNames.contains('migrations')) {
+                    const migrationStore = db.createObjectStore('migrations', { keyPath: 'id', autoIncrement: true });
                     migrationStore.createIndex('timestamp', 'timestamp', { unique: false });
                     migrationStore.createIndex('version', 'version', { unique: false });
                 }

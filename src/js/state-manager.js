@@ -506,7 +506,7 @@ class StateManager {
     
     // Persist state to database
     async persistState() {
-        if (!this.db || !this.persistenceEnabled) return;
+        if (!window.db || !this.persistenceEnabled) return;
         
         try {
             const stateSnapshot = {
@@ -520,7 +520,7 @@ class StateManager {
                 key: 'current',
                 ...stateSnapshot
             };
-            await this.db.put('state', stateData);
+            await window.db.put('state', stateData);
             
             // Also backup to localStorage for redundancy
             try {
@@ -536,11 +536,11 @@ class StateManager {
     
     // Load persisted state
     async loadPersistedState() {
-        if (!this.db) return;
+        if (!window.db) return;
         
         try {
             // Try to load from IndexedDB first
-            const savedState = await this.db.get('state', 'current');
+            const savedState = await window.db.get('state', 'current');
             
             if (savedState && savedState.state) {
                 this.mergePersistedState(savedState.state);
@@ -793,8 +793,8 @@ class StateManager {
         this.pendingUpdates = [];
         
         // Clear persistence
-        if (this.db) {
-            await this.db.delete('state', 'current');
+        if (window.db) {
+            await window.db.delete('state', 'current');
         }
         localStorage.removeItem('ava_state_backup');
         
