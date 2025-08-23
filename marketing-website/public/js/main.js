@@ -1,28 +1,20 @@
 // Ava Solutions Marketing Website JavaScript
 // Navigation and Routing Functions
 
-// PWA Application URL - Update this to your deployed PWA URL
+// PWA Application URL - Points to the main PWA application
 const PWA_URL = window.location.hostname === 'localhost' 
     ? '../index.html'  // Local development
-    : 'https://your-pwa-app.netlify.app/index.html';  // Production PWA URL
+    : 'https://avasolutionsph-source.github.io/AvaSolutionsPH-August-8/index.html';  // Production PWA URL
 
 // Routing Functions
 function redirectToLogin() {
-    // Check if we're in development or production
-    if (window.location.hostname === 'localhost') {
-        window.location.href = '../auth/login.html';
-    } else {
-        window.location.href = PWA_URL + '?action=login';
-    }
+    // Direct to the auth pages in the main repository
+    window.location.href = 'https://avasolutionsph-source.github.io/AvaSolutionsPH-August-8/auth/login.html';
 }
 
 function redirectToSignup() {
-    // Check if we're in development or production  
-    if (window.location.hostname === 'localhost') {
-        window.location.href = '../auth/signup.html';
-    } else {
-        window.location.href = PWA_URL + '?action=signup';
-    }
+    // Direct to the auth pages in the main repository
+    window.location.href = 'https://avasolutionsph-source.github.io/AvaSolutionsPH-August-8/auth/signup.html';
 }
 
 function redirectToApp() {
@@ -31,11 +23,7 @@ function redirectToApp() {
 
 function startFreeTrial(plan = 'professional') {
     // Track the selected plan and redirect to signup
-    if (window.location.hostname === 'localhost') {
-        window.location.href = `../auth/signup.html?plan=${plan}&trial=true`;
-    } else {
-        window.location.href = PWA_URL + `?action=signup&plan=${plan}&trial=true`;
-    }
+    window.location.href = `https://avasolutionsph-source.github.io/AvaSolutionsPH-August-8/auth/signup.html?plan=${plan}&trial=true`;
 }
 
 function requestDemo() {
@@ -358,7 +346,7 @@ function showSuperAdminLogin() {
         // Simple admin key check (in production, this should be more secure)
         if (adminKey === 'avasolutions2024admin') {
             modal.remove();
-            window.location.href = PWA_URL + '?admin=true';
+            window.location.href = 'https://avasolutionsph-source.github.io/AvaSolutionsPH-August-8/index.html?admin=true';
         } else {
             showNotification('Invalid admin key', 'error');
         }
