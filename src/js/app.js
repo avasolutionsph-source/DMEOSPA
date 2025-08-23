@@ -97,7 +97,7 @@ class App {
         // Set up date/time display (throttle on low/balanced devices)
         this.updateDateTime();
         const dateInterval = this.performanceProfile === 'low' ? 60000 : (this.performanceProfile === 'balanced' ? 5000 : 1000);
-        setInterval(() => this.updateDateTime(), dateInterval);
+        this.dateTimeInterval = setInterval(() => this.updateDateTime(), dateInterval);
         
         // Load business name from settings
         await this.loadBusinessName();
@@ -139,6 +139,18 @@ class App {
                 }
             }
         }, 1000); // Give PWA 1 second to fully render before auth check
+        
+        // Set up cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            this.cleanup();
+        });
+
+    // Clean up resources to prevent memory leaks
+    cleanup() {
+        if (this.dateTimeInterval) {
+            clearInterval(this.dateTimeInterval);
+            this.dateTimeInterval = null;
+        }
     }
 
     // Heuristic performance detection (cores/memory/reduced motion)
@@ -323,15 +335,25 @@ class App {
             // Page element not loaded yet, wait for components to load
             console.log(`Page element not found: ${pageName}, waiting for components to load...`);
             
-            // Check for component loading
+            // Check for component loading with timeout
+            let attempts = 0;
+            const maxAttempts = 20; // Max 10 seconds (20 * 500ms)
+            
             const checkForPage = () => {
                 const page = document.getElementById(pageName);
                 if (page) {
                     page.classList.add('active');
                     this.loadPageData(pageName);
-                } else {
-                    // Try again after a short delay
+                } else if (attempts < maxAttempts) {
+                    attempts++;
                     setTimeout(checkForPage, 500);
+                } else {
+                    console.error(`❌ Page ${pageName} failed to load after ${maxAttempts} attempts`);
+                    // Fall back to dashboard
+                    const dashboard = document.getElementById('dashboard');
+                    if (dashboard) {
+                        dashboard.classList.add('active');
+                    }
                 }
             };
             
@@ -1315,37 +1337,13 @@ function forceLogout() {
     window.location.href = 'login.html';
 }
 
-// Fallback notification function
+// Global notification function - delegates to sync manager
 function showNotification(message, type = 'info') {
     if (window.syncManager && window.syncManager.showNotification) {
         window.syncManager.showNotification(message, type);
     } else {
-        // Fallback notification
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.innerHTML = `
-            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-            <span>${message}</span>
-        `;
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: white;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            z-index: 9999;
-            border-left: 4px solid ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
-        `;
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
+        // Simple console fallback if sync manager not available
+        console.log(`📢 ${type.toUpperCase()}: ${message}`);
     }
 }
 

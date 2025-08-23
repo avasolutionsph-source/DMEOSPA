@@ -214,12 +214,21 @@ class SyncManager {
         this.showSyncIndicator(true);
 
         try {
-            // Sync each data type
+            // Sync each data type with yielding to prevent UI blocking
             await this.syncProducts();
+            await this.yieldControl();
+            
             await this.syncInventory();
+            await this.yieldControl();
+            
             await this.syncEmployees();
+            await this.yieldControl();
+            
             await this.syncTransactions();
+            await this.yieldControl();
+            
             await this.syncChatbotHistory(); // Sync enhanced chatbot data
+            await this.yieldControl();
             
             // Process sync queue
             await this.processSyncQueue();
@@ -246,6 +255,11 @@ class SyncManager {
             this.syncInProgress = false;
             this.showSyncIndicator(false);
         }
+    }
+
+    // Yield control to prevent UI blocking during heavy sync operations
+    async yieldControl() {
+        return new Promise(resolve => setTimeout(resolve, 0));
     }
 
     async syncProducts() {

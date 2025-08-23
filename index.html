@@ -37,6 +37,7 @@
     
     <!-- Core Application Scripts - Load as modules to fix import errors -->
     <script type="module" src="src/js/database.js"></script>
+    <script type="module" src="src/js/token-manager.js"></script>
     <script type="module" src="src/js/config-service.js"></script>
     <script type="module" src="src/js/auth.js"></script>
     <script type="module" src="src/js/state-manager.js"></script>
@@ -79,38 +80,25 @@
         window.checkAuthenticationAfterLoad = function() {
             console.log('🛡️ PWA Authentication Check: Verifying after load...');
             
-            const userToken = localStorage.getItem('userToken') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-            const userData = localStorage.getItem('userData') || localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+            // Wait for token manager to be available
+            if (!window.tokenManager) {
+                console.log('⏳ Token manager not ready, retrying...');
+                setTimeout(() => window.checkAuthenticationAfterLoad(), 100);
+                return;
+            }
             
-            const hasValidAuth = !!(userToken && userData);
+            const isAuthenticated = window.tokenManager.isAuthenticated();
+            const authState = window.tokenManager.getAuthState();
             
-            if (!hasValidAuth) {
+            console.log('🔍 Auth state:', authState);
+            
+            if (!isAuthenticated) {
                 console.log('🚫 PWA Authentication: No valid authentication detected');
                 console.log('🔄 Redirecting to login page...');
                 setTimeout(() => {
                     window.location.replace('login.html');
                 }, 1000); // Give user time to see the PWA loaded
                 return false;
-            }
-            
-            // Validate user data structure
-            if (userData) {
-                try {
-                    const user = JSON.parse(userData);
-                    if (!user.email || !user.id) {
-                        console.log('🚫 PWA Authentication: Invalid user data structure');
-                        setTimeout(() => {
-                            window.location.replace('login.html');
-                        }, 1000);
-                        return false;
-                    }
-                } catch (error) {
-                    console.log('🚫 PWA Authentication: Corrupted user data');
-                    setTimeout(() => {
-                        window.location.replace('login.html');
-                    }, 1000);
-                    return false;
-                }
             }
             
             console.log('✅ PWA Authentication: Valid authentication confirmed');
