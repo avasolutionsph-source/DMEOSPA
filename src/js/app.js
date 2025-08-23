@@ -24,6 +24,14 @@ class App {
             });
         }
         
+        // Check if user is authenticated FIRST - redirect to login page if not
+        const isUserLoggedIn = this.checkIfUserLoggedIn();
+        if (!isUserLoggedIn) {
+            console.log('User not authenticated, redirecting to login page');
+            window.location.href = 'login.html';
+            return; // Stop initialization
+        }
+        
         // Wait for database to be ready before proceeding
         try {
             await ensureDBInit();
@@ -54,21 +62,16 @@ class App {
         this.applyPerformanceTuning();
         this.autotunePerformance();
         
-        // Check if user is already logged in before showing setup wizard
-        const isUserLoggedIn = this.checkIfUserLoggedIn();
-        
-        // If user is logged in, restore their UI state first
-        if (isUserLoggedIn) {
-            if (window.logger) {
-                window.logger.info('User logged in, restoring UI state', { 
-                    category: 'APP', 
-                    operation: 'restore_ui_state'
-                });
-            }
-            // Call the checkLoginState function from index.html to restore UI
-            if (typeof window.checkLoginState === 'function') {
-                window.checkLoginState();
-            }
+        // User is logged in, restore their UI state
+        if (window.logger) {
+            window.logger.info('User logged in, restoring UI state', { 
+                category: 'APP', 
+                operation: 'restore_ui_state'
+            });
+        }
+        // Call the checkLoginState function from index.html to restore UI
+        if (typeof window.checkLoginState === 'function') {
+            window.checkLoginState();
         }
         
         // REMOVED: Automatic setup wizard - now manual only
@@ -852,10 +855,23 @@ class App {
     onUserLoggedOut() {
         console.log('User logged out - resetting app state');
         
-        // REMOVED: Setup state properties - manual setup wizard doesn't need state tracking
+        // Clear authentication data
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('isLoggedIn');
+        sessionStorage.removeItem('userToken');
+        sessionStorage.removeItem('authToken');
+        sessionStorage.removeItem('userData');
+        sessionStorage.removeItem('currentUser');
+        sessionStorage.removeItem('isLoggedIn');
         
         // Clear any cached business data
         this.businessConfig = null;
+        
+        // Redirect to login page
+        window.location.href = 'login.html';
     }
 
     // REMOVED: checkFirstTimeSetup() method - setup wizard is now manual only
@@ -1237,13 +1253,29 @@ class App {
     }
 }
 
-// Global functions for modals
+// Global functions for modals (DEPRECATED - PWA now uses dedicated login page)
 function openModal(modalId) {
-    window.app.openModal(modalId);
+    if (window.app) {
+        window.app.openModal(modalId);
+    }
 }
 
 function closeModal(modalId) {
-    window.app.closeModal(modalId);
+    if (window.app) {
+        window.app.closeModal(modalId);
+    }
+}
+
+// Global logout function
+function logout() {
+    if (window.app) {
+        window.app.onUserLoggedOut();
+    } else {
+        // Fallback logout
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = 'login.html';
+    }
 }
 
 // Fallback notification function
