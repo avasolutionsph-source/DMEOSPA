@@ -12,7 +12,22 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
-// Apply authentication to all admin routes
+// Test route (no auth required) - must come BEFORE auth middleware
+router.get('/', (req, res) => {
+  res.json({ 
+    message: 'Admin API',
+    version: '1.0.0',
+    status: 'available',
+    endpoints: {
+      stats: '/api/admin/stats',
+      users: '/api/admin/users',
+      user: '/api/admin/user/:id',
+      revenue: '/api/admin/revenue'
+    }
+  });
+});
+
+// Apply authentication to all other admin routes
 router.use(authenticateJWT);
 router.use(requireAdmin);
 
@@ -252,18 +267,5 @@ router.get('/dashboard', (req, res) => {
   });
 });
 
-// GET / - Admin root
-router.get('/', (req, res) => {
-  res.json({ 
-    message: 'Admin API',
-    version: '1.0.0',
-    endpoints: {
-      stats: '/api/admin/stats',
-      users: '/api/admin/users',
-      user: '/api/admin/user/:id',
-      revenue: '/api/admin/revenue'
-    }
-  });
-});
 
 export default router;
