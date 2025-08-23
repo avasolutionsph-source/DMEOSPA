@@ -1003,47 +1003,8 @@
     
     <!-- Emergency login function - available immediately -->
     <script>
-        // Utility functions for auth system
-        function showNotification(message, type = 'info') {
-            console.log(`[${type.toUpperCase()}] ${message}`);
-            alert(message); // Simple fallback
-        }
-        
-        function setButtonLoading(buttonId, loading) {
-            const btn = document.getElementById(buttonId);
-            if (btn) {
-                if (loading) {
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-                } else {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
-                }
-            }
-        }
-        
-        function showLoading(title, message) {
-            console.log(`Loading: ${title} - ${message}`);
-        }
-        
-        function hideLoading() {
-            console.log('Loading hidden');
-        }
-        
-        function closeModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.style.display = 'none';
-                document.body.classList.remove('modal-open');
-            }
-        }
-        
-        // Make functions globally available
-        window.showNotification = showNotification;
-        window.setButtonLoading = setButtonLoading;
-        window.showLoading = showLoading;
-        window.hideLoading = hideLoading;
-        window.closeModal = closeModal;
+        // These utility functions are now handled by app.js
+        // Removed duplicate function definitions to prevent conflicts
         
         // Global flag to prevent setup wizard from ever showing again
         window.setupWizardDisabled = false;

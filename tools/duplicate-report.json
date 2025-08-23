@@ -1,0 +1,796 @@
+{
+  "css": [
+    {
+      "type": "CSS Selector",
+      "selector": ".cta-buttons",
+      "file": "marketing-website\\public\\assets\\style.css",
+      "lines": [
+        840,
+        1023
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".form-group",
+      "file": "marketing-website\\public\\assets\\style.css",
+      "lines": [
+        984,
+        1160
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".nav-links",
+      "file": "marketing-website\\public\\assets\\style.css",
+      "lines": [
+        251,
+        1748
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".nav-toggle",
+      "file": "marketing-website\\public\\assets\\style.css",
+      "lines": [
+        273,
+        1752
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".hero-content",
+      "file": "marketing-website\\public\\assets\\style.css",
+      "lines": [
+        296,
+        1756
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".hero-buttons",
+      "file": "marketing-website\\public\\assets\\style.css",
+      "lines": [
+        319,
+        1765
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".contact-grid",
+      "file": "marketing-website\\public\\assets\\style.css",
+      "lines": [
+        933,
+        1769
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".footer-content",
+      "file": "marketing-website\\public\\assets\\style.css",
+      "lines": [
+        1048,
+        1773
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".footer-links",
+      "file": "marketing-website\\public\\assets\\style.css",
+      "lines": [
+        1073,
+        1777
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".footer-bottom",
+      "file": "marketing-website\\public\\assets\\style.css",
+      "lines": [
+        1096,
+        1781
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".cta-buttons",
+      "file": "marketing-website\\public\\assets\\style.css",
+      "lines": [
+        840,
+        1786
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": "@media (max-width: 768px)",
+      "file": "marketing-website\\public\\assets\\style.css",
+      "lines": [
+        1747,
+        1838
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".stat-card",
+      "file": "styles.css",
+      "lines": [
+        920,
+        1989
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".logo",
+      "file": "styles.css",
+      "lines": [
+        335,
+        2009
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".dashboard-charts",
+      "file": "styles.css",
+      "lines": [
+        1055,
+        2449
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".dashboard-grid",
+      "file": "styles.css",
+      "lines": [
+        912,
+        2454
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".page-header",
+      "file": "styles.css",
+      "lines": [
+        611,
+        2459
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".header-actions",
+      "file": "styles.css",
+      "lines": [
+        638,
+        2466
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".sidebar",
+      "file": "styles.css",
+      "lines": [
+        301,
+        2474
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".main-content",
+      "file": "styles.css",
+      "lines": [
+        558,
+        2485
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".page",
+      "file": "styles.css",
+      "lines": [
+        585,
+        2489
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".page-header",
+      "file": "styles.css",
+      "lines": [
+        611,
+        2493
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".dashboard-grid",
+      "file": "styles.css",
+      "lines": [
+        912,
+        2498
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".dashboard-charts",
+      "file": "styles.css",
+      "lines": [
+        1055,
+        2503
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".btn-ghost",
+      "file": "styles.css",
+      "lines": [
+        859,
+        2523
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": "@media (max-width: 1024px)",
+      "file": "styles.css",
+      "lines": [
+        2448,
+        2563
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".pos-container",
+      "file": "styles.css",
+      "lines": [
+        1146,
+        2564
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": "@media (max-width: 768px)",
+      "file": "styles.css",
+      "lines": [
+        2473,
+        3167
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".chatbot-container",
+      "file": "styles.css",
+      "lines": [
+        2820,
+        3168
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".chat-messages",
+      "file": "styles.css",
+      "lines": [
+        2870,
+        3173
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".chat-input-container",
+      "file": "styles.css",
+      "lines": [
+        3055,
+        3177
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".message-content",
+      "file": "styles.css",
+      "lines": [
+        2967,
+        3181
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".message-avatar",
+      "file": "styles.css",
+      "lines": [
+        2925,
+        3186
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".form-row",
+      "file": "styles.css",
+      "lines": [
+        2507,
+        3240
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".modal-content",
+      "file": "styles.css",
+      "lines": [
+        2511,
+        3278
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": "from",
+      "file": "styles.css",
+      "lines": [
+        3309,
+        3320
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": "to",
+      "file": "styles.css",
+      "lines": [
+        3313,
+        3325
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".modal-body",
+      "file": "styles.css",
+      "lines": [
+        2517,
+        3372
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": "@media (max-width: 1024px)",
+      "file": "styles.css",
+      "lines": [
+        2448,
+        3617
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".pos-container",
+      "file": "styles.css",
+      "lines": [
+        1146,
+        3618
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".dashboard-charts",
+      "file": "styles.css",
+      "lines": [
+        1055,
+        3622
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": "@media (max-width: 768px)",
+      "file": "styles.css",
+      "lines": [
+        2473,
+        3860
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".sidebar",
+      "file": "styles.css",
+      "lines": [
+        301,
+        3861
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".main-content",
+      "file": "styles.css",
+      "lines": [
+        558,
+        3871
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".form-row",
+      "file": "styles.css",
+      "lines": [
+        2507,
+        3875
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".payment-options",
+      "file": "styles.css",
+      "lines": [
+        3442,
+        3879
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".notification",
+      "file": "styles.css",
+      "lines": [
+        3563,
+        3883
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".form-hint",
+      "file": "styles.css",
+      "lines": [
+        3247,
+        3943
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".btn-outline",
+      "file": "styles.css",
+      "lines": [
+        844,
+        4353
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".btn-sm",
+      "file": "styles.css",
+      "lines": [
+        894,
+        4368
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": "from",
+      "file": "styles.css",
+      "lines": [
+        3309,
+        4547
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": "to",
+      "file": "styles.css",
+      "lines": [
+        3313,
+        4551
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": "from",
+      "file": "styles.css",
+      "lines": [
+        3309,
+        4558
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": "to",
+      "file": "styles.css",
+      "lines": [
+        3313,
+        4562
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": "from",
+      "file": "styles.css",
+      "lines": [
+        3309,
+        4569
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": "to",
+      "file": "styles.css",
+      "lines": [
+        3313,
+        4573
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": "@media (max-width: 768px)",
+      "file": "styles.css",
+      "lines": [
+        2473,
+        4580
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".install-banner",
+      "file": "styles.css",
+      "lines": [
+        4374,
+        4581
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".install-banner-content",
+      "file": "styles.css",
+      "lines": [
+        4388,
+        4587
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".install-actions",
+      "file": "styles.css",
+      "lines": [
+        4425,
+        4593
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".update-notification",
+      "file": "styles.css",
+      "lines": [
+        4474,
+        4598
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".update-content",
+      "file": "styles.css",
+      "lines": [
+        4487,
+        4605
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".upgrade-btn",
+      "file": "styles.css",
+      "lines": [
+        3703,
+        4724
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".modal-content",
+      "file": "styles.css",
+      "lines": [
+        2511,
+        4755
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".badge",
+      "file": "styles.css",
+      "lines": [
+        2632,
+        4884
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".badge-success",
+      "file": "styles.css",
+      "lines": [
+        2641,
+        4903
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".badge-warning",
+      "file": "styles.css",
+      "lines": [
+        2646,
+        4909
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".badge-danger",
+      "file": "styles.css",
+      "lines": [
+        2651,
+        4915
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".modal-content",
+      "file": "styles.css",
+      "lines": [
+        2511,
+        5049
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": "@media (max-width: 768px)",
+      "file": "styles.css",
+      "lines": [
+        2473,
+        5061
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".btn",
+      "file": "styles.css",
+      "lines": [
+        659,
+        5068
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".modal-content",
+      "file": "styles.css",
+      "lines": [
+        2511,
+        5073
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".nav-item",
+      "file": "styles.css",
+      "lines": [
+        475,
+        5078
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".sidebar",
+      "file": "styles.css",
+      "lines": [
+        301,
+        5089
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": "table",
+      "file": "styles.css",
+      "lines": [
+        4819,
+        5100
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".modal-content",
+      "file": "styles.css",
+      "lines": [
+        2511,
+        5119
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".page",
+      "file": "styles.css",
+      "lines": [
+        585,
+        5145
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".main-content",
+      "file": "styles.css",
+      "lines": [
+        558,
+        5270
+      ],
+      "severity": "HIGH"
+    },
+    {
+      "type": "CSS Selector",
+      "selector": ".page-header",
+      "file": "styles.css",
+      "lines": [
+        611,
+        5289
+      ],
+      "severity": "HIGH"
+    }
+  ],
+  "js": [],
+  "html": []
+}

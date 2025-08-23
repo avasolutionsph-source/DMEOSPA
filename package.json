@@ -1,0 +1,17 @@
+{
+  "name": "avasolutions-pwa",
+  "version": "1.0.0",
+  "description": "PWA Spa Management Application",
+  "scripts": {
+    "scan-duplicates": "node tools/duplicate-scanner.js",
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "echo 'Build process - minify CSS/JS if needed'"
+  },
+  "keywords": ["pwa", "spa", "management", "pos"],
+  "author": "Ava Solutions PH",
+  "license": "ISC",
+  "devDependencies": {
+    
+  }
+}
