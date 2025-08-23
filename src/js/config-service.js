@@ -147,7 +147,8 @@ class ConfigurationService {
         this.cache = new Map();
         this.listeners = new Map();
         
-        this.init();
+        // Don't initialize immediately - wait for main database to be ready
+        this.initPromise = null;
     }
 
     async init() {
@@ -824,8 +825,24 @@ class MemoryAdapter {
     }
 }
 
-// Initialize and expose global config service
+// Create global config service but don't initialize yet
 window.config = new ConfigurationService();
+
+// Initialize when database is ready
+function initConfigServiceWhenReady() {
+    if (window.db && window.ensureDBInit) {
+        if (!window.config.initPromise) {
+            window.config.initPromise = window.config.init();
+        }
+        return window.config.initPromise;
+    } else {
+        // Wait for database to be available
+        setTimeout(initConfigServiceWhenReady, 100);
+    }
+}
+
+// Start waiting for database
+setTimeout(initConfigServiceWhenReady, 500);
 
 // Export for module usage
 if (typeof module !== 'undefined' && module.exports) {
