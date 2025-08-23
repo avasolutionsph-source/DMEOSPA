@@ -2,7 +2,7 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 3; // Incremented for state store
+        this.version = 4; // Incremented for config and migrations stores
         this.db = null;
         this.userId = null;
     }
@@ -76,6 +76,21 @@ class Database {
                 // State store for StateManager persistence
                 if (!this.db.objectStoreNames.contains('state')) {
                     this.db.createObjectStore('state', { keyPath: 'key' });
+                }
+
+                // Configuration store for config-service
+                if (!this.db.objectStoreNames.contains('config')) {
+                    const configStore = this.db.createObjectStore('config', { keyPath: 'key' });
+                    configStore.createIndex('category', 'category', { unique: false });
+                    configStore.createIndex('source', 'source', { unique: false });
+                    configStore.createIndex('lastModified', 'lastModified', { unique: false });
+                }
+
+                // Migration history store for config-service
+                if (!this.db.objectStoreNames.contains('migrations')) {
+                    const migrationStore = this.db.createObjectStore('migrations', { keyPath: 'id', autoIncrement: true });
+                    migrationStore.createIndex('timestamp', 'timestamp', { unique: false });
+                    migrationStore.createIndex('version', 'version', { unique: false });
                 }
 
                 // Promo Discounts store

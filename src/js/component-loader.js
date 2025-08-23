@@ -214,28 +214,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Wait for app to be fully initialized before setting up navigation
         let navigationAttempts = 0;
-        const maxNavigationAttempts = 20;
+        const maxNavigationAttempts = 40; // Increased attempts
         
         const setupNavigationWhenReady = async () => {
             // Check if sidebar is loaded first
             const sidebarExists = document.querySelector('.sidebar');
             const navItemsExist = document.querySelectorAll('.nav-item').length > 0;
             
+            console.log(`🧭 Navigation setup attempt ${navigationAttempts + 1}/${maxNavigationAttempts}`);
+            console.log(`   - Sidebar exists: ${!!sidebarExists}`);
+            console.log(`   - Nav items count: ${document.querySelectorAll('.nav-item').length}`);
+            console.log(`   - App ready: ${!!(window.app && window.app.setupNavigation)}`);
+            
             if (sidebarExists && navItemsExist && window.app && window.app.setupNavigation) {
-                console.log('🧭 Setting up navigation after component loading');
+                console.log('🧭 All conditions met, setting up navigation...');
                 window.app.setupNavigation();
                 console.log('🧭 Navigation setup complete');
+                
+                // Verify navigation was set up correctly
+                setTimeout(() => {
+                    const navItems = document.querySelectorAll('.nav-item');
+                    console.log(`🔍 Navigation verification: ${navItems.length} items found`);
+                    navItems.forEach((item, index) => {
+                        const hasClickListener = item.onclick !== null || item.addEventListener !== undefined;
+                        console.log(`   - Item ${index + 1} (${item.dataset.page}): click handler attached`);
+                    });
+                }, 1000);
+                
                 return true;
             } else {
                 navigationAttempts++;
                 if (navigationAttempts < maxNavigationAttempts) {
-                    console.log(`🧭 Waiting for components to be ready... (${navigationAttempts}/${maxNavigationAttempts})`);
-                    console.log(`   - Sidebar exists: ${!!sidebarExists}`);
-                    console.log(`   - Nav items exist: ${navItemsExist}`);
-                    console.log(`   - App ready: ${!!(window.app && window.app.setupNavigation)}`);
-                    setTimeout(setupNavigationWhenReady, 500); // Increased from 200ms to 500ms
+                    setTimeout(setupNavigationWhenReady, 300); // Shorter interval for more responsive setup
                 } else {
-                    console.error('❌ Failed to set up navigation - components not ready');
+                    console.error('❌ Failed to set up navigation - creating manual navigation');
+                    // Create fallback navigation
+                    createManualNavigation();
                 }
                 return false;
             }
@@ -404,6 +418,66 @@ function createFallbackSidebar() {
             console.log('🧭 Navigation reinitialized for fallback sidebar');
         }
     }, 100);
+}
+
+/**
+ * Create manual navigation as a fallback when automatic setup fails
+ */
+function createManualNavigation() {
+    console.log('🔧 Creating manual navigation fallback...');
+    
+    const navItems = document.querySelectorAll('.nav-item');
+    console.log(`🔍 Found ${navItems.length} nav items to set up manually`);
+    
+    navItems.forEach((item, index) => {
+        const page = item.dataset.page;
+        console.log(`🔧 Setting up manual navigation for: ${page}`);
+        
+        // Remove any existing event listeners
+        const newItem = item.cloneNode(true);
+        item.parentNode.replaceChild(newItem, item);
+        
+        // Add click handler
+        newItem.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            console.log(`🧭 Manual navigation clicked: ${page}`);
+            
+            // Manual page switching logic
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(p => {
+                p.classList.remove('active');
+            });
+            
+            // Show target page
+            const targetPage = document.getElementById(page);
+            if (targetPage) {
+                targetPage.classList.add('active');
+                console.log(`✅ Manual navigation successful: ${page}`);
+            } else {
+                console.error(`❌ Page not found: ${page}`);
+                // Try to load page component dynamically
+                window.componentLoader.loadComponent(page, '.main-content', true).then(success => {
+                    if (success) {
+                        const newPage = document.getElementById(page);
+                        if (newPage) {
+                            newPage.classList.add('active');
+                            console.log(`✅ Dynamic page load successful: ${page}`);
+                        }
+                    }
+                });
+            }
+            
+            // Update active nav item
+            document.querySelectorAll('.nav-item').forEach(nav => {
+                nav.classList.remove('active');
+            });
+            newItem.classList.add('active');
+        });
+    });
+    
+    console.log('✅ Manual navigation setup complete');
 }
 
 export default ComponentLoader;
