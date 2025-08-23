@@ -135,11 +135,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const coreComponents = [
         { name: 'main-content', target: '.app-container', append: false },
         { name: 'sidebar', target: '.app-container', append: true },
-        { name: 'dashboard', target: '.main-content', append: false },
         { name: 'modals', target: 'body', append: true }
     ];
-
+    
     await window.componentLoader.loadComponents(coreComponents);
+    
+    // Load dashboard after main-content exists
+    await window.componentLoader.loadComponent('dashboard', '.main-content', false);
     
     // Preload other components for faster navigation
     const preloadComponents = [

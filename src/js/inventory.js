@@ -234,8 +234,8 @@ class InventoryManager {
 
             openModal('inventoryModal');
         } catch (error) {
-            if (// logger) {
-                // logger.error('Failed to edit item', {
+            if (window.logger) {
+                window.logger.error('Failed to edit item', {
                     category: 'INVENTORY',
                     operation: 'edit_item',
                     error: error
@@ -256,8 +256,8 @@ class InventoryManager {
             showNotification('Item deleted successfully', 'success');
             await this.loadInventory();
         } catch (error) {
-            if (// logger) {
-                // logger.error('Failed to delete item', {
+            if (window.logger) {
+                window.logger.error('Failed to delete item', {
                     category: 'INVENTORY',
                     operation: 'delete_item',
                     error: error
@@ -346,8 +346,8 @@ class InventoryManager {
                 window.loadPOS && window.loadPOS();
             }
         } catch (error) {
-            if (// logger) {
-                // logger.error('Failed to save inventory item', {
+            if (window.logger) {
+                window.logger.error('Failed to save inventory item', {
                     category: 'INVENTORY',
                     operation: 'save_item',
                     error: error
