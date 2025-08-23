@@ -2519,14 +2519,6 @@ a:hover {
     }
 }
 
-/* Buttons – extended variants without altering existing ones */
-.btn-success { background: var(--success-color); color: #fff; }
-.btn-success:hover { filter: brightness(.95); box-shadow: var(--elev-2); }
-.btn-warning { background: var(--warning-color); color: #fff; }
-.btn-warning:hover { filter: brightness(.95); box-shadow: var(--elev-2); }
-.btn-info { background: var(--info-color); color: #0b3653; }
-.btn-info:hover { filter: brightness(.95); box-shadow: var(--elev-2); }
-.btn-outline { background: #fff; border: 2px solid var(--primary-color); color: var(--primary-color); }
 .btn-outline:hover { background: var(--primary-color); color: #fff; }
 .btn-ghost { background: transparent; color: var(--dark); }
 .btn-ghost:hover { background: rgba(0,0,0,.03); }
@@ -2566,12 +2558,6 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
 .chip { display: inline-flex; align-items: center; gap: .35rem; padding: .25rem .5rem; border-radius: 999px; font-size: .8rem; background: rgba(99,102,241,.08); color: var(--dark); }
 .chip i { opacity: .9; }
 
-/* Utilities */
-.rounded-sm { border-radius: var(--radius-sm); }
-.rounded-md { border-radius: var(--radius-md); }
-.rounded-lg { border-radius: var(--radius-lg); }
-.shadow-1 { box-shadow: var(--elev-1); }
-.shadow-2 { box-shadow: var(--elev-2); }
 .shadow-3 { box-shadow: var(--elev-3); }
 .text-muted { color: var(--gray); }
 
@@ -3742,9 +3728,6 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
     font-size: 0.9rem;
 }
 
-.nav-item {
-    position: relative;
-}
 
 /* Feature Lock Modal Styling */
 .feature-locked-content {
@@ -4037,18 +4020,26 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
     pointer-events: auto;
     user-select: none;
     width: 100%;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0.08) 50%,
+        rgba(255, 255, 255, 0.04) 100%);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     color: var(--white);
-    padding: 0.875rem 1.25rem;
-    border-radius: var(--border-radius-sm);
+    padding: 1rem 1.25rem;
+    border-radius: 16px;
     font-weight: var(--font-weight-semibold);
     font-size: var(--font-size-sm);
-    transition: var(--transition-smooth);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.12),
+        0 2px 8px rgba(255, 255, 255, 0.1) inset,
+        0 1px 0 rgba(255, 255, 255, 0.2) inset;
     position: relative;
     overflow: hidden;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .auth-indicator .btn::before {
@@ -4057,17 +4048,49 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
     inset: 0;
     background: linear-gradient(
         135deg, 
-        rgba(255, 255, 255, 0.1) 0%, 
-        transparent 100%
+        rgba(255, 255, 255, 0.15) 0%, 
+        transparent 40%,
+        rgba(255, 255, 255, 0.08) 100%
     );
+    border-radius: inherit;
     pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.auth-indicator .btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.2), 
+        transparent);
+    transition: left 0.6s ease;
 }
 
 .auth-indicator .btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.18) 0%,
+        rgba(255, 255, 255, 0.12) 50%,
+        rgba(255, 255, 255, 0.08) 100%);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 
+        0 12px 40px rgba(0, 0, 0, 0.16),
+        0 4px 12px rgba(255, 255, 255, 0.15) inset,
+        0 1px 0 rgba(255, 255, 255, 0.3) inset;
+}
+
+.auth-indicator .btn:hover::after {
+    left: 100%;
+}
+
+.auth-indicator .btn:active {
+    transform: translateY(-1px) scale(1.01);
+    transition: all 0.1s ease;
 }
 
 .auth-form {
@@ -4177,17 +4200,24 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
-    padding: 1rem 1.25rem;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(12px);
-    border-radius: var(--border-radius-sm);
+    gap: 1rem;
+    padding: 1.125rem 1.5rem;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0.06) 50%,
+        rgba(255, 255, 255, 0.03) 100%);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-radius: 16px;
     margin: 0 1rem 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.1),
+        0 2px 8px rgba(255, 255, 255, 0.08) inset,
+        0 1px 0 rgba(255, 255, 255, 0.15) inset;
     position: relative;
     overflow: hidden;
-    transition: var(--transition-smooth);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .user-info::before {
@@ -4196,16 +4226,44 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
     inset: 0;
     background: linear-gradient(
         135deg, 
-        rgba(255, 255, 255, 0.1) 0%, 
-        transparent 100%
+        rgba(255, 255, 255, 0.12) 0%, 
+        transparent 35%,
+        rgba(255, 255, 255, 0.06) 100%
     );
+    border-radius: inherit;
     pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.user-info::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.15), 
+        transparent);
+    transition: left 0.6s ease;
 }
 
 .user-info:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.15) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.05) 100%);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 
+        0 12px 40px rgba(0, 0, 0, 0.15),
+        0 4px 12px rgba(255, 255, 255, 0.12) inset,
+        0 1px 0 rgba(255, 255, 255, 0.2) inset;
+}
+
+.user-info:hover::after {
+    left: 100%;
 }
 
 .user-info #userName {
@@ -4220,24 +4278,70 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
 
 .user-info #logoutBtn {
     font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-medium);
-    padding: 0.5rem 0.875rem;
-    background: rgba(239, 68, 68, 0.8);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: var(--border-radius-sm);
+    font-weight: var(--font-weight-semibold);
+    padding: 0.625rem 1rem;
+    background: linear-gradient(135deg, 
+        rgba(239, 68, 68, 0.9) 0%,
+        rgba(220, 38, 38, 0.8) 100%);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 12px;
     color: var(--white);
-    transition: var(--transition-smooth);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    z-index: 1;
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+    z-index: 2;
+    cursor: pointer;
+    box-shadow: 
+        0 4px 16px rgba(239, 68, 68, 0.25),
+        0 1px 0 rgba(255, 255, 255, 0.2) inset;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.user-info #logoutBtn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.15) 0%, 
+        transparent 50%);
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.user-info #logoutBtn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.25), 
+        transparent);
+    transition: left 0.4s ease;
 }
 
 .user-info #logoutBtn:hover {
-    background: rgba(220, 38, 38, 0.9);
-    border-color: rgba(220, 38, 38, 0.4);
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+    background: linear-gradient(135deg, 
+        rgba(220, 38, 38, 0.95) 0%,
+        rgba(185, 28, 28, 0.9) 100%);
+    border-color: rgba(220, 38, 38, 0.5);
+    transform: scale(1.06) translateY(-1px);
+    box-shadow: 
+        0 8px 24px rgba(220, 38, 38, 0.35),
+        0 2px 8px rgba(255, 255, 255, 0.15) inset;
+}
+
+.user-info #logoutBtn:hover::after {
+    left: 100%;
+}
+
+.user-info #logoutBtn:active {
+    transform: scale(1.02);
+    transition: all 0.1s ease;
 }
 
 .user-info i {
@@ -4532,11 +4636,6 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
     animation: pulse 2s infinite;
 }
 
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
-}
 
 /* Enhanced Plan Badge Styles for Different Contexts */
 /* .sidebar .plan-badge is already styled above with modern glassmorphism */
@@ -4711,30 +4810,6 @@ textarea:focus {
     100% { background-position: 200% 0; }
 }
 
-/* Enhanced Navigation Items */
-.nav-item {
-    border-radius: var(--border-radius-sm);
-    margin: 0.25rem 0.75rem;
-    transition: var(--transition);
-    position: relative;
-    overflow: hidden;
-}
-
-.nav-item::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.1),
-        transparent
-    );
-    transition: var(--transition);
-}
 
 .nav-item:hover::before {
     left: 100%;
@@ -5123,11 +5198,6 @@ textarea:focus {
     border-top: 2px solid transparent;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
 }
 
 /* ========================================
