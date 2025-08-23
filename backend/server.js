@@ -26,6 +26,9 @@ import { setupPassport } from './config/passport.js';
 import apiRouter from './routes/api/index.js';
 import marketingRouter from './routes/marketing/index.js';
 import adminRouter from './routes/admin/index.js';
+
+// Debug: Check if admin router loaded successfully
+console.log('Admin router loaded:', !!adminRouter, typeof adminRouter);
 import syncRouter from './routes/sync/index.js';
 import realtimeRouter from './routes/realtime/index.js';
 
@@ -246,6 +249,11 @@ app.get('/api/version', (req, res) => {
       marketing: true
     }
   });
+});
+
+// Test admin route directly in server (debug)
+app.get('/api/admin/test', (req, res) => {
+  res.json({ message: 'Direct admin test route working', timestamp: new Date().toISOString() });
 });
 
 // Mount routers with clear separation

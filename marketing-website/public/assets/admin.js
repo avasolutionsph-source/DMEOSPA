@@ -97,6 +97,14 @@ async function loadDashboard() {
             const apiAdminResponse = await fetch(`${apiBase}/api/admin`);
             console.log('API admin base status:', apiAdminResponse.status);
             
+            // Test direct admin route
+            const adminTestResponse = await fetch(`${apiBase}/api/admin/test`);
+            console.log('Direct admin test status:', adminTestResponse.status);
+            if (adminTestResponse.ok) {
+                const testData = await adminTestResponse.json();
+                console.log('Direct admin test data:', testData);
+            }
+            
         } catch (e) {
             console.log('Backend connectivity test failed:', e.message);
         }
