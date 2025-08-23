@@ -1,28 +1,12 @@
-<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#4f46e5;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:1" />
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
     </linearGradient>
   </defs>
-  
-  <!-- Background circle -->
-  <circle cx="256" cy="256" r="240" fill="url(#gradient)" stroke="#fff" stroke-width="16"/>
-  
-  <!-- Spa icon - stylized flower/leaf -->
-  <g transform="translate(256,256)">
-    <!-- Center dot -->
-    <circle cx="0" cy="0" r="16" fill="#fff"/>
-    
-    <!-- Petals/leaves -->
-    <ellipse cx="0" cy="-80" rx="32" ry="72" fill="#fff" opacity="0.9"/>
-    <ellipse cx="69" cy="-40" rx="32" ry="72" fill="#fff" opacity="0.8" transform="rotate(60)"/>
-    <ellipse cx="69" cy="40" rx="32" ry="72" fill="#fff" opacity="0.8" transform="rotate(120)"/>
-    <ellipse cx="0" cy="80" rx="32" ry="72" fill="#fff" opacity="0.9" transform="rotate(180)"/>
-    <ellipse cx="-69" cy="40" rx="32" ry="72" fill="#fff" opacity="0.8" transform="rotate(240)"/>
-    <ellipse cx="-69" cy="-40" rx="32" ry="72" fill="#fff" opacity="0.8" transform="rotate(300)"/>
-  </g>
-  
-  <!-- Text -->
-  <text x="256" y="440" font-family="Arial, sans-serif" font-size="56" font-weight="bold" text-anchor="middle" fill="#fff">AVA</text>
+  <circle cx="50" cy="50" r="45" fill="url(#grad)"/>
+  <path d="M30 35 Q50 20 70 35 Q50 50 30 35" fill="white" opacity="0.9"/>
+  <path d="M30 50 Q50 35 70 50 Q50 65 30 50" fill="white" opacity="0.7"/>
+  <path d="M30 65 Q50 50 70 65 Q50 80 30 65" fill="white" opacity="0.5"/>
 </svg>

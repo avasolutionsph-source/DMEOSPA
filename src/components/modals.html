@@ -16,7 +16,7 @@
                     <h3>Sign In to Your Account</h3>
                     <p class="text-muted">Access your spa management dashboard</p>
                 </div>
-                <form id="loginForm" onsubmit="event.preventDefault(); handleLogin(); return false;">
+                <form id="loginForm" onsubmit="event.preventDefault(); if(window.authSystem && window.authSystem.handleLogin) { window.authSystem.handleLogin(); } else { console.error('AuthSystem not available'); } return false;">
                     <div class="form-group">
                         <label>Email Address</label>
                         <input type="email" id="loginEmail" class="form-input" required placeholder="Enter your email">
@@ -32,11 +32,14 @@
                             Remember me on this device
                         </label>
                     </div>
-                    <button type="submit" id="loginBtn" class="btn btn-primary btn-full">
+                    <button type="submit" id="loginBtn" class="btn btn-primary btn-full" onclick="event.preventDefault(); if(window.authSystem && window.authSystem.handleLogin) { window.authSystem.handleLogin(); } else { console.error('AuthSystem not available'); } return false;">
                         <i class="fas fa-sign-in-alt"></i> Sign In
                     </button>
                     <button type="button" onclick="testLogin()" class="btn btn-secondary btn-full" style="margin-top: 10px;">
-                        🧪 Test Demo Login
+                        🧪 Test Super Admin Login
+                    </button>
+                    <button type="button" onclick="debugFormValues()" class="btn btn-outline btn-full" style="margin-top: 5px; font-size: 0.8rem;">
+                        🔍 Debug Form Values
                     </button>
                 </form>
                 <div class="auth-footer">
