@@ -83,6 +83,24 @@ async function loadDashboard() {
             throw new Error('No admin token found. Please login again.');
         }
         
+        // Test if backend is responding at all
+        console.log('Testing basic backend connectivity...');
+        try {
+            const healthResponse = await fetch(`${apiBase}/api/health`);
+            console.log('Health check status:', healthResponse.status);
+            
+            // Test if admin route base path exists
+            const adminBaseResponse = await fetch(`${apiBase}/admin`);
+            console.log('Admin base path status:', adminBaseResponse.status);
+            
+            // Test alternative admin paths
+            const apiAdminResponse = await fetch(`${apiBase}/api/admin`);
+            console.log('API admin base status:', apiAdminResponse.status);
+            
+        } catch (e) {
+            console.log('Backend connectivity test failed:', e.message);
+        }
+        
         // Load stats
         console.log('Fetching admin stats from:', `${apiBase}/api/admin/stats`);
         const statsResponse = await fetch(`${apiBase}/api/admin/stats`, {
