@@ -1456,5 +1456,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         return; // Auth check will handle redirect
     }
     
+    // Give the database and other systems more time to initialize
+    console.log('⏳ Waiting for systems to be ready before app initialization...');
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+    
     await window.initializeApp();
 });

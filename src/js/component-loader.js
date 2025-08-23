@@ -156,8 +156,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         const coreResults = await window.componentLoader.loadComponents(coreComponents);
         const coreLoaded = coreResults.filter(Boolean).length;
         
+        console.log(`📊 Component loading results:`, coreResults);
+        console.log(`✅ ${coreLoaded}/${coreComponents.length} core components loaded successfully`);
+        
+        // Check what actually got loaded
+        setTimeout(() => {
+            console.log('🔍 Component check after loading:');
+            console.log(`   - .app-container: ${!!document.querySelector('.app-container')}`);
+            console.log(`   - .sidebar: ${!!document.querySelector('.sidebar')}`);
+            console.log(`   - .main-content: ${!!document.querySelector('.main-content')}`);
+            console.log(`   - .nav-item count: ${document.querySelectorAll('.nav-item').length}`);
+        }, 100);
+        
         if (coreLoaded < coreComponents.length) {
             console.warn(`⚠️ Only ${coreLoaded}/${coreComponents.length} core components loaded`);
+            
+            // Wait a bit longer before creating fallbacks
+            await new Promise(resolve => setTimeout(resolve, 500));
             
             // Check which components failed and create fallbacks
             if (!document.querySelector('.sidebar')) {
@@ -202,7 +217,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const maxNavigationAttempts = 20;
         
         const setupNavigationWhenReady = async () => {
-            if (window.app && window.app.setupNavigation) {
+            // Check if sidebar is loaded first
+            const sidebarExists = document.querySelector('.sidebar');
+            const navItemsExist = document.querySelectorAll('.nav-item').length > 0;
+            
+            if (sidebarExists && navItemsExist && window.app && window.app.setupNavigation) {
                 console.log('🧭 Setting up navigation after component loading');
                 window.app.setupNavigation();
                 console.log('🧭 Navigation setup complete');
@@ -210,10 +229,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 navigationAttempts++;
                 if (navigationAttempts < maxNavigationAttempts) {
-                    console.log(`🧭 Waiting for app to be ready... (${navigationAttempts}/${maxNavigationAttempts})`);
-                    setTimeout(setupNavigationWhenReady, 200);
+                    console.log(`🧭 Waiting for components to be ready... (${navigationAttempts}/${maxNavigationAttempts})`);
+                    console.log(`   - Sidebar exists: ${!!sidebarExists}`);
+                    console.log(`   - Nav items exist: ${navItemsExist}`);
+                    console.log(`   - App ready: ${!!(window.app && window.app.setupNavigation)}`);
+                    setTimeout(setupNavigationWhenReady, 500); // Increased from 200ms to 500ms
                 } else {
-                    console.error('❌ Failed to set up navigation - app not ready');
+                    console.error('❌ Failed to set up navigation - components not ready');
                 }
                 return false;
             }

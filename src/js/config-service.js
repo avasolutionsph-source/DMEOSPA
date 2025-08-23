@@ -524,6 +524,11 @@ class ConfigurationService {
             version: 1
         };
 
+        // Ensure database is initialized before using raw db access
+        if (!window.db.db) {
+            await window.ensureDBInit();
+        }
+        
         const transaction = window.db.db.transaction(['config'], 'readwrite');
         const store = transaction.objectStore('config');
         
@@ -646,6 +651,11 @@ class ConfigurationService {
 
     async isMigrationComplete(migrationId) {
         if (!this.db) return false;
+        
+        // Ensure database is initialized before using raw db access
+        if (!window.db.db) {
+            await window.ensureDBInit();
+        }
 
         const transaction = window.db.db.transaction(['migrations'], 'readonly');
         const store = transaction.objectStore('migrations');
@@ -666,6 +676,11 @@ class ConfigurationService {
             version: 1
         };
 
+        // Ensure database is initialized before using raw db access
+        if (!window.db.db) {
+            await window.ensureDBInit();
+        }
+        
         const transaction = window.db.db.transaction(['migrations'], 'readwrite');
         const store = transaction.objectStore('migrations');
         
