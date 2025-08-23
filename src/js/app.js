@@ -144,6 +144,7 @@ class App {
         window.addEventListener('beforeunload', () => {
             this.cleanup();
         });
+    }
 
     // Clean up resources to prevent memory leaks
     cleanup() {

@@ -147,9 +147,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     try {
         // Load essential components first with error handling
+        // Load sidebar FIRST, then main-content to ensure proper DOM order
         const coreComponents = [
-            { name: 'main-content', target: '.app-container', append: false },
             { name: 'sidebar', target: '.app-container', append: true },
+            { name: 'main-content', target: '.app-container', append: true },
             { name: 'modals', target: 'body', append: true }
         ];
         
@@ -166,6 +167,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log(`   - .sidebar: ${!!document.querySelector('.sidebar')}`);
             console.log(`   - .main-content: ${!!document.querySelector('.main-content')}`);
             console.log(`   - .nav-item count: ${document.querySelectorAll('.nav-item').length}`);
+            
+            // Debug: Show actual DOM content
+            const appContainer = document.querySelector('.app-container');
+            console.log('📋 App container HTML:', appContainer?.innerHTML.substring(0, 200) + '...');
+            console.log('📋 App container children:', Array.from(appContainer?.children || []).map(c => c.tagName + '.' + c.className));
         }, 100);
         
         if (coreLoaded < coreComponents.length) {
