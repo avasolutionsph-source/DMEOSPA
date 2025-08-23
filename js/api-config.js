@@ -35,7 +35,7 @@
         CACHE_DURATION: 5 * 60 * 1000, // 5 minutes
         
         // Feature flags
-        ENABLE_WEBSOCKETS: true,
+        ENABLE_WEBSOCKETS: false, // Disabled until backend supports it
         ENABLE_OFFLINE_SYNC: true,
         ENABLE_STATE_PERSISTENCE: true,
         
