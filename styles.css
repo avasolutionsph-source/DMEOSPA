@@ -5059,3 +5059,168 @@ textarea:focus-visible {
         padding: 0.875rem 1rem;
     }
 }
+
+/* ========================================
+   IMMEDIATE VISIBLE ENHANCEMENTS
+   ========================================*/
+
+/* Enhanced Sidebar with Subtle Glow */
+.sidebar {
+    box-shadow: var(--shadow-xl), 0 0 40px rgba(30, 58, 138, 0.15);
+    transition: var(--transition);
+}
+
+/* More Prominent Card Shadows and Spacing */
+.dashboard-grid .stat-card,
+.main-content .card,
+[class*="card"] {
+    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    margin-bottom: 2rem;
+    transition: var(--transition-smooth);
+    border-radius: var(--border-radius);
+}
+
+/* Enhanced Header/Page Title Styling */
+.page h1,
+.page h2,
+.main-content h1,
+.main-content h2 {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+/* More Visible Button Enhancements */
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-dark) 100%);
+    box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+    transform: translateY(0);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
+}
+
+/* Enhanced Table Styling */
+table {
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    background: var(--white);
+}
+
+table thead th {
+    background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-100) 100%);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.5px;
+    padding: 1rem;
+}
+
+/* Enhanced Dashboard Stats Cards */
+.dashboard-stats .stat-card {
+    background: linear-gradient(135deg, var(--white) 0%, rgba(248, 250, 252, 0.8) 100%);
+    border: 1px solid rgba(30, 58, 138, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-stats .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+}
+
+/* Enhanced Modal Styling */
+.modal {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.modal-content {
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Enhanced Navigation Active States */
+.nav-item.active {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+    border-left: 4px solid var(--accent-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateX(4px);
+}
+
+/* Enhanced Form Inputs */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -5px rgba(30, 58, 138, 0.2);
+}
+
+/* Page Content Animation */
+.page {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Enhanced Status Indicators */
+.connection-status.online {
+    background: linear-gradient(135deg, var(--success-color) 0%, var(--emerald-light) 100%);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+}
+
+.connection-status.offline {
+    background: linear-gradient(135deg, var(--danger-color) 0%, var(--rose-light) 100%);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+/* Enhanced Loading States */
+.loading {
+    position: relative;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid var(--white);
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
