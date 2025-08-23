@@ -78,15 +78,31 @@
                     const user = JSON.parse(userData);
                     if (!user.email || !user.id) {
                         console.log('🚫 PWA Authentication Guard: Invalid user data structure');
-                        localStorage.clear();
-                        sessionStorage.clear();
+                        // Only clear auth-related data, not everything
+                        localStorage.removeItem('userToken');
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('userData');
+                        localStorage.removeItem('currentUser');
+                        localStorage.removeItem('isLoggedIn');
+                        sessionStorage.removeItem('userToken');
+                        sessionStorage.removeItem('authToken');
+                        sessionStorage.removeItem('userData');
+                        sessionStorage.removeItem('currentUser');
                         window.location.replace('login.html');
                         return;
                     }
                 } catch (error) {
                     console.log('🚫 PWA Authentication Guard: Corrupted user data');
-                    localStorage.clear();
-                    sessionStorage.clear();
+                    // Only clear auth-related data, not everything
+                    localStorage.removeItem('userToken');
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('userData');
+                    localStorage.removeItem('currentUser');
+                    localStorage.removeItem('isLoggedIn');
+                    sessionStorage.removeItem('userToken');
+                    sessionStorage.removeItem('authToken');
+                    sessionStorage.removeItem('userData');
+                    sessionStorage.removeItem('currentUser');
                     window.location.replace('login.html');
                     return;
                 }

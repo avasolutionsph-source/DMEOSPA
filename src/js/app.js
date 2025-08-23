@@ -1192,36 +1192,7 @@ class App {
     handleURLParameters() {
         const urlParams = new URLSearchParams(window.location.search);
         
-        // Check for login modal parameter
-        if (urlParams.get('showLogin') === 'true') {
-            console.log('🔑 URL parameter detected: showing login modal');
-            // Wait a bit for components to load, then show login modal
-            setTimeout(() => {
-                if (window.authSystem && window.authSystem.showLoginModal) {
-                    window.authSystem.showLoginModal();
-                } else {
-                    // Fallback to opening modal directly
-                    this.openModal('loginModal');
-                }
-                // Clear URL parameter
-                this.clearURLParameter('showLogin');
-            }, 500);
-        }
-        
-        // Check for signup modal parameter
-        if (urlParams.get('showSignup') === 'true') {
-            console.log('📝 URL parameter detected: showing signup modal');
-            setTimeout(() => {
-                if (window.authSystem && window.authSystem.showSignupModal) {
-                    window.authSystem.showSignupModal();
-                } else {
-                    // Fallback to opening modal directly
-                    this.openModal('signupModal');
-                }
-                // Clear URL parameter
-                this.clearURLParameter('showSignup');
-            }, 500);
-        }
+        // URL parameters for auth modals removed - PWA now uses dedicated login page
     }
     
     // Clear URL parameter without page reload
