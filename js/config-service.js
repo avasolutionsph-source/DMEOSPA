@@ -82,7 +82,7 @@ class ConfigurationService {
                 default: 'unpaid',
                 sources: ['localStorage:subscriptionPlan', 'currentUser:subscriptionPlan', 'hardcoded'],
                 type: 'string',
-                enum: ['unpaid', 'pro'],
+                enum: ['unpaid', 'basic', 'professional', 'enterprise'],
                 category: 'business'
             },
             

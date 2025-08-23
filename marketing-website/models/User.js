@@ -67,7 +67,7 @@ const userSchema = new mongoose.Schema({
   // Subscription info
   subscriptionPlan: {
     type: String,
-    enum: ['unpaid', 'pro'],
+    enum: ['unpaid', 'basic', 'professional', 'enterprise'],
     default: 'unpaid'
   },
   subscriptionStatus: {
