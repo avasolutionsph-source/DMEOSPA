@@ -4,17 +4,17 @@
 // PWA Application URL - Points to the main PWA application
 const PWA_URL = window.location.hostname === 'localhost' 
     ? '../index.html'  // Local development
-    : 'https://avasolutionsph-source.github.io/AvaSolutionsPH-August-8/index.html';  // Production PWA URL
+    : 'https://ava-solutions-pwa.netlify.app';  // Production PWA URL
 
 // Routing Functions
 function redirectToLogin() {
-    // Direct to the auth pages in the main repository
-    window.location.href = 'https://avasolutionsph-source.github.io/AvaSolutionsPH-August-8/auth/login.html';
+    // Direct to the PWA login page
+    window.location.href = PWA_URL + '/auth/login.html';
 }
 
 function redirectToSignup() {
-    // Direct to the auth pages in the main repository
-    window.location.href = 'https://avasolutionsph-source.github.io/AvaSolutionsPH-August-8/auth/signup.html';
+    // Direct to the PWA signup page
+    window.location.href = PWA_URL + '/auth/signup.html';
 }
 
 function redirectToApp() {
@@ -23,7 +23,7 @@ function redirectToApp() {
 
 function startFreeTrial(plan = 'professional') {
     // Track the selected plan and redirect to signup
-    window.location.href = `https://avasolutionsph-source.github.io/AvaSolutionsPH-August-8/auth/signup.html?plan=${plan}&trial=true`;
+    window.location.href = `${PWA_URL}/auth/signup.html?plan=${plan}&trial=true`;
 }
 
 function requestDemo() {
@@ -346,7 +346,7 @@ function showSuperAdminLogin() {
         // Simple admin key check (in production, this should be more secure)
         if (adminKey === 'avasolutions2024admin') {
             modal.remove();
-            window.location.href = 'https://avasolutionsph-source.github.io/AvaSolutionsPH-August-8/index.html?admin=true';
+            window.location.href = PWA_URL + '?admin=true';
         } else {
             showNotification('Invalid admin key', 'error');
         }
