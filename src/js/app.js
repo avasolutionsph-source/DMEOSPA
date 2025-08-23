@@ -209,22 +209,19 @@ class App {
 
     setupNavigation() {
         const navItems = document.querySelectorAll('.nav-item');
+        console.log(`🧭 Setting up navigation for ${navItems.length} items`);
+        
+        if (navItems.length === 0) {
+            console.warn('⚠️ No navigation items found - sidebar might not be loaded yet');
+            return;
+        }
+        
         if (window.logger) {
             window.logger.debug('Setting up navigation items', { 
                 category: 'APP', 
                 operation: 'navigation_setup',
                 data: { itemCount: navItems.length }
             });
-        } else {
-            if (window.logger) {
-                window.logger.info('Setting up navigation', {
-                    category: 'APP',
-                    operation: 'navigation_setup',
-                    data: { itemCount: navItems.length }
-                });
-            } else {
-                console.log(`🧭 Setting up navigation for ${navItems.length} items`);
-            }
         }
         
         navItems.forEach(item => {
@@ -1438,6 +1435,17 @@ window.initializeApp = async function() {
     if (!window.app) {
         window.app = new App();
         await window.app.init();
+    }
+};
+
+// Global function to manually setup navigation (for debugging)
+window.setupNavigation = function() {
+    console.log('🔧 Manual navigation setup requested');
+    if (window.app && window.app.setupNavigation) {
+        window.app.setupNavigation();
+        console.log('✅ Manual navigation setup complete');
+    } else {
+        console.error('❌ App not available for navigation setup');
     }
 };
 

@@ -524,7 +524,7 @@ class ConfigurationService {
             version: 1
         };
 
-        const transaction = window.db.transaction(['config'], 'readwrite');
+        const transaction = window.db.db.transaction(['config'], 'readwrite');
         const store = transaction.objectStore('config');
         
         return new Promise((resolve, reject) => {
@@ -647,7 +647,7 @@ class ConfigurationService {
     async isMigrationComplete(migrationId) {
         if (!this.db) return false;
 
-        const transaction = window.db.transaction(['migrations'], 'readonly');
+        const transaction = window.db.db.transaction(['migrations'], 'readonly');
         const store = transaction.objectStore('migrations');
         
         return new Promise((resolve) => {
@@ -666,7 +666,7 @@ class ConfigurationService {
             version: 1
         };
 
-        const transaction = window.db.transaction(['migrations'], 'readwrite');
+        const transaction = window.db.db.transaction(['migrations'], 'readwrite');
         const store = transaction.objectStore('migrations');
         
         return new Promise((resolve, reject) => {

@@ -197,11 +197,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             await initializeApp();
         }
         
-        // Reinitialize navigation after components are loaded
-        if (window.app && window.app.setupNavigation) {
-            window.app.setupNavigation();
-            console.log('🧭 Navigation reinitialized after component loading');
-        }
+        // Wait for app to be fully initialized before setting up navigation
+        let navigationAttempts = 0;
+        const maxNavigationAttempts = 20;
+        
+        const setupNavigationWhenReady = async () => {
+            if (window.app && window.app.setupNavigation) {
+                console.log('🧭 Setting up navigation after component loading');
+                window.app.setupNavigation();
+                console.log('🧭 Navigation setup complete');
+                return true;
+            } else {
+                navigationAttempts++;
+                if (navigationAttempts < maxNavigationAttempts) {
+                    console.log(`🧭 Waiting for app to be ready... (${navigationAttempts}/${maxNavigationAttempts})`);
+                    setTimeout(setupNavigationWhenReady, 200);
+                } else {
+                    console.error('❌ Failed to set up navigation - app not ready');
+                }
+                return false;
+            }
+        };
+        
+        await setupNavigationWhenReady();
     } catch (error) {
         console.error('❌ Error during component initialization:', error);
     }

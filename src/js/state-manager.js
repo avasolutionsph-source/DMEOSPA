@@ -520,7 +520,7 @@ class StateManager {
                 key: 'current',
                 ...stateSnapshot
             };
-            await window.db.put('state', stateData);
+            await window.db.update('state', stateData);
             
             // Also backup to localStorage for redundancy
             try {
