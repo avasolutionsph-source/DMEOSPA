@@ -2020,54 +2020,7 @@ a:hover {
     animation: aurora-shift 8s ease-in-out infinite;
 }
 
-/* Ultra-Premium Card System with Advanced Glassmorphism */
-.card, .panel {
-    background: var(--white);
-    border-radius: var(--border-radius-sm);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    border: 1px solid var(--gray-200);
-    transition: var(--transition-luxury);
-    position: relative;
-    overflow: hidden;
-}
-
-.card::after, .panel::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(
-        45deg,
-        transparent 40%,
-        rgba(255, 255, 255, 0.1) 50%,
-        transparent 60%
-    );
-    transform: rotate(45deg) translateX(-100%);
-    transition: var(--transition-luxury);
-    pointer-events: none;
-    opacity: 0;
-}
-
-.card.hoverable:hover, .panel.hoverable:hover { 
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    transform: translateY(-4px);
-    border-color: var(--gray-300);
-}
-
-/* Premium Card Variants */
-.card.premium {
-    background: var(--white);
-    border: 2px solid var(--primary-color);
-    box-shadow: 0 4px 16px rgba(30, 58, 138, 0.15);
-}
-
-.card.luxury {
-    background: var(--white);
-    border: 2px solid var(--secondary-color);
-    box-shadow: 0 4px 16px rgba(34, 211, 238, 0.15);
-}
+/* OLD CARD STYLES REMOVED - USING NEW FORCED STYLES INSTEAD */
 
 /* Enhanced Badges & Chips */
 .chip, .badge { 
@@ -5071,42 +5024,9 @@ textarea:focus-visible {
     border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
-/* More Prominent Card Shadows and Spacing */
-.dashboard-grid .stat-card,
-.main-content .card,
-[class*="card"] {
-    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    margin-bottom: 2rem;
-    transition: var(--transition-smooth);
-    border-radius: var(--border-radius);
-}
+/* OLD CARD SHADOWS REMOVED - USING FORCED STYLES AT END OF FILE */
 
-/* Enhanced Header/Page Title Styling */
-.page h1,
-.page h2,
-.main-content h1,
-.main-content h2 {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-weight: 700;
-    margin-bottom: 1.5rem;
-}
-
-/* More Visible Button Enhancements */
-.btn-primary {
-    background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-dark) 100%);
-    box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
-    transform: translateY(0);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.btn-primary:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
-}
+/* OLD HEADER AND BUTTON STYLES REMOVED - USING FORCED STYLES AT END */
 
 /* Enhanced Table Styling */
 table {
@@ -5125,23 +5045,7 @@ table thead th {
     padding: 1rem;
 }
 
-/* Enhanced Dashboard Stats Cards */
-.dashboard-stats .stat-card {
-    background: linear-gradient(135deg, var(--white) 0%, rgba(248, 250, 252, 0.8) 100%);
-    border: 1px solid rgba(30, 58, 138, 0.1);
-    position: relative;
-    overflow: hidden;
-}
-
-.dashboard-stats .stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-}
+/* OLD DASHBOARD STATS REMOVED - USING FORCED STYLES INSTEAD */
 
 /* Enhanced Modal Styling */
 .modal {
