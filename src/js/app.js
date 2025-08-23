@@ -121,7 +121,7 @@ class App {
         this.handleURLParameters();
         
         // Initialize page
-        this.showPage('dashboard');
+        await this.showPage('dashboard');
         
         // Set up modal close handlers
         this.setupModalHandlers();
@@ -293,7 +293,7 @@ class App {
         });
     }
 
-    showPage(pageName) {
+    async showPage(pageName) {
         if (window.logger) {
             window.logger.info('Navigating to page', { 
                 category: 'APP', 
@@ -1404,9 +1404,26 @@ window.refreshCurrentPage = async function() {
 
 // Global initialization function for component-loader
 window.initializeApp = async function() {
-    if (!window.app) {
-        window.app = new App();
-        await window.app.init();
+    try {
+        if (!window.app) {
+            console.log('🚀 Creating new App instance...');
+            window.app = new App();
+            console.log('📋 App instance created, methods available:', !!window.app.setupNavigation);
+            
+            console.log('⏳ Starting app initialization...');
+            await window.app.init();
+            console.log('✅ App initialization completed');
+            console.log('🔍 App methods after init:', {
+                setupNavigation: !!window.app.setupNavigation,
+                showPage: !!window.app.showPage,
+                init: !!window.app.init
+            });
+        } else {
+            console.log('📋 App already exists, skipping initialization');
+        }
+    } catch (error) {
+        console.error('❌ Error during app initialization:', error);
+        throw error;
     }
 };
 

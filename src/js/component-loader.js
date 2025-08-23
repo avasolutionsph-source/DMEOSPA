@@ -215,12 +215,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Initialize app after components are loaded
         if (typeof initializeApp === 'function') {
-            await initializeApp();
+            try {
+                console.log('📋 Component loader calling initializeApp...');
+                await initializeApp();
+                console.log('✅ initializeApp completed successfully');
+                
+                // Give a small delay to ensure everything is ready
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (error) {
+                console.error('❌ Error during app initialization from component loader:', error);
+            }
+        } else {
+            console.warn('⚠️ initializeApp function not available');
         }
         
         // Wait for app to be fully initialized before setting up navigation
         let navigationAttempts = 0;
-        const maxNavigationAttempts = 40; // Increased attempts
+        const maxNavigationAttempts = 20; // Reduced since we improved initialization
         
         const setupNavigationWhenReady = async () => {
             // Check if sidebar is loaded first
@@ -230,12 +241,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log(`🧭 Navigation setup attempt ${navigationAttempts + 1}/${maxNavigationAttempts}`);
             console.log(`   - Sidebar exists: ${!!sidebarExists}`);
             console.log(`   - Nav items count: ${document.querySelectorAll('.nav-item').length}`);
-            console.log(`   - App ready: ${!!(window.app && window.app.setupNavigation)}`);
+            console.log(`   - window.app exists: ${!!window.app}`);
+            console.log(`   - window.app.setupNavigation exists: ${!!(window.app && window.app.setupNavigation)}`);
+            console.log(`   - typeof window.app.setupNavigation: ${window.app ? typeof window.app.setupNavigation : 'N/A'}`);
             
-            if (sidebarExists && navItemsExist && window.app && window.app.setupNavigation) {
+            if (sidebarExists && navItemsExist && window.app && typeof window.app.setupNavigation === 'function') {
                 console.log('🧭 All conditions met, setting up navigation...');
-                window.app.setupNavigation();
-                console.log('🧭 Navigation setup complete');
+                try {
+                    window.app.setupNavigation();
+                    console.log('🧭 Navigation setup complete');
+                } catch (error) {
+                    console.error('❌ Error during navigation setup:', error);
+                    return false;
+                }
                 
                 // Verify navigation was set up correctly
                 setTimeout(() => {
