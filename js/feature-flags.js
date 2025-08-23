@@ -117,7 +117,7 @@ class FeatureFlagSystem {
 
     async waitForDependencies() {
         let attempts = 0;
-        const maxAttempts = 50;
+        const maxAttempts = 20; // Reduced from 50 to 20 (2 seconds instead of 5)
         
         while (attempts < maxAttempts) {
             if (window.config?.isInitialized && window.logger) {

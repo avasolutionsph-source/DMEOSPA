@@ -330,10 +330,16 @@ class SettingsManager {
 
             // Get statistics
             const logs = await window.logger.exportLogs();
-            const errorReport = await window.logger.getErrorReport();
             
             if (totalLogsEl) totalLogsEl.textContent = logs.length.toLocaleString();
-            if (errorsEl) errorsEl.textContent = errorReport.totalErrors.toLocaleString();
+            
+            // Count errors from logs
+            if (errorsEl) {
+                const errorCount = logs.filter(log => 
+                    log.level === 'ERROR' || log.level === 'CRITICAL'
+                ).length;
+                errorsEl.textContent = errorCount.toLocaleString();
+            }
 
             // Estimate storage usage
             if (storageEl) {

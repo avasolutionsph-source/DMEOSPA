@@ -118,6 +118,29 @@ class AuthSystem {
         if (registerForm) registerForm.style.display = 'none';
     }
 
+    // Show login modal (called from sync system and other components)
+    showLoginModal() {
+        console.log('🔐 AuthSystem.showLoginModal called');
+        
+        // Show the auth modal
+        const modal = document.getElementById('authModal');
+        if (modal) {
+            modal.style.display = 'block';
+            modal.classList.add('show');
+        }
+        
+        // Make sure login form is visible (not register)
+        this.showLoginForm();
+        
+        // Focus on email field for better UX
+        setTimeout(() => {
+            const emailField = document.getElementById('loginEmail');
+            if (emailField) {
+                emailField.focus();
+            }
+        }, 100);
+    }
+
     showRegisterForm() {
         const loginForm = document.getElementById('loginForm');
         const registerForm = document.getElementById('registerForm');

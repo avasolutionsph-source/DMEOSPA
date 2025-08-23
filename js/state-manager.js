@@ -473,7 +473,7 @@ class StateManager {
     
     // Wait for dependencies
     async waitForDependencies() {
-        const maxAttempts = 50;
+        const maxAttempts = 20; // Reduced from 50 to 20 (2 seconds instead of 5)
         let attempts = 0;
         
         while (attempts < maxAttempts) {
