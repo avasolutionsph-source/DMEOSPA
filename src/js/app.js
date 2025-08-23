@@ -313,15 +313,23 @@ class App {
             // Load page-specific data
             this.loadPageData(pageName);
         } else {
-            if (window.logger) {
-                window.logger.error('Page element not found', { 
-                    category: 'APP', 
-                    operation: 'page_navigation',
-                    error: { message: 'Page element not found', page: pageName }
-                });
-            } else {
-                console.error(`Page element not found: ${pageName}`);
-            }
+            // Page element not loaded yet, wait for components to load
+            console.log(`Page element not found: ${pageName}, waiting for components to load...`);
+            
+            // Check for component loading
+            const checkForPage = () => {
+                const page = document.getElementById(pageName);
+                if (page) {
+                    page.classList.add('active');
+                    this.loadPageData(pageName);
+                } else {
+                    // Try again after a short delay
+                    setTimeout(checkForPage, 500);
+                }
+            };
+            
+            // Start checking after a brief delay
+            setTimeout(checkForPage, 100);
         }
     }
 
@@ -628,8 +636,15 @@ class App {
         try {
             const setting = await window.db.get('settings', 'businessName');
             if (setting && setting.value) {
-                document.getElementById('businessName').textContent = setting.value;
-                document.title = `${setting.value} - Business Management System`;
+                const businessNameEl = document.getElementById('businessName');
+                if (businessNameEl) {
+                    businessNameEl.textContent = setting.value;
+                    document.title = `${setting.value} - Business Management System`;
+                } else {
+                    // Element not loaded yet, try again after components load
+                    console.log('Business name element not found, will retry after components load');
+                    setTimeout(() => this.loadBusinessName(), 1000);
+                }
             }
         } catch (error) {
             if (window.logger) {

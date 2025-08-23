@@ -33,24 +33,24 @@
     </div>
 
     <!-- Component Loader - Loads all HTML components -->
-    <script src="src/js/component-loader.js"></script>
+    <script type="module" src="src/js/component-loader.js"></script>
     
-    <!-- Core Application Scripts -->
-    <script src="src/js/config-service.js"></script>
-    <script src="src/js/database.js"></script>
-    <script src="src/js/auth.js"></script>
-    <script src="src/js/state-manager.js"></script>
-    <script src="src/js/sync.js"></script>
-    <script src="src/js/dashboard.js"></script>
-    <script src="src/js/pos.js"></script>
-    <script src="src/js/products.js"></script>
-    <script src="src/js/inventory.js"></script>
-    <script src="src/js/employees.js"></script>
-    <script src="src/js/rooms.js"></script>
-    <script src="src/js/gift-certificates.js"></script>
-    <script src="src/js/chatbot.js"></script>
-    <script src="src/js/settings.js"></script>
-    <script src="src/js/app.js"></script>
+    <!-- Core Application Scripts - Load as modules to fix import errors -->
+    <script type="module" src="src/js/config-service.js"></script>
+    <script type="module" src="src/js/database.js"></script>
+    <script type="module" src="src/js/auth.js"></script>
+    <script type="module" src="src/js/state-manager.js"></script>
+    <script type="module" src="src/js/sync.js"></script>
+    <script type="module" src="src/js/dashboard.js"></script>
+    <script type="module" src="src/js/pos.js"></script>
+    <script type="module" src="src/js/products.js"></script>
+    <script type="module" src="src/js/inventory.js"></script>
+    <script type="module" src="src/js/employees.js"></script>
+    <script type="module" src="src/js/rooms.js"></script>
+    <script type="module" src="src/js/gift-certificates.js"></script>
+    <script type="module" src="src/js/chatbot.js"></script>
+    <script type="module" src="src/js/settings.js"></script>
+    <script type="module" src="src/js/app.js"></script>
 
     <!-- CRITICAL: Authentication Check Before Everything Else -->
     <script>
