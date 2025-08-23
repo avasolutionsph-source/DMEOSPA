@@ -4,187 +4,386 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contact Us - Ava Solutions</title>
-    <meta name="description" content="Get in touch with Ava Solutions. We're here to help transform your spa business.">
-    <link rel="stylesheet" href="css/marketing.css">
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="icon" type="image/svg+xml" href="images/icon.svg">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/marketing.css">
+
+    <style>
+        .contact-header {
+            background: var(--gradient);
+            color: white;
+            padding: 120px 0 80px;
+            text-align: center;
+        }
+
+        .contact-hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .contact-hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .contact {
+            padding: 80px 0;
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            margin-top: 2rem;
+        }
+
+        .contact-info {
+            background: var(--bg-light);
+            padding: 2rem;
+            border-radius: 1rem;
+            height: fit-content;
+        }
+
+        .contact-item {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .contact-item i {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-top: 0.25rem;
+        }
+
+        .contact-item h4 {
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+        }
+
+        .contact-item p {
+            margin-bottom: 0.25rem;
+            color: var(--text-light);
+        }
+
+        .contact-form {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-textarea {
+            resize: vertical;
+        }
+
+        .success-message,
+        .error-message {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        .success-message {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .social-icons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .social-icons a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+
+        .social-icons a:hover {
+            background: var(--primary-dark);
+        }
+
+        .faq {
+            background: var(--bg-light);
+            padding: 80px 0;
+        }
+
+        .faq h2 {
+            text-align: center;
+            margin-bottom: 3rem;
+            font-size: 2.5rem;
+        }
+
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .faq-item {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+        }
+
+        .faq-item h3 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .faq-item p {
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .contact-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .contact-hero h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-brand">
-                <a href="index.html" style="text-decoration: none; color: inherit; display: flex; align-items: center;">
-                    <img src="images/icon.svg" alt="Ava Solutions" style="width: 32px; height: 32px; margin-right: 8px;">
-                    <h2>Ava Solutions</h2>
-                </a>
+                <i class="fas fa-spa"></i>
+                <span>Ava Solutions</span>
             </div>
-            <ul class="nav-menu">
-                <li><a href="index.html#features">Features</a></li>
-                <li><a href="pricing.html">Pricing</a></li>
-                <li><a href="contact.html">Contact</a></li>
-                <li><a href="#" class="btn-login" onclick="redirectToLogin()">Login</a></li>
-            </ul>
-            <div class="hamburger">
-                <span></span>
-                <span></span>
-                <span></span>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="pricing.html">Pricing</a>
+                <a href="index.html#features">Features</a>
+                <a href="contact.html">Contact</a>
+                <div class="nav-auth" id="navAuth">
+                    <a href="#" onclick="redirectToLogin()" class="btn-secondary">Login</a>
+                    <a href="#" onclick="redirectToSignup()" class="btn-primary">Get Started</a>
+                </div>
             </div>
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section class="hero">
+    <!-- Contact Header -->
+    <section class="contact-header">
         <div class="container">
-            <div class="section-header">
+            <div class="contact-hero">
                 <h1>Get in Touch</h1>
-                <p>Ready to transform your spa business? We're here to help you every step of the way.</p>
+                <p>Have questions about Ava Solutions? We're here to help you transform your spa business.</p>
             </div>
         </div>
     </section>
 
     <!-- Contact Section -->
-    <section class="contact" style="padding-top: 0;">
+    <section class="contact">
         <div class="container">
-            <div class="contact-grid">
-                <div class="contact-info">
-                    <h3>Let's Talk</h3>
-                    <p style="margin-bottom: 2rem; color: var(--gray-600);">Whether you have questions about our features, pricing, or need help getting started, our team is ready to assist you.</p>
-                    
-                    <div class="contact-item">
-                        <i class="fas fa-envelope"></i>
-                        <div>
-                            <strong>Email Us</strong><br>
-                            <a href="mailto:hello@avasolutions.com" style="color: var(--primary-color); text-decoration: none;">hello@avasolutions.com</a>
+            <div class="contact-content">
+                <div class="contact-grid">
+                    <div class="contact-info">
+                        <h2>Contact Information</h2>
+                        <p>Reach out to us through any of these channels</p>
+                        
+                        <div class="contact-item">
+                            <i class="fas fa-envelope"></i>
+                            <div>
+                                <h4>Email Support</h4>
+                                <p>support@avasolutions.ph</p>
+                                <p>sales@avasolutions.ph</p>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <i class="fas fa-phone"></i>
+                            <div>
+                                <h4>Phone Support</h4>
+                                <p>+63 (2) 123-4567</p>
+                                <p>+63 917 123 4567</p>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div>
+                                <h4>Office Location</h4>
+                                <p>123 Business Center</p>
+                                <p>Makati City, Philippines</p>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <i class="fas fa-clock"></i>
+                            <div>
+                                <h4>Business Hours</h4>
+                                <p>Monday - Friday: 9 AM - 6 PM</p>
+                                <p>Saturday: 10 AM - 2 PM</p>
+                            </div>
+                        </div>
+                        
+                        <div class="social-links">
+                            <h4>Follow Us</h4>
+                            <div class="social-icons">
+                                <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+                                <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                                <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                                <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="contact-item">
-                        <i class="fas fa-phone"></i>
-                        <div>
-                            <strong>Call Us</strong><br>
-                            <a href="tel:+15551234567" style="color: var(--primary-color); text-decoration: none;">+1 (555) 123-4567</a><br>
-                            <small style="color: var(--gray-500);">Mon-Fri, 9am-6pm EST</small>
+                    <div class="contact-form">
+                        <h2>Send Us a Message</h2>
+                        <p>Fill out the form below and we'll get back to you within 24 hours</p>
+                        
+                        <div class="success-message" id="contactSuccess" style="display: none;">
+                            Message sent successfully! We'll get back to you soon.
                         </div>
-                    </div>
-                    
-                    <div class="contact-item">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <div>
-                            <strong>Visit Us</strong><br>
-                            123 Business Avenue<br>
-                            Suite 100<br>
-                            City, State 12345
+                        <div class="error-message" id="contactError" style="display: none;">
+                            Failed to send message. Please try again.
                         </div>
-                    </div>
-                    
-                    <div class="contact-item">
-                        <i class="fas fa-clock"></i>
-                        <div>
-                            <strong>Response Time</strong><br>
-                            We typically respond within<br>
-                            <strong>24 hours</strong>
-                        </div>
+                        
+                        <form id="contactForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">First Name</label>
+                                    <input type="text" class="form-input" name="firstName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Last Name</label>
+                                    <input type="text" class="form-input" name="lastName" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" class="form-input" name="email" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" class="form-input" name="phone" placeholder="+63 XXX XXX XXXX">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Business Name</label>
+                                <input type="text" class="form-input" name="businessName" placeholder="Your Spa/Salon Name">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Subject</label>
+                                <select class="form-select" name="subject" required>
+                                    <option value="">Select a topic</option>
+                                    <option value="sales">Sales Inquiry</option>
+                                    <option value="support">Technical Support</option>
+                                    <option value="demo">Request Demo</option>
+                                    <option value="pricing">Pricing Questions</option>
+                                    <option value="partnership">Partnership Opportunity</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Message</label>
+                                <textarea class="form-textarea" name="message" rows="5" placeholder="Tell us how we can help you..." required></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn-primary btn-full">
+                                <i class="fas fa-paper-plane"></i> Send Message
+                            </button>
+                        </form>
                     </div>
                 </div>
-                
-                <form class="contact-form" id="contactForm">
-                    <h3 style="margin-bottom: 1.5rem; color: var(--gray-900);">Send us a Message</h3>
-                    
-                    <div class="form-group">
-                        <label for="name">Full Name *</label>
-                        <input type="text" id="name" name="name" required placeholder="Your full name">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="email">Email Address *</label>
-                        <input type="email" id="email" name="email" required placeholder="your@email.com">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="phone">Phone Number</label>
-                        <input type="tel" id="phone" name="phone" placeholder="+1 (555) 123-4567">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="business">Business Name</label>
-                        <input type="text" id="business" name="business" placeholder="Your spa or business name">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="subject">Subject</label>
-                        <select id="subject" name="subject" style="width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius); font-size: 1rem;">
-                            <option value="general">General Inquiry</option>
-                            <option value="demo">Request a Demo</option>
-                            <option value="pricing">Pricing Questions</option>
-                            <option value="support">Technical Support</option>
-                            <option value="partnership">Partnership</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="message">Message *</label>
-                        <textarea id="message" name="message" rows="5" required placeholder="Tell us how we can help you..."></textarea>
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: 2rem;">
-                        <label style="display: flex; align-items: flex-start; cursor: pointer;">
-                            <input type="checkbox" id="newsletter" name="newsletter" style="margin-right: 0.75rem; margin-top: 0.25rem;">
-                            <span style="color: var(--gray-600); font-size: 0.875rem;">
-                                I'd like to receive updates about Ava Solutions features and spa industry insights
-                            </span>
-                        </label>
-                    </div>
-                    
-                    <button type="submit" class="btn-primary">Send Message</button>
-                    
-                    <p style="margin-top: 1rem; font-size: 0.875rem; color: var(--gray-500);">
-                        By submitting this form, you agree to our privacy policy and terms of service.
-                    </p>
-                </form>
             </div>
         </div>
     </section>
 
-    <!-- Alternative Contact Methods -->
-    <section style="padding: 60px 0; background: var(--gray-50);">
+    <!-- FAQ Section -->
+    <section class="faq">
         <div class="container">
-            <div class="section-header" style="margin-bottom: 3rem;">
-                <h2>Other Ways to Connect</h2>
-                <p>Choose the method that works best for you</p>
-            </div>
-            
-            <div class="features-grid" style="max-width: 900px; margin: 0 auto;">
-                <div class="feature-card" style="cursor: pointer;" onclick="redirectToApp()">
-                    <div class="feature-icon">
-                        <i class="fas fa-play"></i>
-                    </div>
-                    <h3>Live Demo</h3>
-                    <p>See Ava Solutions in action with a personalized demo of all features.</p>
-                    <button class="btn-outline" style="margin-top: 1rem;">Schedule Demo</button>
+            <h2>Frequently Asked Questions</h2>
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <h3>How quickly can I get started?</h3>
+                    <p>You can start using Ava Solutions immediately after registration. Our PWA works instantly on any device with a browser.</p>
                 </div>
-                
-                <div class="feature-card" style="cursor: pointer;" onclick="redirectToApp()">
-                    <div class="feature-icon">
-                        <i class="fas fa-rocket"></i>
-                    </div>
-                    <h3>Free Trial</h3>
-                    <p>Start your 14-day free trial and explore all features with your own data.</p>
-                    <button class="btn-outline" style="margin-top: 1rem;">Start Free Trial</button>
+                <div class="faq-item">
+                    <h3>Do I need technical knowledge?</h3>
+                    <p>Not at all! Ava Solutions is designed to be user-friendly. We provide training and support to help you get started.</p>
                 </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-life-ring"></i>
-                    </div>
-                    <h3>Help Center</h3>
-                    <p>Browse our comprehensive guides, tutorials, and frequently asked questions.</p>
-                    <button class="btn-outline" style="margin-top: 1rem;" onclick="redirectToApp()">View Help Center</button>
+                <div class="faq-item">
+                    <h3>What kind of support do you offer?</h3>
+                    <p>We offer email support for all plans, phone support for Pro plans, and dedicated support for Enterprise customers.</p>
+                </div>
+                <div class="faq-item">
+                    <h3>Can I import my existing data?</h3>
+                    <p>Yes! We provide tools and assistance to help you import your existing products, inventory, and employee data.</p>
                 </div>
             </div>
         </div>
@@ -195,35 +394,106 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-brand">
-                    <h3>Ava Solutions</h3>
-                    <p>Transforming spa businesses worldwide</p>
+                    <div class="brand">
+                        <i class="fas fa-spa"></i>
+                        <span>Ava Solutions</span>
+                    </div>
+                    <p>Intelligent business management system that works offline and grows with your business.</p>
                 </div>
                 <div class="footer-links">
                     <div class="footer-column">
                         <h4>Product</h4>
                         <a href="index.html#features">Features</a>
                         <a href="pricing.html">Pricing</a>
-                        <a href="#" onclick="redirectToApp()">Demo</a>
+                        <a href="#" onclick="redirectToApp()">Download App</a>
+                        <a href="#" onclick="requestDemo()">Request Demo</a>
                     </div>
                     <div class="footer-column">
                         <h4>Company</h4>
+                        <a href="contact.html">About Us</a>
                         <a href="contact.html">Contact</a>
-                        <a href="#" onclick="redirectToApp()">Support</a>
-                        <a href="#" onclick="redirectToApp()">Privacy</a>
+                        <a href="#" onclick="redirectToApp()">Careers</a>
+                        <a href="#" onclick="redirectToApp()">Blog</a>
                     </div>
                     <div class="footer-column">
-                        <h4>Connect</h4>
-                        <a href="#" onclick="redirectToApp()">Login</a>
-                        <a href="#" onclick="redirectToApp()">Sign Up</a>
+                        <h4>Support</h4>
+                        <a href="#" onclick="redirectToApp()">Help Center</a>
+                        <a href="#" onclick="redirectToApp()">Documentation</a>
+                        <a href="#" onclick="redirectToApp()">Training</a>
+                        <a href="#" onclick="redirectToApp()">System Status</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Legal</h4>
+                        <a href="#" onclick="redirectToApp()">Privacy Policy</a>
+                        <a href="#" onclick="redirectToApp()">Terms of Service</a>
+                        <a href="#" onclick="redirectToApp()">Security</a>
+                        <a href="#" onclick="redirectToApp()">Compliance</a>
                     </div>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 Ava Solutions. All rights reserved.</p>
+                <p>&copy; 2024 Ava Solutions Philippines. All rights reserved.</p>
+                <div class="footer-legal">
+                    <a href="#" onclick="redirectToApp()">Privacy Policy</a>
+                    <a href="#" onclick="redirectToApp()">Terms of Service</a>
+                </div>
             </div>
         </div>
     </footer>
 
+    <script>
+        document.getElementById('contactForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {
+                firstName: formData.get('firstName'),
+                lastName: formData.get('lastName'),
+                email: formData.get('email'),
+                phone: formData.get('phone'),
+                businessName: formData.get('businessName'),
+                subject: formData.get('subject'),
+                message: formData.get('message')
+            };
+            
+            try {
+                // In production, send to your API
+                // const response = await fetch('/api/contact', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify(data)
+                // });
+                
+                // For now, simulate success
+                showSuccess('Message sent successfully! We\'ll get back to you within 24 hours.');
+                e.target.reset();
+            } catch (error) {
+                showError('Failed to send message. Please try again or email us directly.');
+            }
+        });
+        
+        function showSuccess(message) {
+            const successEl = document.getElementById('contactSuccess');
+            successEl.textContent = message;
+            successEl.style.display = 'block';
+            document.getElementById('contactError').style.display = 'none';
+            
+            setTimeout(() => {
+                successEl.style.display = 'none';
+            }, 5000);
+        }
+        
+        function showError(message) {
+            const errorEl = document.getElementById('contactError');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            document.getElementById('contactSuccess').style.display = 'none';
+            
+            setTimeout(() => {
+                errorEl.style.display = 'none';
+            }, 5000);
+        }
+    </script>
     <script src="js/main.js"></script>
 </body>
 </html>

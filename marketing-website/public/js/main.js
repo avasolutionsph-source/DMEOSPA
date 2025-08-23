@@ -1,233 +1,235 @@
 // Ava Solutions Marketing Website JavaScript
-// No ES6 modules - pure JavaScript for compatibility
+// Navigation and Routing Functions
 
-// Configuration - Use environment variables with fallbacks
+// PWA Application URL - Update this to your deployed PWA URL
 const PWA_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:3002' 
-    : 'https://ava-solutions-pwa.netlify.app';
-const API_BASE = window.location.hostname === 'localhost'
-    ? 'http://localhost:3000'
-    : 'https://ava-pwa-backend.onrender.com';
+    ? '../index.html'  // Local development
+    : 'https://your-pwa-app.netlify.app/index.html';  // Production PWA URL
 
-// Marketing website URLs
-const MARKETING_URLS = {
-    login: `${PWA_URL}/auth/login`,
-    signup: `${PWA_URL}/auth/signup`,
-    demo: `${PWA_URL}/demo`,
-    app: PWA_URL
-};
-
-// Enhanced redirect functions
-function redirectToApp() {
-    console.log('🚀 Redirecting to PWA:', PWA_URL);
-    trackEvent('cta_click', { action: 'redirect_to_app', source: 'general' });
-    window.location.href = PWA_URL;
-}
-
+// Routing Functions
 function redirectToLogin() {
-    console.log('🔑 Redirecting to login:', MARKETING_URLS.login);
-    trackEvent('auth_click', { action: 'login', source: 'marketing' });
-    window.location.href = MARKETING_URLS.login;
+    // Check if we're in development or production
+    if (window.location.hostname === 'localhost') {
+        window.location.href = '../auth/login.html';
+    } else {
+        window.location.href = PWA_URL + '?action=login';
+    }
 }
 
 function redirectToSignup() {
-    console.log('📝 Redirecting to signup:', MARKETING_URLS.signup);
-    trackEvent('auth_click', { action: 'signup', source: 'marketing' });
-    window.location.href = MARKETING_URLS.signup;
+    // Check if we're in development or production  
+    if (window.location.hostname === 'localhost') {
+        window.location.href = '../auth/signup.html';
+    } else {
+        window.location.href = PWA_URL + '?action=signup';
+    }
 }
 
-function startFreeTrial() {
-    console.log('🎉 Starting free trial:', MARKETING_URLS.signup);
-    trackEvent('conversion', { action: 'free_trial', source: 'marketing' });
-    window.location.href = MARKETING_URLS.signup;
+function redirectToApp() {
+    window.location.href = PWA_URL;
+}
+
+function startFreeTrial(plan = 'professional') {
+    // Track the selected plan and redirect to signup
+    if (window.location.hostname === 'localhost') {
+        window.location.href = `../auth/signup.html?plan=${plan}&trial=true`;
+    } else {
+        window.location.href = PWA_URL + `?action=signup&plan=${plan}&trial=true`;
+    }
 }
 
 function requestDemo() {
-    console.log('👁️ Requesting demo:', MARKETING_URLS.demo);
-    trackEvent('lead_generation', { action: 'demo_request', source: 'marketing' });
-    window.location.href = MARKETING_URLS.demo;
+    // Redirect to contact page with demo inquiry pre-selected
+    window.location.href = 'contact.html?subject=demo';
 }
 
-// Smooth scroll to section
-function scrollToSection(sectionId) {
-    const element = document.getElementById(sectionId);
-    if (element) {
-        element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
+// Navigation Enhancement
+document.addEventListener('DOMContentLoaded', function() {
+    // Smooth scrolling for anchor links
+    const anchorLinks = document.querySelectorAll('a[href^="#"]');
+    anchorLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
         });
-    }
-}
+    });
 
-// Mobile navigation toggle
-function toggleMobileNav() {
-    const navMenu = document.querySelector('.nav-menu');
-    const hamburger = document.querySelector('.hamburger');
-    
-    navMenu.classList.toggle('active');
-    hamburger.classList.toggle('active');
-}
+    // Navbar scroll effect
+    const navbar = document.querySelector('.navbar');
+    let lastScrollTop = 0;
 
-// Contact form handling
-async function handleContactForm(event) {
-    event.preventDefault();
-    
-    const form = event.target;
-    const formData = new FormData(form);
-    const submitButton = form.querySelector('button[type="submit"]');
-    const originalText = submitButton.textContent;
-    
-    // Show loading state
-    submitButton.textContent = 'Sending...';
-    submitButton.disabled = true;
-    submitButton.classList.add('loading');
-    
-    try {
-        const contactData = {
-            name: formData.get('name'),
-            email: formData.get('email'),
-            phone: formData.get('phone'),
-            business: formData.get('business'),
-            message: formData.get('message'),
-            source: 'marketing-website',
-            timestamp: new Date().toISOString()
-        };
+    window.addEventListener('scroll', function() {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         
-        const response = await fetch(`${API_BASE}/api/contact`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(contactData)
-        });
-        
-        const result = await response.json();
-        
-        if (result.success || response.ok) {
-            // Success
-            showNotification('Thank you! Your message has been sent successfully. We\'ll get back to you soon.', 'success');
-            form.reset();
+        if (scrollTop > 100) {
+            navbar.classList.add('scrolled');
         } else {
-            throw new Error(result.error?.message || 'Failed to send message');
+            navbar.classList.remove('scrolled');
+        }
+
+        // Hide/show navbar on scroll
+        if (scrollTop > lastScrollTop && scrollTop > 200) {
+            navbar.style.transform = 'translateY(-100%)';
+        } else {
+            navbar.style.transform = 'translateY(0)';
         }
         
-    } catch (error) {
-        console.error('Contact form error:', error);
-        showNotification('Sorry, there was an error sending your message. Please try again or email us directly.', 'error');
-    } finally {
-        // Reset button state
-        submitButton.textContent = originalText;
-        submitButton.disabled = false;
-        submitButton.classList.remove('loading');
+        lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+    });
+
+    // Mobile navigation toggle
+    const navToggle = document.getElementById('navToggle');
+    const navLinks = document.querySelector('.nav-links');
+
+    if (navToggle) {
+        navToggle.addEventListener('click', function() {
+            navLinks.classList.toggle('active');
+            navToggle.classList.toggle('active');
+        });
     }
+
+    // Contact form subject pre-selection from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const subject = urlParams.get('subject');
+    if (subject) {
+        const subjectSelect = document.querySelector('select[name="subject"]');
+        if (subjectSelect) {
+            subjectSelect.value = subject;
+        }
+    }
+
+    // Plan parameter handling for pricing page
+    const plan = urlParams.get('plan');
+    if (plan && window.location.pathname.includes('pricing')) {
+        highlightPlan(plan);
+    }
+
+    // Animation on scroll
+    observeElements();
+});
+
+// Plan highlighting for pricing page
+function highlightPlan(planName) {
+    const plans = document.querySelectorAll('.pricing-card');
+    plans.forEach(plan => {
+        if (plan.textContent.toLowerCase().includes(planName.toLowerCase())) {
+            plan.style.transform = 'scale(1.05)';
+            plan.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.15)';
+            plan.style.border = '2px solid var(--primary)';
+        }
+    });
 }
 
-// Simple notification system for marketing site
-function showNotification(message, type = 'info') {
-    // Remove existing notifications
-    const existingNotifications = document.querySelectorAll('.marketing-notification');
-    existingNotifications.forEach(notification => notification.remove());
+// Intersection Observer for animations
+function observeElements() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('animate-in');
+            }
+        });
+    }, {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    });
+
+    // Observe elements for animation
+    const animatedElements = document.querySelectorAll(
+        '.feature-card, .pricing-card, .faq-item, .contact-item, .stat-card, .hero-features'
+    );
     
-    // Create notification element
+    animatedElements.forEach(el => {
+        observer.observe(el);
+    });
+}
+
+// Utility Functions
+function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
-    notification.className = `marketing-notification marketing-notification-${type}`;
+    notification.className = `notification notification-${type}`;
     notification.innerHTML = `
-        <div class="marketing-notification-content">
-            <span class="marketing-notification-message">${message}</span>
-            <button class="marketing-notification-close" onclick="this.parentElement.parentElement.remove()">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <span>${message}</span>
+        <button class="notification-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
     `;
     
-    // Add styles if not already added
-    if (!document.querySelector('#marketing-notification-styles')) {
+    // Add notification styles if not already present
+    if (!document.querySelector('#notification-styles')) {
         const styles = document.createElement('style');
-        styles.id = 'marketing-notification-styles';
+        styles.id = 'notification-styles';
         styles.textContent = `
-            .marketing-notification {
+            .notification {
                 position: fixed;
                 top: 20px;
                 right: 20px;
-                z-index: 10000;
-                max-width: 400px;
-                border-radius: 8px;
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-                animation: slideInRight 0.3s ease;
-            }
-            
-            .marketing-notification-success {
-                background: #059669;
-                color: white;
-            }
-            
-            .marketing-notification-error {
-                background: #dc2626;
-                color: white;
-            }
-            
-            .marketing-notification-info {
-                background: #1e3a8a;
-                color: white;
-            }
-            
-            .marketing-notification-content {
+                background: white;
+                padding: 1rem 1.5rem;
+                border-radius: 0.5rem;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+                border-left: 4px solid var(--success);
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
-                padding: 16px;
+                gap: 0.5rem;
+                z-index: 10000;
+                max-width: 400px;
+                animation: slideInRight 0.3s ease-out;
             }
             
-            .marketing-notification-message {
-                flex: 1;
-                margin-right: 12px;
+            .notification-error {
+                border-left-color: var(--error);
             }
             
-            .marketing-notification-close {
+            .notification i:first-child {
+                color: var(--success);
+                font-size: 1.2rem;
+            }
+            
+            .notification-error i:first-child {
+                color: var(--error);
+            }
+            
+            .notification-close {
                 background: none;
                 border: none;
-                color: inherit;
                 cursor: pointer;
-                padding: 4px;
-                border-radius: 4px;
-                opacity: 0.8;
+                opacity: 0.7;
+                transition: opacity 0.2s;
             }
             
-            .marketing-notification-close:hover {
+            .notification-close:hover {
                 opacity: 1;
-                background: rgba(255, 255, 255, 0.1);
             }
             
             @keyframes slideInRight {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
             }
         `;
         document.head.appendChild(styles);
     }
     
-    // Add to page
     document.body.appendChild(notification);
     
     // Auto remove after 5 seconds
     setTimeout(() => {
         if (notification.parentElement) {
-            notification.style.animation = 'slideInRight 0.3s ease reverse';
-            setTimeout(() => notification.remove(), 300);
+            notification.remove();
         }
     }, 5000);
 }
 
-// Analytics and tracking (placeholder)
+// Analytics and Tracking (placeholder)
 function trackEvent(eventName, properties = {}) {
-    // Placeholder for analytics tracking
-    console.log('Track Event:', eventName, properties);
+    // Integrate with your analytics service
+    console.log('Event:', eventName, properties);
     
     // Example: Google Analytics 4
     if (typeof gtag !== 'undefined') {
@@ -240,102 +242,144 @@ function trackEvent(eventName, properties = {}) {
     }
 }
 
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🌐 Ava Solutions Marketing Website Loaded');
-    
-    // Setup mobile navigation
-    const hamburger = document.querySelector('.hamburger');
-    if (hamburger) {
-        hamburger.addEventListener('click', toggleMobileNav);
+// Track button clicks
+document.addEventListener('click', function(e) {
+    const button = e.target.closest('button, .btn-primary, .btn-secondary');
+    if (button) {
+        const buttonText = button.textContent.trim();
+        trackEvent('button_click', {
+            button_text: buttonText,
+            page: window.location.pathname
+        });
     }
+});
+
+// Performance monitoring
+window.addEventListener('load', function() {
+    // Simple performance tracking
+    const loadTime = performance.now();
+    trackEvent('page_load', {
+        load_time: Math.round(loadTime),
+        page: window.location.pathname
+    });
+});
+
+// Super Admin Functions (as requested)
+function showSuperAdminLogin() {
+    const modal = document.createElement('div');
+    modal.className = 'super-admin-modal';
+    modal.innerHTML = `
+        <div class="modal-overlay" onclick="this.parentElement.remove()"></div>
+        <div class="modal-content">
+            <h3>Super Admin Access</h3>
+            <form id="superAdminForm">
+                <div class="form-group">
+                    <label>Admin Key</label>
+                    <input type="password" id="adminKey" required placeholder="Enter admin key">
+                </div>
+                <div class="form-actions">
+                    <button type="button" onclick="this.closest('.super-admin-modal').remove()">Cancel</button>
+                    <button type="submit">Access Dashboard</button>
+                </div>
+            </form>
+        </div>
+    `;
     
-    // Setup contact form
-    const contactForm = document.getElementById('contactForm');
-    if (contactForm) {
-        contactForm.addEventListener('submit', handleContactForm);
-    }
-    
-    // Setup smooth scrolling for navigation links
-    const navLinks = document.querySelectorAll('a[href^="#"]');
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const targetId = this.getAttribute('href').substring(1);
-            scrollToSection(targetId);
-            
-            // Close mobile menu if open
-            const navMenu = document.querySelector('.nav-menu');
-            const hamburger = document.querySelector('.hamburger');
-            if (navMenu && navMenu.classList.contains('active')) {
-                navMenu.classList.remove('active');
-                hamburger.classList.remove('active');
+    // Add modal styles
+    if (!document.querySelector('#super-admin-styles')) {
+        const styles = document.createElement('style');
+        styles.id = 'super-admin-styles';
+        styles.textContent = `
+            .super-admin-modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
-        });
-    });
-    
-    // Track page view
-    trackEvent('page_view', {
-        page: 'marketing_home',
-        referrer: document.referrer
-    });
-    
-    // Track CTA clicks
-    const ctaButtons = document.querySelectorAll('[onclick*="redirectToApp"]');
-    ctaButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const buttonText = this.textContent.trim();
-            trackEvent('cta_click', {
-                button_text: buttonText,
-                page: 'marketing_home'
-            });
-        });
-    });
-    
-    // Intersection Observer for animations (optional)
-    if ('IntersectionObserver' in window) {
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
-        
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        }, observerOptions);
-        
-        // Observe elements for animation
-        const animateElements = document.querySelectorAll('.feature-card, .pricing-card');
-        animateElements.forEach(el => {
-            el.style.opacity = '0';
-            el.style.transform = 'translateY(20px)';
-            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-            observer.observe(el);
-        });
+            
+            .modal-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+            }
+            
+            .modal-content {
+                background: white;
+                padding: 2rem;
+                border-radius: 1rem;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                z-index: 1;
+                width: 90%;
+                max-width: 400px;
+            }
+            
+            .form-actions {
+                display: flex;
+                gap: 1rem;
+                justify-content: flex-end;
+                margin-top: 1rem;
+            }
+            
+            .form-actions button {
+                padding: 0.5rem 1rem;
+                border: none;
+                border-radius: 0.25rem;
+                cursor: pointer;
+            }
+            
+            .form-actions button[type="button"] {
+                background: var(--text-light);
+                color: white;
+            }
+            
+            .form-actions button[type="submit"] {
+                background: var(--primary);
+                color: white;
+            }
+        `;
+        document.head.appendChild(styles);
     }
-});
-
-// Handle window resize
-window.addEventListener('resize', function() {
-    // Close mobile menu on resize to desktop
-    if (window.innerWidth > 768) {
-        const navMenu = document.querySelector('.nav-menu');
-        const hamburger = document.querySelector('.hamburger');
-        if (navMenu && navMenu.classList.contains('active')) {
-            navMenu.classList.remove('active');
-            hamburger.classList.remove('active');
+    
+    document.body.appendChild(modal);
+    
+    // Handle form submission
+    document.getElementById('superAdminForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const adminKey = document.getElementById('adminKey').value;
+        
+        // Simple admin key check (in production, this should be more secure)
+        if (adminKey === 'avasolutions2024admin') {
+            modal.remove();
+            window.location.href = PWA_URL + '?admin=true';
+        } else {
+            showNotification('Invalid admin key', 'error');
         }
+    });
+}
+
+// Keyboard shortcut for super admin (Ctrl+Alt+A)
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.altKey && e.key === 'A') {
+        showSuperAdminLogin();
     }
 });
 
-// Export functions for global access (for onclick handlers)
-window.redirectToApp = redirectToApp;
-window.redirectToLogin = redirectToLogin;
-window.redirectToSignup = redirectToSignup;
-window.startFreeTrial = startFreeTrial;
-window.requestDemo = requestDemo;
-window.scrollToSection = scrollToSection;
+// Export functions for use in other scripts
+window.AvaMarketing = {
+    redirectToLogin,
+    redirectToSignup,
+    redirectToApp,
+    startFreeTrial,
+    requestDemo,
+    showNotification,
+    trackEvent,
+    showSuperAdminLogin
+};
