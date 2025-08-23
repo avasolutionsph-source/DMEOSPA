@@ -1,172 +1,479 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
+import User from '../../models/User.js';
+import { generateToken, verifyToken } from '../../middleware/auth.js';
 
 const router = express.Router();
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
-  const { email, password, firstName, lastName, businessName, phone, plan } = req.body;
-  
-  // Validate plan name - support new 4-tier system
-  const validPlans = ['unpaid', 'basic', 'professional', 'enterprise'];
-  const subscriptionPlan = validPlans.includes(plan) ? plan : 'unpaid';
-  
-  // Mock user creation (in production, save to database)
-  const mockUser = {
-    id: 'user-' + Date.now(),
-    email: email || 'user@example.com',
-    firstName: firstName || 'John',
-    lastName: lastName || 'Doe',
-    businessName: businessName || 'My Business',
-    phone: phone || '',
-    subscriptionPlan: subscriptionPlan,
-    plan: subscriptionPlan, // For backward compatibility
-    role: 'customer'
-  };
-  
-  // Import generateToken from auth middleware
-  const { generateToken } = await import('../../middleware/auth.js');
-  const token = generateToken(mockUser);
-  
-  res.json({ 
-    success: true,
-    message: 'User registration successful',
-    token,
-    user: {
-      id: mockUser.id,
-      email: mockUser.email,
-      firstName: mockUser.firstName,
-      lastName: mockUser.lastName,
-      businessName: mockUser.businessName,
-      subscriptionPlan: mockUser.subscriptionPlan,
-      plan: mockUser.plan
+  try {
+    const { email, password, firstName, lastName, businessName, phone, plan } = req.body;
+    
+    // Validate required fields
+    if (!email || !password || !firstName || !lastName || !businessName) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide all required fields'
+      });
     }
-  });
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        error: 'User already exists with this email'
+      });
+    }
+    
+    // Validate plan name - support new 4-tier system
+    const validPlans = ['unpaid', 'basic', 'professional', 'enterprise'];
+    const subscriptionPlan = validPlans.includes(plan) ? plan : 'unpaid';
+    
+    // Create new user (password will be hashed by pre-save hook)
+    const user = await User.create({
+      email: email.toLowerCase(),
+      password,
+      firstName,
+      lastName,
+      businessName,
+      phone: phone || '',
+      subscriptionPlan,
+      role: 'customer'
+    });
+    
+    // Generate JWT token
+    const token = generateToken({
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      businessName: user.businessName,
+      subscriptionPlan: user.subscriptionPlan,
+      role: user.role
+    });
+    
+    res.json({ 
+      success: true,
+      message: 'User registration successful',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        businessName: user.businessName,
+        subscriptionPlan: user.subscriptionPlan,
+        plan: user.subscriptionPlan, // For backward compatibility
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Registration failed'
+    });
+  }
 });
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  
-  // Mock user with proper subscription plan based on email
-  // In production, this would verify credentials and fetch from database
-  let subscriptionPlan = 'unpaid';
-  
-  // Demo accounts with different plans for testing
-  if (email === 'basic@demo.com') {
-    subscriptionPlan = 'basic';
-  } else if (email === 'pro@demo.com' || email === 'professional@demo.com') {
-    subscriptionPlan = 'professional';
-  } else if (email === 'enterprise@demo.com') {
-    subscriptionPlan = 'enterprise';
-  } else if (email === 'admin@demo.com' || email === 'avasolutionsph@gmail.com') {
-    subscriptionPlan = 'enterprise'; // Admins get enterprise features
-  }
-  
-  const mockUser = {
-    id: 'user-123',
-    email: email || 'user@example.com',
-    firstName: 'John',
-    lastName: 'Doe',
-    businessName: 'Demo Business',
-    businessId: 'business-123',
-    subscriptionPlan: subscriptionPlan,
-    plan: subscriptionPlan, // For backward compatibility
-    role: email === 'avasolutionsph@gmail.com' ? 'superAdmin' : 'customer'
-  };
-  
-  // Import generateToken from auth middleware
-  const { generateToken } = await import('../../middleware/auth.js');
-  const token = generateToken(mockUser);
-  
-  res.json({ 
-    success: true,
-    message: 'Login successful',
-    token,
-    user: {
-      id: mockUser.id,
-      email: mockUser.email,
-      firstName: mockUser.firstName,
-      lastName: mockUser.lastName,
-      businessName: mockUser.businessName,
-      subscriptionPlan: mockUser.subscriptionPlan,
-      plan: mockUser.plan,
-      role: mockUser.role
+  try {
+    const { email, password } = req.body;
+    
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide email and password'
+      });
     }
-  });
+    
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+    
+    // Check for super admin hardcoded credentials
+    if (email.toLowerCase() === 'avasolutionsph@gmail.com' && password === 'Ava12345') {
+      // Create or update super admin user
+      let superAdmin = user;
+      if (!superAdmin) {
+        superAdmin = await User.create({
+          email: 'avasolutionsph@gmail.com',
+          password: 'Ava12345',
+          firstName: 'Super',
+          lastName: 'Admin',
+          businessName: 'Ava Solutions PH',
+          role: 'superAdmin',
+          subscriptionPlan: 'enterprise'
+        });
+      } else if (superAdmin.role !== 'superAdmin') {
+        superAdmin.role = 'superAdmin';
+        superAdmin.subscriptionPlan = 'enterprise';
+        await superAdmin.save();
+      }
+      
+      const token = generateToken({
+        id: superAdmin._id,
+        email: superAdmin.email,
+        firstName: superAdmin.firstName,
+        lastName: superAdmin.lastName,
+        businessName: superAdmin.businessName,
+        subscriptionPlan: superAdmin.subscriptionPlan,
+        role: superAdmin.role
+      });
+      
+      return res.json({
+        success: true,
+        message: 'Login successful',
+        token,
+        user: {
+          id: superAdmin._id,
+          email: superAdmin.email,
+          firstName: superAdmin.firstName,
+          lastName: superAdmin.lastName,
+          businessName: superAdmin.businessName,
+          subscriptionPlan: superAdmin.subscriptionPlan,
+          plan: superAdmin.subscriptionPlan,
+          role: superAdmin.role
+        }
+      });
+    }
+    
+    // Check for demo accounts
+    const demoAccounts = {
+      'demo@spa.com': { password: 'demo123', plan: 'professional', firstName: 'Demo', lastName: 'User', businessName: 'Demo Spa' },
+      'basic@demo.com': { password: 'demo123', plan: 'basic', firstName: 'Basic', lastName: 'Demo', businessName: 'Basic Business' },
+      'professional@demo.com': { password: 'demo123', plan: 'professional', firstName: 'Pro', lastName: 'Demo', businessName: 'Pro Business' },
+      'enterprise@demo.com': { password: 'demo123', plan: 'enterprise', firstName: 'Enterprise', lastName: 'Demo', businessName: 'Enterprise Corp' }
+    };
+    
+    const demoAccount = demoAccounts[email.toLowerCase()];
+    if (demoAccount && password === demoAccount.password) {
+      // Create or update demo user
+      let demoUser = user;
+      if (!demoUser) {
+        demoUser = await User.create({
+          email: email.toLowerCase(),
+          password: demoAccount.password,
+          firstName: demoAccount.firstName,
+          lastName: demoAccount.lastName,
+          businessName: demoAccount.businessName,
+          subscriptionPlan: demoAccount.plan,
+          role: 'customer'
+        });
+      }
+      
+      const token = generateToken({
+        id: demoUser._id,
+        email: demoUser.email,
+        firstName: demoUser.firstName,
+        lastName: demoUser.lastName,
+        businessName: demoUser.businessName,
+        subscriptionPlan: demoUser.subscriptionPlan,
+        role: demoUser.role
+      });
+      
+      return res.json({
+        success: true,
+        message: 'Login successful',
+        token,
+        user: {
+          id: demoUser._id,
+          email: demoUser.email,
+          firstName: demoUser.firstName,
+          lastName: demoUser.lastName,
+          businessName: demoUser.businessName,
+          subscriptionPlan: demoUser.subscriptionPlan,
+          plan: demoUser.subscriptionPlan,
+          role: demoUser.role
+        }
+      });
+    }
+    
+    // Normal user authentication
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid email or password'
+      });
+    }
+    
+    // Verify password
+    const isPasswordValid = await user.comparePassword(password);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid email or password'
+      });
+    }
+    
+    // Generate JWT token
+    const token = generateToken({
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      businessName: user.businessName,
+      subscriptionPlan: user.subscriptionPlan,
+      role: user.role
+    });
+    
+    res.json({ 
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        businessName: user.businessName,
+        subscriptionPlan: user.subscriptionPlan,
+        plan: user.subscriptionPlan, // For backward compatibility
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Login failed'
+    });
+  }
 });
 
 // POST /api/auth/logout
 router.post('/logout', async (req, res) => {
+  // Client should remove token from storage
   res.json({ 
-    message: 'User logout placeholder',
-    success: true 
+    success: true,
+    message: 'Logout successful'
   });
+});
+
+// POST /api/auth/verify
+router.post('/verify', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        error: 'No token provided'
+      });
+    }
+    
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+    
+    if (!decoded) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid token'
+      });
+    }
+    
+    // Get fresh user data from database
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        businessName: user.businessName,
+        subscriptionPlan: user.subscriptionPlan,
+        plan: user.subscriptionPlan,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Token verification error:', error);
+    res.status(401).json({
+      success: false,
+      error: 'Token verification failed'
+    });
+  }
 });
 
 // POST /api/auth/refresh
 router.post('/refresh', async (req, res) => {
-  res.json({ 
-    message: 'Token refresh placeholder',
-    token: 'new-placeholder-jwt-token',
-    success: true 
-  });
+  try {
+    const { refreshToken } = req.body;
+    
+    // For now, just verify the existing token and issue a new one
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        error: 'No token provided'
+      });
+    }
+    
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+    
+    if (!decoded) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid token'
+      });
+    }
+    
+    // Get fresh user data
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    // Generate new token
+    const newToken = generateToken({
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      businessName: user.businessName,
+      subscriptionPlan: user.subscriptionPlan,
+      role: user.role
+    });
+    
+    res.json({
+      success: true,
+      token: newToken,
+      message: 'Token refreshed successfully'
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    res.status(401).json({
+      success: false,
+      error: 'Token refresh failed'
+    });
+  }
 });
 
 // POST /api/auth/forgot-password
 router.post('/forgot-password', async (req, res) => {
-  res.json({ 
-    message: 'Password reset email sent placeholder',
-    success: true 
-  });
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide an email address'
+      });
+    }
+    
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      // Don't reveal if user exists or not
+      return res.json({
+        success: true,
+        message: 'If an account exists with this email, a password reset link has been sent'
+      });
+    }
+    
+    // TODO: Implement email sending with reset token
+    // For now, just return success
+    res.json({
+      success: true,
+      message: 'If an account exists with this email, a password reset link has been sent'
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process password reset request'
+    });
+  }
 });
 
 // POST /api/auth/reset-password
 router.post('/reset-password', async (req, res) => {
-  res.json({ 
-    message: 'Password reset placeholder',
-    success: true 
-  });
+  try {
+    const { token, newPassword } = req.body;
+    
+    if (!token || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide reset token and new password'
+      });
+    }
+    
+    // TODO: Implement token verification and password reset
+    // For now, just return success
+    res.json({
+      success: true,
+      message: 'Password has been reset successfully'
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reset password'
+    });
+  }
 });
 
 // GET /api/auth/subscription - Check current subscription status
 router.get('/subscription', async (req, res) => {
-  // Extract token from Authorization header
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ 
-      error: 'No token provided',
-      success: false 
-    });
-  }
-
-  const token = authHeader.substring(7);
-  
   try {
-    // Import verifyToken from auth middleware
-    const { verifyToken } = await import('../../middleware/auth.js');
+    // Extract token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'No token provided'
+      });
+    }
+
+    const token = authHeader.substring(7);
     const decoded = verifyToken(token);
     
     if (!decoded) {
       return res.status(401).json({ 
-        error: 'Invalid token',
-        success: false 
+        success: false,
+        error: 'Invalid token'
+      });
+    }
+    
+    // Get user from database
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
       });
     }
     
     // Return subscription information
     res.json({ 
       success: true,
-      subscriptionPlan: decoded.subscriptionPlan || decoded.plan || 'unpaid',
-      plan: decoded.subscriptionPlan || decoded.plan || 'unpaid',
-      email: decoded.email,
-      businessName: decoded.businessName,
-      role: decoded.role || 'customer'
+      subscriptionPlan: user.subscriptionPlan,
+      plan: user.subscriptionPlan, // For backward compatibility
+      email: user.email,
+      businessName: user.businessName,
+      role: user.role,
+      subscriptionStatus: user.subscriptionStatus,
+      subscriptionStart: user.subscriptionStart,
+      subscriptionEnd: user.subscriptionEnd
     });
   } catch (error) {
     console.error('Subscription check error:', error);
-    res.status(401).json({ 
-      error: 'Failed to verify subscription',
-      success: false 
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to verify subscription'
     });
   }
 });

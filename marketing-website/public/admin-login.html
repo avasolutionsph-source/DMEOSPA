@@ -142,7 +142,9 @@
             loginBtn.textContent = '🔄 Signing in...';
             
             try {
-                const response = await fetch('/api/admin/super-login', {
+                // Use unified backend auth endpoint
+                const apiUrl = 'https://ava-pwa-backend.onrender.com';
+                const response = await fetch(`${apiUrl}/api/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

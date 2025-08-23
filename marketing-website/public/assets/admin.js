@@ -36,8 +36,9 @@ document.getElementById('adminLoginForm').addEventListener('submit', async funct
     const password = formData.get('password');
     
     try {
+        // Use unified backend auth endpoint
         const apiBase = 'https://ava-pwa-backend.onrender.com';
-        const response = await fetch(`${apiBase}/api/admin/super-login`, {
+        const response = await fetch(`${apiBase}/api/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

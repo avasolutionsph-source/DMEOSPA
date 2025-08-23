@@ -118,7 +118,9 @@
             const password = formData.get('password');
             
             try {
-                const response = await fetch('/api/auth/login', {
+                // Use unified backend for authentication
+                const apiUrl = 'https://ava-pwa-backend.onrender.com';
+                const response = await fetch(`${apiUrl}/api/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

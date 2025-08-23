@@ -190,7 +190,9 @@
             };
             
             try {
-                const response = await fetch('/api/auth/register', {
+                // Use unified backend for registration
+                const apiUrl = 'https://ava-pwa-backend.onrender.com';
+                const response = await fetch(`${apiUrl}/api/auth/register`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
