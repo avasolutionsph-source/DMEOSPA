@@ -48,6 +48,11 @@ class APIClient {
     setToken(token) {
         this.token = token;
     }
+    
+    // Clear authentication token
+    clearToken() {
+        this.token = null;
+    }
 
     // Setup network monitoring
     setupNetworkMonitoring() {
