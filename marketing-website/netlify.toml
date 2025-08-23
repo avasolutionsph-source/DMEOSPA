@@ -1,7 +1,9 @@
 [build]
   # Static marketing website - no build process needed
+  base = "marketing-website"
   publish = "public"
   command = "echo 'Deploying static marketing website'"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . '../backend' '../src' '../PWA' || exit 0"
 
 # Redirect rules for SPA-like behavior
 [[redirects]]
