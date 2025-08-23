@@ -2,7 +2,7 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 2; // Incremented for rooms and gift certificates
+        this.version = 3; // Incremented for state store
         this.db = null;
         this.userId = null;
     }
@@ -71,6 +71,11 @@ class Database {
                     gcStore.createIndex('status', 'status', { unique: false });
                     gcStore.createIndex('usedDate', 'usedDate', { unique: false });
                     gcStore.createIndex('syncStatus', 'syncStatus', { unique: false });
+                }
+
+                // State store for StateManager persistence
+                if (!this.db.objectStoreNames.contains('state')) {
+                    this.db.createObjectStore('state', { keyPath: 'key' });
                 }
 
                 // Promo Discounts store

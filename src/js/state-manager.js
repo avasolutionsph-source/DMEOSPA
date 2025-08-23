@@ -515,8 +515,12 @@ class StateManager {
                 version: '1.0.0'
             };
             
-            // Store in IndexedDB
-            await this.db.put('state', stateSnapshot, 'current');
+            // Store in IndexedDB using Database class method
+            const stateData = {
+                key: 'current',
+                ...stateSnapshot
+            };
+            await this.db.put('state', stateData);
             
             // Also backup to localStorage for redundancy
             try {

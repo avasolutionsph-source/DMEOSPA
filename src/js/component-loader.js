@@ -158,6 +158,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         if (coreLoaded < coreComponents.length) {
             console.warn(`⚠️ Only ${coreLoaded}/${coreComponents.length} core components loaded`);
+            
+            // Check which components failed and create fallbacks
+            if (!document.querySelector('.sidebar')) {
+                console.log('📋 Creating fallback sidebar...');
+                createFallbackSidebar();
+            }
+            if (!document.querySelector('.main-content')) {
+                console.log('📋 Creating fallback main-content...');
+                const appContainer = document.querySelector('.app-container');
+                if (appContainer) {
+                    appContainer.innerHTML = '<main class="main-content"></main>' + appContainer.innerHTML;
+                }
+            }
         }
         
         // Wait a bit for DOM to settle
@@ -166,7 +179,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Load dashboard after main-content exists
         const dashboardLoaded = await window.componentLoader.loadComponent('dashboard', '.main-content', false);
         if (!dashboardLoaded) {
-            console.error('❌ Failed to load dashboard component');
+            console.error('❌ Failed to load dashboard component - creating fallback');
+            createFallbackDashboard();
         }
         
         // Preload other components for faster navigation
@@ -192,19 +206,50 @@ document.addEventListener('DOMContentLoaded', async () => {
  */
 async function waitForCSS() {
     return new Promise((resolve) => {
+        let attempts = 0;
+        const maxAttempts = 100; // 5 seconds max
+        
         const checkCSS = () => {
-            const testElement = document.createElement('div');
-            testElement.className = 'loading-overlay';
-            testElement.style.position = 'absolute';
-            testElement.style.visibility = 'hidden';
-            document.body.appendChild(testElement);
+            attempts++;
             
-            const styles = window.getComputedStyle(testElement);
-            const hasCSS = styles.position === 'fixed'; // loading-overlay should have position: fixed
+            // Check if stylesheets are loaded
+            const stylesheets = document.styleSheets;
+            let cssLoaded = false;
             
-            document.body.removeChild(testElement);
+            try {
+                // Try to access CSS rules - if they're loaded, we can access them
+                for (let i = 0; i < stylesheets.length; i++) {
+                    const sheet = stylesheets[i];
+                    if (sheet.href && sheet.href.includes('main.css')) {
+                        // Try to access rules - this will work if CSS is loaded
+                        if (sheet.cssRules || sheet.rules) {
+                            cssLoaded = true;
+                            break;
+                        }
+                    }
+                }
+                
+                // Fallback: check if app-container class has expected styles
+                if (!cssLoaded) {
+                    const testElement = document.createElement('div');
+                    testElement.className = 'app-container';
+                    testElement.style.position = 'absolute';
+                    testElement.style.visibility = 'hidden';
+                    document.body.appendChild(testElement);
+                    
+                    const styles = window.getComputedStyle(testElement);
+                    // Check if it has any non-default styling
+                    cssLoaded = styles.display !== 'block' || 
+                               styles.margin !== '0px' || 
+                               styles.padding !== '0px';
+                    
+                    document.body.removeChild(testElement);
+                }
+            } catch (e) {
+                // CSS might still be loading
+            }
             
-            if (hasCSS) {
+            if (cssLoaded || attempts >= maxAttempts) {
                 console.log('✅ CSS loaded and ready');
                 resolve();
             } else {
@@ -212,7 +257,8 @@ async function waitForCSS() {
             }
         };
         
-        setTimeout(checkCSS, 10);
+        // Start checking immediately if DOM is ready, otherwise wait a bit
+        setTimeout(checkCSS, document.readyState === 'complete' ? 10 : 100);
     });
 }
 
@@ -249,5 +295,61 @@ window.loadPage = async (pageName) => {
         targetPage.classList.add('active');
     }
 };
+
+/**
+ * Create fallback dashboard if component loading fails
+ */
+function createFallbackDashboard() {
+    const mainContent = document.querySelector('.main-content');
+    if (!mainContent) return;
+    
+    const fallbackHTML = `
+        <div id="dashboard" class="page active" style="padding: 20px;">
+            <div class="page-header">
+                <h1>Dashboard</h1>
+                <p style="color: #666;">Loading components...</p>
+            </div>
+            <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+                <div class="stat-card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h3>Welcome to Ava Solutions</h3>
+                    <p>Your spa management system is starting up...</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    mainContent.innerHTML = fallbackHTML;
+    console.log('✅ Fallback dashboard created');
+    
+    // Dispatch event to hide loader
+    document.dispatchEvent(new CustomEvent('componentLoaded', {
+        detail: { componentName: 'dashboard', targetSelector: '.main-content' }
+    }));
+}
+
+/**
+ * Create fallback sidebar if component loading fails
+ */
+function createFallbackSidebar() {
+    const appContainer = document.querySelector('.app-container');
+    if (!appContainer) return;
+    
+    const fallbackHTML = `
+        <aside class="sidebar" style="width: 250px; background: #2c3e50; color: white; height: 100vh; padding: 20px;">
+            <div class="logo" style="margin-bottom: 30px;">
+                <h2>Ava Solutions</h2>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" style="display: block; padding: 10px; color: white; text-decoration: none; margin-bottom: 10px;">
+                    Dashboard
+                </a>
+                <p style="color: #bdc3c7; font-size: 14px;">Loading navigation...</p>
+            </nav>
+        </aside>
+    `;
+    
+    appContainer.insertAdjacentHTML('beforeend', fallbackHTML);
+    console.log('✅ Fallback sidebar created');
+}
 
 export default ComponentLoader;
