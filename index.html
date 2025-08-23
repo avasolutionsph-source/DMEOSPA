@@ -115,17 +115,56 @@
     <!-- Initialize App After Components Load -->
     <script>
         // Hide loader when app is ready
+        let loaderHidden = false;
+        
+        function hideLoader() {
+            if (loaderHidden) return;
+            loaderHidden = true;
+            
+            const loader = document.getElementById('appLoader');
+            if (loader) {
+                console.log('🎯 Hiding app loader');
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    if (loader.parentNode) {
+                        loader.remove();
+                        console.log('✅ App loader removed');
+                    }
+                }, 300);
+            }
+        }
+        
+        // Hide loader when dashboard component is loaded
         document.addEventListener('componentLoaded', (e) => {
+            console.log('📦 Component loaded:', e.detail.componentName);
             if (e.detail.componentName === 'dashboard') {
-                const loader = document.getElementById('appLoader');
-                if (loader) {
-                    setTimeout(() => {
-                        loader.style.opacity = '0';
-                        setTimeout(() => loader.remove(), 300);
-                    }, 1000);
-                }
+                setTimeout(hideLoader, 1000);
             }
         });
+        
+        // Fallback: Hide loader after 5 seconds regardless
+        setTimeout(() => {
+            if (!loaderHidden) {
+                console.log('⏰ Loader timeout - hiding loader as fallback');
+                hideLoader();
+            }
+        }, 5000);
+        
+        // Additional fallback: Hide loader when main content is found
+        const checkForContent = () => {
+            const dashboard = document.getElementById('dashboard');
+            const sidebar = document.querySelector('.sidebar');
+            
+            if (dashboard && sidebar) {
+                console.log('🎯 Found dashboard and sidebar - hiding loader');
+                setTimeout(hideLoader, 500);
+            } else {
+                setTimeout(checkForContent, 500);
+            }
+        };
+        
+        // Start checking after initial delay
+        setTimeout(checkForContent, 2000);
 
         // Enhanced error handling for component loading
         window.addEventListener('error', (e) => {
