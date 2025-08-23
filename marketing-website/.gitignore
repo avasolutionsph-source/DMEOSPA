@@ -1,0 +1,10 @@
+# Node.js files - not needed for static deployment
+server.js
+package.json
+package-lock.json
+node_modules/
+
+# Development files
+*.log
+.env
+.env.local
