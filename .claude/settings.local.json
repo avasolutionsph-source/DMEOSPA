@@ -18,9 +18,14 @@
       "Bash(true)",
       "Bash(for file in src/js/feature-flags.js src/js/state-helpers.js src/js/rollback-system.js src/js/backup-system.js src/js/auto-updater.js)",
       "Bash(do sed -i 's/await db\\./await window.db./g' \"$file\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(python:*)",
+      "Bash(start chrome \"http://localhost:8000\")"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\Users\\opet_\\OneDrive\\Desktop\\AvasolutionsWebApp"
+    ]
   }
 }

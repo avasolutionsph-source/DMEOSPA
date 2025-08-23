@@ -4,6 +4,65 @@
 @import 'variables.css';
 @import 'base.css';
 
+/* Debug: Ensure CSS is loading with fallbacks */
+body {
+    background: var(--gray-50, #F8FAFC) !important;
+    font-family: var(--font-family-primary, 'Inter', sans-serif) !important;
+    color: var(--gray-800, #1E293B) !important;
+}
+
+/* Emergency fallback styles for main components */
+.app-container {
+    display: flex !important;
+    height: 100vh !important;
+    background: #F8FAFC !important;
+}
+
+.sidebar {
+    width: 280px !important;
+    background: linear-gradient(135deg, #0F1629 0%, #1E293B 35%, #374151 100%) !important;
+    color: white !important;
+    display: flex !important;
+    flex-direction: column !important;
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    height: 100vh !important;
+    z-index: 1030 !important;
+}
+
+.main-content {
+    flex: 1 !important;
+    margin-left: 280px !important;
+    padding: 20px !important;
+    background: white !important;
+    overflow-y: auto !important;
+}
+
+.nav-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    padding: 1rem 1.5rem !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    text-decoration: none !important;
+    transition: all 0.3s ease !important;
+    border-radius: 0 6px 6px 0 !important;
+    margin-right: 1rem !important;
+    cursor: pointer !important;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+
+.nav-item.active {
+    background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
 /* Layout & Structure */
 @import 'layout.css';
 @import 'navigation.css';

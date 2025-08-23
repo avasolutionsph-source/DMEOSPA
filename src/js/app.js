@@ -224,8 +224,10 @@ class App {
             });
         }
         
-        navItems.forEach(item => {
+        navItems.forEach((item, index) => {
             const page = item.dataset.page;
+            console.log(`🔧 Setting up navigation item ${index + 1}: ${page}`);
+            
             if (window.logger) {
                 window.logger.debug('Adding navigation click handler', { 
                     category: 'APP', 
@@ -234,8 +236,13 @@ class App {
                 });
             }
             
-            item.addEventListener('click', (e) => {
+            // Remove any existing listeners by cloning the element
+            const newItem = item.cloneNode(true);
+            item.parentNode.replaceChild(newItem, item);
+            
+            newItem.addEventListener('click', (e) => {
                 e.preventDefault();
+                console.log(`🧭 Navigation clicked: ${page}`);
                 
                 // Check entitlements before navigation
                 if (window.entitlementsSystem && !window.entitlementsSystem.can(page)) {
@@ -263,10 +270,13 @@ class App {
                 }
                 this.showPage(page);
                 
-                // Update active state
-                navItems.forEach(nav => nav.classList.remove('active'));
-                item.classList.add('active');
+                // Update active state - get fresh nav items list
+                const allNavItems = document.querySelectorAll('.nav-item');
+                allNavItems.forEach(nav => nav.classList.remove('active'));
+                newItem.classList.add('active');
             });
+            
+            console.log(`✅ Navigation item ${index + 1} setup complete: ${page}`);
         });
     }
 
