@@ -333,33 +333,43 @@ class App {
             // Load page-specific data
             this.loadPageData(pageName);
         } else {
-            // Page element not loaded yet, wait for components to load
-            console.log(`Page element not found: ${pageName}, waiting for components to load...`);
+            // Page element not loaded yet, load the component first
+            console.log(`Page element not found: ${pageName}, loading component...`);
             
-            // Check for component loading with timeout
-            let attempts = 0;
-            const maxAttempts = 20; // Max 10 seconds (20 * 500ms)
-            
-            const checkForPage = () => {
-                const page = document.getElementById(pageName);
-                if (page) {
-                    page.classList.add('active');
-                    this.loadPageData(pageName);
-                } else if (attempts < maxAttempts) {
-                    attempts++;
-                    setTimeout(checkForPage, 500);
+            // Load the page component first
+            try {
+                const success = await window.componentLoader.loadComponent(pageName, '.main-content', true);
+                if (success) {
+                    // Component loaded, now try to find and activate the page
+                    const page = document.getElementById(pageName);
+                    if (page) {
+                        page.classList.add('active');
+                        this.loadPageData(pageName);
+                        console.log(`✅ Page ${pageName} loaded and activated successfully`);
+                    } else {
+                        console.error(`❌ Page component loaded but element #${pageName} not found`);
+                        // Fall back to dashboard
+                        const dashboard = document.getElementById('dashboard');
+                        if (dashboard) {
+                            dashboard.classList.add('active');
+                        }
+                    }
                 } else {
-                    console.error(`❌ Page ${pageName} failed to load after ${maxAttempts} attempts`);
+                    console.error(`❌ Failed to load component: ${pageName}`);
                     // Fall back to dashboard
                     const dashboard = document.getElementById('dashboard');
                     if (dashboard) {
                         dashboard.classList.add('active');
                     }
                 }
-            };
-            
-            // Start checking after a brief delay
-            setTimeout(checkForPage, 100);
+            } catch (error) {
+                console.error(`❌ Error loading page component ${pageName}:`, error);
+                // Fall back to dashboard
+                const dashboard = document.getElementById('dashboard');
+                if (dashboard) {
+                    dashboard.classList.add('active');
+                }
+            }
         }
     }
 
