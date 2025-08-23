@@ -3,28 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Account - Ava Solutions</title>
+    <title>Register - Ava Solutions</title>
     <meta name="description" content="Create your Ava Solutions spa management account">
     <link rel="manifest" href="../manifest.json">
     <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
     <link rel="icon" type="image/svg+xml" href="../src/assets/icons/icon.svg">
     
-    <!-- CSS -->
-    <link rel="stylesheet" href="../src/css/main.css">
-    <link rel="stylesheet" href="../src/css/auth.css">
+    <!-- Use marketing website CSS for consistent design -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../marketing-website/public/css/marketing.css">
 </head>
-<body class="auth-page">
-    <div class="auth-container">
-        <div class="auth-card">
-            <div class="auth-header">
-                <div class="auth-logo">
-                    <img src="../src/assets/icons/icon.svg" alt="Ava Solutions" style="width: 64px; height: 64px;">
-                    <h1>Ava Solutions</h1>
-                    <p>Create your spa management account</p>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-spa"></i>
+                <span>Ava Solutions</span>
+            </div>
+            <div class="nav-links">
+                <a href="../marketing-website/public/index.html">Home</a>
+                <a href="../marketing-website/public/pricing.html">Pricing</a>
+                <a href="../marketing-website/public/index.html#features">Features</a>
+                <a href="../marketing-website/public/contact.html">Contact</a>
+                <div class="nav-auth">
+                    <a href="login.html" class="btn-secondary">Login</a>
+                    <a href="signup.html" class="btn-primary">Register</a>
                 </div>
             </div>
+        </div>
+    </nav>
+
+    <!-- Register Form -->
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-container">
+                <div class="auth-header">
+                    <h1>Start Your Free Trial</h1>
+                    <p>Create your Ava Solutions account and transform your spa business</p>
+                </div>
             
             <form id="signupForm" class="auth-form" onsubmit="event.preventDefault(); handleSignup(); return false;">
                 <div class="form-group">

@@ -3,66 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In - Ava Solutions</title>
+    <title>Login - Ava Solutions</title>
     <meta name="description" content="Sign in to your Ava Solutions spa management dashboard">
     <link rel="manifest" href="../manifest.json">
     <link rel="icon" type="image/x-icon" href="../src/assets/favicon.ico">
     <link rel="icon" type="image/svg+xml" href="../src/assets/icons/icon.svg">
     
-    <!-- CSS -->
-    <link rel="stylesheet" href="../src/css/main.css">
-    <link rel="stylesheet" href="../src/css/auth.css">
+    <!-- Use marketing website CSS for consistent design -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../marketing-website/public/css/marketing.css">
 </head>
-<body class="auth-page">
-    <div class="auth-container">
-        <div class="auth-card">
-            <div class="auth-header">
-                <div class="auth-logo">
-                    <img src="../src/assets/icons/icon.svg" alt="Ava Solutions" style="width: 64px; height: 64px;">
-                    <h1>Ava Solutions</h1>
-                    <p>Sign in to your spa management dashboard</p>
-                </div>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-spa"></i>
+                <span>Ava Solutions</span>
             </div>
-            
-            <form id="loginForm" class="auth-form" onsubmit="event.preventDefault(); handleLogin(); return false;">
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" id="loginEmail" class="form-input" required placeholder="Enter your email">
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="loginPassword" class="form-input" required placeholder="Enter your password">
-                </div>
-                <div class="form-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="rememberMe">
-                        <span class="checkmark"></span>
-                        Remember me on this device
-                    </label>
-                </div>
-                <button type="submit" id="loginBtn" class="btn btn-primary btn-full">
-                    <i class="fas fa-sign-in-alt"></i> Sign In
-                </button>
-                <button type="button" onclick="testLogin()" class="btn btn-secondary btn-full" style="margin-top: 10px;">
-                    🧪 Test Demo Login
-                </button>
-            </form>
-            
-            <div class="auth-footer">
-                <p>Don't have an account? <a href="signup.html">Create one here</a></p>
-                <p><a href="../marketing-website/public/index.html">← Back to Home</a></p>
-                <div class="demo-login">
-                    <small class="text-muted">
-                        <strong>Demo Login:</strong><br>
-                        Email: demo@spa.com<br>
-                        Password: demo123
-                    </small>
+            <div class="nav-links">
+                <a href="../marketing-website/public/index.html">Home</a>
+                <a href="../marketing-website/public/pricing.html">Pricing</a>
+                <a href="../marketing-website/public/index.html#features">Features</a>
+                <a href="../marketing-website/public/contact.html">Contact</a>
+                <div class="nav-auth">
+                    <a href="signup.html" class="btn-secondary">Register</a>
+                    <a href="login.html" class="btn-primary">Login</a>
                 </div>
             </div>
         </div>
-    </div>
+    </nav>
+
+    <!-- Login Form -->
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-container">
+                <div class="auth-header">
+                    <h1>Welcome Back</h1>
+                    <p>Sign in to your Ava Solutions account</p>
+                </div>
+                
+                <div class="auth-form">
+                    <div class="error-message" id="loginError" style="display: none;"></div>
+                    
+                    <form id="loginForm" onsubmit="event.preventDefault(); handleLogin(); return false;">
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" id="loginEmail" class="form-input" name="email" required placeholder="Enter your email">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" id="loginPassword" class="form-input" name="password" required placeholder="Enter your password">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="rememberMe" name="remember">
+                                <span class="checkmark"></span>
+                                Remember me
+                            </label>
+                        </div>
+                        
+                        <button type="submit" id="loginBtn" class="btn-primary btn-full">
+                            <i class="fas fa-sign-in-alt"></i> Sign In
+                        </button>
+                    </form>
+                    
+                    <div class="oauth-divider">
+                        <span>or continue with</span>
+                    </div>
+                    
+                    <div class="oauth-buttons">
+                        <button type="button" onclick="googleLogin()" class="oauth-btn oauth-google">
+                            <i class="fab fa-google"></i>
+                            Sign in with Google
+                        </button>
+                        <button type="button" onclick="facebookLogin()" class="oauth-btn oauth-facebook">
+                            <i class="fab fa-facebook-f"></i>
+                            Sign in with Facebook
+                        </button>
+                    </div>
+                    
+                    <div class="auth-links">
+                        <p>Don't have an account? <a href="signup.html">Sign up here</a></p>
+                        <p><button type="button" onclick="testLogin()" class="link-button">🧪 Test Demo Login</button></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="brand">
+                        <i class="fas fa-spa"></i>
+                        <span>Ava Solutions</span>
+                    </div>
+                    <p>Professional spa management system that works offline and grows with your business.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Ava Solutions Philippines. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
 
     <!-- Scripts -->
     <script src="../src/js/database.js"></script>
@@ -80,10 +129,34 @@
             handleLogin();
         }
         
+        // OAuth functions (placeholders for now)
+        function googleLogin() {
+            showError('Google login will be available soon. Use demo login for now.');
+        }
+        
+        function facebookLogin() {
+            showError('Facebook login will be available soon. Use demo login for now.');
+        }
+        
+        // Error display function
+        function showError(message) {
+            const errorElement = document.getElementById('loginError');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+        
         // Handle login function
         async function handleLogin() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showError('Please enter both email and password.');
+                return;
+            }
             
             try {
                 // Use the auth system from auth.js
@@ -91,14 +164,34 @@
                     const result = await window.auth.login(email, password);
                     if (result.success) {
                         window.location.href = '../index.html';
+                    } else {
+                        showError(result.error || 'Login failed. Please try again.');
                     }
                 } else {
                     console.error('Auth system not loaded');
+                    showError('Authentication system not loaded. Please refresh the page.');
                 }
             } catch (error) {
                 console.error('Login error:', error);
+                showError('Network error. Please check your connection and try again.');
             }
         }
     </script>
+    
+    <!-- Add some custom CSS for link-button -->
+    <style>
+        .link-button {
+            background: none;
+            border: none;
+            color: var(--primary);
+            text-decoration: none;
+            cursor: pointer;
+            font-size: inherit;
+            padding: 0;
+        }
+        .link-button:hover {
+            text-decoration: underline;
+        }
+    </style>
 </body>
 </html>
