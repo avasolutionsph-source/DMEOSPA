@@ -448,5 +448,8 @@ function ensureDBInit() {
     return dbInitPromise;
 }
 
+// Make ensureDBInit available globally
+window.ensureDBInit = ensureDBInit;
+
 // Pre-initialize when script loads
 ensureDBInit();

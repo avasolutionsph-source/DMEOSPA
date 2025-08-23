@@ -75,8 +75,8 @@ class InventoryManager {
             this.inventory = await db.getAll('inventory');
             this.displayInventory();
         } catch (error) {
-            if (// logger) {
-                // logger.error('Failed to load inventory', {
+            if (window.logger) {
+                window.logger.error('Failed to load inventory', {
                     category: 'INVENTORY',
                     operation: 'load_inventory',
                     error: error

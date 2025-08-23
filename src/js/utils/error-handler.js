@@ -378,5 +378,5 @@ export function onError(errorType, callback) {
 }
 
 // Export error handler instance and types
-export { errorHandler as ErrorHandler, ErrorTypes, ErrorSeverity };
+export { errorHandler as ErrorHandler, ErrorTypes };
 export default errorHandler;

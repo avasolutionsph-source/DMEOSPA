@@ -133,7 +133,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Load essential components first
     const coreComponents = [
-        { name: 'sidebar', target: '.app-container', append: false },
+        { name: 'main-content', target: '.app-container', append: false },
+        { name: 'sidebar', target: '.app-container', append: true },
         { name: 'dashboard', target: '.main-content', append: false },
         { name: 'modals', target: 'body', append: true }
     ];

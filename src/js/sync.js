@@ -95,10 +95,8 @@ class SyncManager {
             logError('Failed to initialize WebSocket', {
                 category: 'SYNC',
                 operation: 'websocket_init',
-                error
-                    category: 'SYNC',
-                    error: error.message
-                });
+                error: error
+            });
             }
         }
     }
