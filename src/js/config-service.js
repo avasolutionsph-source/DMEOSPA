@@ -3,8 +3,9 @@
 
 class ConfigurationService {
     constructor() {
-        this.dbName = 'AvaConfigDB';
-        this.version = 1;
+        // Use the main database instead of a separate one
+        this.dbName = 'AvaSolutionsDB';
+        this.version = 4; // Match the main database version
         this.db = null;
         this.isInitialized = false;
         
@@ -175,34 +176,14 @@ class ConfigurationService {
     }
 
     async initDB() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, this.version);
-
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => {
-                this.db = request.result;
-                resolve(this.db);
-            };
-
-            request.onupgradeneeded = (e) => {
-                const db = e.target.result;
-
-                // Unified config store
-                if (!db.objectStoreNames.contains('config')) {
-                    const configStore = db.createObjectStore('config', { keyPath: 'key' });
-                    configStore.createIndex('category', 'category', { unique: false });
-                    configStore.createIndex('source', 'source', { unique: false });
-                    configStore.createIndex('lastModified', 'lastModified', { unique: false });
-                }
-
-                // Migration history store
-                if (!db.objectStoreNames.contains('migrations')) {
-                    const migrationStore = db.createObjectStore('migrations', { keyPath: 'id', autoIncrement: true });
-                    migrationStore.createIndex('timestamp', 'timestamp', { unique: false });
-                    migrationStore.createIndex('version', 'version', { unique: false });
-                }
-            };
-        });
+        // Use the global database instance instead of creating a separate one
+        if (window.db && window.ensureDBInit) {
+            await window.ensureDBInit();
+            this.db = window.db.db; // Access the raw IndexedDB instance
+            return this.db;
+        } else {
+            throw new Error('Main database not available. Config service must be loaded after database.js');
+        }
     }
 
     // Main API Methods
