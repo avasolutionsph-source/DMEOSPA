@@ -16,9 +16,72 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <!-- App Container - Components will be loaded here -->
+    <!-- App Container - Direct Layout from Working Backup -->
     <div class="app-container">
-        <!-- Sidebar and Main Content will be loaded by component-loader.js -->
+        <!-- Sidebar Navigation (MUST be first for correct CSS flex positioning) -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-spa"></i>
+                <span>Ava Solutions</span>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-page="pos">
+                    <i class="fas fa-cash-register"></i>
+                    <span>Point of Sale</span>
+                </a>
+                <a href="#" class="nav-item" data-page="products">
+                    <i class="fas fa-spa"></i>
+                    <span>Services</span>
+                </a>
+                <a href="#" class="nav-item" data-page="inventory">
+                    <i class="fas fa-boxes"></i>
+                    <span>Supplies</span>
+                </a>
+                <a href="#" class="nav-item" data-page="employees">
+                    <i class="fas fa-users"></i>
+                    <span>Staff</span>
+                </a>
+                <a href="#" class="nav-item" data-page="rooms">
+                    <i class="fas fa-door-open"></i>
+                    <span>Rooms</span>
+                </a>
+                <a href="#" class="nav-item" data-page="gift-certificates">
+                    <i class="fas fa-gift"></i>
+                    <span>Gift Cards</span>
+                </a>
+                <a href="#" class="nav-item" data-page="chatbot">
+                    <i class="fas fa-robot"></i>
+                    <span>AI Assistant</span>
+                </a>
+                <a href="#" class="nav-item" data-page="settings">
+                    <i class="fas fa-cogs"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-bottom">
+                <div class="connection-status online">
+                    <i class="fas fa-circle"></i>
+                    <span>Online</span>
+                </div>
+                <div class="user-info">
+                    <span id="userName">User</span>
+                    <button id="logoutBtn" class="btn btn-secondary" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content (MUST be second for correct CSS flex positioning) -->
+        <main class="main-content">
+            <!-- Pages will be loaded here dynamically -->
+        </main>
     </div>
 
     <!-- Loading Indicator -->
@@ -32,26 +95,23 @@
         </div>
     </div>
 
-    <!-- Component Loader - Loads all HTML components -->
+    <!-- Component Loader - Only loads modals now -->
     <script type="module" src="src/js/component-loader.js?v=1.8.0"></script>
     
-    <!-- Core Application Scripts - Load as modules to fix import errors -->
+    <!-- Essential Core Scripts Only - Remove duplicates to prevent conflicts -->
     <script type="module" src="src/js/database.js?v=1.8.0"></script>
-    <script type="module" src="src/js/token-manager.js?v=1.8.0"></script>
-    <script type="module" src="src/js/config-service.js?v=1.8.0"></script>
     <script type="module" src="src/js/auth.js?v=1.8.0"></script>
-    <script type="module" src="src/js/state-manager.js?v=1.8.0"></script>
-    <script type="module" src="src/js/sync.js?v=1.8.0"></script>
+    <script type="module" src="src/js/app.js?v=1.8.0"></script>
+    
+    <!-- Feature Scripts - Load after core -->
     <script type="module" src="src/js/dashboard.js?v=1.8.0"></script>
-    <script type="module" src="src/js/pos.js?v=1.8.0"></script>
     <script type="module" src="src/js/products.js?v=1.8.0"></script>
     <script type="module" src="src/js/inventory.js?v=1.8.0"></script>
     <script type="module" src="src/js/employees.js?v=1.8.0"></script>
     <script type="module" src="src/js/rooms.js?v=1.8.0"></script>
-    <script type="module" src="src/js/gift-certificates.js?v=1.8.0"></script>
-    <script type="module" src="src/js/chatbot.js?v=1.8.0"></script>
-    <script type="module" src="src/js/settings.js?v=1.8.0"></script>
-    <script type="module" src="src/js/app.js?v=1.8.0"></script>
+    
+    <!-- Entitlements Fix - Load early to unlock all features -->
+    <script type="module" src="src/js/browser-universal-fix.js?v=1.8.0"></script>
 
     <!-- DEVELOPMENT CACHE REFRESH -->
     <script>

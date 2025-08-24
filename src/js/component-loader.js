@@ -147,10 +147,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     try {
         // Load essential components first with error handling
-        // Load sidebar FIRST, then main-content to ensure proper DOM order
+        // Note: sidebar and main-content are now directly embedded in index.html to fix layout issues
         const coreComponents = [
-            { name: 'sidebar', target: '.app-container', append: true },
-            { name: 'main-content', target: '.app-container', append: true },
             { name: 'modals', target: 'body', append: true }
         ];
         

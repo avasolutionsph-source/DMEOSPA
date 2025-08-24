@@ -198,6 +198,11 @@ class ProductsManager {
 
         // Show loading
         const saveBtn = document.querySelector('#productForm button[type="submit"]');
+        if (!saveBtn) {
+            console.error('Save button not found in productForm');
+            this.isSaving = false;
+            return;
+        }
         const originalText = saveBtn.innerHTML;
         saveBtn.classList.add('loading');
         saveBtn.disabled = true;
