@@ -467,11 +467,14 @@ class AuthSystem {
         let authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
         let currentUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
         let isLoggedIn = localStorage.getItem('isLoggedIn') || sessionStorage.getItem('isLoggedIn');
+        let demoMode = localStorage.getItem('demoMode') || sessionStorage.getItem('demoMode');
         
         console.log('📁 Auth state found:', {
             hasToken: !!authToken,
             hasUser: !!currentUser,
-            isLoggedIn: isLoggedIn === 'true'
+            isLoggedIn: isLoggedIn === 'true',
+            demoMode: demoMode === 'true',
+            tokenPreview: authToken ? authToken.substring(0, 10) + '...' : null
         });
         
         if (authToken && currentUser && isLoggedIn === 'true') {
@@ -481,8 +484,9 @@ class AuthSystem {
                 this.isLoggedIn = true;
                 
                 console.log('✅ Auth state restored:', {
-                    user: this.currentUser.firstName || this.currentUser.businessName,
-                    tokenLength: authToken.length
+                    user: this.currentUser?.firstName || this.currentUser?.businessName || 'Unknown User',
+                    tokenLength: authToken.length,
+                    userObject: this.currentUser
                 });
                 
                 // Set API client token

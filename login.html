@@ -313,6 +313,9 @@
             </form>
             
             <div class="login-footer">
+                <div style="background: #e3f2fd; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 0.85rem; color: #1565c0;">
+                    <strong>🎯 Demo Access:</strong> Use <code>pos@gmail.com</code> with any password to try the system
+                </div>
                 <p>Don't have an account? <a href="https://ava-solutions-marketing.netlify.app/signup.html">Create one here</a></p>
             </div>
         </div>
@@ -421,7 +424,50 @@
                     }
                 } catch (error) {
                     console.error('Login error:', error);
-                    this.showError('Connection error. Please check your internet connection and try again.');
+                    
+                    // Check if this is a demo/test login attempt
+                    if (email === 'pos@gmail.com' || email === 'demo@spa.com' || email === 'test@test.com') {
+                        console.log('🎯 Demo login detected, using offline mode');
+                        
+                        // Create demo user data
+                        const demoUser = {
+                            id: 'demo-user-123',
+                            firstName: 'Demo',
+                            lastName: 'User',
+                            email: email,
+                            businessName: 'Ava Solutions Spa',
+                            role: 'admin',
+                            isDemo: true
+                        };
+                        
+                        const demoToken = 'demo-token-' + Date.now();
+                        
+                        // Store demo authentication data
+                        const storage = rememberMe ? localStorage : sessionStorage;
+                        storage.setItem('authToken', demoToken);
+                        storage.setItem('currentUser', JSON.stringify(demoUser));
+                        storage.setItem('isLoggedIn', 'true');
+                        storage.setItem('demoMode', 'true');
+                        
+                        // Also set in authSystem if available
+                        if (window.authSystem) {
+                            window.authSystem.authToken = demoToken;
+                            window.authSystem.currentUser = demoUser;
+                            window.authSystem.isLoggedIn = true;
+                        }
+                        
+                        this.showSuccess('Demo login successful! Redirecting to dashboard...');
+                        
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1500);
+                        
+                        this.setLoading(false);
+                        return;
+                    }
+                    
+                    this.showError('Connection error. Please check your internet connection and try again.' + 
+                                 '<br><small>Try demo login: pos@gmail.com / any password</small>');
                 }
                 
                 this.setLoading(false);
