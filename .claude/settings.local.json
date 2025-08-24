@@ -22,7 +22,17 @@
       "Bash(python:*)",
       "Bash(start chrome \"http://localhost:8000\")",
       "Bash(timeout:*)",
-      "Bash(start chrome:*)"
+      "Bash(start chrome:*)",
+      "Bash(xcopy:*)",
+      "Bash(robocopy:*)",
+      "Bash(tar:*)",
+      "Bash(if [ -f \"src/assets/icons/icon.svg\" ])",
+      "Bash(then cp \"src/assets/icons/icon.svg\" \"icons/icon.svg\")",
+      "Bash(fi)",
+      "Bash(for:*)",
+      "Bash(do sed -i '/^import.*from/d' \"$file\")",
+      "Bash(do)",
+      "Bash(sed:*)"
     ],
     "deny": [],
     "ask": [],

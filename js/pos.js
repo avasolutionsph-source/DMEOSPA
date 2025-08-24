@@ -1,5 +1,16 @@
 // POS System Management
-import { showSuccess, showError, showWarning, showInfo } from './utils/notification-manager.js';
+
+// Simple utility functions to replace missing imports
+function showSuccess(msg) { alert('✅ ' + msg); }
+function showError(msg) { alert('❌ ' + msg); }
+function showWarning(msg) { alert('⚠️ ' + msg); }
+function showInfo(msg) { alert('ℹ️ ' + msg); }
+function setButtonLoading(btnId, loading) { 
+    const btn = document.getElementById(btnId);
+    if (btn) btn.disabled = loading;
+}
+function showLoading(title, msg) { console.log('Loading:', title, msg); }
+function hideLoading() { console.log('Loading complete'); }
 
 class POSSystem {
     constructor() {

@@ -1,4 +1,0 @@
-[build]
-  base = "marketing-website"
-  publish = "public"
-  command = ""
