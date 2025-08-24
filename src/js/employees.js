@@ -220,8 +220,22 @@ class EmployeeManager {
         }
         this.isSaving = true;
 
-        // Show loading
-        const saveBtn = document.querySelector('#employeeForm button[type="submit"]');
+        // Show loading - check multiple selectors for submit button
+        let saveBtn = document.querySelector('#employeeForm button[type="submit"]');
+        if (!saveBtn) {
+            // Try alternative selector for button with form attribute
+            saveBtn = document.querySelector('button[form="employeeForm"][type="submit"]');
+        }
+        if (!saveBtn) {
+            // Try broader selector
+            saveBtn = document.querySelector('button[type="submit"]');
+            console.warn('Using fallback submit button selector for employees');
+        }
+        if (!saveBtn) {
+            console.error('Save button not found in employeeForm with any selector');
+            this.isSaving = false;
+            return;
+        }
         const originalText = saveBtn.innerHTML;
         saveBtn.classList.add('loading');
         saveBtn.disabled = true;

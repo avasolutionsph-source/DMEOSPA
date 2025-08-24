@@ -80,7 +80,355 @@
 
         <!-- Main Content (MUST be second for correct CSS flex positioning) -->
         <main class="main-content">
-            <!-- Pages will be loaded here dynamically -->
+            <!-- Dashboard Page -->
+            <div id="dashboard" class="page active">
+                <div class="dashboard-container">
+                    <div class="welcome-banner">
+                        <h1 id="dashboardWelcome">Welcome Back!</h1>
+                        <p id="dashboardSubtitle">Here's how your business is doing today</p>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="todayRevenue">₱0.00</h3>
+                                <p>Today's Revenue</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="todayOrders">0</h3>
+                                <p>Today's Orders</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="totalEmployees">0</h3>
+                                <p>Total Employees</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-spa"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="totalServices">0</h3>
+                                <p>Total Services</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- POS Page -->
+            <div id="pos" class="page">
+                <div class="pos-container">
+                    <div class="pos-left">
+                        <div class="pos-header">
+                            <h2>Point of Sale</h2>
+                            <div class="employee-select">
+                                <label>Employee:</label>
+                                <select id="employeeSelect">
+                                    <option value="">Select Employee</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="product-categories">
+                            <button class="category-btn active" data-category="all">All</button>
+                            <button class="category-btn" data-category="massage">Massage</button>
+                            <button class="category-btn" data-category="facial">Facial</button>
+                            <button class="category-btn" data-category="body">Body</button>
+                            <button class="category-btn" data-category="nails">Nails</button>
+                        </div>
+                        
+                        <div class="products-grid" id="posProductsGrid"></div>
+                    </div>
+                    
+                    <div class="pos-right">
+                        <div class="cart-section">
+                            <h3>Current Order</h3>
+                            <div class="cart-items" id="cartItems"></div>
+                            <div class="cart-totals">
+                                <div class="total-row">
+                                    <span>Subtotal:</span>
+                                    <span id="cartSubtotal">₱0.00</span>
+                                </div>
+                                <div class="total-row final">
+                                    <span>Total:</span>
+                                    <span id="cartTotal">₱0.00</span>
+                                </div>
+                            </div>
+                            <div class="cart-actions">
+                                <button class="btn btn-secondary" id="clearCartBtn">Clear</button>
+                                <button class="btn btn-primary" id="checkoutBtn">Checkout</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products/Services Page -->
+            <div id="products" class="page">
+                <div class="page-header">
+                    <h1>Spa Services</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="addProductBtn">
+                            <i class="fas fa-plus"></i> Add Service
+                        </button>
+                    </div>
+                </div>
+                <div class="products-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Service Name</th>
+                                <th>Duration</th>
+                                <th>Price</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th>Show in POS</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Inventory Page -->
+            <div id="inventory" class="page">
+                <div class="page-header">
+                    <h1>Spa Supplies & Inventory</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="addInventoryBtn">
+                            <i class="fas fa-plus"></i> Add Supply
+                        </button>
+                    </div>
+                </div>
+                <div class="inventory-filters">
+                    <div class="filter-group">
+                        <label>Filter by Status:</label>
+                        <select id="stockFilter" class="form-select">
+                            <option value="all">All Items</option>
+                            <option value="low">Low Stock</option>
+                            <option value="out">Out of Stock</option>
+                            <option value="ok">In Stock</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="inventory-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Supply Name</th>
+                                <th>Category</th>
+                                <th>Current Stock</th>
+                                <th>Unit</th>
+                                <th>Min Stock</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Employees Page -->
+            <div id="employees" class="page">
+                <div class="page-header">
+                    <h1>Employee Management</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="addEmployeeBtn">
+                            <i class="fas fa-user-plus"></i> Add Employee
+                        </button>
+                    </div>
+                </div>
+                <div class="employees-grid" id="employeesGrid"></div>
+            </div>
+
+            <!-- Rooms Page -->
+            <div id="rooms" class="page">
+                <div class="page-header">
+                    <h1>Room Management</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="addRoomBtn">
+                            <i class="fas fa-plus-circle"></i> Add Room
+                        </button>
+                    </div>
+                </div>
+                <div class="rooms-grid" id="roomsGrid"></div>
+            </div>
+
+            <!-- Gift Certificates Page -->
+            <div id="gift-certificates" class="page">
+                <div class="page-header">
+                    <h1>Gift Certificate Management</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="create-certificate-btn">
+                            <i class="fas fa-plus"></i> Create Certificate
+                        </button>
+                        <button class="btn btn-secondary" id="validate-certificate-btn">
+                            <i class="fas fa-search"></i> Validate
+                        </button>
+                        <button class="btn btn-outline" id="export-certificates-btn">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="gc-dashboard">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-gift"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="gc-total-count">0</h3>
+                                <p>Total Certificates</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="gc-active-count">0</h3>
+                                <p>Active</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-money-bill"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="gc-total-value">₱0.00</h3>
+                                <p>Total Value</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-piggy-bank"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="gc-remaining-value">₱0.00</h3>
+                                <p>Outstanding</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gc-filters">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="active">Active</button>
+                    <button class="filter-btn" data-filter="redeemed">Redeemed</button>
+                    <button class="filter-btn" data-filter="expired">Expired</button>
+                </div>
+
+                <div class="certificates-container" id="certificates-list">
+                    <!-- Certificates will be loaded here -->
+                </div>
+            </div>
+
+            <!-- AI Assistant/Chatbot Page -->
+            <div id="chatbot" class="page">
+                <div class="page-header">
+                    <h1>AI Business Assistant</h1>
+                </div>
+                <div class="chatbot-container">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="chat-message bot">
+                            <div class="message-avatar">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="message-content">
+                                <p><strong>🌟 Welcome to your AI Business Assistant!</strong></p>
+                                <br>
+                                <p>Hello! I'm your intelligent spa management companion, here to help you grow and optimize your business! 🚀</p>
+                                <br>
+                                <p><strong>What I can do for you:</strong></p>
+                                <br>
+                                <p>💰 <strong>Smart Analytics</strong> - Ask me "Who's my best employee?" or "What's my most profitable service?"</p>
+                                <br>
+                                <p>📊 <strong>Business Intelligence</strong> - Try "How much will I earn this month?" or "Show me my revenue trends"</p>
+                                <br>
+                                <p>🎯 <strong>Personalized Tips</strong> - Say "I want to make more profit" or "Help me prevent theft"</p>
+                                <br>
+                                <p>🔍 <strong>Deep Insights</strong> - Ask "Is someone stealing?" or "When should I close?"</p>
+                                <br>
+                                <p>💡 <strong>Expert Advice</strong> - Request "Marketing tips" or "Staff management help"</p>
+                                <br>
+                                <p><strong>💬 Just talk to me naturally!</strong> I understand your questions and analyze your actual business data to give you specific, actionable advice.</p>
+                                <br>
+                                <p><em>What would you like to know about your business today? 😊</em></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input-container">
+                        <input type="text" id="chatInput" placeholder="Ask me anything about your business...">
+                        <button class="btn btn-primary" id="sendChatBtn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="settings" class="page">
+                <div class="page-header">
+                    <h1>Settings</h1>
+                </div>
+                <div class="settings-container">
+                    <div class="settings-section">
+                        <h3>Business Information</h3>
+                        <div class="form-group">
+                            <label>Business Name</label>
+                            <input type="text" id="businessNameInput" class="form-input" placeholder="Enter business name">
+                        </div>
+                        <button class="btn btn-primary" id="saveSettingsBtn">Save Changes</button>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Data Management</h3>
+                        <button class="btn btn-secondary" id="exportDataBtn">
+                            <i class="fas fa-download"></i> Export Data
+                        </button>
+                        <button class="btn btn-danger" id="clearDataBtn">
+                            <i class="fas fa-trash"></i> Clear All Data
+                        </button>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Application Updates</h3>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                            Use this to refresh the app and load the latest features when updates are available.
+                        </p>
+                        <button class="btn btn-primary" id="forceRefreshBtn">
+                            <i class="fas fa-sync-alt"></i> Refresh App & Clear Cache
+                        </button>
+                    </div>
+                    <div class="settings-section">
+                        <h3>Troubleshooting</h3>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                            If you're experiencing issues like pages not loading correctly or features not working, use this to fix common problems.
+                        </p>
+                        <button class="btn btn-warning" id="fixStorageBtn">
+                            <i class="fas fa-tools"></i> Fix App Issues (Keep Data)
+                        </button>
+                        <p style="color: #666; font-size: 0.85rem; margin-top: 0.5rem;">
+                            <i class="fas fa-info-circle"></i> This will clear temporary files and cache but <strong>keep all your business data safe</strong>.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
