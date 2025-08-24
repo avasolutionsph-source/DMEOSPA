@@ -1145,10 +1145,11 @@ body {
 /* Ultra-Premium POS System */
 .pos-container {
     display: grid;
-    grid-template-columns: 1fr 450px;
+    grid-template-columns: 1.5fr 1fr;
     gap: 2rem;
     height: calc(100vh - 200px);
     position: relative;
+    max-width: 100%;
 }
 
 /* Employee Selection in POS */
@@ -3439,13 +3440,14 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
     color: var(--dark);
 }
 
-.payment-options {
+.payment-options, .payment-methods {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
+    margin-bottom: 1.5rem;
 }
 
-.payment-option {
+.payment-option, .payment-method {
     padding: 1rem;
     border: 2px solid var(--light);
     border-radius: 8px;

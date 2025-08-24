@@ -1,39 +1,13 @@
 // POS System Management
 
-// Utility functions with improved implementations
-function showSuccess(msg) { 
-    if (window.showNotification) {
-        window.showNotification(msg, 'success');
-    } else {
-        alert('✅ ' + msg);
-    }
-}
-
-function showError(msg) { 
-    if (window.showNotification) {
-        window.showNotification(msg, 'error');
-    } else {
-        alert('❌ ' + msg);
-    }
-}
-
-function showWarning(msg) { 
-    if (window.showNotification) {
-        window.showNotification(msg, 'warning');
-    } else {
-        alert('⚠️ ' + msg);
-    }
-}
-
-function showInfo(msg) { 
-    if (window.showNotification) {
-        window.showNotification(msg, 'info');
-    } else {
-        alert('ℹ️ ' + msg);
-    }
-}
-
-function setButtonLoading(btnId, loading) { 
+// Use global utility functions if available
+const showSuccess = window.showNotification ? (msg) => window.showNotification(msg, 'success') : (msg) => alert('✅ ' + msg);
+const showError = window.showNotification ? (msg) => window.showNotification(msg, 'error') : (msg) => alert('❌ ' + msg);
+const showWarning = window.showNotification ? (msg) => window.showNotification(msg, 'warning') : (msg) => alert('⚠️ ' + msg);
+const showInfo = window.showNotification ? (msg) => window.showNotification(msg, 'info') : (msg) => alert('ℹ️ ' + msg);
+const showLoading = window.showLoading || ((title, msg) => console.log('Loading:', title, msg));
+const hideLoading = window.hideLoading || (() => console.log('Loading complete'));
+const setButtonLoading = window.setButtonLoading || ((btnId, loading) => {
     const btn = document.getElementById(btnId);
     if (btn) {
         btn.disabled = loading;
@@ -44,44 +18,13 @@ function setButtonLoading(btnId, loading) {
             btn.innerHTML = btn.dataset.originalText;
         }
     }
-}
-
-function showLoading(title, msg) { 
-    // Check for global showLoading utility, but avoid self-reference
-    if (window.showLoading && window.showLoading !== showLoading) {
-        window.showLoading(title, msg);
-    } else {
-        console.log('Loading:', title, msg);
-    }
-}
-
-function hideLoading() { 
-    // Check for global hideLoading utility, but avoid self-reference
-    if (window.hideLoading && window.hideLoading !== hideLoading) {
-        window.hideLoading();
-    } else {
-        console.log('Loading complete');
-    }
-}
+});
 
 class POSSystem {
     constructor() {
-        // Always initialize cart as empty array to avoid state issues
+        // Initialize all properties
         this.cart = [];
         this.selectedEmployee = null;
-        
-        // Try to load from StateManager if available, but don't fail
-        try {
-            if (window.StateManager && window.StateManager.initialized) {
-                const savedCart = window.StateManager.getState('pos.cart');
-                if (Array.isArray(savedCart)) {
-                    this.cart = savedCart;
-                }
-                this.selectedEmployee = window.StateManager.getState('pos.selectedEmployee');
-            }
-        } catch (e) {
-            console.warn('Could not load cart from StateManager:', e);
-        }
         this.currentCategory = 'all';
         this.products = [];
         this.inventory = [];
@@ -92,6 +35,15 @@ class POSSystem {
         this.appliedPromoDiscount = null;
         this.discountAmount = 0;
         this.gcAmount = 0;
+        
+        // Room type labels
+        this.roomTypes = {
+            'massage': 'Massage Room',
+            'facial': 'Facial Room',
+            'couple': 'Couple\'s Room',
+            'vip': 'VIP Suite',
+            'general': 'General Purpose'
+        };
     }
 
     async init() {
@@ -99,6 +51,50 @@ class POSSystem {
         await this.loadProducts();
         this.setupEventListeners();
         this.updateCartDisplay();
+    }
+
+    // Unified logging methods to reduce duplicate code
+    logError(message, operation, error) {
+        if (window.logger) {
+            window.logger.error(message, {
+                category: 'POS',
+                operation,
+                error
+            });
+        } else {
+            console.error(message, error);
+        }
+    }
+
+    logInfo(message, operation, data) {
+        if (window.logger) {
+            window.logger.info(message, {
+                category: 'POS',
+                operation,
+                data
+            });
+        }
+    }
+
+    logDebug(message, operation, data) {
+        if (window.logger) {
+            window.logger.debug(message, {
+                category: 'POS',
+                operation,
+                data
+            });
+        }
+    }
+
+    // Unified inventory stock update
+    async updateInventoryStock(itemId, quantityChange) {
+        const invItem = await window.db.get('inventory', itemId);
+        if (invItem) {
+            invItem.quantity = Math.max(0, (invItem.quantity || 0) + quantityChange);
+            invItem.currentStock = invItem.quantity;
+            invItem.modifiedAt = new Date().toISOString();
+            await window.db.update('inventory', invItem);
+        }
     }
 
     setupEventListeners() {
@@ -116,14 +112,7 @@ class POSSystem {
         const employeeSelect = document.getElementById('employeeSelect');
         if (employeeSelect) {
             employeeSelect.addEventListener('change', (e) => {
-                // Use StateHelpers if available
-                if (window.StateHelpers) {
-                    window.StateHelpers.selectEmployee(e.target.value);
-                } else if (window.StateManager && window.StateManager.initialized) {
-                    window.StateManager.setState('pos.selectedEmployee', e.target.value);
-                } else {
-                    this.selectedEmployee = e.target.value;
-                }
+                this.selectedEmployee = e.target.value;
                 
                 // Update checkout button appearance based on employee selection
                 const checkoutBtn = document.getElementById('checkoutBtn');
@@ -218,10 +207,10 @@ class POSSystem {
         }
     }
 
-    async loadEmployees() {
+    async loadEmployees(selectId = 'employeeSelect', setSelected = false) {
         try {
             const employees = await window.db.getAll('employees');
-            const select = document.getElementById('employeeSelect');
+            const select = document.getElementById(selectId);
             if (select) {
                 select.innerHTML = '<option value="">Select Employee</option>';
                 employees.forEach(emp => {
@@ -230,15 +219,14 @@ class POSSystem {
                     option.textContent = `${emp.name} - ${emp.position}`;
                     select.appendChild(option);
                 });
+                
+                // Set previously selected employee if requested
+                if (setSelected && this.selectedEmployee) {
+                    select.value = this.selectedEmployee;
+                }
             }
         } catch (error) {
-            if (window.logger) {
-                window.logger.error('Failed to load employees', {
-                    category: 'POS',
-                    operation: 'load_employees',
-                    error: error
-                });
-            }
+            this.logError('Failed to load employees', 'load_employees', error);
         }
     }
 
@@ -264,13 +252,7 @@ class POSSystem {
             // Combine and display
             this.displayProducts();
         } catch (error) {
-            if (window.logger) {
-                window.logger.error('Failed to load products', {
-                    category: 'POS',
-                    operation: 'load_products',
-                    error: error
-                });
-            }
+            this.logError('Failed to load products', 'load_products', error);
         }
     }
 
@@ -321,24 +303,16 @@ class POSSystem {
 
     async addToCart(itemId, itemType) {
         try {
-            if (window.logger) {
-                window.logger.debug('Adding item to cart', {
-                    category: 'POS',
-                    operation: 'add_to_cart',
-                    data: { itemId: itemId, itemType: itemType }
-                });
-            }
+            this.logDebug('Adding item to cart', 'add_to_cart', { itemId, itemType });
             let item;
             if (itemType === 'inventory') {
                 item = await window.db.get('inventory', itemId);
-                // Check stock - use quantity which is the primary field
-                const stock = item.quantity || item.currentStock || 0;
-                if (stock <= 0) {
+                // Check stock - use quantity as primary field
+                item.currentStock = item.quantity || 0;
+                if (item.currentStock <= 0) {
                     showError('Item out of stock');
                     return;
                 }
-                // Normalize to currentStock for consistency
-                item.currentStock = stock;
             } else {
                 item = await window.db.get('products', itemId);
             }
@@ -367,44 +341,20 @@ class POSSystem {
                     maxStock: item.currentStock
                 };
                 
-                // Just use local cart management for now to avoid state issues
                 this.cart.push(newItem);
-                
-                // Try to update StateManager if available, but don't fail if it errors
-                try {
-                    if (window.StateManager && window.StateManager.initialized) {
-                        window.StateManager.setState('pos.cart', [...this.cart]);
-                    }
-                } catch (stateError) {
-                    console.warn('Could not update StateManager:', stateError);
-                }
             }
 
             this.updateCartDisplay();
             showSuccess(`${item.name} added to cart`);
             
-            if (window.logger) {
-                window.logger.info('Item added to cart successfully', {
-                    category: 'POS',
-                    operation: 'add_to_cart_success',
-                    data: { 
-                        itemName: item.name, 
-                        itemId: itemId, 
-                        price: item.price || item.unitPrice || 0,
-                        cartSize: this.cart.length 
-                    }
-                });
-            }
+            this.logInfo('Item added to cart successfully', 'add_to_cart_success', { 
+                itemName: item.name, 
+                itemId, 
+                price: item.price || item.unitPrice || 0,
+                cartSize: this.cart.length 
+            });
         } catch (error) {
-            if (window.logger) {
-                window.logger.error('Failed to add item to cart', {
-                    category: 'POS',
-                    operation: 'add_to_cart_error',
-                    error: error
-                });
-            } else {
-                console.error('Failed to add item to cart:', error);
-            }
+            this.logError('Failed to add item to cart', 'add_to_cart_error', error);
             showError('Failed to add item to cart');
         }
     }
@@ -412,17 +362,7 @@ class POSSystem {
     removeFromCart(index) {
         const item = this.cart[index];
         if (confirm(`Remove ${item.name} from cart?`)) {
-            // Just use local cart management
             this.cart.splice(index, 1);
-            
-            // Try to update StateManager if available, but don't fail
-            try {
-                if (window.StateManager && window.StateManager.initialized) {
-                    window.StateManager.setState('pos.cart', [...this.cart]);
-                }
-            } catch (stateError) {
-                console.warn('Could not update StateManager:', stateError);
-            }
             
             this.updateCartDisplay();
             showInfo(`${item.name} removed from cart`);
@@ -444,19 +384,7 @@ class POSSystem {
     }
 
     clearCart() {
-        // Just clear the local cart
         this.cart = [];
-        
-        // Try to update StateManager if available, but don't fail
-        try {
-            if (window.StateManager && window.StateManager.initialized) {
-                window.StateManager.setState('pos.cart', []);
-                window.StateManager.setState('pos.discounts', []);
-                window.StateManager.setState('pos.currentTransaction', null);
-            }
-        } catch (stateError) {
-            console.warn('Could not update StateManager:', stateError);
-        }
         
         // Reset discount tracking
         this.appliedGiftCertificate = null;
@@ -556,7 +484,7 @@ class POSSystem {
         this.resetDiscounts();
         
         // Load employees for checkout dropdown
-        await this.loadEmployeesForCheckout();
+        await this.loadEmployees('checkoutEmployeeSelect', true);
         
         // Check if there are services in cart to show room assignment (reuse hasServices variable)
         const roomSection = document.getElementById('roomAssignmentSection');
@@ -656,13 +584,7 @@ class POSSystem {
             this.updateCheckoutTotals();
             
         } catch (error) {
-            if (window.logger) {
-                window.logger.error('Gift certificate validation error', {
-                    category: 'POS',
-                    operation: 'validate_gift_certificate',
-                    error: error
-                });
-            }
+            this.logError('Gift certificate validation error', 'validate_gift_certificate', error);
             statusDiv.innerHTML = '<span style="color: red;">Error validating gift certificate</span>';
         }
     }
@@ -765,36 +687,6 @@ class POSSystem {
         document.getElementById('checkoutTotal').textContent = app.formatCurrency(Math.max(0, total));
     }
 
-    // Load employees for checkout dropdown
-    async loadEmployeesForCheckout() {
-        try {
-            const employees = await window.db.getAll('employees');
-            const select = document.getElementById('checkoutEmployeeSelect');
-            if (select) {
-                select.innerHTML = '<option value="">Select Employee</option>';
-                employees.forEach(emp => {
-                    const option = document.createElement('option');
-                    option.value = emp.id;
-                    option.textContent = `${emp.name} - ${emp.position}`;
-                    select.appendChild(option);
-                });
-                
-                // Set previously selected employee if any
-                if (this.selectedEmployee) {
-                    select.value = this.selectedEmployee;
-                }
-            }
-        } catch (error) {
-            if (window.logger) {
-                window.logger.error('Failed to load employees for checkout', {
-                    category: 'POS',
-                    operation: 'load_checkout_employees',
-                    error: error
-                });
-            }
-        }
-    }
-    
     // Load available rooms for checkout
     async loadAvailableRooms() {
         try {
@@ -807,30 +699,13 @@ class POSSystem {
                 availableRooms.forEach(room => {
                     const option = document.createElement('option');
                     option.value = room.id;
-                    option.textContent = `${room.name} - ${this.getRoomTypeLabel(room.type)} (Capacity: ${room.capacity})`;
+                    option.textContent = `${room.name} - ${this.roomTypes[room.type] || room.type} (Capacity: ${room.capacity})`;
                     select.appendChild(option);
                 });
             }
         } catch (error) {
-            if (window.logger) {
-                window.logger.error('Failed to load rooms for checkout', {
-                    category: 'POS',
-                    operation: 'load_checkout_rooms',
-                    error: error
-                });
-            }
+            this.logError('Failed to load rooms for checkout', 'load_checkout_rooms', error);
         }
-    }
-    
-    getRoomTypeLabel(type) {
-        const types = {
-            'massage': 'Massage Room',
-            'facial': 'Facial Room',
-            'couple': 'Couple\'s Room',
-            'vip': 'VIP Suite',
-            'general': 'General Purpose'
-        };
-        return types[type] || type;
     }
 
     async processCheckout() {
@@ -839,16 +714,10 @@ class POSSystem {
             return;
         }
         
-        if (window.logger) {
-            window.logger.info('Starting checkout process', {
-                category: 'POS',
-                operation: 'checkout_start',
-                data: { 
-                    cartItems: this.cart.length,
-                    cartTotal: this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-                }
-            });
-        }
+        this.logInfo('Starting checkout process', 'checkout_start', { 
+            cartItems: this.cart.length,
+            cartTotal: this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+        });
         
         // Get employee from checkout modal
         const checkoutEmployee = document.getElementById('checkoutEmployeeSelect')?.value;
@@ -987,19 +856,11 @@ class POSSystem {
                 syncStatus: 'pending'
             };
 
-            // Debug: Log transaction data being saved
-            if (window.logger && window.logger.info) {
-                window.logger.info('POS transaction being saved', { 
-                    category: 'POS', 
-                    context: {
-                        total: transaction.total,
-                        employeeId: transaction.employeeId,
-                        employeeIdType: typeof transaction.employeeId,
-                        selectedEmployee: this.selectedEmployee,
-                        items: transaction.items.length
-                    }
-                });
-            }
+            this.logInfo('POS transaction being saved', 'save_transaction', {
+                total: transaction.total,
+                employeeId: transaction.employeeId,
+                items: transaction.items.length
+            });
 
             // Save transaction
             const transactionId = await window.db.add('transactions', transaction);
@@ -1041,13 +902,7 @@ class POSSystem {
             for (const item of this.cart) {
                 if (item.type === 'inventory') {
                     // Get the inventory item and update stock manually
-                    const invItem = await window.db.get('inventory', item.id);
-                    if (invItem) {
-                        invItem.quantity = Math.max(0, (invItem.quantity || 0) - item.quantity);
-                        invItem.currentStock = invItem.quantity; // Keep both in sync
-                        invItem.modifiedAt = new Date().toISOString();
-                        await window.db.update('inventory', invItem);
-                    }
+                    await this.updateInventoryStock(item.id, -item.quantity);
                 } else if (item.type === 'service') {
                     // Track automatic supply usage for services
                     await this.processServiceSupplyUsage(item, transactionId);
@@ -1060,33 +915,20 @@ class POSSystem {
                 if (employee && employee.commissionRate) {
                     const commission = total * (employee.commissionRate / 100);
                     // You might want to track commissions separately
-                    if (window.logger) {
-                        window.logger.debug('Commission calculated', {
-                            category: 'POS',
-                            operation: 'calculate_commission',
-                            data: {
-                                employeeName: employee.name,
-                                commission: commission
-                            }
-                        });
-                    }
+                    this.logDebug('Commission calculated', 'calculate_commission', {
+                        employeeName: employee.name,
+                        commission
+                    });
                 }
             }
 
-            // Log successful transaction
-            if (window.logger) {
-                window.logger.info('Transaction completed successfully', {
-                    category: 'POS',
-                    operation: 'checkout_success',
-                    data: {
-                        transactionId: transactionId,
-                        total: transaction.total,
-                        paymentMethod: paymentMethod,
-                        employeeId: transaction.employeeId,
-                        itemCount: transaction.items.length
-                    }
-                });
-            }
+            this.logInfo('Transaction completed successfully', 'checkout_success', {
+                transactionId,
+                total: transaction.total,
+                paymentMethod,
+                employeeId: transaction.employeeId,
+                itemCount: transaction.items.length
+            });
 
             // Clear cart
             this.cart = [];
@@ -1108,15 +950,7 @@ class POSSystem {
             }
 
         } catch (error) {
-            if (window.logger) {
-                window.logger.error('Checkout failed', {
-                    category: 'POS',
-                    operation: 'checkout',
-                    error: error
-                });
-            } else {
-                console.error('Checkout failed:', error);
-            }
+            this.logError('Checkout failed', 'checkout', error);
             hideLoading();
             setButtonLoading('confirmCheckoutBtn', false);
             showError('Checkout failed. Please try again.');
@@ -1150,13 +984,7 @@ class POSSystem {
                 );
             }
         } catch (error) {
-            if (window.logger) {
-                window.logger.error('Failed to process service supply usage', {
-                    category: 'POS',
-                    operation: 'process_supply_usage',
-                    error: error
-                });
-            }
+            this.logError('Failed to process service supply usage', 'process_supply_usage', error);
         }
     }
 
@@ -1164,9 +992,8 @@ class POSSystem {
     async updateInventoryWithUsageTracking(inventoryItem, usageAmount, transactionId, serviceName) {
         try {
             // Update stock - use quantity as primary field
-            const currentStock = inventoryItem.quantity || inventoryItem.currentStock || 0;
-            inventoryItem.quantity = Math.max(0, currentStock - usageAmount);
-            inventoryItem.currentStock = inventoryItem.quantity; // Keep both in sync
+            inventoryItem.quantity = Math.max(0, (inventoryItem.quantity || 0) - usageAmount);
+            inventoryItem.currentStock = inventoryItem.quantity;
             inventoryItem.modifiedAt = new Date().toISOString();
             inventoryItem.syncStatus = 'pending';
 
@@ -1203,27 +1030,15 @@ class POSSystem {
             // Save updated inventory item
             await window.db.update('inventory', inventoryItem);
 
-            if (window.logger) {
-                window.logger.info('Auto-tracked supply usage', {
-                    category: 'POS',
-                    operation: 'auto_track_supply',
-                    data: {
-                        amount: usageAmount,
-                        unit: inventoryItem.unit || 'units',
-                        itemName: inventoryItem.name,
-                        serviceName: serviceName
-                    }
-                });
-            }
+            this.logInfo('Auto-tracked supply usage', 'auto_track_supply', {
+                amount: usageAmount,
+                unit: inventoryItem.unit || 'units',
+                itemName: inventoryItem.name,
+                serviceName
+            });
             
         } catch (error) {
-            if (window.logger) {
-                window.logger.error('Failed to update inventory with usage tracking', {
-                    category: 'POS',
-                    operation: 'update_inventory_usage',
-                    error: error
-                });
-            }
+            this.logError('Failed to update inventory with usage tracking', 'update_inventory_usage', error);
         }
     }
 
@@ -1274,15 +1089,7 @@ class POSSystem {
             </div>
         `;
 
-        // Show modal (you'd need to implement this modal in your HTML)
-        // For now, just log the usage
-        if (window.logger) {
-            window.logger.debug('Supply usage tracking available', {
-                category: 'POS',
-                operation: 'check_supply_tracking',
-                data: { serviceName: serviceItem.name }
-            });
-        }
+        this.logDebug('Supply usage tracking available', 'check_supply_tracking', { serviceName: serviceItem.name });
     }
 }
 
