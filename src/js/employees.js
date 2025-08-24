@@ -15,6 +15,14 @@ class EmployeeManager {
 
     setupEventListeners() {
         if (this._listenersAttached) return;
+        
+        // Check if we're actually on the employees page before setting up listeners
+        const employeesPage = document.getElementById('employees');
+        if (!employeesPage) {
+            console.log('🔍 [EMPLOYEES] Not on employees page, skipping event listener setup');
+            return;
+        }
+        
         this._listenersAttached = true;
         // Add employee button
         const addBtn = document.getElementById('addEmployeeBtn');

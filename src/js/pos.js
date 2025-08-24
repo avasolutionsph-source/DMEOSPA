@@ -34,6 +34,14 @@ class POSSystem {
 
     setupEventListeners() {
         if (this._listenersAttached) return;
+        
+        // Check if we're actually on the POS page before setting up listeners
+        const posPage = document.getElementById('pos');
+        if (!posPage) {
+            console.log('🔍 [POS] Not on POS page, skipping event listener setup');
+            return;
+        }
+        
         this._listenersAttached = true;
         // Employee selection
         const employeeSelect = document.getElementById('employeeSelect');
@@ -96,7 +104,9 @@ class POSSystem {
         });
 
         // Clear cart button
-        document.getElementById('clearCart').addEventListener('click', () => {
+        const clearCartBtn = document.getElementById('clearCart');
+        if (clearCartBtn) {
+            clearCartBtn.addEventListener('click', () => {
             if (this.cart.length > 0) {
                 const itemCount = this.cart.length;
                 const totalItems = this.cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -106,21 +116,28 @@ class POSSystem {
             } else {
                 showInfo('Cart is already empty');
             }
-        });
+            });
+        }
 
         // Checkout button
-        document.getElementById('checkoutBtn').addEventListener('click', () => {
-            if (this.cart.length > 0) {
-                this.showCheckout();
-            } else {
-                showWarning('Cart is empty');
-            }
-        });
+        const checkoutBtn = document.getElementById('checkoutBtn');
+        if (checkoutBtn) {
+            checkoutBtn.addEventListener('click', () => {
+                if (this.cart.length > 0) {
+                    this.showCheckout();
+                } else {
+                    showWarning('Cart is empty');
+                }
+            });
+        }
 
         // Confirm checkout button
-        document.getElementById('confirmCheckoutBtn').addEventListener('click', () => {
-            this.processCheckout();
-        });
+        const confirmCheckoutBtn = document.getElementById('confirmCheckoutBtn');
+        if (confirmCheckoutBtn) {
+            confirmCheckoutBtn.addEventListener('click', () => {
+                this.processCheckout();
+            });
+        }
     }
 
     async loadEmployees() {

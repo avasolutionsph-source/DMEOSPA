@@ -15,6 +15,14 @@ class ProductsManager {
 
     setupEventListeners() {
         if (this._listenersAttached) return;
+        
+        // Check if we're actually on the products page before setting up listeners
+        const productsPage = document.getElementById('products');
+        if (!productsPage) {
+            console.log('🔍 [PRODUCTS] Not on products page, skipping event listener setup');
+            return;
+        }
+        
         this._listenersAttached = true;
         // Add product button
         const addBtn = document.getElementById('addProductBtn');

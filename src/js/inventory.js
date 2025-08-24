@@ -17,6 +17,14 @@ class InventoryManager {
 
     setupEventListeners() {
         if (this._listenersAttached) return;
+        
+        // Check if we're actually on the inventory page before setting up listeners
+        const inventoryPage = document.getElementById('inventory');
+        if (!inventoryPage) {
+            console.log('🔍 [INVENTORY] Not on inventory page, skipping event listener setup');
+            return;
+        }
+        
         this._listenersAttached = true;
         // Add inventory button
         const addBtn = document.getElementById('addInventoryBtn');

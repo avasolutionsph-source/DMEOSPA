@@ -537,7 +537,7 @@ class App {
 
         // Load styles if not present
         if (!document.getElementById('gift-certificates-styles')) {
-            const response = await fetch('gift-certificates.html');
+            const response = await fetch('src/components/gift-certificates.html');
             if (response.ok) {
                 const html = await response.text();
                 const parser = new DOMParser();
