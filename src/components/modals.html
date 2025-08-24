@@ -1,6 +1,401 @@
 <!-- All Modal Components -->
 <!-- NOTE: Authentication modal removed - PWA now uses dedicated login.html and register.html pages -->
 
+<!-- Spa Supplies Modal -->
+<div id="inventoryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="inventoryModalTitle">Add Spa Supply</h2>
+            <button class="modal-close" onclick="closeModal('inventoryModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="inventoryForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Supply Name</label>
+                        <input type="text" id="inventoryName" class="form-input" required placeholder="e.g., Lavender Essential Oil">
+                    </div>
+                    <div class="form-group">
+                        <label>SKU/Code</label>
+                        <input type="text" id="inventorySku" class="form-input" placeholder="e.g., LEO-001">
+                        <small class="form-hint">Unique identifier for this item</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="inventoryCategory" class="form-input" onchange="handleDropdownChange(this, 'inventoryCategoryCustom')">
+                            <option value="oils">Essential Oils</option>
+                            <option value="lotions">Lotions & Creams</option>
+                            <option value="towels">Towels & Linens</option>
+                            <option value="candles">Candles & Aromatics</option>
+                            <option value="tools">Tools & Equipment</option>
+                            <option value="skincare">Skincare Products</option>
+                            <option value="cleaning">Cleaning Supplies</option>
+                            <option value="disposables">Disposable Items</option>
+                            <option value="misc">Miscellaneous</option>
+                            <option value="custom">Others (specify)</option>
+                        </select>
+                        <div id="inventoryCategoryCustomContainer" class="custom-input-container" style="display: none; margin-top: 0.5rem;">
+                            <input type="text" id="inventoryCategoryCustom" class="form-input" placeholder="Enter custom category">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Current Stock</label>
+                        <input type="number" id="inventoryStock" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Unit of Measurement</label>
+                        <select id="inventoryUnit" class="form-input" onchange="handleDropdownChange(this, 'inventoryUnitCustom')">
+                            <option value="pieces">Pieces</option>
+                            <option value="bottles">Bottles</option>
+                            <option value="ml">Milliliters (ml)</option>
+                            <option value="liters">Liters</option>
+                            <option value="grams">Grams</option>
+                            <option value="kg">Kilograms</option>
+                            <option value="sets">Sets</option>
+                            <option value="rolls">Rolls</option>
+                            <option value="packs">Packs</option>
+                            <option value="custom">Others (specify)</option>
+                        </select>
+                        <div id="inventoryUnitCustomContainer" class="custom-input-container" style="display: none; margin-top: 0.5rem;">
+                            <input type="text" id="inventoryUnitCustom" class="form-input" placeholder="Enter custom unit">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Minimum Stock Level</label>
+                        <input type="number" id="inventoryMinStock" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Unit Cost (₱)</label>
+                        <input type="number" id="inventoryPrice" class="form-input" step="0.01" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Usage per Service</label>
+                        <input type="number" id="inventoryUsagePerService" class="form-input" step="0.1" placeholder="Amount used per service">
+                        <small class="form-hint">How much is used per service/treatment</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Used in Services</label>
+                        <select id="inventoryUsedIn" class="form-input" onchange="handleDropdownChange(this, 'inventoryUsedInCustom')">
+                            <option value="">Select service type</option>
+                            <option value="massage">Massage Services</option>
+                            <option value="facial">Facial Services</option>
+                            <option value="body">Body Treatments</option>
+                            <option value="nails">Nail Services</option>
+                            <option value="all">All Services</option>
+                            <option value="maintenance">Facility Maintenance</option>
+                            <option value="custom">Others (specify)</option>
+                        </select>
+                        <div id="inventoryUsedInCustomContainer" class="custom-input-container" style="display: none; margin-top: 0.5rem;">
+                            <input type="text" id="inventoryUsedInCustom" class="form-input" placeholder="Specify where it's used">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="inventoryNotes" class="form-input" rows="2" placeholder="Brand, supplier, special storage instructions..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="inventoryLowStockAlert" checked>
+                        Enable Low Stock Alert
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('inventoryModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Supply</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Employee Modal -->
+<div id="employeeModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="employeeModalTitle">Add Employee</h2>
+            <button class="modal-close" onclick="closeModal('employeeModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="employeeForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="employeeName" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Position</label>
+                        <input type="text" id="employeePosition" class="form-input" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="employeeEmail" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" id="employeePhone" class="form-input">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Commission Rate (%)</label>
+                        <input type="number" id="employeeCommission" class="form-input" step="0.01" min="0" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label>Hire Date</label>
+                        <input type="date" id="employeeHireDate" class="form-input">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('employeeModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Room Modal -->
+<div id="roomModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="roomModalTitle">Add Room</h2>
+            <button class="modal-close" onclick="closeModal('roomModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="roomForm">
+                <input type="hidden" id="roomId">
+                <div class="form-group">
+                    <label>Room Name</label>
+                    <input type="text" id="roomName" class="form-input" required placeholder="e.g., Room 1, VIP Suite">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Room Type</label>
+                        <select id="roomType" class="form-input" required>
+                            <option value="general">General Purpose</option>
+                            <option value="massage">Massage Room</option>
+                            <option value="facial">Facial Room</option>
+                            <option value="couple">Couple's Room</option>
+                            <option value="vip">VIP Suite</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Capacity</label>
+                        <input type="number" id="roomCapacity" class="form-input" min="1" max="10" value="1" required>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('roomModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Room
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Checkout Modal -->
+<div id="checkoutModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Checkout</h2>
+            <button class="modal-close" onclick="closeModal('checkoutModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <!-- Employee & Room Assignment Section -->
+            <div class="assignment-section" style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="margin-top: 0; color: #2c3e50;"><i class="fas fa-user-check"></i> Service Assignment</h3>
+                
+                <!-- Employee Assignment -->
+                <div class="form-group">
+                    <label style="font-weight: 600; color: #34495e;">
+                        <i class="fas fa-user"></i> Assign to Employee <span style="color: red;">*</span>
+                    </label>
+                    <select id="checkoutEmployeeSelect" class="form-input" style="width: 100%; padding: 10px; border: 2px solid #3498db;">
+                        <option value="">Select Employee</option>
+                    </select>
+                    <small style="color: #7f8c8d;">Employee must be selected for commission tracking</small>
+                </div>
+                
+                <!-- Room Assignment (for services) -->
+                <div class="form-group" id="roomAssignmentSection" style="display: none;">
+                    <label style="font-weight: 600; color: #34495e;">
+                        <i class="fas fa-door-open"></i> Assign Room
+                    </label>
+                    <select id="checkoutRoomSelect" class="form-input" style="width: 100%; padding: 10px;">
+                        <option value="">No Room Assignment</option>
+                    </select>
+                    <small style="color: #7f8c8d;">Assign a room for service tracking</small>
+                </div>
+            </div>
+            
+            <div class="checkout-summary">
+                <h3>Order Summary</h3>
+                <div id="checkoutItems"></div>
+                <div class="checkout-totals">
+                    <div class="summary-row subtotal">
+                        <span>Subtotal:</span>
+                        <span id="checkoutSubtotal">₱0.00</span>
+                    </div>
+                    <div class="summary-row discount" id="discountRow" style="display: none;">
+                        <span>Discount:</span>
+                        <span id="checkoutDiscount">-₱0.00</span>
+                    </div>
+                    <div class="summary-row gc" id="gcRow" style="display: none;">
+                        <span>Gift Certificate:</span>
+                        <span id="checkoutGC">-₱0.00</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Total:</span>
+                        <span id="checkoutTotal">₱0.00</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Discounts Section -->
+            <div class="discount-section">
+                <h3>Discounts & Gift Certificates</h3>
+                
+                <!-- Gift Certificate -->
+                <div class="form-group">
+                    <label><i class="fas fa-gift"></i> Gift Certificate</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="gcControlNumber" class="form-input" placeholder="Enter Control Number">
+                        <button type="button" class="btn btn-secondary" onclick="posSystem.validateGiftCertificate()">
+                            <i class="fas fa-check"></i> Validate
+                        </button>
+                    </div>
+                    <div id="gcStatus" style="margin-top: 5px; font-size: 0.9rem;"></div>
+                </div>
+                
+                <!-- Senior/PWD Discount -->
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="applySeniorPWD" onchange="posSystem.toggleSeniorPWDFields()">
+                        <span class="checkmark"></span>
+                        Apply Senior Citizen / PWD Discount (20%)
+                    </label>
+                    <div id="seniorPWDFields" style="display: none; margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                        <input type="text" id="discountCardholderName" class="form-input" placeholder="Cardholder Name" style="margin-bottom: 10px;">
+                        <input type="text" id="discountIDNumber" class="form-input" placeholder="ID Number" style="margin-bottom: 10px;">
+                        <select id="discountCardType" class="form-input">
+                            <option value="">Select Card Type</option>
+                            <option value="senior">Senior Citizen</option>
+                            <option value="pwd">PWD</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Other Promo Discounts -->
+                <div class="form-group">
+                    <label><i class="fas fa-percentage"></i> Other Promo Discounts</label>
+                    <select id="promoDiscount" class="form-input" onchange="posSystem.applyPromoDiscount()">
+                        <option value="">No Promo Applied</option>
+                        <option value="new-customer-10">New Customer (10% off)</option>
+                        <option value="loyalty-15">Loyalty Reward (15% off)</option>
+                        <option value="holiday-20">Holiday Special (20% off)</option>
+                        <option value="custom">Custom Discount...</option>
+                    </select>
+                    <div id="customDiscountField" style="display: none; margin-top: 10px;">
+                        <input type="number" id="customDiscountPercent" class="form-input" placeholder="Enter discount %" min="0" max="100" step="1">
+                        <input type="text" id="customDiscountReason" class="form-input" placeholder="Reason for discount" style="margin-top: 5px;">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="payment-section">
+                <h3>Payment Method</h3>
+                <div class="payment-options">
+                    <label class="payment-option">
+                        <input type="radio" name="payment" value="cash" checked>
+                        <i class="fas fa-money-bill"></i> Cash
+                    </label>
+                    <label class="payment-option">
+                        <input type="radio" name="payment" value="card">
+                        <i class="fas fa-credit-card"></i> Card
+                    </label>
+                    <label class="payment-option">
+                        <input type="radio" name="payment" value="gcash">
+                        <i class="fas fa-mobile-alt"></i> GCash
+                    </label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('checkoutModal')">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmCheckoutBtn">
+                    <i class="fas fa-check"></i> Complete Sale
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gift Certificate Modal -->
+<div id="giftCertificateModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="giftCertificateModalTitle">Issue Gift Certificate</h2>
+            <button class="modal-close" onclick="closeModal('giftCertificateModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <form id="giftCertificateForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Recipient Name</label>
+                        <input type="text" id="gcRecipientName" class="form-input" required placeholder="Full name of recipient">
+                    </div>
+                    <div class="form-group">
+                        <label>Purchaser Name</label>
+                        <input type="text" id="gcPurchaserName" class="form-input" required placeholder="Full name of purchaser">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Amount (₱)</label>
+                        <input type="number" id="gcAmount" class="form-input" step="0.01" min="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Expiry Date</label>
+                        <input type="date" id="gcExpiryDate" class="form-input" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Message (Optional)</label>
+                    <textarea id="gcMessage" class="form-input" rows="3" placeholder="Special message for the recipient..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('giftCertificateModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-gift"></i> Issue Certificate
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Service Modal -->
 <div id="productModal" class="modal">
     <div class="modal-content">
