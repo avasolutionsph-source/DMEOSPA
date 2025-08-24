@@ -417,7 +417,7 @@
                         
                         // Redirect to PWA dashboard
                         setTimeout(() => {
-                            window.location.href = 'index.html';
+                            window.location.href = 'index.html#dashboard';
                         }, 1500);
                     } else {
                         this.showError(data.error || 'Login failed. Please try again.');
@@ -459,7 +459,7 @@
                         this.showSuccess('Demo login successful! Redirecting to dashboard...');
                         
                         setTimeout(() => {
-                            window.location.href = 'index.html';
+                            window.location.href = 'index.html#dashboard';
                         }, 1500);
                         
                         this.setLoading(false);

@@ -961,7 +961,7 @@ class App {
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
-                    this.closeModal(modal.id);
+                    closeModal(modal.id);
                 }
             });
         });
@@ -971,34 +971,13 @@ class App {
             if (e.key === 'Escape') {
                 const activeModal = document.querySelector('.modal.active');
                 if (activeModal) {
-                    this.closeModal(activeModal.id);
+                    closeModal(activeModal.id);
                 }
             }
         });
     }
 
-    openModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            // Remove any inline display style that might be blocking
-            modal.style.display = '';
-            modal.classList.add('active');
-        }
-    }
-
-    closeModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.classList.remove('active');
-            modal.style.display = 'none';
-            
-            // Clear form if exists
-            const form = modal.querySelector('form');
-            if (form) {
-                form.reset();
-            }
-        }
-    }
+    // Modal functions removed - using global functions in index.html for HTML onclick handlers
 
     checkForUpdates() {
         if ('serviceWorker' in navigator) {
