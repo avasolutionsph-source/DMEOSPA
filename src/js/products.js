@@ -196,10 +196,19 @@ class ProductsManager {
         }
         this.isSaving = true;
 
-        // Show loading
-        const saveBtn = document.querySelector('#productForm button[type="submit"]');
+        // Show loading - check multiple selectors for submit button
+        let saveBtn = document.querySelector('#productForm button[type="submit"]');
         if (!saveBtn) {
-            console.error('Save button not found in productForm');
+            // Try alternative selector for button with form attribute
+            saveBtn = document.querySelector('button[form="productForm"][type="submit"]');
+        }
+        if (!saveBtn) {
+            // Try broader selector
+            saveBtn = document.querySelector('button[type="submit"]');
+            console.warn('Using fallback submit button selector');
+        }
+        if (!saveBtn) {
+            console.error('Save button not found in productForm with any selector');
             this.isSaving = false;
             return;
         }

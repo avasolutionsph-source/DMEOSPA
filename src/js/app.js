@@ -595,7 +595,7 @@ class App {
             
             // First time loading - load the script
             const script = document.createElement('script');
-            script.src = 'js/gift-certificates.js?t=' + Date.now(); // Add timestamp to force reload
+            script.src = 'src/js/gift-certificates.js?t=' + Date.now(); // Add timestamp to force reload
             script.id = 'gift-certificates-script';
             
             script.onload = async () => {
