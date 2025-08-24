@@ -295,21 +295,23 @@ class BackupSystem {
     }
 
     async collectAllData() {
-        if (!window.database || !window.database.db) {
-            throw new Error('Main database not available');
+        if (!window.db) {
+            console.warn('Database not yet initialized for backup');
+            return {}; // Return empty data instead of throwing error
         }
 
         const data = {};
-        const db = window.database.db;
-        const storeNames = Array.from(db.objectStoreNames);
+        
+        // Use window.db directly which is our database interface
+        const storesToBackup = ['products', 'inventory', 'employees', 'transactions', 'rooms', 'gift_certificates', 'settings'];
 
-        for (const storeName of storeNames) {
+        for (const storeName of storesToBackup) {
             try {
-                const storeData = await window.database.getAll(storeName);
+                const storeData = await window.db.getAll(storeName);
                 data[storeName] = storeData || [];
             } catch (error) {
                 console.warn(`Failed to backup store ${storeName}:`, error);
-                data[storeName] = null; // Mark as failed but continue
+                data[storeName] = []; // Use empty array instead of null
             }
         }
 
