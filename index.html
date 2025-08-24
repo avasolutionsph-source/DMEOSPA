@@ -53,26 +53,22 @@
     <script type="module" src="src/js/settings.js?v=1.8.0"></script>
     <script type="module" src="src/js/app.js?v=1.8.0"></script>
 
-    <!-- FORCE CACHE REFRESH -->
+    <!-- DEVELOPMENT CACHE REFRESH -->
     <script>
-        // Force cache refresh for PWA resources
-        if ('serviceWorker' in navigator) {
-            // Clear service worker cache
-            caches.keys().then(function(names) {
-                for (let name of names) {
-                    caches.delete(name);
-                    console.log('🗑️ Cleared cache:', name);
-                }
-            });
+        // Only clear cache in development mode or when explicitly needed
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log('🔄 Development mode: cache clearing enabled');
+            if ('serviceWorker' in navigator) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        caches.delete(name);
+                        console.log('🗑️ Dev: Cleared cache:', name);
+                    }
+                });
+            }
+        } else {
+            console.log('✅ Production mode: preserving service worker cache');
         }
-        
-        // Add cache-busting meta tag
-        const meta = document.createElement('meta');
-        meta.setAttribute('http-equiv', 'Cache-Control');
-        meta.setAttribute('content', 'no-cache, no-store, must-revalidate');
-        document.head.appendChild(meta);
-        
-        console.log('🔄 Force cache refresh enabled');
     </script>
 
     <!-- CRITICAL: Browser Extension Protection and Authentication Check -->
