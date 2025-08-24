@@ -37,22 +37,8 @@ const urlsToCache = [
     './js/feature-flags.js',
     './js/auto-updater.js',
     './js/backup-system.js',
-    './src/js/rollback-system.js',
-    './src/js/error-recovery.js',
-    
-    // Component HTML files
-    './src/components/sidebar.html',
-    './src/components/main-content.html',
-    './src/components/dashboard.html',
-    './src/components/pos.html',
-    './src/components/products.html',
-    './src/components/inventory.html',
-    './src/components/employees.html',
-    './src/components/chatbot.html',
-    './src/components/settings.html',
-    './src/components/rooms.html',
-    './src/components/gift-certificates.html',
-    './src/components/modals.html',
+    './js/rollback-system.js',
+    './js/error-recovery.js',
     
     // External resources
     'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',

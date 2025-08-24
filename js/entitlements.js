@@ -72,15 +72,16 @@ class EntitlementsSystem {
                 
                 // Get user data from app's authentication
                 const userData = localStorage.getItem('userData') || localStorage.getItem('currentUser');
-                let userPlan = 'unpaid';
+                let userPlan = 'professional'; // Default to professional for authenticated users
                 
                 if (userData) {
                     try {
                         const parsedUserData = JSON.parse(userData);
-                        userPlan = parsedUserData.subscriptionPlan || parsedUserData.plan || 'unpaid';
+                        userPlan = parsedUserData.subscriptionPlan || parsedUserData.plan || 'professional';
                         console.log('📋 User plan from app authentication:', userPlan);
                     } catch (e) {
-                        console.log('⚠️ Could not parse userData, defaulting to unpaid');
+                        console.log('⚠️ Could not parse userData, defaulting to professional for authenticated user');
+                        userPlan = 'professional';
                     }
                 }
                 
@@ -93,13 +94,25 @@ class EntitlementsSystem {
                     this.updateUI();
                 }, 500);
             } else {
-                console.log('❌ App authentication system says user is NOT logged in, setting unpaid plan');
-                this.setUnpaidPlanEntitlements();
+                console.log('❌ App authentication system says user is NOT logged in');
+                
+                // Check if we have basic auth tokens regardless of app state
+                const hasTokens = !!(localStorage.getItem('userToken') || localStorage.getItem('authToken') || 
+                                   sessionStorage.getItem('userToken') || sessionStorage.getItem('authToken'));
+                
+                if (hasTokens) {
+                    console.log('🔑 Found auth tokens, defaulting to professional plan');
+                    this.setEntitlementsForPlan('professional');
+                } else {
+                    console.log('🚫 No auth tokens found, setting unpaid plan');
+                    this.setUnpaidPlanEntitlements();
+                }
             }
             
         } catch (error) {
             console.error('Error loading entitlements:', error);
-            this.setFreePlanEntitlements();
+            // Default to professional plan on error for restored PWA
+            this.setEntitlementsForPlan('professional');
         }
     }
 

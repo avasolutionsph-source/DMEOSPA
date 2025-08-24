@@ -536,23 +536,8 @@ class App {
             </div>
         `;
 
-        // Load styles if not present
-        if (!document.getElementById('gift-certificates-styles')) {
-            const response = await fetch('src/components/gift-certificates.html');
-            if (response.ok) {
-                const html = await response.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const styles = doc.querySelector('style');
-                
-                if (styles) {
-                    const styleElement = document.createElement('style');
-                    styleElement.id = 'gift-certificates-styles';
-                    styleElement.textContent = styles.textContent;
-                    document.head.appendChild(styleElement);
-                }
-            }
-        }
+        // Gift certificates styles are now in main CSS file
+        // No need to load external styles
 
         // Load the gift certificates JavaScript
         if (window.logger) {
@@ -596,7 +581,7 @@ class App {
             
             // First time loading - load the script
             const script = document.createElement('script');
-            script.src = 'src/js/gift-certificates.js?t=' + Date.now(); // Add timestamp to force reload
+            script.src = 'js/gift-certificates.js?t=' + Date.now(); // Add timestamp to force reload
             script.id = 'gift-certificates-script';
             
             script.onload = async () => {

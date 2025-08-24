@@ -1,13 +1,4 @@
 // Dashboard Management
-n// Simple utility functions to replace missing imports
-function logDebug(msg, data) { console.log("[DEBUG]", msg, data); }
-function logInfo(msg, data) { console.log("[INFO]", msg, data); }
-function logError(msg, data) { console.error("[ERROR]", msg, data); }
-function showSuccess(msg) { alert("✅ " + msg); }
-function showError(msg) { alert("❌ " + msg); }
-function withErrorHandling(fn, config) { try { return Promise.resolve(fn()); } catch(e) { console.error(config.operation, e); throw e; } }
-const ErrorTypes = { NETWORK: "network", VALIDATION: "validation" };
-const ErrorSeverity = { LOW: "low", HIGH: "high" };
 
 
 class DashboardManager {
