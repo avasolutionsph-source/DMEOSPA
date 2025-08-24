@@ -102,17 +102,21 @@
         window.checkAuthenticationAfterLoad = function() {
             console.log('🛡️ PWA Authentication Check: Verifying after load...');
             
-            // Wait for token manager to be available
-            if (!window.tokenManager) {
-                console.log('⏳ Token manager not ready, retrying...');
+            // Wait for auth system to be available
+            if (!window.authSystem) {
+                console.log('⏳ Auth system not ready, retrying...');
                 setTimeout(() => window.checkAuthenticationAfterLoad(), 100);
                 return;
             }
             
-            const isAuthenticated = window.tokenManager.isAuthenticated();
-            const authState = window.tokenManager.getAuthState();
+            const isAuthenticated = window.authSystem.isAuthenticated();
+            const currentUser = window.authSystem.getCurrentUser();
             
-            console.log('🔍 Auth state:', authState);
+            console.log('🔍 Auth state:', {
+                isAuthenticated,
+                hasUser: !!currentUser,
+                hasToken: !!window.authSystem.getAuthToken()
+            });
             
             if (!isAuthenticated) {
                 console.log('🚫 PWA Authentication: No valid authentication detected');
