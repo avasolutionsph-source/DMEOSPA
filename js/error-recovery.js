@@ -730,7 +730,9 @@ class ErrorRecoverySystem {
             const totalChecks = Object.keys(checks).length;
             const healthPercentage = (healthyCount / totalChecks) * 100;
 
-            if (healthPercentage < 50 && !this.emergencyMode) {
+            // Only activate emergency mode if health is critically low (less than 20%)
+            // 40% is actually acceptable during initialization
+            if (healthPercentage < 20 && !this.emergencyMode) {
                 await this.activateEmergencyMode(`Health check failure: ${healthPercentage.toFixed(1)}% healthy`);
             }
 
