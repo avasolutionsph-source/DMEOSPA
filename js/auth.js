@@ -185,7 +185,7 @@ class AuthSystem {
         const rememberMe = document.getElementById('rememberMe').checked;
 
         if (!email || !password) {
-            showNotification('Please enter email and password', 'error');
+            showError('Please enter email and password');
             return;
         }
 
@@ -245,7 +245,7 @@ class AuthSystem {
                 const modal = document.getElementById('authModal');
                 if (modal) modal.style.display = 'none';
 
-                showNotification(`Welcome back, ${data.user.firstName || data.user.businessName}!`, 'success');
+                showSuccess(`Welcome back, ${data.user.firstName || data.user.businessName}!`);
                 
                 // Update UI
                 this.updateAuthUI();
@@ -259,7 +259,7 @@ class AuthSystem {
         } catch (error) {
             console.error('Login error:', error);
             setButtonLoading('loginBtn', false);
-            showNotification(error.message || 'Login failed. Please try again.', 'error');
+            showError(error.message || 'Login failed. Please try again.');
         }
     }
 
@@ -276,17 +276,17 @@ class AuthSystem {
 
         // Validation
         if (!email || !password || !businessName || !firstName || !lastName) {
-            showNotification('Please fill in all required fields', 'error');
+            showError('Please fill in all required fields');
             return;
         }
 
         if (password !== confirmPassword) {
-            showNotification('Passwords do not match', 'error');
+            showError('Passwords do not match');
             return;
         }
 
         if (password.length < 6) {
-            showNotification('Password must be at least 6 characters', 'error');
+            showError('Password must be at least 6 characters');
             return;
         }
 
@@ -346,7 +346,7 @@ class AuthSystem {
                 const modal = document.getElementById('authModal');
                 if (modal) modal.style.display = 'none';
 
-                showNotification('Registration successful! Welcome to Ava Solutions!', 'success');
+                showSuccess('Registration successful! Welcome to Ava Solutions!');
                 
                 // Update UI
                 this.updateAuthUI();
@@ -360,7 +360,7 @@ class AuthSystem {
         } catch (error) {
             console.error('Registration error:', error);
             setButtonLoading('registerBtn', false);
-            showNotification(error.message || 'Registration failed. Please try again.', 'error');
+            showError(error.message || 'Registration failed. Please try again.');
         }
     }
 

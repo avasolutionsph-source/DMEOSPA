@@ -14,6 +14,7 @@ const urlsToCache = [
     // JavaScript files
     './js/app.js',
     './js/database.js',
+    './js/utilities.js',
     './js/pos.js',
     './js/products.js',
     './js/inventory.js',
