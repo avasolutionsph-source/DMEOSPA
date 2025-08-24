@@ -14,15 +14,21 @@ function hideLoading() { console.log('Loading complete'); }
 
 class POSSystem {
     constructor() {
-        // Initialize with StateManager if available, fallback to local properties
-        if (window.StateManager && window.StateManager.initialized) {
-            // Properties will proxy to state
-            this.cart = window.StateManager.getState('pos.cart') || [];
-            this.selectedEmployee = window.StateManager.getState('pos.selectedEmployee');
-        } else {
-            // Fallback to local properties (will proxy to state when StateManager loads)
-            this.cart = [];
-            this.selectedEmployee = null;
+        // Always initialize cart as empty array to avoid state issues
+        this.cart = [];
+        this.selectedEmployee = null;
+        
+        // Try to load from StateManager if available, but don't fail
+        try {
+            if (window.StateManager && window.StateManager.initialized) {
+                const savedCart = window.StateManager.getState('pos.cart');
+                if (Array.isArray(savedCart)) {
+                    this.cart = savedCart;
+                }
+                this.selectedEmployee = window.StateManager.getState('pos.selectedEmployee');
+            }
+        } catch (e) {
+            console.warn('Could not load cart from StateManager:', e);
         }
         this.currentCategory = 'all';
         this.products = [];
@@ -297,15 +303,16 @@ class POSSystem {
                     maxStock: item.currentStock
                 };
                 
-                // Use StateHelpers if available for better state management
-                if (window.StateHelpers) {
-                    window.StateHelpers.addToCart(newItem, 1);
-                } else {
-                    this.cart.push(newItem);
-                    // Update state if StateManager available
+                // Just use local cart management for now to avoid state issues
+                this.cart.push(newItem);
+                
+                // Try to update StateManager if available, but don't fail if it errors
+                try {
                     if (window.StateManager && window.StateManager.initialized) {
                         window.StateManager.setState('pos.cart', [...this.cart]);
                     }
+                } catch (stateError) {
+                    console.warn('Could not update StateManager:', stateError);
                 }
             }
 
@@ -346,16 +353,18 @@ class POSSystem {
     removeFromCart(index) {
         const item = this.cart[index];
         if (confirm(`Remove ${item.name} from cart?`)) {
-            // Use StateHelpers if available
-            if (window.StateHelpers && item.id) {
-                window.StateHelpers.removeFromCart(item.id);
-            } else {
-                this.cart.splice(index, 1);
-                // Update state if StateManager available
+            // Just use local cart management
+            this.cart.splice(index, 1);
+            
+            // Try to update StateManager if available, but don't fail
+            try {
                 if (window.StateManager && window.StateManager.initialized) {
                     window.StateManager.setState('pos.cart', [...this.cart]);
                 }
+            } catch (stateError) {
+                console.warn('Could not update StateManager:', stateError);
             }
+            
             this.updateCartDisplay();
             showInfo(`${item.name} removed from cart`);
         }
@@ -376,15 +385,18 @@ class POSSystem {
     }
 
     clearCart() {
-        // Use StateHelpers if available
-        if (window.StateHelpers) {
-            window.StateHelpers.clearCart();
-        } else if (window.StateManager && window.StateManager.initialized) {
-            window.StateManager.setState('pos.cart', []);
-            window.StateManager.setState('pos.discounts', []);
-            window.StateManager.setState('pos.currentTransaction', null);
-        } else {
-            this.cart = [];
+        // Just clear the local cart
+        this.cart = [];
+        
+        // Try to update StateManager if available, but don't fail
+        try {
+            if (window.StateManager && window.StateManager.initialized) {
+                window.StateManager.setState('pos.cart', []);
+                window.StateManager.setState('pos.discounts', []);
+                window.StateManager.setState('pos.currentTransaction', null);
+            }
+        } catch (stateError) {
+            console.warn('Could not update StateManager:', stateError);
         }
         
         // Reset discount tracking
