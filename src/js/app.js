@@ -320,54 +320,55 @@ class App {
             modal.style.display = 'none';
         });
         
-        // Hide all pages
-        document.querySelectorAll('.page').forEach(page => {
-            page.classList.remove('active');
-        });
-        
-        // Show selected page
+        // Check if page already exists in DOM
         const selectedPage = document.getElementById(pageName);
         if (selectedPage) {
+            // Page already loaded - just hide others and show this one
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
             selectedPage.classList.add('active');
             
             // Load page-specific data
             this.loadPageData(pageName);
+            console.log(`✅ Existing page ${pageName} activated`);
         } else {
-            // Page element not loaded yet, load the component first
-            console.log(`Page element not found: ${pageName}, loading component...`);
+            // Page element not found, need to load component
+            console.log(`📄 Page element #${pageName} not found, loading component...`);
             
-            // Load the page component first
+            // Check if component loader is available
+            if (!window.componentLoader) {
+                console.error('❌ Component loader not available yet, retrying in 100ms...');
+                setTimeout(() => this.showPage(pageName), 100);
+                return;
+            }
+            
             try {
-                const success = await window.componentLoader.loadComponent(pageName, '.main-content', true);
+                console.log(`🔄 Loading component: ${pageName} into .main-content`);
+                const success = await window.componentLoader.loadComponent(pageName, '.main-content', false);
+                
                 if (success) {
-                    // Component loaded, now try to find and activate the page
-                    const page = document.getElementById(pageName);
-                    if (page) {
-                        page.classList.add('active');
-                        this.loadPageData(pageName);
-                        console.log(`✅ Page ${pageName} loaded and activated successfully`);
-                    } else {
-                        console.error(`❌ Page component loaded but element #${pageName} not found`);
-                        // Fall back to dashboard
-                        const dashboard = document.getElementById('dashboard');
-                        if (dashboard) {
-                            dashboard.classList.add('active');
-                        }
-                    }
+                    console.log(`✅ Component ${pageName} loaded successfully`);
+                    
+                    // Since we loaded with append=false, the component replaced the content
+                    // The page should already be active from the component, just load data
+                    this.loadPageData(pageName);
+                    console.log(`🎯 Page ${pageName} loaded as new content`);
                 } else {
                     console.error(`❌ Failed to load component: ${pageName}`);
-                    // Fall back to dashboard
-                    const dashboard = document.getElementById('dashboard');
-                    if (dashboard) {
-                        dashboard.classList.add('active');
+                    // Try to show dashboard as fallback
+                    if (pageName !== 'dashboard') {
+                        console.log(`🔄 Falling back to dashboard...`);
+                        this.showPage('dashboard');
                     }
                 }
             } catch (error) {
                 console.error(`❌ Error loading page component ${pageName}:`, error);
-                // Fall back to dashboard
-                const dashboard = document.getElementById('dashboard');
-                if (dashboard) {
-                    dashboard.classList.add('active');
+                // Try to show dashboard as fallback
+                if (pageName !== 'dashboard') {
+                    console.log(`🔄 Falling back to dashboard due to error...`);
+                    this.showPage('dashboard');
                 }
             }
         }
