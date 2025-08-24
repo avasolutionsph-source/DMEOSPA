@@ -251,6 +251,12 @@ class EntitlementsSystem {
     updateUI() {
         console.log(`🔄 Updating UI for ${this.currentPlan} plan with restrictions`);
         
+        // Ensure entitlements are initialized
+        if (!this.entitlements) {
+            console.warn('Entitlements not yet initialized, skipping UI update');
+            return;
+        }
+        
         // Update navigation items based on entitlements
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(element => {
@@ -753,10 +759,11 @@ class EntitlementsSystem {
             enterprise: '#8b5cf6'
         };
         
+        const plan = this.currentPlan || 'free';
         statusIndicator.innerHTML = `
-            <div class="plan-badge" style="background-color: ${planColors[this.currentPlan]}">
-                <i class="fas fa-${this.currentPlan === 'free' ? 'gift' : 'crown'}"></i>
-                <span>${this.currentPlan.toUpperCase()}</span>
+            <div class="plan-badge" style="background-color: ${planColors[plan] || '#6c757d'}">
+                <i class="fas fa-${plan === 'free' ? 'gift' : 'crown'}"></i>
+                <span>${plan.toUpperCase()}</span>
             </div>
         `;
         

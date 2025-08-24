@@ -47,7 +47,8 @@ function setButtonLoading(btnId, loading) {
 }
 
 function showLoading(title, msg) { 
-    if (window.showLoading) {
+    // Check for global showLoading utility, but avoid self-reference
+    if (window.showLoading && window.showLoading !== showLoading) {
         window.showLoading(title, msg);
     } else {
         console.log('Loading:', title, msg);
@@ -55,7 +56,8 @@ function showLoading(title, msg) {
 }
 
 function hideLoading() { 
-    if (window.hideLoading) {
+    // Check for global hideLoading utility, but avoid self-reference
+    if (window.hideLoading && window.hideLoading !== hideLoading) {
         window.hideLoading();
     } else {
         console.log('Loading complete');
