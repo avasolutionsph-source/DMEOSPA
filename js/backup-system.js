@@ -303,7 +303,21 @@ class BackupSystem {
         const data = {};
         
         // Use window.db directly which is our database interface
-        const storesToBackup = ['products', 'inventory', 'employees', 'transactions', 'rooms', 'gift_certificates', 'settings'];
+        // Note: Use actual store names from database.js (camelCase for giftCertificates)
+        const storesToBackup = [
+            'products', 
+            'inventory', 
+            'employees', 
+            'transactions', 
+            'rooms', 
+            'giftCertificates',  // camelCase, not snake_case
+            'settings',
+            'state',
+            'config',
+            'promoDiscounts',
+            'activeServices',
+            'syncQueue'
+        ];
 
         for (const storeName of storesToBackup) {
             try {
