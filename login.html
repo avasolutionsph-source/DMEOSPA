@@ -321,6 +321,7 @@
     <!-- Core Scripts (removed auth.js due to module import issues) -->
     <script src="src/js/config-service.js"></script>
     <script src="src/js/database.js"></script>
+    <script src="src/js/token-manager.js"></script>
 
     <script>
         // Login page functionality
@@ -377,13 +378,24 @@
                     const data = await response.json();
                     
                     if (data.success) {
-                        // Store authentication data
-                        const storage = rememberMe ? localStorage : sessionStorage;
-                        storage.setItem('userToken', data.token);
-                        storage.setItem('authToken', data.token);
-                        storage.setItem('userData', JSON.stringify(data.user));
-                        storage.setItem('currentUser', JSON.stringify(data.user));
-                        storage.setItem('isLoggedIn', 'true');
+                        // Store authentication data using token manager
+                        console.log('🔐 Login successful, storing auth data via token manager');
+                        
+                        // Use token manager for unified storage
+                        if (window.tokenManager) {
+                            window.tokenManager.setAuthToken(data.token, rememberMe);
+                            window.tokenManager.setUserData(data.user, rememberMe);
+                            console.log('✅ Auth data stored via token manager');
+                        } else {
+                            console.warn('⚠️ Token manager not available, falling back to direct storage');
+                            // Fallback to direct storage if token manager isn't ready
+                            const storage = rememberMe ? localStorage : sessionStorage;
+                            storage.setItem('userToken', data.token);
+                            storage.setItem('authToken', data.token);
+                            storage.setItem('userData', JSON.stringify(data.user));
+                            storage.setItem('currentUser', JSON.stringify(data.user));
+                            storage.setItem('isLoggedIn', 'true');
+                        }
                         
                         this.showSuccess('Login successful! Redirecting to dashboard...');
                         
