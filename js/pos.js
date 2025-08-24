@@ -1,16 +1,66 @@
 // POS System Management
 
-// Simple utility functions to replace missing imports
-function showSuccess(msg) { alert('✅ ' + msg); }
-function showError(msg) { alert('❌ ' + msg); }
-function showWarning(msg) { alert('⚠️ ' + msg); }
-function showInfo(msg) { alert('ℹ️ ' + msg); }
+// Utility functions with improved implementations
+function showSuccess(msg) { 
+    if (window.showNotification) {
+        window.showNotification(msg, 'success');
+    } else {
+        alert('✅ ' + msg);
+    }
+}
+
+function showError(msg) { 
+    if (window.showNotification) {
+        window.showNotification(msg, 'error');
+    } else {
+        alert('❌ ' + msg);
+    }
+}
+
+function showWarning(msg) { 
+    if (window.showNotification) {
+        window.showNotification(msg, 'warning');
+    } else {
+        alert('⚠️ ' + msg);
+    }
+}
+
+function showInfo(msg) { 
+    if (window.showNotification) {
+        window.showNotification(msg, 'info');
+    } else {
+        alert('ℹ️ ' + msg);
+    }
+}
+
 function setButtonLoading(btnId, loading) { 
     const btn = document.getElementById(btnId);
-    if (btn) btn.disabled = loading;
+    if (btn) {
+        btn.disabled = loading;
+        if (loading) {
+            btn.dataset.originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        } else if (btn.dataset.originalText) {
+            btn.innerHTML = btn.dataset.originalText;
+        }
+    }
 }
-function showLoading(title, msg) { console.log('Loading:', title, msg); }
-function hideLoading() { console.log('Loading complete'); }
+
+function showLoading(title, msg) { 
+    if (window.showLoading) {
+        window.showLoading(title, msg);
+    } else {
+        console.log('Loading:', title, msg);
+    }
+}
+
+function hideLoading() { 
+    if (window.hideLoading) {
+        window.hideLoading();
+    } else {
+        console.log('Loading complete');
+    }
+}
 
 class POSSystem {
     constructor() {
@@ -105,7 +155,16 @@ class POSSystem {
         // Product search
         const searchInput = document.getElementById('productSearch');
         if (searchInput) {
-            searchInput.addEventListener('input', app.debounce((e) => {
+            // Use window.debounce if available, otherwise use a simple timeout
+            const debounceFn = window.debounce || ((func, wait) => {
+                let timeout;
+                return function(...args) {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(this, args), wait);
+                };
+            });
+            
+            searchInput.addEventListener('input', debounceFn((e) => {
                 this.filterProducts(e.target.value);
             }, 300));
         }
@@ -270,11 +329,14 @@ class POSSystem {
             let item;
             if (itemType === 'inventory') {
                 item = await window.db.get('inventory', itemId);
-                // Check stock
-                if (item.currentStock <= 0) {
+                // Check stock - use quantity which is the primary field
+                const stock = item.quantity || item.currentStock || 0;
+                if (stock <= 0) {
                     showError('Item out of stock');
                     return;
                 }
+                // Normalize to currentStock for consistency
+                item.currentStock = stock;
             } else {
                 item = await window.db.get('products', itemId);
             }
@@ -339,14 +401,9 @@ class POSSystem {
                     error: error
                 });
             } else {
-                if (window.logger) {
-                    window.logger.error('Failed to add item to cart', {
-                        category: 'POS',
-                        operation: 'add_to_cart',
-                        error: error
-                    });
-                }
+                console.error('Failed to add item to cart:', error);
             }
+            showError('Failed to add item to cart');
         }
     }
 
@@ -981,7 +1038,14 @@ class POSSystem {
             // Update inventory stock and track service usage
             for (const item of this.cart) {
                 if (item.type === 'inventory') {
-                    await window.db.updateInventoryStock(item.id, item.quantity, 'subtract');
+                    // Get the inventory item and update stock manually
+                    const invItem = await window.db.get('inventory', item.id);
+                    if (invItem) {
+                        invItem.quantity = Math.max(0, (invItem.quantity || 0) - item.quantity);
+                        invItem.currentStock = invItem.quantity; // Keep both in sync
+                        invItem.modifiedAt = new Date().toISOString();
+                        await window.db.update('inventory', invItem);
+                    }
                 } else if (item.type === 'service') {
                     // Track automatic supply usage for services
                     await this.processServiceSupplyUsage(item, transactionId);
@@ -1042,16 +1106,14 @@ class POSSystem {
             }
 
         } catch (error) {
-            if (window.logger && window.logger.error) {
-                window.logger.error('Checkout failed', { category: 'POS', error, context: { operation: 'checkout' } });
+            if (window.logger) {
+                window.logger.error('Checkout failed', {
+                    category: 'POS',
+                    operation: 'checkout',
+                    error: error
+                });
             } else {
-                if (window.logger) {
-                    window.logger.error('Checkout failed', {
-                        category: 'POS',
-                        operation: 'checkout',
-                        error: error
-                    });
-                }
+                console.error('Checkout failed:', error);
             }
             hideLoading();
             setButtonLoading('confirmCheckoutBtn', false);
@@ -1099,8 +1161,10 @@ class POSSystem {
     // Update inventory with automatic usage tracking
     async updateInventoryWithUsageTracking(inventoryItem, usageAmount, transactionId, serviceName) {
         try {
-            // Update stock
-            inventoryItem.currentStock = Math.max(0, inventoryItem.currentStock - usageAmount);
+            // Update stock - use quantity as primary field
+            const currentStock = inventoryItem.quantity || inventoryItem.currentStock || 0;
+            inventoryItem.quantity = Math.max(0, currentStock - usageAmount);
+            inventoryItem.currentStock = inventoryItem.quantity; // Keep both in sync
             inventoryItem.modifiedAt = new Date().toISOString();
             inventoryItem.syncStatus = 'pending';
 
@@ -1113,7 +1177,7 @@ class POSSystem {
                 date: new Date().toISOString(),
                 adjustment: -usageAmount,
                 reason: `Auto-used in service: ${serviceName}`,
-                newStock: inventoryItem.currentStock,
+                newStock: inventoryItem.quantity,
                 transactionId: transactionId,
                 type: 'service_usage'
             });
