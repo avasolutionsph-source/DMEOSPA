@@ -345,13 +345,8 @@ class SyncManager {
             })));
 
             if (allInventory.length === 0) {
-                // This is normal when inventory is empty, use debug level
-                if (window.logger && window.logger.debug) {
-                    window.logger.debug('No inventory items to sync', {
-                        category: 'SYNC',
-                        operation: 'inventory_sync_empty'
-                    });
-                }
+                // This is normal when inventory is empty, just return silently
+                // No need to log this as it's not an error or warning
                 return;
             }
 
