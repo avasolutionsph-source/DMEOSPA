@@ -126,11 +126,27 @@ class DashboardManager {
     }
 
     updateStatsDisplay() {
-        // Update stat cards
-        document.getElementById('todaySales').textContent = app.formatCurrency(this.stats.todaySales);
-        document.getElementById('todayTransactions').textContent = this.stats.todayTransactions;
-        document.getElementById('lowStockCount').textContent = this.stats.lowStockCount;
-        document.getElementById('monthlyRevenue').textContent = app.formatCurrency(this.stats.monthlyRevenue);
+        // Helper function to format currency with fallback
+        const formatCurrency = (amount) => {
+            if (window.app && typeof window.app.formatCurrency === 'function') {
+                return window.app.formatCurrency(amount);
+            }
+            // Fallback currency formatting
+            return `₱${(amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        };
+        
+        // Update stat cards with error handling
+        const todaySalesEl = document.getElementById('todaySales');
+        const todayTransactionsEl = document.getElementById('todayTransactions');
+        const lowStockCountEl = document.getElementById('lowStockCount');
+        const monthlyRevenueEl = document.getElementById('monthlyRevenue');
+        
+        if (todaySalesEl) todaySalesEl.textContent = formatCurrency(this.stats.todaySales);
+        if (todayTransactionsEl) todayTransactionsEl.textContent = this.stats.todayTransactions;
+        if (lowStockCountEl) lowStockCountEl.textContent = this.stats.lowStockCount;
+        if (monthlyRevenueEl) monthlyRevenueEl.textContent = formatCurrency(this.stats.monthlyRevenue);
+        
+        console.log('📊 Dashboard stats updated:', this.stats);
 
         // Calculate and display percentage changes
         this.calculateGrowth();
@@ -138,21 +154,32 @@ class DashboardManager {
 
     async calculateGrowth() {
         try {
+            // Ensure database is available
+            if (!window.db) {
+                console.log('📊 Database not available for growth calculation, skipping...');
+                return;
+            }
+            
             // Get yesterday's data for comparison
             const allTransactions = await window.db.getAll('transactions');
+            if (!allTransactions || allTransactions.length === 0) {
+                console.log('📊 No transaction data available for growth calculation');
+                return;
+            }
+            
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
             const yesterdayStr = yesterday.toDateString();
             
             const yesterdayTransactions = allTransactions.filter(t => 
-                new Date(t.date).toDateString() === yesterdayStr
+                t.date && new Date(t.date).toDateString() === yesterdayStr
             );
             
-            const yesterdaySales = yesterdayTransactions.reduce((sum, t) => sum + t.total, 0);
+            const yesterdaySales = yesterdayTransactions.reduce((sum, t) => sum + (t.total || 0), 0);
             
             if (yesterdaySales > 0) {
                 const growth = ((this.stats.todaySales - yesterdaySales) / yesterdaySales) * 100;
-                const growthElement = document.querySelector('#todaySales').nextElementSibling;
+                const growthElement = document.querySelector('#todaySales')?.nextElementSibling;
                 if (growthElement) {
                     growthElement.textContent = `${growth > 0 ? '+' : ''}${growth.toFixed(1)}%`;
                     growthElement.className = `stat-change ${growth >= 0 ? 'positive' : 'negative'}`;

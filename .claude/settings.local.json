@@ -20,7 +20,9 @@
       "Bash(do sed -i 's/await db\\./await window.db./g' \"$file\")",
       "Bash(done)",
       "Bash(python:*)",
-      "Bash(start chrome \"http://localhost:8000\")"
+      "Bash(start chrome \"http://localhost:8000\")",
+      "Bash(timeout:*)",
+      "Bash(start chrome:*)"
     ],
     "deny": [],
     "ask": [],

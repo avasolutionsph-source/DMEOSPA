@@ -280,6 +280,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
         
         await setupNavigationWhenReady();
+        
+        // After everything is loaded, check authentication if user came from login
+        setTimeout(() => {
+            if (window.checkAuthenticationAfterLoad) {
+                console.log('🔐 Running post-initialization auth check...');
+                window.checkAuthenticationAfterLoad();
+            }
+        }, 2000); // Give time for everything to initialize
+        
     } catch (error) {
         console.error('❌ Error during component initialization:', error);
     }
