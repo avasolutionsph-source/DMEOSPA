@@ -1,8 +1,4 @@
-/* Main CSS File - Imports all modular styles */
-
-/* Core Foundation */
-@import 'variables.css';
-@import 'base.css';
+/* Main CSS File - Additional styles and overrides */
 
 /* Debug: Ensure CSS is loading with fallbacks */
 body {
