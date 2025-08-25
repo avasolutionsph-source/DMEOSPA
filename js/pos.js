@@ -1,24 +1,32 @@
 // POS System Management
 
-// Use global utility functions if available
-const showSuccess = window.showNotification ? (msg) => window.showNotification(msg, 'success') : (msg) => alert('✅ ' + msg);
-const showError = window.showNotification ? (msg) => window.showNotification(msg, 'error') : (msg) => alert('❌ ' + msg);
-const showWarning = window.showNotification ? (msg) => window.showNotification(msg, 'warning') : (msg) => alert('⚠️ ' + msg);
-const showInfo = window.showNotification ? (msg) => window.showNotification(msg, 'info') : (msg) => alert('ℹ️ ' + msg);
-const showLoading = window.showLoading || ((title, msg) => console.log('Loading:', title, msg));
-const hideLoading = window.hideLoading || (() => console.log('Loading complete'));
-const setButtonLoading = window.setButtonLoading || ((btnId, loading) => {
-    const btn = document.getElementById(btnId);
-    if (btn) {
-        btn.disabled = loading;
-        if (loading) {
-            btn.dataset.originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-        } else if (btn.dataset.originalText) {
-            btn.innerHTML = btn.dataset.originalText;
-        }
+// Use global utility functions if available, wrapped to avoid redeclaration
+(function() {
+    if (!window.posUtilsInitialized) {
+        window.showSuccess = window.showNotification ? (msg) => window.showNotification(msg, 'success') : (msg) => alert('✅ ' + msg);
+        window.showError = window.showNotification ? (msg) => window.showNotification(msg, 'error') : (msg) => alert('❌ ' + msg);
+        window.showWarning = window.showNotification ? (msg) => window.showNotification(msg, 'warning') : (msg) => alert('⚠️ ' + msg);
+        window.showInfo = window.showNotification ? (msg) => window.showNotification(msg, 'info') : (msg) => alert('ℹ️ ' + msg);
+        window.showLoading = window.showLoading || ((title, msg) => console.log('Loading:', title, msg));
+        window.hideLoading = window.hideLoading || (() => console.log('Loading complete'));
+        window.setButtonLoading = window.setButtonLoading || ((btnId, loading) => {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.disabled = loading;
+                if (loading) {
+                    btn.dataset.originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                } else if (btn.dataset.originalText) {
+                    btn.innerHTML = btn.dataset.originalText;
+                }
+            }
+        });
+        window.posUtilsInitialized = true;
     }
-});
+})();
+
+// Reference the functions locally for this file
+const { showSuccess, showError, showWarning, showInfo, showLoading, hideLoading, setButtonLoading } = window;
 
 class POSSystem {
     constructor() {
