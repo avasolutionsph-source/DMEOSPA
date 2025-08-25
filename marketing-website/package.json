@@ -5,8 +5,10 @@
   "main": "index.js",
   "scripts": {
     "build": "npm run copy-files",
-    "copy-files": "xcopy src public\\ /E /Y"
+    "copy-files": "copyfiles 'src/**' 'public' -u 1"
   },
   "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+    "copyfiles": "^2.4.1"
+  }
 }
