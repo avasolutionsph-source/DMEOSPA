@@ -401,6 +401,171 @@ app.get('/api/admin/users', async (req, res) => {
   }
 });
 
+// Admin sync stats endpoint
+app.get('/api/admin/sync-stats', async (req, res) => {
+  try {
+    // Mock sync statistics for now
+    res.json({
+      success: true,
+      stats: {
+        totalSyncs: 156,
+        successfulSyncs: 152,
+        failedSyncs: 4,
+        lastSyncTime: new Date().toISOString(),
+        averageResponseTime: '1.2s',
+        syncQueueSize: 0
+      }
+    });
+  } catch (error) {
+    console.error('Admin sync stats error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch sync statistics'
+    });
+  }
+});
+
+// Admin update user endpoint (for Edit button functionality)
+app.put('/api/admin/users/:userId', async (req, res) => {
+  try {
+    const User = (await import('./models/User.js')).default;
+    const { userId } = req.params;
+    const { subscriptionPlan, subscriptionStatus, fullName, businessName, plan, status, notes } = req.body;
+    
+    // Validate the user ID
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User ID is required'
+      });
+    }
+    
+    // Build update object - handle both formats
+    const updateData = {};
+    if (subscriptionPlan || plan) updateData.subscriptionPlan = subscriptionPlan || plan;
+    if (subscriptionStatus || status) updateData.subscriptionStatus = subscriptionStatus || status;
+    if (fullName) {
+      const nameParts = fullName.split(' ');
+      updateData.firstName = nameParts[0] || fullName;
+      updateData.lastName = nameParts.slice(1).join(' ') || '';
+    }
+    if (businessName) updateData.businessName = businessName;
+    if (notes !== undefined) updateData.notes = notes;
+    
+    // Update the user
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, select: '-password' }
+    );
+    
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    console.log(`Admin updated user ${userId}:`, updateData);
+    
+    res.json({
+      success: true,
+      user: updatedUser,
+      message: 'User updated successfully'
+    });
+    
+  } catch (error) {
+    console.error('Admin user update error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update user'
+    });
+  }
+});
+
+// Admin delete user endpoint
+app.delete('/api/admin/users/:userId', async (req, res) => {
+  try {
+    const User = (await import('./models/User.js')).default;
+    const { userId } = req.params;
+    
+    // Validate the user ID
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User ID is required'
+      });
+    }
+    
+    // Delete the user
+    const deletedUser = await User.findByIdAndDelete(userId);
+    
+    if (!deletedUser) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    console.log(`Admin deleted user ${userId}:`, deletedUser.email);
+    
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+    
+  } catch (error) {
+    console.error('Admin user delete error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete user'
+    });
+  }
+});
+
+// Admin fix user subscription endpoint  
+app.post('/api/admin/fix-user-subscription/:userId', async (req, res) => {
+  try {
+    const User = (await import('./models/User.js')).default;
+    const { userId } = req.params;
+    const { plan, reason } = req.body;
+    
+    // Find the user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    // Update subscription plan
+    user.subscriptionPlan = plan;
+    user.subscriptionStatus = 'active';
+    await user.save();
+    
+    console.log(`Admin fixed user subscription ${userId}: ${user.subscriptionPlan} → ${plan} (Reason: ${reason})`);
+    
+    res.json({
+      success: true,
+      message: 'User subscription fixed successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        subscriptionPlan: user.subscriptionPlan,
+        subscriptionStatus: user.subscriptionStatus
+      }
+    });
+    
+  } catch (error) {
+    console.error('Admin fix subscription error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fix user subscription'
+    });
+  }
+});
+
 // Mount routers with clear separation
 app.use('/api', apiRouter);           // Main API endpoints for PWA
 app.use('/api/sync', syncRouter);     // Sync endpoints for PWA data

@@ -286,7 +286,7 @@ document.getElementById('editUserForm').addEventListener('submit', async functio
     
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`/api/admin/users/${userId}/subscription`, {
+        const response = await fetch(`https://ava-pwa-backend.onrender.com/api/admin/users/${userId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -415,7 +415,7 @@ async function fixUserSubscription(userId, email, currentPlan) {
     
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`/api/admin/fix-user-subscription/${userId}`, {
+        const response = await fetch(`https://ava-pwa-backend.onrender.com/api/admin/fix-user-subscription/${userId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
