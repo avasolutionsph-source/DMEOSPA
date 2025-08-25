@@ -108,7 +108,9 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ email, password }),
+                    mode: 'cors', // Explicitly enable CORS
+                    credentials: 'include' // Include credentials for CORS
                 });
                 
                 const data = await response.json();
