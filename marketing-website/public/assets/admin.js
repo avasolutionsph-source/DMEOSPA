@@ -420,10 +420,10 @@ async function loadSyncStats() {
 
 // Fix user subscription inconsistencies
 window.fixUserSubscription = async function(userId, email, currentPlan) {
-    const newPlan = prompt(`Fix subscription for ${email}\nCurrent plan shown: ${currentPlan}\n\nEnter correct plan (unpaid, pro):`, currentPlan);
+    const newPlan = prompt(`Fix subscription for ${email}\nCurrent plan shown: ${currentPlan}\n\nEnter correct plan (unpaid, basic, professional, enterprise):`, currentPlan);
     
-    if (!newPlan || !['unpaid', 'pro'].includes(newPlan.toLowerCase())) {
-        alert('Invalid plan. Please use: unpaid or pro');
+    if (!newPlan || !['unpaid', 'basic', 'professional', 'enterprise'].includes(newPlan.toLowerCase())) {
+        alert('Invalid plan. Please use: unpaid, basic, professional, or enterprise');
         return;
     }
     
