@@ -69,9 +69,9 @@ class RoomManager {
 
     async loadActiveServices() {
         try {
-            // Load active services (those currently using rooms)
-            const services = await window.db.getAll('activeServices');
-            this.activeServices = services || [];
+            // Load only active services (not completed ones)
+            const allServices = await window.db.getAll('activeServices');
+            this.activeServices = (allServices || []).filter(service => service.status === 'active');
             
             // Update room statuses based on active services
             for (const service of this.activeServices) {
@@ -287,8 +287,11 @@ class RoomManager {
         room.currentService.actualDuration = durationMinutes;
         room.currentService.status = 'completed';
         
-        // Save to history
+        // Save to history/database
         await window.db.update('activeServices', room.currentService);
+        
+        // Remove from active services array
+        this.activeServices = this.activeServices.filter(service => service.id !== room.currentService.id);
 
         // Clear room
         room.status = 'available';
