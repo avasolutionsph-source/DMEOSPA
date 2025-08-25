@@ -100,12 +100,19 @@ const corsOptions = {
     }
     
     // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      logger.info('CORS: Allowing request with no origin');
+      return callback(null, true);
+    }
+    
+    // Log origin for debugging
+    logger.info(`CORS: Checking origin: ${origin}`);
     
     // Check exact match or pattern match for Netlify/Render domains
     if (allowedOrigins.includes(origin) || 
         /netlify\.app$/.test(origin) || 
         /onrender\.com$/.test(origin)) {
+      logger.info(`CORS: Allowing origin: ${origin}`);
       return callback(null, true);
     }
     
@@ -117,10 +124,21 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'Accept', 'Origin', 'X-Requested-With'],
   exposedHeaders: ['Content-Length', 'X-Request-Id'],
-  maxAge: 86400 // 24 hours
+  maxAge: 86400, // 24 hours
+  optionsSuccessStatus: 200 // Support legacy browsers
 };
 
 app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', (req, res) => {
+  logger.info(`CORS preflight request from: ${req.headers.origin}`);
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, Accept, Origin, x-user-id');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).send();
+});
 
 // 5. Rate limiting (different limits for different endpoints)
 const createRateLimiter = (windowMs, max, message) => rateLimit({
