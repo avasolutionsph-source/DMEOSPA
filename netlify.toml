@@ -1,5 +1,6 @@
 [build]
   # Frontend build settings for PWA
+  base = "."
   command = "echo 'Static site - no build needed'"
   publish = "."
   
@@ -24,14 +25,7 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
-# Single Page Application routing
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  conditions = {Role = ["admin"], Country = ["US"]}
-
-# Default catch-all for PWA
+# Single Page Application routing for PWA
 [[redirects]]
   from = "/*"
   to = "/index.html"
