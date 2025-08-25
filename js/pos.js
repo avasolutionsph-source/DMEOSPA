@@ -236,18 +236,19 @@ class POSSystem {
             const products = await window.db.getAll('products');
             const inventory = await window.db.getAll('inventory');
             
-            // Filter based on business configuration
-            const showAllServices = window.app?.businessConfig?.businessType === 'spa';
+            // Show all products/services that either have showInPOS true OR don't have the property (for backwards compatibility)
+            this.products = products.filter(p => p.showInPOS !== false);
             
-            if (showAllServices) {
-                // For spa business, show all services in POS
-                this.products = products;
-            } else {
-                // For other businesses, filter by showInPOS setting
-                this.products = products.filter(p => p.showInPOS);
-            }
+            this.inventory = inventory.filter(i => i.showInPOS !== false);
             
-            this.inventory = inventory.filter(i => i.showInPOS);
+            // Debug log to see what's loaded
+            console.log('POS Products loaded:', {
+                totalProducts: products.length,
+                filteredProducts: this.products.length,
+                totalInventory: inventory.length,
+                filteredInventory: this.inventory.length,
+                products: this.products.map(p => ({ name: p.name, showInPOS: p.showInPOS, type: p.type }))
+            });
             
             // Combine and display
             this.displayProducts();

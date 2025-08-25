@@ -226,7 +226,7 @@ class ProductsManager {
                 category: getDropdownValue('productCategory', 'productCategoryCustom'),
                 description: document.getElementById('productDescription').value,
                 notes: document.getElementById('productNotes').value,
-                showInPOS: document.getElementById('productShowInPOS').checked,
+                showInPOS: document.getElementById('productShowInPOS') ? document.getElementById('productShowInPOS').checked : true,
                 syncStatus: 'pending',
                 modifiedAt: new Date().toISOString()
             };
