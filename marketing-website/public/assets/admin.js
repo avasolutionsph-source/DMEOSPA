@@ -262,9 +262,18 @@ function filterUsers() {
 }
 
 // Edit user
-function editUser(userId) {
+window.editUser = function(userId) {
+    console.log('Edit user clicked for:', userId);
+    console.log('All users:', allUsers);
+    
     const user = allUsers.find(u => u._id === userId);
-    if (!user) return;
+    if (!user) {
+        console.error('User not found:', userId);
+        alert('User not found. Please refresh the page and try again.');
+        return;
+    }
+    
+    console.log('Found user:', user);
     
     document.getElementById('editUserId').value = userId;
     document.getElementById('editUserInfo').textContent = `${user.firstName} ${user.lastName} (${user.email})`;
@@ -272,6 +281,7 @@ function editUser(userId) {
     document.getElementById('editStatus').value = user.subscriptionStatus;
     document.getElementById('editNotes').value = user.notes || '';
     
+    console.log('Opening modal...');
     document.getElementById('editUserModal').style.display = 'block';
 }
 
@@ -319,7 +329,7 @@ async function refreshUsers() {
 }
 
 // Close modal
-function closeModal() {
+window.closeModal = function() {
     document.getElementById('editUserModal').style.display = 'none';
     hideMessage('modalError');
     hideMessage('modalSuccess');
@@ -405,7 +415,7 @@ async function loadSyncStats() {
 }
 
 // Fix user subscription inconsistencies
-async function fixUserSubscription(userId, email, currentPlan) {
+window.fixUserSubscription = async function(userId, email, currentPlan) {
     const newPlan = prompt(`Fix subscription for ${email}\nCurrent plan shown: ${currentPlan}\n\nEnter correct plan (unpaid, pro):`, currentPlan);
     
     if (!newPlan || !['unpaid', 'pro'].includes(newPlan.toLowerCase())) {
