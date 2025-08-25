@@ -442,20 +442,11 @@ class POSSystem {
 
         if (!cartItemsDiv) return;
 
-        // Update employee selection visibility based on cart content
+        // Hide the main employee selection when cart has items - we'll use the one in checkout modal
         const employeeSelection = document.querySelector('.employee-selection');
         if (employeeSelection) {
-            if (this.cart.length > 0) {
-                employeeSelection.style.display = 'block';
-                if (!this.selectedEmployee) {
-                    // Add visual emphasis when cart has items but no employee selected
-                    employeeSelection.style.boxShadow = '0 0 10px rgba(255, 193, 7, 0.5)';
-                } else {
-                    employeeSelection.style.boxShadow = 'none';
-                }
-            } else {
-                employeeSelection.style.display = 'none';
-            }
+            // Always hide the main employee selection since we use checkout modal
+            employeeSelection.style.display = 'none';
         }
 
         if (this.cart.length === 0) {
@@ -467,12 +458,12 @@ class POSSystem {
         // Check if there are services in cart
         const hasServices = this.cart.some(item => item.type === 'service');
         
-        // Display notice if services in cart but no employee selected
+        // Display notice if services in cart - employee will be selected at checkout
         let serviceNotice = '';
-        if (hasServices && !this.selectedEmployee) {
+        if (hasServices) {
             serviceNotice = `
-                <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.75rem; font-size: 0.875rem; color: #92400e;">
-                    <i class="fas fa-info-circle"></i> Service items in cart - Please select an employee for commission tracking
+                <div style="background: #e8f4f8; border: 1px solid #22d3ee; padding: 0.75rem; border-radius: 6px; margin-bottom: 0.75rem; font-size: 0.875rem; color: #0891b2;">
+                    <i class="fas fa-info-circle"></i> Service items in cart - Employee will be assigned at checkout
                 </div>
             `;
         }
@@ -508,16 +499,7 @@ class POSSystem {
     }
 
     async showCheckout() {
-        // Check if employee requirement is enabled and there are services in cart
-        const requireEmployee = window.app?.isFeatureEnabled('requireEmployeeForServices');
         const hasServices = this.cart.some(item => item.type === 'service');
-        
-        if (requireEmployee && hasServices && !this.selectedEmployee) {
-            if (!confirm('You have services in your cart but no employee selected. Services require employee assignment for commission tracking. Continue anyway?')) {
-                showWarning('Please select an employee for service items');
-                return;
-            }
-        }
 
         // Reset discounts for new checkout
         this.resetDiscounts();

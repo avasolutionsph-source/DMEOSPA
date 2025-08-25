@@ -768,29 +768,29 @@
             </div>
             <div class="modal-body">
                 <!-- Employee & Room Assignment Section -->
-                <div class="assignment-section" style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <h3 style="margin-top: 0; color: #2c3e50;"><i class="fas fa-user-check"></i> Service Assignment</h3>
+                <div class="assignment-section">
+                    <h3><i class="fas fa-user-check"></i> Service Assignment</h3>
                     
                     <!-- Employee Assignment -->
                     <div class="form-group">
-                        <label style="font-weight: 600; color: #34495e;">
-                            <i class="fas fa-user"></i> Assign to Employee <span style="color: red;">*</span>
+                        <label>
+                            <i class="fas fa-user"></i> Assign to Employee <span style="color: var(--danger-color);">*</span>
                         </label>
-                        <select id="checkoutEmployeeSelect" class="form-input" style="width: 100%; padding: 10px; border: 2px solid #3498db;">
+                        <select id="checkoutEmployeeSelect" class="form-input">
                             <option value="">Select Employee</option>
                         </select>
-                        <small style="color: #7f8c8d;">Employee must be selected for commission tracking</small>
+                        <small>Employee must be selected for commission tracking</small>
                     </div>
                     
                     <!-- Room Assignment (for services) -->
                     <div class="form-group" id="roomAssignmentSection" style="display: none;">
-                        <label style="font-weight: 600; color: #34495e;">
+                        <label>
                             <i class="fas fa-door-open"></i> Assign Room
                         </label>
-                        <select id="checkoutRoomSelect" class="form-input" style="width: 100%; padding: 10px;">
+                        <select id="checkoutRoomSelect" class="form-input">
                             <option value="">No Room Assignment</option>
                         </select>
-                        <small style="color: #7f8c8d;">Assign a room for service tracking</small>
+                        <small>Assign a room for service tracking</small>
                     </div>
                 </div>
                 
@@ -824,13 +824,13 @@
                     <!-- Gift Certificate -->
                     <div class="form-group">
                         <label><i class="fas fa-gift"></i> Gift Certificate</label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="text" id="gcControlNumber" class="form-input" placeholder="Enter Control Number">
+                        <div style="display: flex; gap: 0.75rem;">
+                            <input type="text" id="gcControlNumber" class="form-input" placeholder="Enter Control Number" style="flex: 1;">
                             <button type="button" class="btn btn-secondary" onclick="posSystem.validateGiftCertificate()">
                                 <i class="fas fa-check"></i> Validate
                             </button>
                         </div>
-                        <div id="gcStatus" style="margin-top: 5px; font-size: 0.9rem;"></div>
+                        <div id="gcStatus" style="margin-top: 0.5rem; font-size: var(--font-size-sm);"></div>
                     </div>
                     
                     <!-- Senior/PWD Discount -->
@@ -840,9 +840,9 @@
                             <span class="checkmark"></span>
                             Apply Senior Citizen / PWD Discount (20%)
                         </label>
-                        <div id="seniorPWDFields" style="display: none; margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
-                            <input type="text" id="discountCardholderName" class="form-input" placeholder="Cardholder Name" style="margin-bottom: 10px;">
-                            <input type="text" id="discountIDNumber" class="form-input" placeholder="ID Number" style="margin-bottom: 10px;">
+                        <div id="seniorPWDFields" style="display: none; margin-top: 0.75rem; padding: 1rem; background: var(--gray-50); border-radius: var(--border-radius-sm); border: 1px solid var(--gray-200);">
+                            <input type="text" id="discountCardholderName" class="form-input" placeholder="Cardholder Name" style="margin-bottom: 0.75rem;">
+                            <input type="text" id="discountIDNumber" class="form-input" placeholder="ID Number" style="margin-bottom: 0.75rem;">
                             <select id="discountCardType" class="form-input">
                                 <option value="">Select Card Type</option>
                                 <option value="senior">Senior Citizen</option>
@@ -861,9 +861,9 @@
                             <option value="holiday-20">Holiday Special (20% off)</option>
                             <option value="custom">Custom Discount...</option>
                         </select>
-                        <div id="customDiscountField" style="display: none; margin-top: 10px;">
-                            <input type="number" id="customDiscountPercent" class="form-input" placeholder="Enter discount %" min="0" max="100" step="1">
-                            <input type="text" id="customDiscountReason" class="form-input" placeholder="Reason for discount" style="margin-top: 5px;">
+                        <div id="customDiscountField" style="display: none; margin-top: 0.75rem;">
+                            <input type="number" id="customDiscountPercent" class="form-input" placeholder="Enter discount %" min="0" max="100" step="1" style="margin-bottom: 0.5rem;">
+                            <input type="text" id="customDiscountReason" class="form-input" placeholder="Reason for discount">
                         </div>
                     </div>
                 </div>
@@ -873,15 +873,18 @@
                     <div class="payment-options">
                         <label class="payment-option">
                             <input type="radio" name="payment" value="cash" checked>
-                            <i class="fas fa-money-bill"></i> Cash
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span>Cash</span>
                         </label>
                         <label class="payment-option">
                             <input type="radio" name="payment" value="card">
-                            <i class="fas fa-credit-card"></i> Card
+                            <i class="fas fa-credit-card"></i>
+                            <span>Card</span>
                         </label>
                         <label class="payment-option">
                             <input type="radio" name="payment" value="gcash">
-                            <i class="fas fa-mobile-alt"></i> GCash
+                            <i class="fas fa-mobile-alt"></i>
+                            <span>GCash</span>
                         </label>
                     </div>
                 </div>
