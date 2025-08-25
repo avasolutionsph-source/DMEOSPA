@@ -1,0 +1,31 @@
+# PWA Repository - Files to Include
+# Copy these files/folders to your new PWA repository
+
+## Root Files:
+- index.html
+- login.html  
+- register.html
+- manifest.json
+- service-worker.js
+- styles.css
+- updates.json
+
+## Directories:
+- js/ (entire directory)
+- icons/ (entire directory)
+
+## Configuration Files:
+- netlify.toml (PWA-specific)
+- _headers (PWA-specific)
+
+## Optional:
+- README.md (create new PWA-specific readme)
+- .gitignore (create PWA-specific gitignore)
+
+## DO NOT INCLUDE:
+- marketing-website/
+- backend/ 
+- docs/
+- scripts/
+- render.yaml
+- Any backend-related files

@@ -1,0 +1,41 @@
+# Marketing Website Repository - Files to Include  
+# Copy these files/folders to your new Marketing repository
+
+## Root Files (from marketing-website/):
+- marketing-website/public/ → Move to root as /
+  - index.html
+  - admin.html
+  - login.html
+  - register.html
+  - pricing.html
+  - features.html
+  - contact.html
+  - business-dashboard.html
+  - 404.html
+  - about.html
+  - download.html
+  - admin-login.html
+
+## Assets Directory:
+- marketing-website/public/assets/ → Move to root as /assets/
+  - admin.js
+  - main.js  
+  - pricing.js
+  - style.css
+  - favicon.svg
+
+## Configuration Files:
+- netlify.toml (marketing-specific)
+- _headers (marketing-specific)
+
+## Optional Backend (if needed):
+- marketing-website/server.js
+- marketing-website/package.json
+- marketing-website/routes/
+- marketing-website/models/
+- marketing-website/config/
+
+## DO NOT INCLUDE:
+- Root PWA files (index.html, js/, styles.css from root)
+- backend/ (main backend)
+- PWA-specific files
