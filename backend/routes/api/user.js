@@ -243,4 +243,29 @@ router.put('/settings', async (req, res) => {
   }
 });
 
+// GET /api/user/business-name - Get just the business name
+router.get('/business-name', async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('businessName');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      businessName: user.businessName || 'Your Business'
+    });
+  } catch (error) {
+    logger.error('Get business name error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get business name'
+    });
+  }
+});
+
 export default router;

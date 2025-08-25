@@ -1,6 +1,12 @@
 import express from 'express';
+import { authenticateJWT } from '../../middleware/auth.js';
+import User from '../../models/User.js';
+import logger from '../../utils/logger.js';
 
 const router = express.Router();
+
+// Apply authentication to all business routes
+router.use(authenticateJWT);
 
 // GET /api/business
 router.get('/', async (req, res) => {
@@ -36,6 +42,41 @@ router.delete('/:id', async (req, res) => {
     message: 'Business deleted placeholder',
     success: true 
   });
+});
+
+// GET /api/business/stats - Get business statistics
+router.get('/stats', async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    // Return basic stats for now - can be expanded later
+    res.json({
+      success: true,
+      stats: {
+        totalSales: 0,
+        totalTransactions: 0,
+        totalProducts: 0,
+        totalEmployees: 0,
+        dailySales: 0,
+        weeklySales: 0,
+        monthlySales: 0,
+        lastUpdated: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    logger.error('Get business stats error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get business statistics'
+    });
+  }
 });
 
 export default router;
