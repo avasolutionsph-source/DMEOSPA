@@ -128,4 +128,102 @@ router.get('/users', async (req, res) => {
   }
 });
 
+// Update user plan and status (for admin edit functionality)
+router.put('/users/:userId', async (req, res) => {
+  try {
+    // Import User model
+    const User = (await import('../../models/User.js')).default;
+    
+    const { userId } = req.params;
+    const { subscriptionPlan, subscriptionStatus, fullName, businessName } = req.body;
+    
+    // Validate the user ID
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User ID is required'
+      });
+    }
+    
+    // Build update object
+    const updateData = {};
+    if (subscriptionPlan) updateData.subscriptionPlan = subscriptionPlan;
+    if (subscriptionStatus) updateData.subscriptionStatus = subscriptionStatus;
+    if (fullName) updateData.firstName = fullName.split(' ')[0] || fullName;
+    if (fullName) updateData.lastName = fullName.split(' ').slice(1).join(' ') || '';
+    if (businessName) updateData.businessName = businessName;
+    
+    // Update the user
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, select: '-password' }
+    );
+    
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    console.log(`Admin updated user ${userId}:`, updateData);
+    
+    res.json({
+      success: true,
+      user: updatedUser,
+      message: 'User updated successfully'
+    });
+    
+  } catch (error) {
+    console.error('Admin user update error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update user'
+    });
+  }
+});
+
+// Delete user (for admin delete functionality)
+router.delete('/users/:userId', async (req, res) => {
+  try {
+    // Import User model
+    const User = (await import('../../models/User.js')).default;
+    
+    const { userId } = req.params;
+    
+    // Validate the user ID
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User ID is required'
+      });
+    }
+    
+    // Delete the user
+    const deletedUser = await User.findByIdAndDelete(userId);
+    
+    if (!deletedUser) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    console.log(`Admin deleted user ${userId}:`, deletedUser.email);
+    
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+    
+  } catch (error) {
+    console.error('Admin user delete error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete user'
+    });
+  }
+});
+
 export default router;
