@@ -3270,9 +3270,9 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
 }
 
 .modal.active {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     padding: 2rem;
 }
 

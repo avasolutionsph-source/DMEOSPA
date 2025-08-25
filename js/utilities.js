@@ -5,8 +5,15 @@
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.style.display = 'flex';
+        // Remove any conflicting inline styles
+        modal.style.removeProperty('display');
+        modal.style.removeProperty('position');
+        modal.style.removeProperty('align-items');
+        modal.style.removeProperty('justify-content');
+        
+        // Apply the active class which will handle centering via CSS
         modal.classList.add('active');
+        
         // Add overlay click handler
         modal.addEventListener('click', function(e) {
             if (e.target === modal) {

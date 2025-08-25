@@ -32,7 +32,8 @@
       "Bash(for:*)",
       "Bash(do sed -i '/^import.*from/d' \"$file\")",
       "Bash(do)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(rg:*)"
     ],
     "deny": [],
     "ask": [],
