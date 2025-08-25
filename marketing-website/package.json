@@ -4,11 +4,9 @@
   "description": "Ava Solutions Marketing Website",
   "main": "index.js",
   "scripts": {
-    "build": "npm run copy-files",
-    "copy-files": "copyfiles 'src/**' 'public' -u 1"
+    "build": "mkdir -p public && cp -r src/* public/",
+    "prebuild": "rm -rf public"
   },
   "dependencies": {},
-  "devDependencies": {
-    "copyfiles": "^2.4.1"
-  }
+  "devDependencies": {}
 }
