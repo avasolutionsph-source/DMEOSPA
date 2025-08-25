@@ -5,7 +5,7 @@
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.style.display = 'block';
+        modal.style.display = 'flex';
         modal.classList.add('active');
         // Add overlay click handler
         modal.addEventListener('click', function(e) {
