@@ -234,15 +234,10 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../marketing-website/public/admin.html'));
 });
 
-// Serve PWA static files
+// Serve PWA static files (corrected path)
 app.use('/pwa', express.static(path.join(__dirname, '../')));
-app.use('/app', express.static(path.join(__dirname, '../')));
 
-// PWA app routes - serve PWA index.html
-app.get('/app/*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../index.html'));
-});
-
+// PWA SPA routing - serve PWA index.html for all PWA routes
 app.get('/pwa/*', (req, res) => {
   res.sendFile(path.join(__dirname, '../index.html'));
 });
