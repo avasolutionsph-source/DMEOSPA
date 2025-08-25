@@ -36,7 +36,7 @@ document.getElementById('adminLoginForm').addEventListener('submit', async funct
     const password = formData.get('password');
     
     try {
-        const response = await fetch('/api/auth/admin-login', {
+        const response = await fetch('https://ava-pwa-backend.onrender.com/api/auth/admin-login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -72,7 +72,7 @@ async function loadDashboard() {
         const token = localStorage.getItem('adminToken');
         
         // Load stats
-        const statsResponse = await fetch('/api/admin/stats', {
+        const statsResponse = await fetch('https://ava-pwa-backend.onrender.com/api/admin/stats', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -104,7 +104,7 @@ function updateDashboardStats(stats) {
 async function loadUsers() {
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/admin/users', {
+        const response = await fetch('https://ava-pwa-backend.onrender.com/api/admin/users', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -365,7 +365,7 @@ async function cleanupOldSyncs() {
 
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/admin/cleanup-syncs', {
+        const response = await fetch('https://ava-pwa-backend.onrender.com/api/admin/cleanup-syncs', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -386,7 +386,7 @@ async function cleanupOldSyncs() {
 async function loadSyncStats() {
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/admin/sync-stats', {
+        const response = await fetch('https://ava-pwa-backend.onrender.com/api/admin/sync-stats', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 

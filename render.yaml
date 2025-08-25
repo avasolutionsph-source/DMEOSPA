@@ -4,8 +4,8 @@ services:
     name: ava-pwa-backend
     env: node
     region: singapore
-    buildCommand: cd unified-backend && npm install
-    startCommand: cd unified-backend && npm start
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
     envVars:
       - key: NODE_ENV
         value: production
