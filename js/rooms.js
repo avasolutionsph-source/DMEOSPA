@@ -115,8 +115,8 @@ class RoomManager {
         container.innerHTML = this.rooms.map(room => {
             const isOccupied = room.status === 'occupied';
             const statusColor = isOccupied ? '#e74c3c' : '#27ae60';
-            const statusIcon = isOccupied ? 'lock' : 'lock-open';
-            const statusText = isOccupied ? 'OCCUPIED' : 'AVAILABLE';
+            const statusIcon = isOccupied ? 'clock' : 'lock-open';
+            const statusText = isOccupied ? 'IN SERVICE' : 'AVAILABLE';
             
             let timerDisplay = '';
             let serviceInfo = '';
@@ -431,10 +431,19 @@ class RoomManager {
 
         const serviceId = await window.db.add('activeServices', activeService);
         activeService.id = serviceId;
+        
+        // Add to active services array
+        this.activeServices.push(activeService);
 
+        // Update room status to occupied and set current service
         room.status = 'occupied';
         room.currentService = activeService;
         await window.db.update('rooms', room);
+        
+        // Refresh the room display to show the service has started
+        if (window.app?.currentPage === 'rooms') {
+            this.displayRooms();
+        }
 
         return true;
     }
@@ -443,7 +452,18 @@ class RoomManager {
 // Initialize Room Manager
 const roomManager = new RoomManager();
 
+// Make roomManager globally available for POS system
+window.roomManager = roomManager;
+
 // Load rooms when page is shown
 window.loadRooms = async function() {
     await roomManager.init();
 };
+
+// Initialize room manager on app start
+document.addEventListener('DOMContentLoaded', async () => {
+    if (window.roomManager && !window.roomManager.initialized) {
+        await window.roomManager.init();
+        window.roomManager.initialized = true;
+    }
+});

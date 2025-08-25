@@ -900,11 +900,20 @@ class POSSystem {
                 // Get employee details
                 const employee = await window.db.get('employees', parseInt(this.selectedEmployee));
                 
-                // Get service names
-                const serviceNames = this.cart
-                    .filter(item => item.type === 'service')
-                    .map(item => item.name)
-                    .join(', ');
+                // Get service details with durations
+                const serviceItems = this.cart.filter(item => item.type === 'service');
+                const serviceNames = serviceItems.map(item => item.name).join(', ');
+                
+                // Calculate total estimated duration from all services
+                let totalDuration = 0;
+                for (const serviceItem of serviceItems) {
+                    const service = await window.db.get('products', serviceItem.id);
+                    if (service && service.duration) {
+                        totalDuration += service.duration * serviceItem.quantity;
+                    } else {
+                        totalDuration += 60 * serviceItem.quantity; // Default 60 minutes per service
+                    }
+                }
                 
                 // Assign room to service
                 if (window.roomManager) {
@@ -914,7 +923,7 @@ class POSSystem {
                         employeeId: this.selectedEmployee,
                         employeeName: employee?.name || 'Unknown',
                         transactionId: transactionId,
-                        estimatedDuration: 60 // Default 60 minutes
+                        estimatedDuration: totalDuration || 60 // Use calculated duration or default 60 minutes
                     });
                 }
             }
