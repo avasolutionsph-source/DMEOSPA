@@ -1,15 +1,35 @@
 // POS System Management
 
-// Use global utility functions if available, wrapped to avoid redeclaration
+// Ensure utility functions are available
 (function() {
-    if (!window.posUtilsInitialized) {
-        window.showSuccess = window.showNotification ? (msg) => window.showNotification(msg, 'success') : (msg) => alert('✅ ' + msg);
-        window.showError = window.showNotification ? (msg) => window.showNotification(msg, 'error') : (msg) => alert('❌ ' + msg);
-        window.showWarning = window.showNotification ? (msg) => window.showNotification(msg, 'warning') : (msg) => alert('⚠️ ' + msg);
-        window.showInfo = window.showNotification ? (msg) => window.showNotification(msg, 'info') : (msg) => alert('ℹ️ ' + msg);
-        window.showLoading = window.showLoading || ((title, msg) => console.log('Loading:', title, msg));
-        window.hideLoading = window.hideLoading || (() => console.log('Loading complete'));
-        window.setButtonLoading = window.setButtonLoading || ((btnId, loading) => {
+    if (!window.showSuccess) {
+        window.showSuccess = window.showNotification ? 
+            (msg) => window.showNotification(msg, 'success') : 
+            (msg) => alert('✅ ' + msg);
+    }
+    if (!window.showError) {
+        window.showError = window.showNotification ? 
+            (msg) => window.showNotification(msg, 'error') : 
+            (msg) => alert('❌ ' + msg);
+    }
+    if (!window.showWarning) {
+        window.showWarning = window.showNotification ? 
+            (msg) => window.showNotification(msg, 'warning') : 
+            (msg) => alert('⚠️ ' + msg);
+    }
+    if (!window.showInfo) {
+        window.showInfo = window.showNotification ? 
+            (msg) => window.showNotification(msg, 'info') : 
+            (msg) => alert('ℹ️ ' + msg);
+    }
+    if (!window.showLoading) {
+        window.showLoading = (title, msg) => console.log('Loading:', title, msg);
+    }
+    if (!window.hideLoading) {
+        window.hideLoading = () => console.log('Loading complete');
+    }
+    if (!window.setButtonLoading) {
+        window.setButtonLoading = (btnId, loading) => {
             const btn = document.getElementById(btnId);
             if (btn) {
                 btn.disabled = loading;
@@ -20,13 +40,9 @@
                     btn.innerHTML = btn.dataset.originalText;
                 }
             }
-        });
-        window.posUtilsInitialized = true;
+        };
     }
 })();
-
-// Reference the functions locally for this file
-const { showSuccess, showError, showWarning, showInfo, showLoading, hideLoading, setButtonLoading } = window;
 
 class POSSystem {
     constructor() {
@@ -245,7 +261,15 @@ class POSSystem {
             const inventory = await window.db.getAll('inventory');
             
             // Show all products/services that either have showInPOS true OR don't have the property (for backwards compatibility)
-            this.products = products.filter(p => p.showInPOS !== false);
+            // For services, also ensure they have the correct type
+            this.products = products.filter(p => {
+                const shouldShow = p.showInPOS !== false;
+                // Ensure service type is set correctly for backwards compatibility
+                if (!p.type) {
+                    p.type = 'service';
+                }
+                return shouldShow;
+            });
             
             this.inventory = inventory.filter(i => i.showInPOS !== false);
             
@@ -276,7 +300,13 @@ class POSSystem {
             if (this.currentCategory === 'products') {
                 items = items.filter(item => item.type === 'product' || item.sku);
             } else if (this.currentCategory === 'services') {
-                items = items.filter(item => item.type === 'service');
+                items = items.filter(item => item.type === 'service' || (!item.type && !item.sku));
+            } else {
+                // Filter by specific spa service category (massage, facial, etc.)
+                items = items.filter(item => 
+                    (item.type === 'service' || (!item.type && !item.sku)) && 
+                    item.category === this.currentCategory
+                );
             }
         }
 
