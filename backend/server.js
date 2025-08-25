@@ -235,7 +235,17 @@ app.get('/admin', (req, res) => {
 });
 
 // Serve PWA static files
-app.use('/pwa', express.static(path.join(__dirname, '../public')));
+app.use('/pwa', express.static(path.join(__dirname, '../')));
+app.use('/app', express.static(path.join(__dirname, '../')));
+
+// PWA app routes - serve PWA index.html
+app.get('/app/*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../index.html'));
+});
+
+app.get('/pwa/*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../index.html'));
+});
 
 // Serve admin dashboard (if exists)
 app.use('/admin/dashboard', express.static(path.join(__dirname, '../admin-dashboard/build')));
