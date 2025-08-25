@@ -641,7 +641,6 @@ class GiftCertificateManager {
 
         const modal = document.createElement('div');
         modal.className = 'modal gc-modal active';
-        modal.style.cssText = 'display: flex !important; z-index: 10000 !important;';
         modal.innerHTML = `
             <div class="modal-content large">
                 <div class="modal-header">
@@ -760,7 +759,6 @@ class GiftCertificateManager {
     showRedeemModal(controlNumber) {
         const modal = document.createElement('div');
         modal.className = 'modal gc-modal active';
-        modal.style.cssText = 'display: flex !important; z-index: 10000 !important;';
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
@@ -960,7 +958,6 @@ class GiftCertificateManager {
         console.log('Opening create certificate modal');
         const modal = document.createElement('div');
         modal.className = 'modal gc-modal active';
-        modal.style.cssText = 'display: flex !important; z-index: 10000 !important;';
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
@@ -1016,7 +1013,6 @@ class GiftCertificateManager {
         console.log('Opening validate certificate modal');
         const modal = document.createElement('div');
         modal.className = 'modal gc-modal active';
-        modal.style.cssText = 'display: flex !important; z-index: 10000 !important;';
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
@@ -1083,7 +1079,6 @@ class GiftCertificateManager {
 
         const modal = document.createElement('div');
         modal.className = 'modal gc-modal active';
-        modal.style.cssText = 'display: flex !important; z-index: 10000 !important;';
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
