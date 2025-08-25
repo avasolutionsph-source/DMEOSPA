@@ -1,11 +1,25 @@
 [build]
-  # Marketing website build settings  
-  base = "marketing-website"
-  command = "echo 'Static marketing website - no build needed'"
-  publish = "public"
-  
+  # PWA build settings
+  base = "."
+  command = "echo 'PWA deployment - no build required'"
+  publish = "."
+
 [build.environment]
   NODE_VERSION = "18"
+
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = false
+  minify = true
+
+[build.processing.html]
+  pretty_urls = true
 
 # PWA specific settings
 [[headers]]

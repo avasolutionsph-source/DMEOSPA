@@ -1,0 +1,11 @@
+# Ignore marketing website for PWA deployment
+marketing-website/
+
+# Ignore backend for PWA deployment  
+backend/
+
+# Ignore docs and other non-PWA files
+docs/
+scripts/
+*.md
+render.yaml
