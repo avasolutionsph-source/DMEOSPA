@@ -149,6 +149,9 @@ function renderUsers() {
     const endIndex = startIndex + usersPerPage;
     const pageUsers = filteredUsers.slice(startIndex, endIndex);
     
+    // Debug: Check user object structure
+    console.log('Rendering users. First user structure:', pageUsers[0]);
+    
     const tableHTML = `
         <table class="users-table">
             <thead>
@@ -185,10 +188,10 @@ function renderUsers() {
                         <td>${new Date(user.createdAt).toLocaleDateString()}</td>
                         <td>${user.businessMetrics?.lastActiveDate ? new Date(user.businessMetrics.lastActiveDate).toLocaleDateString() : 'Never'}</td>
                         <td>
-                            <button class="btn btn-primary btn-sm" onclick="editUser('${user._id}')">
+                            <button class="btn btn-primary btn-sm" onclick="editUser('${user._id || user.id}')">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
-                            <button class="btn btn-warning btn-sm" onclick="fixUserSubscription('${user._id}', '${user.email}', '${user.subscriptionPlan}')">
+                            <button class="btn btn-warning btn-sm" onclick="fixUserSubscription('${user._id || user.id}', '${user.email}', '${user.subscriptionPlan}')">
                                 <i class="fas fa-wrench"></i> Fix
                             </button>
                         </td>
@@ -266,9 +269,10 @@ window.editUser = function(userId) {
     console.log('Edit user clicked for:', userId);
     console.log('All users:', allUsers);
     
-    const user = allUsers.find(u => u._id === userId);
+    const user = allUsers.find(u => u._id === userId || u.id === userId);
     if (!user) {
         console.error('User not found:', userId);
+        console.log('Available user IDs:', allUsers.map(u => ({ id: u.id, _id: u._id, email: u.email })));
         alert('User not found. Please refresh the page and try again.');
         return;
     }
