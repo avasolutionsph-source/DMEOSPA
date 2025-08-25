@@ -1,8 +1,8 @@
 [build]
-  # Frontend build settings for PWA
-  base = "."
-  command = "echo 'Static site - no build needed'"
-  publish = "."
+  # Marketing website build settings
+  base = "marketing-website"
+  command = "npm run build"
+  publish = "public"
   
 [build.environment]
   NODE_VERSION = "18"

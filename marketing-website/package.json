@@ -1,0 +1,12 @@
+{
+  "name": "avasolutions-marketing",
+  "version": "1.0.0",
+  "description": "Ava Solutions Marketing Website",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm run copy-files",
+    "copy-files": "xcopy src public\\ /E /Y"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
