@@ -1,7 +1,7 @@
 [build]
-  # Marketing website build settings
+  # Marketing website build settings  
   base = "marketing-website"
-  command = "npm run build"
+  command = "echo 'Static marketing website - no build needed'"
   publish = "public"
   
 [build.environment]

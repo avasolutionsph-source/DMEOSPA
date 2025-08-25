@@ -1,12 +1,30 @@
 {
-  "name": "avasolutions-marketing",
+  "name": "ava-solutions-marketing-website",
   "version": "1.0.0",
-  "description": "Ava Solutions Marketing Website",
-  "main": "index.js",
+  "description": "Ava Solutions Professional Marketing Website",
+  "main": "server.js",
+  "type": "module",
   "scripts": {
-    "build": "mkdir -p public && cp -r src/* public/",
-    "prebuild": "rm -rf public"
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "seed": "node scripts/seed.js",
+    "cleanup": "node scripts/cleanup-sample-users.js",
+    "test": "echo \"No tests specified\" && exit 0"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "express": "^4.19.2",
+    "mongoose": "^8.5.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.2.0",
+    "compression": "^1.7.4",
+    "morgan": "^1.10.0",
+    "express-validator": "^7.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.3"
+  }
 }

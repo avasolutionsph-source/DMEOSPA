@@ -3,343 +3,292 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ava Solutions - Spa Management Platform</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-        
-        header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1rem 0;
-        }
-        
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-        
-        .admin-panel {
-            background: rgba(255,255,255,0.1);
-            padding: 10px 20px;
-            border-radius: 5px;
-            text-decoration: none;
-            color: white;
-        }
-        
-        .admin-panel:hover {
-            background: rgba(255,255,255,0.2);
-        }
-        
-        .hero {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-align: center;
-            padding: 100px 0;
-        }
-        
-        .hero h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-        
-        .hero p {
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-        }
-        
-        .cta-button {
-            display: inline-block;
-            background: #ff6b6b;
-            color: white;
-            padding: 15px 30px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 1.1rem;
-            transition: background 0.3s;
-        }
-        
-        .cta-button:hover {
-            background: #ff5252;
-        }
-        
-        .features {
-            padding: 80px 0;
-            background: #f8f9fa;
-        }
-        
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-        }
-        
-        .feature-card {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .feature-card h3 {
-            margin-bottom: 15px;
-            color: #667eea;
-        }
-        
-        footer {
-            background: #333;
-            color: white;
-            text-align: center;
-            padding: 30px 0;
-        }
-    </style>
+    <title>Ava Solutions - AI Business Assistant</title>
+    <meta name="description" content="Intelligent business management system with AI assistant, POS, inventory management, and analytics. Works offline and grows with your business across any industry.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
-    <header>
-        <nav class="container">
-            <div class="logo">Ava Solutions</div>
-            <a href="/admin" class="admin-panel">Admin Panel</a>
-        </nav>
-    </header>
-
-    <main>
-        <section class="hero">
-            <div class="container">
-                <h1>Transform Your Spa Business</h1>
-                <p>Complete spa management solution with PWA technology</p>
-                <a href="#features" class="cta-button">Learn More</a>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-spa"></i>
+                <span>Ava Solutions</span>
             </div>
-        </section>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/pricing">Pricing</a>
+                <a href="/features">Features</a>
+                <a href="http://localhost:3001/download">Download</a>
+                <a href="/contact">Contact</a>
+                <div class="nav-auth" id="navAuth">
+                    <a href="/login" class="btn-secondary">Login</a>
+                    <a href="/register" class="btn-primary">Get Started</a>
+                </div>
+            </div>
+            <div class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
 
-        <section id="features" class="features">
-            <div class="container">
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <h3>Point of Sale System</h3>
-                        <p>Complete POS system with service management, room assignments, and payment processing</p>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1>AI Business Assistant<br>That Works <span class="highlight">Everywhere</span></h1>
+                <p>Intelligent offline-first business management system with AI assistant, complete POS, inventory tracking, and employee management. Perfect for any service-based business that wants to grow smarter.</p>
+                <div class="hero-buttons">
+                    <a href="/register" class="btn-primary btn-large">Start Free Trial</a>
+                    <a href="/download" class="btn-secondary btn-large">
+                        <i class="fas fa-download"></i> Download PWA
+                    </a>
+                </div>
+                <div class="hero-features">
+                    <div class="feature-badge">
+                        <i class="fas fa-wifi-slash"></i>
+                        <span>Works Offline</span>
                     </div>
-                    <div class="feature-card">
-                        <h3>Room Management</h3>
-                        <p>Track room occupancy, service timers, and automatic status updates</p>
+                    <div class="feature-badge">
+                        <i class="fas fa-robot"></i>
+                        <span>AI Assistant</span>
                     </div>
-                    <div class="feature-card">
-                        <h3>Employee Management</h3>
-                        <p>Manage staff schedules, permissions, and performance tracking</p>
+                    <div class="feature-badge">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>Mobile App</span>
                     </div>
-                    <div class="feature-card">
-                        <h3>Inventory Control</h3>
-                        <p>Track products, manage stock levels, and automate reordering</p>
-                    </div>
-                    <div class="feature-card">
-                        <h3>Analytics Dashboard</h3>
-                        <p>Real-time business insights and performance analytics</p>
-                    </div>
-                    <div class="feature-card">
-                        <h3>PWA Technology</h3>
-                        <p>Works offline, installs like an app, and syncs across devices</p>
+                    <div class="feature-badge">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Analytics</span>
                     </div>
                 </div>
             </div>
-        </section>
-    </main>
+            <div class="hero-demo">
+                <div class="laptop-device">
+                    <div class="laptop-screen">
+                        <div class="browser-bar">
+                            <div class="browser-dots">
+                                <span class="dot red"></span>
+                                <span class="dot yellow"></span>
+                                <span class="dot green"></span>
+                            </div>
+                            <div class="browser-url">
+                                <i class="fas fa-lock"></i>
+                                <span>app.avasolutions.ph</span>
+                            </div>
+                            <div class="browser-actions">
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                        <div class="app-preview">
+                            <div class="app-header">
+                                <div class="app-title">
+                                    <i class="fas fa-spa"></i>
+                                    <span>Ava Solutions</span>
+                                </div>
+                                <div class="status-indicator online"></div>
+                            </div>
+                            <div class="app-dashboard">
+                                <div class="stats-row">
+                                    <div class="stat-card">
+                                        <div class="stat-value">₱25,480</div>
+                                        <div class="stat-label">Today's Sales</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-value">42</div>
+                                        <div class="stat-label">Transactions</div>
+                                    </div>
+                                </div>
+                                <div class="quick-actions">
+                                    <div class="action-btn">
+                                        <i class="fas fa-cash-register"></i>
+                                        <span>POS</span>
+                                    </div>
+                                    <div class="action-btn">
+                                        <i class="fas fa-warehouse"></i>
+                                        <span>Inventory</span>
+                                    </div>
+                                    <div class="action-btn">
+                                        <i class="fas fa-users"></i>
+                                        <span>Staff</span>
+                                    </div>
+                                    <div class="action-btn">
+                                        <i class="fas fa-robot"></i>
+                                        <span>AI Assistant</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="laptop-base">
+                        <div class="laptop-notch"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-    <footer>
+    <!-- Features Section -->
+    <section id="features" class="features">
         <div class="container">
-            <p>&copy; 2025 Ava Solutions. All rights reserved.</p>
+            <div class="section-header">
+                <h2>Everything You Need to Run Your Business</h2>
+                <p>Complete business management in one intelligent application</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-cash-register"></i>
+                    </div>
+                    <h3>Smart POS System</h3>
+                    <p>Lightning-fast checkout with automatic inventory updates, commission tracking, and multiple payment methods.</p>
+                    <ul class="feature-list">
+                        <li>Services & product sales</li>
+                        <li>Employee commission tracking</li>
+                        <li>Multiple payment methods</li>
+                        <li>Receipt printing</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>AI Business Assistant</h3>
+                    <p>Get intelligent insights and recommendations based on your actual business data to increase profits.</p>
+                    <ul class="feature-list">
+                        <li>Profit optimization tips</li>
+                        <li>Loss prevention alerts</li>
+                        <li>Marketing recommendations</li>
+                        <li>Staff performance insights</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-warehouse"></i>
+                    </div>
+                    <h3>Inventory Management</h3>
+                    <p>Automatic stock tracking with low-stock alerts and usage calculation for your business operations.</p>
+                    <ul class="feature-list">
+                        <li>Auto stock deduction</li>
+                        <li>Low stock alerts</li>
+                        <li>Usage tracking per service</li>
+                        <li>Purchase order management</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>Employee Management</h3>
+                    <p>Track staff performance, calculate commissions, and manage schedules efficiently.</p>
+                    <ul class="feature-list">
+                        <li>Performance tracking</li>
+                        <li>Commission calculation</li>
+                        <li>Sales analytics per employee</li>
+                        <li>Schedule management</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Business Analytics</h3>
+                    <p>Real-time insights with beautiful charts showing sales trends, peak hours, and growth metrics.</p>
+                    <ul class="feature-list">
+                        <li>Sales trends & forecasting</li>
+                        <li>Peak hour analysis</li>
+                        <li>Customer insights</li>
+                        <li>Financial reporting</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-wifi-slash"></i>
+                    </div>
+                    <h3>Offline First</h3>
+                    <p>Keep your business running even without internet. Data syncs automatically when online.</p>
+                    <ul class="feature-list">
+                        <li>Complete offline functionality</li>
+                        <li>Automatic sync when online</li>
+                        <li>No downtime</li>
+                        <li>Data backup & recovery</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="brand">
+                        <i class="fas fa-spa"></i>
+                        <span>Ava Solutions</span>
+                    </div>
+                    <p>Intelligent business management system that works offline and grows with your business.</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>Product</h4>
+                        <a href="#features">Features</a>
+                        <a href="/pricing">Pricing</a>
+                        <a href="/download">Download App</a>
+                        <a href="/demo">Request Demo</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Company</h4>
+                        <a href="/about">About Us</a>
+                        <a href="#contact">Contact</a>
+                        <a href="/careers">Careers</a>
+                        <a href="/blog">Blog</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Support</h4>
+                        <a href="/help">Help Center</a>
+                        <a href="/documentation">Documentation</a>
+                        <a href="/training">Training</a>
+                        <a href="/status">System Status</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Legal</h4>
+                        <a href="/privacy">Privacy Policy</a>
+                        <a href="/terms">Terms of Service</a>
+                        <a href="/security">Security</a>
+                        <a href="/compliance">Compliance</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Ava Solutions Philippines. All rights reserved.</p>
+                <div class="footer-legal">
+                    <a href="/privacy">Privacy Policy</a>
+                    <a href="/terms">Terms of Service</a>
+                </div>
+            </div>
         </div>
     </footer>
 
-    <div id="admin-panel" style="display: none;">
-        <h2>Super Admin Panel</h2>
-        <div id="user-management">
-            <!-- Admin panel content will be loaded here -->
-            <table id="users-table">
-                <thead>
-                    <tr>
-                        <th>User</th>
-                        <th>Business</th>
-                        <th>Plan</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="users-table-body">
-                    <!-- Users will be loaded here -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <script>
-        // Check if admin panel should be shown
-        if (window.location.pathname === '/admin' || window.location.hash === '#admin') {
-            document.getElementById('admin-panel').style.display = 'block';
-            document.querySelector('main').style.display = 'none';
-            loadAdminPanel();
-        }
-
-        async function loadAdminPanel() {
-            try {
-                const response = await fetch('/api/admin/users');
-                const data = await response.json();
-                
-                if (data.success) {
-                    displayUsers(data.users);
-                }
-            } catch (error) {
-                console.error('Error loading admin panel:', error);
-            }
-        }
-
-        function displayUsers(users) {
-            const tbody = document.getElementById('users-table-body');
-            tbody.innerHTML = users.map(user => `
-                <tr>
-                    <td>${user.fullName} (${user.email})</td>
-                    <td>${user.businessName}</td>
-                    <td>
-                        <select onchange="updateUserPlan('${user.id}', this.value)">
-                            <option value="basic" ${user.subscriptionPlan === 'basic' ? 'selected' : ''}>Basic</option>
-                            <option value="premium" ${user.subscriptionPlan === 'premium' ? 'selected' : ''}>Premium</option>
-                            <option value="enterprise" ${user.subscriptionPlan === 'enterprise' ? 'selected' : ''}>Enterprise</option>
-                        </select>
-                    </td>
-                    <td>
-                        <select onchange="updateUserStatus('${user.id}', this.value)">
-                            <option value="active" ${user.subscriptionStatus === 'active' ? 'selected' : ''}>Active</option>
-                            <option value="inactive" ${user.subscriptionStatus === 'inactive' ? 'selected' : ''}>Inactive</option>
-                            <option value="suspended" ${user.subscriptionStatus === 'suspended' ? 'selected' : ''}>Suspended</option>
-                        </select>
-                    </td>
-                    <td>
-                        <button onclick="editUser('${user.id}')">Edit</button>
-                        <button onclick="deleteUser('${user.id}')" style="background: #ff4444; color: white;">Delete</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        async function updateUserPlan(userId, plan) {
-            try {
-                const response = await fetch(`/api/admin/users/${userId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        subscriptionPlan: plan
-                    })
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    alert('User plan updated successfully');
-                } else {
-                    alert('Error updating user plan');
-                }
-            } catch (error) {
-                console.error('Error updating user plan:', error);
-                alert('Error updating user plan');
-            }
-        }
-
-        async function updateUserStatus(userId, status) {
-            try {
-                const response = await fetch(`/api/admin/users/${userId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        subscriptionStatus: status
-                    })
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    alert('User status updated successfully');
-                } else {
-                    alert('Error updating user status');
-                }
-            } catch (error) {
-                console.error('Error updating user status:', error);
-                alert('Error updating user status');
-            }
-        }
-
-        async function editUser(userId) {
-            const newName = prompt('Enter new full name:');
-            const newBusiness = prompt('Enter new business name:');
-            
-            if (newName || newBusiness) {
-                try {
-                    const response = await fetch(`/api/admin/users/${userId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            fullName: newName,
-                            businessName: newBusiness
-                        })
-                    });
-
-                    const data = await response.json();
-                    if (data.success) {
-                        alert('User updated successfully');
-                        loadAdminPanel(); // Reload the panel
-                    } else {
-                        alert('Error updating user');
-                    }
-                } catch (error) {
-                    console.error('Error updating user:', error);
-                    alert('Error updating user');
-                }
-            }
-        }
-
-        async function deleteUser(userId) {
-            if (confirm('Are you sure you want to delete this user?')) {
-                try {
-                    const response = await fetch(`/api/admin/users/${userId}`, {
-                        method: 'DELETE'
-                    });
-
-                    const data = await response.json();
-                    if (data.success) {
-                        alert('User deleted successfully');
-                        loadAdminPanel(); // Reload the panel
-                    } else {
-                        alert('Error deleting user');
-                    }
-                } catch (error) {
-                    console.error('Error deleting user:', error);
-                    alert('Error deleting user');
-                }
-            }
-        }
-    </script>
+    <!-- Scripts -->
+    <script src="/assets/main.js"></script>
 </body>
 </html>
