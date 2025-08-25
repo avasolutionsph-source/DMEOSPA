@@ -36,7 +36,7 @@ document.getElementById('adminLoginForm').addEventListener('submit', async funct
     const password = formData.get('password');
     
     try {
-        const response = await fetch('https://ava-pwa-backend.onrender.com/api/auth/admin-login', {
+        const response = await fetch('https://ava-pwa-backend.onrender.com/api/auth/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
