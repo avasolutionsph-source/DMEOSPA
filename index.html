@@ -2092,41 +2092,5 @@
             overflow-y: auto !important;
         }
     </style>
-    
-    <!-- Initialize App After Everything Loads -->
-    <script>
-        // Initialize the app when DOM is ready
-        async function startApp() {
-            console.log('🚀 Starting PWA initialization...');
-            
-            // Wait a bit for all scripts to load
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Check if app instance exists
-            if (!window.app && !window.appInstance) {
-                console.log('📱 Creating new App instance...');
-                window.app = new App();
-                
-                // Initialize the app
-                console.log('⚙️ Initializing App...');
-                await window.app.init();
-                console.log('✅ App initialized successfully!');
-            } else if (window.app && !window.app.initialized) {
-                console.log('📱 App exists but not initialized, initializing now...');
-                await window.app.init();
-                console.log('✅ App initialized successfully!');
-            } else {
-                console.log('✅ App already initialized');
-            }
-        }
-        
-        // Start when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', startApp);
-        } else {
-            // DOM is already loaded
-            startApp();
-        }
-    </script>
 </body>
 </html>

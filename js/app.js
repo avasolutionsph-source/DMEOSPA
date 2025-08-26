@@ -426,6 +426,12 @@ class App {
                 // Load gift certificates content dynamically
                 await this.loadGiftCertificatesPage();
                 break;
+            case 'expenses':
+                // Initialize expense manager if not already done
+                if (!window.expenseManager && window.ExpenseManager) {
+                    window.expenseManager = new ExpenseManager();
+                }
+                break;
             case 'chatbot':
                 // Chatbot is loaded on demand
                 break;
@@ -508,8 +514,7 @@ class App {
                                 <i class="fas fa-gift"></i>
                             </div>
                             <div class="header-text">
-                                <h1 style="color: white; font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">Gift Certificate Management</h1>
-                                <p class="page-description" style="color: rgba(255,255,255,0.9); font-size: 1.1rem; margin: 0;">Create, manage, and track gift certificates for your spa business</p>
+                                <h1 style="color: white; font-size: 2rem; font-weight: 700; margin-bottom: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">Gift Certificate Management</h1>
                             </div>
                         </div>
                         <div class="header-actions">
@@ -547,78 +552,6 @@ class App {
                                 <i class="fas fa-search"></i>
                                 <span>Validate</span>
                             </button>
-                            <div class="dropdown">
-                                <button class="btn btn-outline dropdown-toggle" id="more-actions-btn" style="
-                                    background: rgba(255,255,255,0.2);
-                                    color: white;
-                                    border: 2px solid rgba(255,255,255,0.3);
-                                    border-radius: 8px;
-                                    padding: 0.75rem 1.25rem;
-                                    font-weight: 600;
-                                    cursor: pointer;
-                                    transition: all 0.2s ease;
-                                    backdrop-filter: blur(10px);
-                                    display: flex;
-                                    align-items: center;
-                                    gap: 0.5rem;
-                                " onmouseover="this.style.background='rgba(255,255,255,0.3)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'; this.style.transform='translateY(0)'">
-                                    <i class="fas fa-ellipsis-h"></i>
-                                    <span>More</span>
-                                </button>
-                                <div class="dropdown-menu" style="
-                                    background: rgba(255, 255, 255, 0.95);
-                                    backdrop-filter: blur(15px);
-                                    border-radius: 12px;
-                                    padding: 0.75rem;
-                                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-                                    border: 1px solid rgba(255, 255, 255, 0.2);
-                                    display: flex;
-                                    flex-direction: column;
-                                    gap: 0.5rem;
-                                    min-width: 200px;
-                                ">
-                                    <button class="dropdown-item" id="export-certificates-btn" style="
-                                        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-                                        color: white;
-                                        border: none;
-                                        border-radius: 8px;
-                                        padding: 0.75rem 1rem;
-                                        font-weight: 600;
-                                        font-size: 0.85rem;
-                                        cursor: pointer;
-                                        transition: all 0.2s ease;
-                                        display: flex;
-                                        align-items: center;
-                                        gap: 0.5rem;
-                                        text-transform: uppercase;
-                                        letter-spacing: 0.5px;
-                                        box-shadow: 0 3px 8px rgba(139, 92, 246, 0.3);
-                                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(139, 92, 246, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 3px 8px rgba(139, 92, 246, 0.3)'">
-                                        <i class="fas fa-download"></i>
-                                        <span>Export Data</span>
-                                    </button>
-                                    <button class="dropdown-item" id="bulk-actions-btn" style="
-                                        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-                                        color: white;
-                                        border: none;
-                                        border-radius: 8px;
-                                        padding: 0.75rem 1rem;
-                                        font-weight: 600;
-                                        font-size: 0.85rem;
-                                        cursor: pointer;
-                                        transition: all 0.2s ease;
-                                        display: flex;
-                                        align-items: center;
-                                        gap: 0.5rem;
-                                        text-transform: uppercase;
-                                        letter-spacing: 0.5px;
-                                        box-shadow: 0 3px 8px rgba(6, 182, 212, 0.3);
-                                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(6, 182, 212, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 3px 8px rgba(6, 182, 212, 0.3)'">
-                                        <i class="fas fa-tasks"></i>
-                                        <span>Bulk Actions</span>
-                                    </button>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -988,6 +921,9 @@ class App {
                     break;
                 case 'gift-certificates':
                     hasAccess = entitlements['gift-certificates'] === true;
+                    break;
+                case 'expenses':
+                    hasAccess = entitlements.expenses === true;
                     break;
                 case 'chatbot':
                     hasAccess = entitlements.chatbot === true;
@@ -1522,14 +1458,21 @@ window.initializeApp = async function() {
             
             console.log('⏳ Starting app initialization...');
             await window.app.init();
+            window.app.initialized = true; // Mark as initialized
             console.log('✅ App initialization completed');
             console.log('🔍 App methods after init:', {
                 setupNavigation: !!window.app.setupNavigation,
                 showPage: !!window.app.showPage,
                 init: !!window.app.init
             });
+        } else if (window.app && !window.app.initialized) {
+            // App exists but not initialized, initialize it now
+            console.log('📋 App exists but not initialized, initializing now...');
+            await window.app.init();
+            window.app.initialized = true; // Mark as initialized
+            console.log('✅ App initialization completed');
         } else {
-            console.log('📋 App already exists, skipping initialization');
+            console.log('✅ App already exists and is initialized');
         }
     } catch (error) {
         console.error('❌ Error during app initialization:', error);
