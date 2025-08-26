@@ -1451,11 +1451,24 @@ window.refreshCurrentPage = async function() {
 // Global initialization function for component-loader
 window.initializeApp = async function() {
     try {
+        // Check if window.app exists but is not a real App instance (created by StateManager)
+        if (window.app && !(window.app instanceof App)) {
+            console.log('🔄 Replacing empty app object with real App instance...');
+            const tempApp = window.app; // Save any properties that StateManager might have added
+            window.app = new App();
+            // Copy any properties from the temp object if needed
+            if (tempApp.cart) window.app.cart = tempApp.cart;
+            if (tempApp.selectedEmployee) window.app.selectedEmployee = tempApp.selectedEmployee;
+        }
+        
         if (!window.app) {
             console.log('🚀 Creating new App instance...');
             window.app = new App();
             console.log('📋 App instance created, methods available:', !!window.app.setupNavigation);
-            
+        }
+        
+        // Now check if it needs initialization
+        if (!window.app.initialized) {
             console.log('⏳ Starting app initialization...');
             await window.app.init();
             window.app.initialized = true; // Mark as initialized
@@ -1465,14 +1478,8 @@ window.initializeApp = async function() {
                 showPage: !!window.app.showPage,
                 init: !!window.app.init
             });
-        } else if (window.app && !window.app.initialized) {
-            // App exists but not initialized, initialize it now
-            console.log('📋 App exists but not initialized, initializing now...');
-            await window.app.init();
-            window.app.initialized = true; // Mark as initialized
-            console.log('✅ App initialization completed');
         } else {
-            console.log('✅ App already exists and is initialized');
+            console.log('✅ App already initialized');
         }
     } catch (error) {
         console.error('❌ Error during app initialization:', error);
