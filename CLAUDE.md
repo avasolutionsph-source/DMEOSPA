@@ -13,8 +13,11 @@ Ava Solutions PWA is a unified web application ecosystem consisting of a Progres
 # Start backend development server
 cd backend && npm run dev
 
-# Run backend tests
+# Run backend tests with coverage
 cd backend && npm test
+
+# Run backend tests in watch mode
+cd backend && npm run test:watch
 
 # Run backend linting
 cd backend && npm run lint
@@ -22,13 +25,26 @@ cd backend && npm run lint
 # Fix backend linting issues
 cd backend && npm run lint:fix
 
-# Run backend build/validation
-cd backend && npm run build
+# Run database migrations
+cd backend && npm run migrate
+
+# Seed database with test data
+cd backend && npm run seed
+
+# Docker operations
+cd backend && npm run docker:build
+cd backend && npm run docker:run
+
+# PM2 process management
+cd backend && npm run pm2:start
+cd backend && npm run pm2:stop
+cd backend && npm run pm2:restart
+cd backend && npm run pm2:logs
 ```
 
 ### Marketing Website Development  
 ```bash
-# Start marketing development server
+# Start marketing development server (with nodemon)
 cd marketing-website && npm run dev
 
 # Start marketing production server
@@ -36,21 +52,29 @@ cd marketing-website && npm start
 
 # Seed marketing database
 cd marketing-website && npm run seed
+
+# Cleanup sample users
+cd marketing-website && npm run cleanup
 ```
 
 ### PWA Development
-The PWA is a frontend-only application that connects to the backend API. It uses vanilla JavaScript with modular architecture.
-
-### Testing
 ```bash
-# Backend tests with coverage
-cd backend && npm run test
+# The PWA is a static frontend application - no build process required
+# Serve locally for development (from root directory)
+npx http-server PWA-Repository -p 8080 -c-1
 
-# Watch mode testing
-cd backend && npm run test:watch
+# Or open directly in browser:
+# file:///path/to/PWA-Repository/index.html
+```
 
-# Frontend testing - manual testing via browser with PWA/marketing sites
-# No automated frontend test suite currently configured
+### Full Stack Development (Windows)
+```bash
+# Start all three servers simultaneously
+./scripts/start-dev.bat
+
+# Setup scripts for deployment preparation
+./setup-pwa-repository.bat
+./setup-marketing-repository.bat
 ```
 
 ## High-Level Architecture
@@ -65,8 +89,9 @@ The repository contains multiple applications:
 
 ### Database Architecture
 - **MongoDB** - Primary database for all applications (users, products, inventory, transactions)
-- **Unified Models** - Shared Mongoose models across all applications
-- **Connection Pooling** - Single database connection shared by all services
+- **Unified Models** - Shared Mongoose models in `backend/models/`
+- **Connection Pooling** - Database connection management via `backend/config/database.js`
+- **Redis Caching** - Optional caching layer for performance optimization
 
 ### PWA Frontend Architecture
 Modern modular JavaScript architecture with:
@@ -76,9 +101,10 @@ Modern modular JavaScript architecture with:
 - **API Client** - Resource-specific API clients with automatic retry and error handling
 
 ### Authentication Flow
-- **JWT Tokens** - Primary authentication method
-- **Session-based** - For marketing website (Passport.js)
+- **JWT Tokens** - Primary authentication method for API access
+- **Session-based** - For marketing website (Passport.js with local and Google OAuth strategies)
 - **Multi-level Auth** - User and admin authentication with role-based permissions
+- **API Key Auth** - Alternative authentication via X-API-Key header
 
 ### Real-time Features
 - **Socket.IO** - Real-time updates between PWA and backend
@@ -171,25 +197,30 @@ import BaseRouteHandler from './backend/utils/base-route-handler.js';
 
 ### Making Changes to PWA
 1. Work in the `js/` directory for development
-2. Copy changes to `PWA-Repository/js/` for deployment
-3. Test manually with browser by opening `PWA-Repository/index.html`
+2. Copy changes to `PWA-Repository/js/` for production deployment
+3. Test locally by serving PWA-Repository with http-server or opening index.html directly
 4. Use browser developer tools for debugging and validation
+5. No build process required - vanilla JavaScript modules
 
 ### Making Changes to Backend
 1. All backend changes in `backend/` directory
-2. Use BaseRouteHandler for new CRUD endpoints
-3. Follow existing patterns for authentication and error handling
-4. Run tests to ensure compatibility
+2. Use BaseRouteHandler for new CRUD endpoints (`backend/utils/base-route-handler.js`)
+3. Follow existing patterns for authentication (`backend/middleware/auth.js`) and error handling
+4. Run tests with `npm test` and linting with `npm run lint`
+5. Use nodemon for automatic reloading during development (`npm run dev`)
 
 ### Database Changes
 1. Update Mongoose models in `backend/models/`
-2. Create migration scripts if needed with `backend/scripts/migrate.js`
-3. Test with seed data using `npm run seed`
+2. Run migrations with `cd backend && npm run migrate`
+3. Test with seed data using `cd backend && npm run seed`
+4. Connection configuration in `backend/config/database.js`
 
 ## Testing Strategy
-- **Backend Tests** - Jest testing framework with supertest for API testing
-- **Frontend Testing** - Manual browser testing with PWA and marketing sites
-- **Database Testing** - Seed scripts for consistent test data via `npm run seed`
+- **Backend Tests** - Jest testing framework with supertest for API testing (`cd backend && npm test`)
+- **Test Coverage** - Run with coverage report (`cd backend && npm test`)
+- **Watch Mode** - Continuous testing during development (`cd backend && npm run test:watch`)
+- **Frontend Testing** - Manual browser testing (no automated test suite configured)
+- **Database Testing** - Seed scripts for consistent test data (`cd backend && npm run seed`)
 - **Integration Testing** - Test PWA with backend API during development
 
 ## Performance Considerations
@@ -200,10 +231,31 @@ import BaseRouteHandler from './backend/utils/base-route-handler.js';
 - **Bundle Size** - Modular CSS and JS reduce overall bundle size
 
 ## Deployment Architecture
-- **Backend** - Deployed to Render/Railway as unified API server
-- **PWA** - Deployed to Netlify as static PWA
-- **Marketing** - Can be deployed separately or served by backend
-- **Database** - MongoDB Atlas for production
-- **Real-time** - Socket.IO for live updates
+- **Backend** - Node.js/Express server (port 4000) - deployable to Render/Railway/Heroku
+- **PWA** - Static site deployable to Netlify (configured in `PWA-Repository/netlify.toml`)
+- **Marketing** - Express server (port 3001) - can be deployed separately or integrated
+- **Database** - MongoDB (local or Atlas for production)
+- **Real-time** - Socket.IO integrated with backend for live updates
+
+## API Endpoints Reference
+
+### Core API Routes (Backend port 4000)
+- `GET /health` - Health check
+- `GET /api/health` - API health status
+- `POST /api/auth/login` - User authentication
+- `POST /api/auth/register` - User registration
+- `GET /api/products` - Product management
+- `GET /api/inventory` - Inventory tracking
+- `GET /api/employees` - Employee management
+- `GET /api/transactions` - Transaction history
+- `GET /api/sync/pull` - Pull sync data
+- `POST /api/sync/push` - Push sync data
+
+### WebSocket Events
+- `connection` - Client connected
+- `authenticate` - Socket authentication
+- `state:sync` - State synchronization
+- `inventory:changed` - Inventory updates
+- `transaction:new` - New transactions
 
 This codebase prioritizes maintainability, performance, and developer experience through unified systems and consistent patterns.
