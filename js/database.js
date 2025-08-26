@@ -76,11 +76,11 @@ class Database {
 
     async attemptDatabaseConnection() {
         return new Promise((resolve, reject) => {
-            // Add timeout to prevent hanging
+            // Add timeout to prevent hanging - increased for large databases
             const timeout = setTimeout(() => {
-                console.error('⏰ Database connection timeout');
+                console.error('⏰ Database connection timeout after 30 seconds');
                 reject(new Error('Database connection timeout'));
-            }, 10000); // 10 second timeout
+            }, 30000); // 30 second timeout for large databases
 
             const request = indexedDB.open(this.dbName, this.version);
 
