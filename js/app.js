@@ -472,37 +472,148 @@ class App {
         container.innerHTML = `
             <div class="gift-certificates-container">
                 <!-- Modern Page Header -->
-                <div class="page-header">
-                    <div class="header-content">
+                <div class="page-header" style="
+                    background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
+                    padding: 2rem; 
+                    border-radius: 16px; 
+                    margin-bottom: 2rem; 
+                    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+                    position: relative;
+                    overflow: hidden;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 16px 64px rgba(0, 0, 0, 0.25)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 12px 48px rgba(0, 0, 0, 0.2)'">
+                    <!-- Subtle Pattern Overlay -->
+                    <div style="
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: url('data:image/svg+xml,%3Csvg width="60" height="60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.03"%3E%3Cpath d="M30 0L0 30l30 30 30-30z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
+                        pointer-events: none;
+                    "></div>
+                    <!-- Gradient Light Effect -->
+                    <div style="
+                        position: absolute;
+                        top: -50%;
+                        right: -30%;
+                        width: 60%;
+                        height: 120%;
+                        background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+                        pointer-events: none;
+                    "></div>
+                    <div class="header-content" style="position: relative; z-index: 1;">
                         <div class="header-left">
-                            <div class="header-icon">
+                            <div class="header-icon" style="color: rgba(255,255,255,0.9); font-size: 2rem; margin-right: 1rem;">
                                 <i class="fas fa-gift"></i>
                             </div>
                             <div class="header-text">
-                                <h1>Gift Certificate Management</h1>
-                                <p class="page-description">Create, manage, and track gift certificates for your spa business</p>
+                                <h1 style="color: white; font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">Gift Certificate Management</h1>
+                                <p class="page-description" style="color: rgba(255,255,255,0.9); font-size: 1.1rem; margin: 0;">Create, manage, and track gift certificates for your spa business</p>
                             </div>
                         </div>
                         <div class="header-actions">
-                            <button class="btn btn-primary" id="create-certificate-btn">
+                            <button class="btn btn-primary" id="create-certificate-btn" style="
+                                background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+                                color: white;
+                                border: none;
+                                border-radius: 8px;
+                                padding: 0.75rem 1.5rem;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                                box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+                                display: flex;
+                                align-items: center;
+                                gap: 0.5rem;
+                            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(249, 115, 22, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(249, 115, 22, 0.3)'">
                                 <i class="fas fa-plus"></i>
                                 <span>Create Certificate</span>
                             </button>
-                            <button class="btn btn-secondary" id="validate-certificate-btn">
+                            <button class="btn btn-secondary" id="validate-certificate-btn" style="
+                                background: rgba(255,255,255,0.9);
+                                color: #374151;
+                                border: 2px solid rgba(255,255,255,0.5);
+                                border-radius: 8px;
+                                padding: 0.75rem 1.5rem;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                                backdrop-filter: blur(10px);
+                                display: flex;
+                                align-items: center;
+                                gap: 0.5rem;
+                            " onmouseover="this.style.background='white'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.9)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
                                 <i class="fas fa-search"></i>
                                 <span>Validate</span>
                             </button>
                             <div class="dropdown">
-                                <button class="btn btn-outline dropdown-toggle" id="more-actions-btn">
+                                <button class="btn btn-outline dropdown-toggle" id="more-actions-btn" style="
+                                    background: rgba(255,255,255,0.2);
+                                    color: white;
+                                    border: 2px solid rgba(255,255,255,0.3);
+                                    border-radius: 8px;
+                                    padding: 0.75rem 1.25rem;
+                                    font-weight: 600;
+                                    cursor: pointer;
+                                    transition: all 0.2s ease;
+                                    backdrop-filter: blur(10px);
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 0.5rem;
+                                " onmouseover="this.style.background='rgba(255,255,255,0.3)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'; this.style.transform='translateY(0)'">
                                     <i class="fas fa-ellipsis-h"></i>
                                     <span>More</span>
                                 </button>
-                                <div class="dropdown-menu">
-                                    <button class="dropdown-item" id="export-certificates-btn">
+                                <div class="dropdown-menu" style="
+                                    background: rgba(255, 255, 255, 0.95);
+                                    backdrop-filter: blur(15px);
+                                    border-radius: 12px;
+                                    padding: 0.75rem;
+                                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+                                    border: 1px solid rgba(255, 255, 255, 0.2);
+                                    display: flex;
+                                    flex-direction: column;
+                                    gap: 0.5rem;
+                                    min-width: 200px;
+                                ">
+                                    <button class="dropdown-item" id="export-certificates-btn" style="
+                                        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+                                        color: white;
+                                        border: none;
+                                        border-radius: 8px;
+                                        padding: 0.75rem 1rem;
+                                        font-weight: 600;
+                                        font-size: 0.85rem;
+                                        cursor: pointer;
+                                        transition: all 0.2s ease;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 0.5rem;
+                                        text-transform: uppercase;
+                                        letter-spacing: 0.5px;
+                                        box-shadow: 0 3px 8px rgba(139, 92, 246, 0.3);
+                                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(139, 92, 246, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 3px 8px rgba(139, 92, 246, 0.3)'">
                                         <i class="fas fa-download"></i>
                                         <span>Export Data</span>
                                     </button>
-                                    <button class="dropdown-item" id="bulk-actions-btn">
+                                    <button class="dropdown-item" id="bulk-actions-btn" style="
+                                        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+                                        color: white;
+                                        border: none;
+                                        border-radius: 8px;
+                                        padding: 0.75rem 1rem;
+                                        font-weight: 600;
+                                        font-size: 0.85rem;
+                                        cursor: pointer;
+                                        transition: all 0.2s ease;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 0.5rem;
+                                        text-transform: uppercase;
+                                        letter-spacing: 0.5px;
+                                        box-shadow: 0 3px 8px rgba(6, 182, 212, 0.3);
+                                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(6, 182, 212, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 3px 8px rgba(6, 182, 212, 0.3)'">
                                         <i class="fas fa-tasks"></i>
                                         <span>Bulk Actions</span>
                                     </button>
@@ -512,44 +623,100 @@ class App {
                     </div>
                 </div>
 
-                <div class="gc-dashboard">
-                    <div class="stat-card total">
-                        <i class="fas fa-certificate"></i>
-                        <div class="stat-value" id="gc-total-count">0</div>
-                        <div class="stat-label">Total Certificates</div>
+                <div class="gc-dashboard" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                    <div class="stat-card total" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border: none; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.1); text-align: center;">
+                        <i class="fas fa-certificate" style="color: #667eea; font-size: 2rem; margin-bottom: 0.75rem;"></i>
+                        <div class="stat-value" id="gc-total-count" style="font-size: 2.5rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">0</div>
+                        <div class="stat-label" style="color: #64748b; font-size: 0.9rem; font-weight: 500;">Total Certificates</div>
                     </div>
-                    <div class="stat-card active">
-                        <i class="fas fa-check-circle"></i>
-                        <div class="stat-value" id="gc-active-count">0</div>
-                        <div class="stat-label">Active</div>
+                    <div class="stat-card active" style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: none; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.1); text-align: center;">
+                        <i class="fas fa-check-circle" style="color: #10b981; font-size: 2rem; margin-bottom: 0.75rem;"></i>
+                        <div class="stat-value" id="gc-active-count" style="font-size: 2.5rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">0</div>
+                        <div class="stat-label" style="color: #64748b; font-size: 0.9rem; font-weight: 500;">Active</div>
                     </div>
-                    <div class="stat-card redeemed">
-                        <i class="fas fa-shopping-cart"></i>
-                        <div class="stat-value" id="gc-redeemed-count">0</div>
-                        <div class="stat-label">Redeemed</div>
+                    <div class="stat-card redeemed" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: none; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.1); text-align: center;">
+                        <i class="fas fa-shopping-cart" style="color: #f59e0b; font-size: 2rem; margin-bottom: 0.75rem;"></i>
+                        <div class="stat-value" id="gc-redeemed-count" style="font-size: 2.5rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">0</div>
+                        <div class="stat-label" style="color: #64748b; font-size: 0.9rem; font-weight: 500;">Redeemed</div>
                     </div>
-                    <div class="stat-card expired">
-                        <i class="fas fa-clock"></i>
-                        <div class="stat-value" id="gc-expired-count">0</div>
-                        <div class="stat-label">Expired</div>
+                    <div class="stat-card expired" style="background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%); border: none; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.1); text-align: center;">
+                        <i class="fas fa-clock" style="color: #ef4444; font-size: 2rem; margin-bottom: 0.75rem;"></i>
+                        <div class="stat-value" id="gc-expired-count" style="font-size: 2.5rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">0</div>
+                        <div class="stat-label" style="color: #64748b; font-size: 0.9rem; font-weight: 500;">Expired</div>
                     </div>
-                    <div class="stat-card value">
-                        <i class="fas fa-coins"></i>
-                        <div class="stat-value" id="gc-total-value">₱0.00</div>
-                        <div class="stat-label">Total Value</div>
+                    <div class="stat-card value" style="background: linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%); border: none; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.1); text-align: center;">
+                        <i class="fas fa-coins" style="color: #3b82f6; font-size: 2rem; margin-bottom: 0.75rem;"></i>
+                        <div class="stat-value" id="gc-total-value" style="font-size: 1.8rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">₱0.00</div>
+                        <div class="stat-label" style="color: #64748b; font-size: 0.9rem; font-weight: 500;">Total Value</div>
                     </div>
-                    <div class="stat-card remaining">
-                        <i class="fas fa-wallet"></i>
-                        <div class="stat-value" id="gc-remaining-value">₱0.00</div>
-                        <div class="stat-label">Remaining Value</div>
+                    <div class="stat-card remaining" style="background: linear-gradient(135deg, #faf5ff 0%, #e9d5ff 100%); border: none; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.1); text-align: center;">
+                        <i class="fas fa-wallet" style="color: #8b5cf6; font-size: 2rem; margin-bottom: 0.75rem;"></i>
+                        <div class="stat-value" id="gc-remaining-value" style="font-size: 1.8rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">₱0.00</div>
+                        <div class="stat-label" style="color: #64748b; font-size: 0.9rem; font-weight: 500;">Remaining Value</div>
                     </div>
                 </div>
 
-                <div class="gc-filters">
-                    <button class="filter-btn active" data-filter="all">All Certificates</button>
-                    <button class="filter-btn" data-filter="active">Active</button>
-                    <button class="filter-btn" data-filter="redeemed">Redeemed</button>
-                    <button class="filter-btn" data-filter="expired">Expired</button>
+                <div class="gc-filters" style="display: flex; gap: 0.75rem; margin-bottom: 2rem; flex-wrap: wrap;">
+                    <button class="filter-btn active" data-filter="all" style="
+                        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 12px;
+                        padding: 0.75rem 1.25rem;
+                        font-weight: 600;
+                        font-size: 0.9rem;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        border: 2px solid transparent;
+                    ">All Certificates</button>
+                    <button class="filter-btn" data-filter="active" style="
+                        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 12px;
+                        padding: 0.75rem 1.25rem;
+                        font-weight: 600;
+                        font-size: 0.9rem;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        border: 2px solid transparent;
+                    ">Active</button>
+                    <button class="filter-btn" data-filter="redeemed" style="
+                        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 12px;
+                        padding: 0.75rem 1.25rem;
+                        font-weight: 600;
+                        font-size: 0.9rem;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        border: 2px solid transparent;
+                    ">Redeemed</button>
+                    <button class="filter-btn" data-filter="expired" style="
+                        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                        color: white;
+                        border: none;
+                        border-radius: 12px;
+                        padding: 0.75rem 1.25rem;
+                        font-weight: 600;
+                        font-size: 0.9rem;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        border: 2px solid transparent;
+                    ">Expired</button>
                 </div>
 
                 <div id="certificates-list">

@@ -33,7 +33,10 @@
       "Bash(do sed -i '/^import.*from/d' \"$file\")",
       "Bash(do)",
       "Bash(sed:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(.setup-pwa-repository.bat)",
+      "Bash(cmd:*)",
+      "Bash(setup-pwa-repository.bat)"
     ],
     "deny": [],
     "ask": [],
