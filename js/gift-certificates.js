@@ -306,7 +306,33 @@ class GiftCertificateManager {
             }
         });
 
+        // Update filter button counts
+        this.updateFilterCounts(stats);
+
         this.renderCertificatesList();
+    }
+
+    updateFilterCounts(stats) {
+        // Update filter button text with counts
+        const filterButtons = {
+            'all': stats.total,
+            'active': stats.active,
+            'redeemed': stats.redeemed,
+            'expired': stats.expired
+        };
+
+        Object.entries(filterButtons).forEach(([filter, count]) => {
+            const button = document.querySelector(`.filter-btn[data-filter="${filter}"]`);
+            if (button) {
+                const baseText = {
+                    'all': 'All',
+                    'active': 'Active', 
+                    'redeemed': 'Redeemed',
+                    'expired': 'Expired'
+                };
+                button.textContent = `${baseText[filter]} ${count}`;
+            }
+        });
     }
 
     renderCertificatesList() {
@@ -330,118 +356,111 @@ class GiftCertificateManager {
         }
 
         container.innerHTML = certificates.map(cert => `
-            <div class="certificate-card ${cert.status}" data-id="${cert.id}">
+            <div class="certificate-card ${cert.status}" data-id="${cert.id}" style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 1rem; background: white; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
                 <div class="certificate-preview" style="
-                    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-                    background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%23FFD700&quot; fill-opacity=&quot;0.15&quot;%3E%3Cpath d=&quot;M30 0l30 30-30 30-30-30z&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
-                    box-shadow: 0 15px 35px rgba(26, 26, 46, 0.6);
-                    border: 4px double rgba(255,215,0,0.8);
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 35%, #8b5cf6 100%);
+                    background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%23FFFFFF&quot; fill-opacity=&quot;0.1&quot;%3E%3Ccircle cx=&quot;30&quot; cy=&quot;30&quot; r=&quot;15&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
+                    width: 160px;
+                    height: 100px;
+                    flex-shrink: 0;
+                    border-radius: 8px;
                     position: relative;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    text-align: center;
+                    padding: 0.75rem;
                 ">
-                    <div class="decorative-corner top-left" style="
-                        position: absolute;
-                        top: 8px;
-                        left: 8px;
-                        width: 25px;
-                        height: 25px;
-                        background: linear-gradient(45deg, rgba(255,215,0,0.6), transparent);
-                        clip-path: polygon(0 0, 100% 0, 0 100%);
-                        z-index: 2;
-                    "></div>
-                    <div class="decorative-corner top-right" style="
-                        position: absolute;
-                        top: 8px;
-                        right: 8px;
-                        width: 25px;
-                        height: 25px;
-                        background: linear-gradient(-45deg, rgba(255,215,0,0.6), transparent);
-                        clip-path: polygon(100% 0, 100% 100%, 0 0);
-                        z-index: 2;
-                    "></div>
-                    <div class="decorative-corner bottom-left" style="
-                        position: absolute;
-                        bottom: 8px;
-                        left: 8px;
-                        width: 25px;
-                        height: 25px;
-                        background: linear-gradient(135deg, rgba(255,215,0,0.6), transparent);
-                        clip-path: polygon(0 0, 100% 100%, 0 100%);
-                        z-index: 2;
-                    "></div>
-                    <div class="decorative-corner bottom-right" style="
-                        position: absolute;
-                        bottom: 8px;
-                        right: 8px;
-                        width: 25px;
-                        height: 25px;
-                        background: linear-gradient(-135deg, rgba(255,215,0,0.6), transparent);
-                        clip-path: polygon(100% 0, 100% 100%, 0 100%);
-                        z-index: 2;
-                    "></div>
-                    <div class="certificate-header">
-                        <h4 style="
-                            color: #FFFFFF;
-                            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
-                            font-weight: 300;
-                            letter-spacing: 2px;
-                        ">GIFT CERTIFICATE</h4>
-                        <span class="control-number" style="
-                            color: #FFD700;
-                            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
-                            font-weight: 600;
-                        ">${cert.controlNumber}</span>
-                    </div>
-                    <div class="certificate-value" style="
-                        color: #FFD700;
-                        text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
-                        font-weight: 700;
-                    ">₱${cert.value.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>
-                    <div class="certificate-recipient" style="
-                        color: rgba(255,255,255,0.95);
-                        text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
-                    ">${cert.recipientName}</div>
+                    <div style="color: rgba(255,255,255,0.8); font-size: 0.7rem; font-weight: 500; margin-bottom: 0.25rem;">GIFT CERTIFICATE</div>
+                    <div style="color: #FEF3C7; font-size: 1.2rem; font-weight: 700; margin-bottom: 0.25rem;">₱${cert.value.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>
+                    <div style="color: rgba(255,255,255,0.7); font-size: 0.75rem;">${cert.controlNumber}</div>
                 </div>
-                <div class="certificate-details">
-                    <div class="detail-row">
-                        <span class="label">Status:</span>
-                        <span class="status-badge ${cert.status}">${cert.status.toUpperCase()}</span>
+                <div class="certificate-details" style="flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: #1e293b;">${cert.recipientName}</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; font-size: 0.85rem; margin-bottom: 1rem;">
+                            <div><span style="color: #64748b; font-weight: 500;">Status:</span><br><span class="status-badge ${cert.status}" style="padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; ${cert.status === 'active' ? 'background: #dcfce7; color: #166534;' : cert.status === 'redeemed' ? 'background: #fef3c7; color: #d97706;' : 'background: #fecaca; color: #dc2626;'}">${cert.status.toUpperCase()}</span></div>
+                            <div><span style="color: #64748b; font-weight: 500;">Remaining:</span><br><span style="font-weight: 600; color: #1e293b;">₱${cert.remainingValue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
+                            <div><span style="color: #64748b; font-weight: 500;">Expires:</span><br><span style="font-weight: 600; color: #1e293b;">${new Date(cert.expiryDate).toLocaleDateString()}</span></div>
+                        </div>
                     </div>
-                    <div class="detail-row">
-                        <span class="label">Remaining:</span>
-                        <span class="value">₱${cert.remainingValue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label">Expires:</span>
-                        <span class="value">${new Date(cert.expiryDate).toLocaleDateString()}</span>
-                    </div>
-                    <div class="certificate-actions">
-                        <button class="btn-view" data-action="view" data-cert-id="${cert.id}">
+                    <div class="certificate-actions" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="btn-view" data-action="view" data-cert-id="${cert.id}" style="
+                            padding: 0.35rem 0.65rem !important; 
+                            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important; 
+                            color: white !important; 
+                            border: none !important; 
+                            border-radius: 6px !important; 
+                            font-size: 0.75rem !important; 
+                            font-weight: 600 !important;
+                            cursor: pointer !important;
+                            transition: all 0.15s ease !important;
+                            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.25) !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            gap: 0.25rem !important;
+                            text-transform: uppercase !important;
+                            letter-spacing: 0.5px !important;
+                        " onmouseover="this.style.transform='translateY(-1px) scale(1.02)'; this.style.boxShadow='0 4px 8px rgba(59, 130, 246, 0.4)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 2px 4px rgba(59, 130, 246, 0.25)'">
                             <i class="fas fa-eye"></i> View
                         </button>
-                        <button class="btn-print" data-action="print" data-cert-id="${cert.id}">
+                        <button class="btn-print" data-action="print" data-cert-id="${cert.id}" style="
+                            padding: 0.35rem 0.65rem !important; 
+                            background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%) !important; 
+                            color: white !important; 
+                            border: none !important; 
+                            border-radius: 6px !important; 
+                            font-size: 0.75rem !important; 
+                            font-weight: 600 !important;
+                            cursor: pointer !important;
+                            transition: all 0.15s ease !important;
+                            box-shadow: 0 2px 4px rgba(6, 182, 212, 0.25) !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            gap: 0.25rem !important;
+                            text-transform: uppercase !important;
+                            letter-spacing: 0.5px !important;
+                        " onmouseover="this.style.transform='translateY(-1px) scale(1.02)'; this.style.boxShadow='0 4px 8px rgba(6, 182, 212, 0.4)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 2px 4px rgba(6, 182, 212, 0.25)'">
                             <i class="fas fa-print"></i> Print
                         </button>
-                        ${cert.status === 'active' ? `
-                            <button class="btn-redeem" data-action="redeem" data-control-number="${cert.controlNumber}">
-                                <i class="fas fa-check-circle"></i> Redeem
-                            </button>
-                        ` : ''}
+                        ${cert.status === 'active' ? `<button class="btn-redeem" data-action="redeem" data-control-number="${cert.controlNumber}" style="
+                            padding: 0.35rem 0.65rem !important; 
+                            background: linear-gradient(135deg, #10b981 0%, #047857 100%) !important; 
+                            color: white !important; 
+                            border: none !important; 
+                            border-radius: 6px !important; 
+                            font-size: 0.75rem !important; 
+                            font-weight: 600 !important;
+                            cursor: pointer !important;
+                            transition: all 0.15s ease !important;
+                            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25) !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            gap: 0.25rem !important;
+                            text-transform: uppercase !important;
+                            letter-spacing: 0.5px !important;
+                        " onmouseover="this.style.transform='translateY(-1px) scale(1.02)'; this.style.boxShadow='0 4px 8px rgba(16, 185, 129, 0.4)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 2px 4px rgba(16, 185, 129, 0.25)'">
+                            <i class="fas fa-check-circle"></i> Redeem
+                        </button>` : ''}
                         <button class="btn-delete" data-action="delete" data-cert-id="${cert.id}" style="
-                            background: #e74c3c;
-                            color: white;
-                            flex: 1;
-                            padding: 8px 12px;
-                            border: none;
-                            border-radius: 6px;
-                            cursor: pointer;
-                            font-size: 13px;
-                            font-weight: 500;
-                            transition: all 0.2s ease;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            gap: 4px;
-                        ">
+                            padding: 0.35rem 0.65rem !important; 
+                            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%) !important; 
+                            color: white !important; 
+                            border: none !important; 
+                            border-radius: 6px !important; 
+                            font-size: 0.75rem !important; 
+                            font-weight: 600 !important;
+                            cursor: pointer !important;
+                            transition: all 0.15s ease !important;
+                            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.25) !important;
+                            display: flex !important;
+                            align-items: center !important;
+                            gap: 0.25rem !important;
+                            text-transform: uppercase !important;
+                            letter-spacing: 0.5px !important;
+                        " onmouseover="this.style.transform='translateY(-1px) scale(1.02)'; this.style.boxShadow='0 4px 8px rgba(239, 68, 68, 0.4)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 2px 4px rgba(239, 68, 68, 0.25)'">
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </div>
@@ -1011,22 +1030,18 @@ class GiftCertificateManager {
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>Validate Gift Certificate</h2>
-                    <button class="close-modal">×</button>
+                    <h2><i class="fas fa-shield-alt" style="color: var(--info-color); margin-right: 0.5rem;"></i>Validate Gift Certificate</h2>
+                    <button class="close-modal" style="border: none; background: none; font-size: 1.5rem; cursor: pointer; color: var(--gray-600); padding: 0.25rem;">×</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>Control Number</label>
-                        <input type="text" id="validate-control-number" placeholder="Enter control number">
+                        <label for="validate-control-number"><i class="fas fa-search" style="margin-right: 0.5rem; color: var(--info-color);"></i>Control Number</label>
+                        <input type="text" id="validate-control-number" placeholder="Enter gift certificate control number" style="padding: 0.75rem; border: 2px solid var(--info-color); border-radius: 8px; font-size: 1rem; width: 100%; margin-top: 0.25rem;" autofocus>
                     </div>
-                    <div id="validation-result"></div>
-                    <div class="form-actions">
-                        <button class="btn-primary" id="perform-validation-btn">
-                            Validate
-                        </button>
-                        <button class="btn-secondary" id="close-validate-btn">
-                            Close
-                        </button>
+                    <div id="validation-result" style="margin: 1.5rem 0;"></div>
+                    <div class="form-actions" style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: flex-end;">
+                        <button class="btn-secondary" id="close-validate-btn" style="padding: 0.75rem 1.5rem; border: 2px solid var(--gray-300); background: white; color: var(--gray-700); border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Close</button>
+                        <button class="btn-primary" id="perform-validation-btn" style="padding: 0.75rem 1.5rem; background: var(--info-color); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;"><i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i>Validate</button>
                     </div>
                 </div>
             </div>
@@ -1039,7 +1054,7 @@ class GiftCertificateManager {
         const resultDiv = document.getElementById('validation-result');
 
         if (!controlNumber) {
-            resultDiv.innerHTML = '<div class="alert alert-error">Please enter a control number</div>';
+            resultDiv.innerHTML = '<div class="alert alert-error" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #dc2626; padding: 1rem; border-radius: 8px; font-weight: 500;"><i class="fas fa-exclamation-triangle" style="margin-right: 0.5rem;"></i>Please enter a control number</div>';
             return;
         }
 
@@ -1048,21 +1063,21 @@ class GiftCertificateManager {
         if (result.valid) {
             const cert = result.certificate;
             resultDiv.innerHTML = `
-                <div class="alert alert-success">
-                    <h4>✓ Certificate is Valid</h4>
-                    <div class="validation-details">
-                        <p><strong>Recipient:</strong> ${cert.recipientName}</p>
-                        <p><strong>Original Value:</strong> ₱${cert.value.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
-                        <p><strong>Remaining Value:</strong> ₱${cert.remainingValue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</p>
-                        <p><strong>Expires:</strong> ${new Date(cert.expiryDate).toLocaleDateString()}</p>
+                <div class="alert alert-success" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #059669; padding: 1.5rem; border-radius: 12px; margin: 1rem 0;">
+                    <h4 style="color: #059669; margin-bottom: 1rem; font-size: 1.2rem;"><i class="fas fa-check-circle" style="color: #10b981; margin-right: 0.5rem;"></i>Certificate is Valid</h4>
+                    <div class="validation-details" style="display: grid; gap: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid rgba(16, 185, 129, 0.2);"><strong>Recipient:</strong> <span>${cert.recipientName}</span></div>
+                        <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid rgba(16, 185, 129, 0.2);"><strong>Original Value:</strong> <span style="color: #059669; font-weight: 600;">₱${cert.value.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
+                        <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid rgba(16, 185, 129, 0.2);"><strong>Remaining Value:</strong> <span style="color: #059669; font-weight: 600;">₱${cert.remainingValue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</span></div>
+                        <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;"><strong>Expires:</strong> <span>${new Date(cert.expiryDate).toLocaleDateString()}</span></div>
                     </div>
                 </div>
             `;
         } else {
             resultDiv.innerHTML = `
-                <div class="alert alert-error">
-                    <h4>✗ Certificate Invalid</h4>
-                    <p>${result.message}</p>
+                <div class="alert alert-error" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #dc2626; padding: 1.5rem; border-radius: 12px; margin: 1rem 0;">
+                    <h4 style="color: #dc2626; margin-bottom: 0.75rem; font-size: 1.2rem;"><i class="fas fa-times-circle" style="color: #ef4444; margin-right: 0.5rem;"></i>Certificate Invalid</h4>
+                    <p style="margin: 0; font-weight: 500;">${result.message}</p>
                 </div>
             `;
         }
