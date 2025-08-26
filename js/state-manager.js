@@ -489,10 +489,20 @@ class StateManager {
                         category: 'STATE',
                         dbReady,
                         configReady,
-                        loggerReady
+                        loggerReady,
+                        hasDB: !!window.db,
+                        dbOpen: window.db?.isOpen,
+                        dbConnection: !!window.db?.db
                     });
                 } else {
-                    console.log('StateManager: Dependencies ready', {dbReady, configReady, loggerReady});
+                    console.log('StateManager: Dependencies ready', {
+                        dbReady, 
+                        configReady, 
+                        loggerReady,
+                        hasDB: !!window.db,
+                        dbOpen: window.db?.isOpen,
+                        dbConnection: !!window.db?.db
+                    });
                 }
                 return;
             }
@@ -506,7 +516,7 @@ class StateManager {
     
     // Persist state to database
     async persistState() {
-        if (!window.db || !this.persistenceEnabled) return;
+        if (!this.persistenceEnabled) return;
         
         try {
             const stateSnapshot = {
@@ -515,18 +525,51 @@ class StateManager {
                 version: '1.0.0'
             };
             
-            // Store in IndexedDB using Database class method
-            const stateData = {
-                key: 'current',
-                ...stateSnapshot
-            };
-            await window.db.update('state', stateData);
+            // Try IndexedDB first if database is available and open
+            if (window.db && window.db.isOpen) {
+                try {
+                    const stateData = {
+                        key: 'current',
+                        ...stateSnapshot
+                    };
+                    await window.db.update('state', stateData);
+                    
+                    if (window.logger) {
+                        window.logger.debug('State persisted to IndexedDB', {
+                            category: 'STATE',
+                            timestamp: stateSnapshot.timestamp
+                        });
+                    }
+                } catch (dbError) {
+                    if (window.logger) {
+                        window.logger.warn('IndexedDB persistence failed, using localStorage', {
+                            category: 'STATE',
+                            error: dbError.message
+                        });
+                    } else {
+                        console.warn('IndexedDB persistence failed, using localStorage:', dbError);
+                    }
+                }
+            }
             
-            // Also backup to localStorage for redundancy
+            // Always backup to localStorage for redundancy and fallback
             try {
                 localStorage.setItem('ava_state_backup', JSON.stringify(stateSnapshot));
-            } catch (e) {
-                // Ignore localStorage errors
+                localStorage.setItem('ava_state_last_save', Date.now().toString());
+                
+                if (window.logger) {
+                    window.logger.debug('State backed up to localStorage', {
+                        category: 'STATE',
+                        timestamp: stateSnapshot.timestamp
+                    });
+                }
+            } catch (localStorageError) {
+                if (window.logger) {
+                    window.logger.error('localStorage backup failed', {
+                        category: 'STATE',
+                        error: localStorageError.message
+                    });
+                }
             }
             
         } catch (error) {
@@ -536,34 +579,80 @@ class StateManager {
     
     // Load persisted state
     async loadPersistedState() {
-        if (!window.db) return;
-        
         try {
-            // Try to load from IndexedDB first
-            const savedState = await window.db.get('state', 'current');
+            let stateLoaded = false;
             
-            if (savedState && savedState.state) {
-                this.mergePersistedState(savedState.state);
-                
-                if (window.logger) {
-                    window.logger.info('State loaded from database', {
-                        category: 'STATE',
-                        timestamp: savedState.timestamp
-                    });
+            // Try to load from IndexedDB first if database is available and open
+            if (window.db && window.db.isOpen) {
+                try {
+                    const savedState = await window.db.get('state', 'current');
+                    
+                    if (savedState && savedState.state) {
+                        this.mergePersistedState(savedState.state);
+                        stateLoaded = true;
+                        
+                        if (window.logger) {
+                            window.logger.info('State loaded from IndexedDB', {
+                                category: 'STATE',
+                                timestamp: savedState.timestamp
+                            });
+                        } else {
+                            console.log('State loaded from IndexedDB');
+                        }
+                    }
+                } catch (dbError) {
+                    if (window.logger) {
+                        window.logger.warn('Failed to load from IndexedDB, trying localStorage', {
+                            category: 'STATE',
+                            error: dbError.message
+                        });
+                    } else {
+                        console.warn('Failed to load from IndexedDB, trying localStorage:', dbError);
+                    }
                 }
-                return;
             }
             
-            // Fallback to localStorage
-            const backupState = localStorage.getItem('ava_state_backup');
-            if (backupState) {
-                const parsed = JSON.parse(backupState);
-                this.mergePersistedState(parsed.state);
+            // Fallback to localStorage if IndexedDB failed or not available
+            if (!stateLoaded) {
+                // Try regular backup first
+                let backupState = localStorage.getItem('ava_state_backup');
+                let backupType = 'regular';
                 
-                if (window.logger) {
-                    window.logger.info('State loaded from backup', {
-                        category: 'STATE'
-                    });
+                // If no regular backup, try emergency backup
+                if (!backupState) {
+                    backupState = localStorage.getItem('ava_state_emergency_backup');
+                    backupType = 'emergency';
+                }
+                
+                if (backupState) {
+                    try {
+                        const parsed = JSON.parse(backupState);
+                        this.mergePersistedState(parsed.state);
+                        stateLoaded = true;
+                        
+                        if (window.logger) {
+                            window.logger.info(`State loaded from localStorage ${backupType} backup`, {
+                                category: 'STATE',
+                                backupType: backupType
+                            });
+                        } else {
+                            console.log(`State loaded from localStorage ${backupType} backup`);
+                        }
+                        
+                        // Clear emergency backup after successful load
+                        if (backupType === 'emergency') {
+                            localStorage.removeItem('ava_state_emergency_backup');
+                        }
+                    } catch (parseError) {
+                        if (window.logger) {
+                            window.logger.error(`Failed to parse localStorage ${backupType} backup`, {
+                                category: 'STATE',
+                                error: parseError.message
+                            });
+                        } else {
+                            console.error(`Failed to parse localStorage ${backupType} backup:`, parseError);
+                        }
+                    }
                 }
             }
             
@@ -571,7 +660,7 @@ class StateManager {
             this.handleError('Failed to load persisted state', error);
         }
         
-        // Load legacy data if no persisted state found
+        // Always load legacy data to ensure compatibility
         await this.loadLegacyData();
     }
     
@@ -739,15 +828,40 @@ class StateManager {
     
     // Setup auto-save
     setupAutoSave() {
-        // Save state every 30 seconds if there were changes
-        setInterval(() => {
+        // Save state every 10 seconds if there were changes (more frequent for better persistence)
+        this.autoSaveInterval = setInterval(() => {
             if (this.pendingUpdates.length > 0 || this.history.length > 0) {
                 this.persistState();
             }
-        }, 30000);
+        }, 10000);
         
-        // Save on page unload
-        window.addEventListener('beforeunload', () => {
+        // Save on page unload (synchronous attempt)
+        window.addEventListener('beforeunload', (event) => {
+            // Try to save state immediately before page closes
+            this.persistState();
+            
+            // Also save to localStorage synchronously as backup
+            try {
+                const stateSnapshot = {
+                    timestamp: Date.now(),
+                    state: JSON.parse(JSON.stringify(this.state)),
+                    version: '1.0.0'
+                };
+                localStorage.setItem('ava_state_emergency_backup', JSON.stringify(stateSnapshot));
+            } catch (e) {
+                // Ignore errors during emergency save
+            }
+        });
+        
+        // Save on page visibility change (when user switches tabs/apps)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.persistState();
+            }
+        });
+        
+        // Save on focus loss (additional safety net)
+        window.addEventListener('blur', () => {
             this.persistState();
         });
     }

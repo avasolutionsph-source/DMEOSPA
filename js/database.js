@@ -2,30 +2,130 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 4; // Incremented for config and migrations stores
+        this.version = 6; // Incremented for expenses store
         this.db = null;
         this.userId = null;
+        this.isInitializing = false;
+        this.initAttempts = 0;
+        this.maxRetries = 3;
+    }
+
+    async checkForceUpgrade() {
+        try {
+            // Check if database exists and what version it is
+            const databases = await indexedDB.databases();
+            const existingDb = databases.find(db => db.name === this.dbName);
+            
+            if (existingDb && existingDb.version < this.version) {
+                console.log(`Database upgrade needed: ${existingDb.version} -> ${this.version}`);
+                
+                // For version 6 specifically, we need expenses store
+                if (existingDb.version < 6) {
+                    console.log('Forcing database upgrade for expenses store');
+                    // The version increment will trigger onupgradeneeded
+                }
+            }
+        } catch (error) {
+            console.log('Could not check database version, proceeding with normal init');
+        }
     }
 
     async init() {
+        if (this.isInitializing) {
+            console.log('💡 Database initialization already in progress, waiting...');
+            // Wait for current initialization to complete
+            while (this.isInitializing) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            if (this.db) {
+                return this.db;
+            }
+        }
+
+        if (this.db && this.db.objectStoreNames.length > 0) {
+            console.log('✅ Database already initialized and ready');
+            return this.db;
+        }
+
+        this.isInitializing = true;
+        this.initAttempts++;
+
+        console.log(`🔄 Initializing database (attempt ${this.initAttempts}/${this.maxRetries})`);
+
+        try {
+            // Check if we need to force upgrade for existing installations
+            await this.checkForceUpgrade();
+            
+            return await this.attemptDatabaseConnection();
+        } catch (error) {
+            console.error(`❌ Database init attempt ${this.initAttempts} failed:`, error);
+            
+            if (this.initAttempts < this.maxRetries) {
+                console.log(`🔄 Retrying database initialization in 1 second...`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                this.isInitializing = false;
+                return this.init(); // Recursive retry
+            } else {
+                console.error('💀 All database initialization attempts failed, trying recovery...');
+                return await this.attemptDatabaseRecovery();
+            }
+        } finally {
+            this.isInitializing = false;
+        }
+    }
+
+    async attemptDatabaseConnection() {
         return new Promise((resolve, reject) => {
+            // Add timeout to prevent hanging
+            const timeout = setTimeout(() => {
+                console.error('⏰ Database connection timeout');
+                reject(new Error('Database connection timeout'));
+            }, 10000); // 10 second timeout
+
             const request = indexedDB.open(this.dbName, this.version);
 
-            request.onerror = () => {
+            request.onerror = (event) => {
+                clearTimeout(timeout);
+                const error = event.target?.error || new Error('Unknown database error');
+                console.error('❌ Database failed to open:', error);
+                
                 if (window.logger && window.logger.error) {
-                    window.logger.error('Database failed to open', { category: 'DATABASE', context: { dbName: this.dbName, version: this.version } });
-                } else {
-                    console.error('Database failed to open');
+                    window.logger.error('Database failed to open', { 
+                        category: 'DATABASE', 
+                        context: { 
+                            dbName: this.dbName, 
+                            version: this.version,
+                            error: error.message,
+                            attempt: this.initAttempts
+                        } 
+                    });
                 }
-                reject('Database failed to open');
+                reject(error);
             };
 
-            request.onsuccess = () => {
-                this.db = request.result;
+            request.onsuccess = (event) => {
+                clearTimeout(timeout);
+                this.db = event.target.result;
+                
+                // Verify database integrity
+                if (!this.db || this.db.objectStoreNames.length === 0) {
+                    console.error('❌ Database opened but has no stores');
+                    reject(new Error('Database integrity check failed'));
+                    return;
+                }
+                
+                console.log(`✅ Database opened successfully (stores: ${this.db.objectStoreNames.length})`);
+                
                 if (window.logger && window.logger.info) {
-                    window.logger.info('Database opened successfully', { category: 'DATABASE', context: { dbName: this.dbName, version: this.version } });
-                } else {
-                    console.log('Database opened successfully');
+                    window.logger.info('Database opened successfully', { 
+                        category: 'DATABASE', 
+                        context: { 
+                            dbName: this.dbName, 
+                            version: this.version,
+                            storeCount: this.db.objectStoreNames.length,
+                            attempt: this.initAttempts
+                        } 
+                    });
                 }
                 resolve(this.db);
             };
@@ -117,6 +217,24 @@ class Database {
                     activeServicesStore.createIndex('status', 'status', { unique: false });
                     activeServicesStore.createIndex('employeeId', 'employeeId', { unique: false });
                 }
+                
+                // Service History store (for completed services)
+                if (!this.db.objectStoreNames.contains('serviceHistory')) {
+                    const serviceHistoryStore = this.db.createObjectStore('serviceHistory', { keyPath: 'id', autoIncrement: true });
+                    serviceHistoryStore.createIndex('roomId', 'roomId', { unique: false });
+                    serviceHistoryStore.createIndex('date', 'endTime', { unique: false });
+                    serviceHistoryStore.createIndex('employeeId', 'employeeId', { unique: false });
+                    serviceHistoryStore.createIndex('serviceName', 'serviceName', { unique: false });
+                }
+
+                // Expenses store
+                if (!this.db.objectStoreNames.contains('expenses')) {
+                    const expensesStore = this.db.createObjectStore('expenses', { keyPath: 'id', autoIncrement: true });
+                    expensesStore.createIndex('category', 'category', { unique: false });
+                    expensesStore.createIndex('date', 'date', { unique: false });
+                    expensesStore.createIndex('purchaser', 'purchaser', { unique: false });
+                    expensesStore.createIndex('syncStatus', 'syncStatus', { unique: false });
+                }
 
                 // Settings store
                 if (!this.db.objectStoreNames.contains('settings')) {
@@ -166,6 +284,118 @@ class Database {
                 }
             };
         });
+    }
+
+    async attemptDatabaseRecovery() {
+        console.log('🚑 Attempting database recovery...');
+        
+        try {
+            // Strategy 1: Try to delete and recreate the database
+            console.log('🗑️ Trying database deletion and recreation...');
+            
+            // Close any existing connection
+            if (this.db) {
+                this.db.close();
+                this.db = null;
+            }
+            
+            // Delete the database
+            await new Promise((resolve, reject) => {
+                const deleteRequest = indexedDB.deleteDatabase(this.dbName);
+                deleteRequest.onsuccess = () => {
+                    console.log('🗑️ Database deleted successfully');
+                    resolve();
+                };
+                deleteRequest.onerror = (event) => {
+                    console.error('❌ Failed to delete database:', event);
+                    reject(new Error('Database deletion failed'));
+                };
+                deleteRequest.onblocked = () => {
+                    console.warn('⚠️ Database deletion blocked - other connections may be open');
+                    // Continue anyway
+                    setTimeout(() => resolve(), 2000);
+                };
+            });
+            
+            // Wait a bit for cleanup
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Reset attempt counter for fresh start
+            this.initAttempts = 0;
+            
+            // Try to create fresh database
+            console.log('🆕 Creating fresh database...');
+            return await this.attemptDatabaseConnection();
+            
+        } catch (error) {
+            console.error('💀 Database recovery failed:', error);
+            
+            // Strategy 2: Use fallback mode
+            console.log('🚨 Using fallback mode - creating minimal database...');
+            return await this.createFallbackDatabase();
+        }
+    }
+
+    async createFallbackDatabase() {
+        try {
+            // Create a minimal database with just essential stores
+            const fallbackName = `${this.dbName}_fallback_${Date.now()}`;
+            console.log(`🆘 Creating fallback database: ${fallbackName}`);
+            
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(fallbackName, 1);
+                
+                request.onerror = () => {
+                    console.error('💀 Even fallback database failed');
+                    reject(new Error('Complete database failure'));
+                };
+                
+                request.onsuccess = (event) => {
+                    this.db = event.target.result;
+                    this.dbName = fallbackName; // Update to fallback name
+                    console.log('✅ Fallback database created successfully');
+                    
+                    // Store fallback info for user awareness
+                    localStorage.setItem('ava_database_fallback', 'true');
+                    localStorage.setItem('ava_database_fallback_name', fallbackName);
+                    
+                    resolve(this.db);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    console.log('🔧 Setting up fallback database stores...');
+                    
+                    // Create only essential stores
+                    if (!db.objectStoreNames.contains('rooms')) {
+                        const roomsStore = db.createObjectStore('rooms', { keyPath: 'id', autoIncrement: true });
+                        roomsStore.createIndex('status', 'status', { unique: false });
+                    }
+                    
+                    if (!db.objectStoreNames.contains('activeServices')) {
+                        const activeServicesStore = db.createObjectStore('activeServices', { keyPath: 'id', autoIncrement: true });
+                        activeServicesStore.createIndex('roomId', 'roomId', { unique: false });
+                    }
+                    
+                    if (!db.objectStoreNames.contains('settings')) {
+                        const settingsStore = db.createObjectStore('settings', { keyPath: 'key' });
+                    }
+                    
+                    if (!db.objectStoreNames.contains('state')) {
+                        db.createObjectStore('state', { keyPath: 'key' });
+                    }
+                };
+            });
+            
+        } catch (error) {
+            console.error('💀 Complete database system failure:', error);
+            throw new Error('All database recovery strategies failed');
+        }
+    }
+
+    // Add isOpen getter for StateManager compatibility
+    get isOpen() {
+        return !!(this.db && !this.db.closed);
     }
 
     // Generic CRUD operations
@@ -445,31 +675,191 @@ window.db = db;
 
 // Initialize database immediately when script loads
 let dbInitPromise = null;
+let initializationStarted = false;
 
-// Ensure single initialization
+// Ensure single initialization with robust error handling
 function ensureDBInit() {
-    if (!dbInitPromise) {
-        dbInitPromise = db.init().then(() => {
-            if (window.logger && window.logger.info) {
-                window.logger.info('Database initialized for better performance', { category: 'DATABASE', context: { dbName: db.dbName, version: db.version } });
-            } else {
-                console.log('Database initialized for better performance');
-            }
-        }).catch((error) => {
-            if (window.logger && window.logger.error) {
-                window.logger.error('Database initialization failed', { category: 'DATABASE', error, context: { dbName: db.dbName, version: db.version } });
-            } else {
-                console.error('Database initialization failed:', error);
-            }
-            dbInitPromise = null; // Reset on failure so it can retry
-            throw error;
+    if (dbInitPromise) {
+        return dbInitPromise;
+    }
+    
+    if (initializationStarted) {
+        // Already starting, wait for it
+        return new Promise((resolve) => {
+            const checkInit = () => {
+                if (dbInitPromise) {
+                    resolve(dbInitPromise);
+                } else if (!initializationStarted) {
+                    // Restart if needed
+                    resolve(ensureDBInit());
+                } else {
+                    setTimeout(checkInit, 100);
+                }
+            };
+            checkInit();
         });
     }
+    
+    initializationStarted = true;
+    
+    dbInitPromise = db.init().then((database) => {
+        console.log('✅ Database system fully initialized');
+        
+        if (window.logger && window.logger.info) {
+            window.logger.info('Database system fully initialized', { 
+                category: 'DATABASE', 
+                context: { 
+                    dbName: db.dbName, 
+                    version: db.version,
+                    storeCount: database.objectStoreNames.length,
+                    isFallback: localStorage.getItem('ava_database_fallback') === 'true'
+                } 
+            });
+        }
+        
+        return database;
+    }).catch((error) => {
+        console.error('💀 Database system failed completely:', error);
+        
+        if (window.logger && window.logger.error) {
+            window.logger.error('Database system failed completely', { 
+                category: 'DATABASE', 
+                error: error.message, 
+                context: { 
+                    dbName: db.dbName, 
+                    version: db.version,
+                    attempts: db.initAttempts 
+                } 
+            });
+        }
+        
+        // Reset for potential retry
+        dbInitPromise = null;
+        initializationStarted = false;
+        throw error;
+    });
+    
     return dbInitPromise;
 }
+
+// Database diagnostic and repair function
+window.diagnoseDatabase = async function() {
+    console.log('🔍 Running database diagnostics...');
+    
+    try {
+        const databases = await indexedDB.databases();
+        const avaDatabases = databases.filter(db => db.name.includes('AvaSolutions'));
+        
+        console.log('📊 Found databases:', avaDatabases);
+        
+        if (avaDatabases.length > 1) {
+            console.warn('⚠️ Multiple Ava databases detected - this may cause conflicts');
+            for (const dbInfo of avaDatabases) {
+                console.log(`- ${dbInfo.name} (v${dbInfo.version})`);
+            }
+        }
+        
+        // Check if we're in fallback mode
+        const isFallback = localStorage.getItem('ava_database_fallback') === 'true';
+        if (isFallback) {
+            const fallbackName = localStorage.getItem('ava_database_fallback_name');
+            console.log(`🆘 Currently using fallback database: ${fallbackName}`);
+        }
+        
+        return {
+            databases: avaDatabases,
+            currentName: db.dbName,
+            currentVersion: db.version,
+            isFallback,
+            isConnected: !!db.db
+        };
+        
+    } catch (error) {
+        console.error('❌ Database diagnostics failed:', error);
+        return { error: error.message };
+    }
+};
+
+// Database repair function
+window.repairDatabase = async function() {
+    console.log('🔧 Starting database repair...');
+    
+    try {
+        // Prevent multiple repairs
+        if (localStorage.getItem('database_repair_in_progress') === 'true') {
+            console.log('🚫 Database repair already in progress, skipping...');
+            return { success: false, message: 'Repair already in progress' };
+        }
+        
+        // Clear any fallback flags
+        localStorage.removeItem('ava_database_fallback');
+        localStorage.removeItem('ava_database_fallback_name');
+        
+        // Close current connection
+        if (db.db) {
+            db.db.close();
+            db.db = null;
+        }
+        
+        // Reset init state
+        dbInitPromise = null;
+        initializationStarted = false;
+        db.initAttempts = 0;
+        
+        // Force database recreation
+        await db.attemptDatabaseRecovery();
+        
+        // After recovery, properly initialize the new database connection
+        await ensureDBInit();
+        
+        // Verify the database is working
+        if (!db.db) {
+            throw new Error('Database connection failed after recovery');
+        }
+        
+        console.log('✅ Database repair completed and connection verified');
+        return { success: true, dbName: db.dbName, connection: !!db.db };
+        
+    } catch (error) {
+        console.error('💀 Database repair failed:', error);
+        return { success: false, error: error.message };
+    }
+};
 
 // Make ensureDBInit available globally
 window.ensureDBInit = ensureDBInit;
 
-// Pre-initialize when script loads
-ensureDBInit();
+// Delayed initialization to prevent race conditions on page load
+setTimeout(() => {
+    if (!window.document.hidden) { // Only init if page is visible
+        ensureDBInit().then(() => {
+            console.log('✅ Database pre-initialized successfully');
+            // Set flag to indicate database is ready
+            localStorage.setItem('database_initialized', Date.now().toString());
+        }).catch(() => {
+            console.warn('⚠️ Initial database initialization failed, will retry on demand');
+        });
+    }
+}, 500); // Increased delay to let all scripts load properly
+
+// Also try to initialize when page is fully loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            if (!db.db) {
+                ensureDBInit().catch(() => {
+                    console.warn('⚠️ DOMContentLoaded database initialization failed, will retry on demand');
+                });
+            }
+        }, 1000);
+    });
+} else {
+    // Document already loaded, initialize immediately
+    setTimeout(() => {
+        if (!db.db) {
+            ensureDBInit().catch(() => {
+                console.warn('⚠️ Late database initialization failed, will retry on demand');
+            });
+        }
+    }, 1000);
+}
