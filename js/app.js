@@ -468,21 +468,47 @@ class App {
             console.log('✅ Container found');
         }
 
-        // Clear container and inject HTML directly
+        // Clear container and inject modernized HTML structure
         container.innerHTML = `
             <div class="gift-certificates-container">
-                <div class="gc-header">
-                    <h1><i class="fas fa-gift"></i> Gift Certificate Management</h1>
-                    <div class="gc-actions">
-                        <button class="btn-primary" id="create-certificate-btn" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
-                            <i class="fas fa-plus"></i> Create Certificate
-                        </button>
-                        <button class="btn-secondary" id="validate-certificate-btn" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
-                            <i class="fas fa-check"></i> Validate Certificate
-                        </button>
-                        <button class="btn-secondary" id="export-certificates-btn" style="pointer-events: auto !important; cursor: pointer !important; position: relative; z-index: 100;">
-                            <i class="fas fa-download"></i> Export
-                        </button>
+                <!-- Modern Page Header -->
+                <div class="page-header">
+                    <div class="header-content">
+                        <div class="header-left">
+                            <div class="header-icon">
+                                <i class="fas fa-gift"></i>
+                            </div>
+                            <div class="header-text">
+                                <h1>Gift Certificate Management</h1>
+                                <p class="page-description">Create, manage, and track gift certificates for your spa business</p>
+                            </div>
+                        </div>
+                        <div class="header-actions">
+                            <button class="btn btn-primary" id="create-certificate-btn">
+                                <i class="fas fa-plus"></i>
+                                <span>Create Certificate</span>
+                            </button>
+                            <button class="btn btn-secondary" id="validate-certificate-btn">
+                                <i class="fas fa-search"></i>
+                                <span>Validate</span>
+                            </button>
+                            <div class="dropdown">
+                                <button class="btn btn-outline dropdown-toggle" id="more-actions-btn">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                    <span>More</span>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <button class="dropdown-item" id="export-certificates-btn">
+                                        <i class="fas fa-download"></i>
+                                        <span>Export Data</span>
+                                    </button>
+                                    <button class="dropdown-item" id="bulk-actions-btn">
+                                        <i class="fas fa-tasks"></i>
+                                        <span>Bulk Actions</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
