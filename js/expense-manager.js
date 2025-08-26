@@ -1,9 +1,14 @@
 // Expense Manager Module
-import StateManager from './state-manager.js';
-
-class ExpenseManager {
+(function() {
+    'use strict';
+    
+    class ExpenseManager {
     constructor() {
-        this.stateManager = StateManager.getInstance();
+        // Get StateManager from window (it's loaded before this script)
+        this.stateManager = window.StateManager ? window.StateManager.getInstance() : null;
+        if (!this.stateManager) {
+            console.warn('StateManager not available, using local storage fallback');
+        }
         this.receiptImageData = null;
         this.currentStream = null;
         this.initializeExpenseListeners();
@@ -120,9 +125,9 @@ class ExpenseManager {
         };
         
         // Add to state
-        const expenses = this.stateManager.getState('expenses') || [];
+        const expenses = this.getExpenses();
         expenses.push(expense);
-        this.stateManager.setState('expenses', expenses);
+        this.saveExpenses(expenses);
         
         // Reset receipt data
         this.receiptImageData = null;
@@ -597,62 +602,130 @@ class ExpenseManager {
         this.tempImageData = null;
     }
 
+    getExpenses() {
+        if (this.stateManager) {
+            return this.stateManager.getState('expenses') || [];
+        }
+        // Fallback to localStorage
+        const stored = localStorage.getItem('expenses');
+        return stored ? JSON.parse(stored) : [];
+    }
+    
+    saveExpenses(expenses) {
+        if (this.stateManager) {
+            this.stateManager.setState('expenses', expenses);
+        } else {
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+        }
+    }
+    
     async loadExpenses() {
-        const expenses = this.stateManager.getState('expenses') || [];
+        const expenses = this.getExpenses();
         
-        const content = document.getElementById('main-content');
+        // Update dashboard stats if they exist
+        const totalSpent = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        
+        const thisMonthExpenses = expenses.filter(exp => {
+            const date = new Date(exp.date);
+            return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+        });
+        const thisMonthTotal = thisMonthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+        
+        // Update stat cards if they exist
+        const totalExpensesEl = document.getElementById('total-expenses');
+        if (totalExpensesEl) {
+            totalExpensesEl.textContent = `₱${totalSpent.toFixed(2)}`;
+        }
+        
+        const thisMonthEl = document.getElementById('this-month-expenses');
+        if (thisMonthEl) {
+            thisMonthEl.textContent = `₱${thisMonthTotal.toFixed(2)}`;
+        }
+        
+        const countEl = document.getElementById('total-expense-count');
+        if (countEl) {
+            countEl.textContent = expenses.length;
+        }
+        
+        // Find the expenses list container
+        let content = document.getElementById('expenses-list');
+        
+        // If not found, try main-content
+        if (!content) {
+            content = document.getElementById('main-content');
+        }
+        
         if (!content) return;
         
-        const totalSpent = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-        
-        content.innerHTML = `
-            <div class="feature-header">
-                <h2><i class="fas fa-receipt"></i> Expense Tracker</h2>
-                <button onclick="expenseManager.showExpenseModal()" class="primary-btn">
-                    <i class="fas fa-plus"></i> Add Expense
+        // Update expenses list content
+        content.innerHTML = expenses.length === 0 ? `
+            <div class="empty-state" style="text-align: center; padding: 3rem; color: #64748b;">
+                <i class="fas fa-receipt" style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                <h3>No Expenses Recorded</h3>
+                <p>Start tracking your business expenses by adding your first expense record</p>
+                <button onclick="if(window.expenseManager) window.expenseManager.showExpenseModal();" style="
+                    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                    color: white; border: none; border-radius: 8px; padding: 0.75rem 1.5rem;
+                    font-weight: 600; cursor: pointer; margin-top: 1rem;
+                ">
+                    <i class="fas fa-plus"></i> Add Your First Expense
                 </button>
             </div>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value">₱${totalSpent.toFixed(2)}</div>
-                    <div class="stat-label">Total Expenses</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">${expenses.length}</div>
-                    <div class="stat-label">Total Transactions</div>
-                </div>
-            </div>
-            
-            <div class="expense-list">
-                ${expenses.length === 0 ? `
-                    <div class="empty-state">
-                        <i class="fas fa-wallet" style="font-size: 3rem; color: #9ca3af; margin-bottom: 1rem;"></i>
-                        <p>No expenses recorded yet</p>
-                        <button onclick="expenseManager.showExpenseModal()" class="primary-btn">
-                            <i class="fas fa-plus"></i> Add Your First Expense
-                        </button>
-                    </div>
-                ` : expenses.map(expense => `
-                    <div class="expense-item">
-                        <div class="expense-icon">
+        ` : `
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                ${expenses.map(expense => `
+                    <div style="
+                        background: white;
+                        border-radius: 12px;
+                        padding: 1.5rem;
+                        display: flex;
+                        align-items: center;
+                        gap: 1rem;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                        transition: all 0.2s ease;
+                    " onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'" onmouseout="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            color: #4f46e5;
+                            font-size: 1.25rem;
+                        ">
                             ${this.getCategoryIcon(expense.category)}
                         </div>
-                        <div class="expense-details">
-                            <div class="expense-description">${expense.description}</div>
-                            <div class="expense-meta">${expense.category} • ${new Date(expense.date).toLocaleDateString()}</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: #1e293b; margin-bottom: 0.25rem;">${expense.description}</div>
+                            <div style="font-size: 0.875rem; color: #64748b;">${expense.category} • ${new Date(expense.date).toLocaleDateString()}</div>
                         </div>
-                        <div class="expense-amount">₱${expense.amount.toFixed(2)}</div>
-                        <div class="expense-actions">
+                        <div style="font-weight: 700; font-size: 1.25rem; color: #1e293b;">₱${expense.amount.toFixed(2)}</div>
+                        <div style="display: flex; gap: 0.5rem;">
                             ${expense.receipt ? `
-                                <button onclick="viewReceipt(${expense.id})" class="icon-btn" title="View Receipt">
+                                <button onclick="if(window.expenseManager) window.expenseManager.viewReceipt(${expense.id});" style="
+                                    background: #f1f5f9; color: #475569; border: none; border-radius: 8px;
+                                    width: 36px; height: 36px; cursor: pointer; display: flex;
+                                    align-items: center; justify-content: center; transition: all 0.2s ease;
+                                " onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'" title="View Receipt">
                                     <i class="fas fa-image"></i>
                                 </button>
                             ` : ''}
-                            <button onclick="editExpense(${expense.id})" class="icon-btn" title="Edit">
+                            <button onclick="if(window.expenseManager) window.expenseManager.editExpense(${expense.id});" style="
+                                background: #f1f5f9; color: #475569; border: none; border-radius: 8px;
+                                width: 36px; height: 36px; cursor: pointer; display: flex;
+                                align-items: center; justify-content: center; transition: all 0.2s ease;
+                            " onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'" title="Edit">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button onclick="deleteExpense(${expense.id})" class="icon-btn delete" title="Delete">
+                            <button onclick="if(window.expenseManager) window.expenseManager.deleteExpense(${expense.id});" style="
+                                background: #fee2e2; color: #dc2626; border: none; border-radius: 8px;
+                                width: 36px; height: 36px; cursor: pointer; display: flex;
+                                align-items: center; justify-content: center; transition: all 0.2s ease;
+                            " onmouseover="this.style.background='#fecaca'" onmouseout="this.style.background='#fee2e2'" title="Delete">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -684,9 +757,9 @@ class ExpenseManager {
 
     deleteExpense(id) {
         if (confirm('Are you sure you want to delete this expense?')) {
-            const expenses = this.stateManager.getState('expenses') || [];
+            const expenses = this.getExpenses();
             const filtered = expenses.filter(exp => exp.id !== id);
-            this.stateManager.setState('expenses', filtered);
+            this.saveExpenses(filtered);
             
             if (window.showSuccess) {
                 window.showSuccess('Expense deleted successfully');
@@ -698,7 +771,7 @@ class ExpenseManager {
     }
 
     viewReceipt(id) {
-        const expenses = this.stateManager.getState('expenses') || [];
+        const expenses = this.getExpenses();
         const expense = expenses.find(exp => exp.id === id);
         
         if (!expense || !expense.receipt) return;
@@ -721,9 +794,13 @@ class ExpenseManager {
         document.body.appendChild(modal);
     }
 }
-
-// Create and export singleton instance
-const expenseManager = new ExpenseManager();
-window.expenseManager = expenseManager;
-
-export default expenseManager;
+    
+    // Create and expose singleton instance
+    const expenseManager = new ExpenseManager();
+    window.expenseManager = expenseManager;
+    window.ExpenseManager = ExpenseManager;
+    
+    // Also expose to window for debugging
+    console.log('💰 Expense Manager loaded and available as window.expenseManager');
+    
+})();

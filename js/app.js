@@ -431,6 +431,10 @@ class App {
                 if (!window.expenseManager && window.ExpenseManager) {
                     window.expenseManager = new ExpenseManager();
                 }
+                // Load expense data into the page
+                if (window.expenseManager && window.expenseManager.loadExpenses) {
+                    window.expenseManager.loadExpenses();
+                }
                 break;
             case 'chatbot':
                 // Chatbot is loaded on demand
