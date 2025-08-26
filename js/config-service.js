@@ -829,15 +829,23 @@ class MemoryAdapter {
 window.config = new ConfigurationService();
 
 // Initialize when database is ready
+let configInitAttempts = 0;
+const maxConfigInitAttempts = 50; // 5 seconds max wait
+
 function initConfigServiceWhenReady() {
+    configInitAttempts++;
+    
     if (window.db && window.ensureDBInit) {
         if (!window.config.initPromise) {
+            console.log('🔧 Initializing config service with database ready');
             window.config.initPromise = window.config.init();
         }
         return window.config.initPromise;
-    } else {
-        // Wait for database to be available
+    } else if (configInitAttempts < maxConfigInitAttempts) {
+        // Wait for database to be available (with limit)
         setTimeout(initConfigServiceWhenReady, 100);
+    } else {
+        console.warn('⚠️ Config service initialization timeout - database not ready after 5 seconds');
     }
 }
 
