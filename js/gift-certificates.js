@@ -19,6 +19,7 @@ class GiftCertificateManager {
             // Setup immediately, no delay needed
             this.setupEventListeners();
             this.updateDashboard();
+            this.renderCertificatesList();
             console.log('✅ Gift Certificate Manager initialized');
         } catch (error) {
             console.error('Failed to initialize Gift Certificate Manager:', error);
@@ -139,7 +140,7 @@ class GiftCertificateManager {
             recipientEmail: data.recipientEmail || '',
             value: parseFloat(data.value),
             occasion: data.occasion || 'General',
-            message: data.personalMessage || '', // Use personalMessage from form
+            message: data.personalMessage || data.message || '', // Handle both field names
             status: 'active',
             createdDate: new Date().toISOString(),
             expiryDate: data.expiryDate || this.calculateExpiryDate(data.validityDays || 365),
@@ -197,19 +198,16 @@ class GiftCertificateManager {
         if (!certificate) return;
 
         certificate.status = status;
+        certificate.modifiedAt = new Date().toISOString();
 
-        return new Promise((resolve, reject) => {
-            const transaction = window.db.transaction(['certificates'], 'readwrite');
-            const store = transaction.objectStore('certificates');
-            const request = store.put(certificate);
-
-            request.onsuccess = () => {
-                this.updateDashboard();
-                resolve(certificate);
-            };
-
-            request.onerror = () => reject(request.error);
-        });
+        try {
+            await window.db.update('products', certificate);
+            this.updateDashboard();
+            return certificate;
+        } catch (error) {
+            console.error('Error updating certificate status:', error);
+            throw error;
+        }
     }
 
     async redeemCertificate(controlNumber, amount) {
@@ -238,18 +236,15 @@ class GiftCertificateManager {
             certificate.status = 'redeemed';
         }
 
-        return new Promise((resolve, reject) => {
-            const transaction = window.db.transaction(['certificates'], 'readwrite');
-            const store = transaction.objectStore('certificates');
-            const request = store.put(certificate);
+        certificate.modifiedAt = new Date().toISOString();
 
-            request.onsuccess = () => {
-                this.updateDashboard();
-                resolve(certificate);
-            };
-
-            request.onerror = () => reject(request.error);
-        });
+        try {
+            await window.db.update('products', certificate);
+            return certificate;
+        } catch (error) {
+            console.error('Error redeeming certificate:', error);
+            throw error;
+        }
     }
 
     async validateCertificate(controlNumber) {
@@ -762,25 +757,21 @@ class GiftCertificateManager {
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>Redeem Gift Certificate</h2>
-                    <button class="close-modal">×</button>
+                    <h2><i class="fas fa-check-circle" style="color: var(--success-color); margin-right: 0.5rem;"></i>Redeem Gift Certificate</h2>
+                    <button class="close-modal" style="border: none; background: none; font-size: 1.5rem; cursor: pointer; color: var(--gray-600); padding: 0.25rem;">×</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>Control Number</label>
-                        <input type="text" id="redeem-control-number" value="${controlNumber}" readonly>
+                        <label for="redeem-control-number"><i class="fas fa-barcode" style="margin-right: 0.5rem; color: var(--success-color);"></i>Control Number</label>
+                        <input type="text" id="redeem-control-number" value="${controlNumber}" readonly style="padding: 0.75rem; border: 2px solid var(--gray-200); border-radius: 8px; font-size: 1rem; width: 100%; margin-top: 0.25rem; background: var(--gray-50); color: var(--gray-600);">
                     </div>
                     <div class="form-group">
-                        <label>Amount to Redeem</label>
-                        <input type="number" id="redeem-amount" placeholder="Enter amount" step="0.01" min="0.01">
+                        <label for="redeem-amount"><i class="fas fa-peso-sign" style="margin-right: 0.5rem; color: var(--success-color);"></i>Amount to Redeem</label>
+                        <input type="number" id="redeem-amount" placeholder="Enter amount to redeem" step="0.01" min="0.01" style="padding: 0.75rem; border: 2px solid var(--success-color); border-radius: 8px; font-size: 1rem; width: 100%; margin-top: 0.25rem;" autofocus>
                     </div>
-                    <div class="form-actions">
-                        <button class="btn-primary" data-action="process-redemption">
-                            Redeem
-                        </button>
-                        <button class="btn-secondary" data-action="close-modal">
-                            Cancel
-                        </button>
+                    <div class="form-actions" style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: flex-end;">
+                        <button class="btn-secondary" data-action="close-modal" style="padding: 0.75rem 1.5rem; border: 2px solid var(--gray-300); background: white; color: var(--gray-700); border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cancel</button>
+                        <button class="btn-primary" data-action="process-redemption" style="padding: 0.75rem 1.5rem; background: var(--success-color); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;"><i class="fas fa-check" style="margin-right: 0.5rem;"></i>Redeem</button>
                     </div>
                 </div>
             </div>
@@ -799,6 +790,10 @@ class GiftCertificateManager {
 
         try {
             const result = await this.redeemCertificate(controlNumber, amount);
+            // Reload certificates to ensure accurate counts
+            await this.loadCertificates();
+            this.updateDashboard();
+            this.renderCertificatesList();
             alert(`Successfully redeemed ₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2 })}. Remaining balance: ₱${result.remainingValue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`);
             document.querySelector('.modal').remove();
         } catch (error) {
@@ -961,26 +956,26 @@ class GiftCertificateManager {
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>Create Gift Certificate</h2>
-                    <button class="close-modal">×</button>
+                    <h2><i class="fas fa-gift" style="color: var(--primary-color); margin-right: 0.5rem;"></i>Create Gift Certificate</h2>
+                    <button class="close-modal" style="border: none; background: none; font-size: 1.5rem; cursor: pointer; color: var(--gray-600); padding: 0.25rem;">×</button>
                 </div>
                 <div class="modal-body">
                     <form id="create-certificate-form">
                         <div class="form-group">
-                            <label>Recipient Name *</label>
-                            <input type="text" name="recipientName" required>
+                            <label for="recipientName"><i class="fas fa-user" style="margin-right: 0.5rem; color: var(--primary-color);"></i>Recipient Name *</label>
+                            <input type="text" id="recipientName" name="recipientName" placeholder="Enter recipient's full name" required style="padding: 0.75rem; border: 2px solid var(--gray-200); border-radius: 8px; font-size: 1rem; width: 100%; margin-top: 0.25rem;">
                         </div>
                         <div class="form-group">
-                            <label>Recipient Email</label>
-                            <input type="email" name="recipientEmail">
+                            <label for="recipientEmail"><i class="fas fa-envelope" style="margin-right: 0.5rem; color: var(--primary-color);"></i>Recipient Email</label>
+                            <input type="email" id="recipientEmail" name="recipientEmail" placeholder="Optional - for digital delivery" style="padding: 0.75rem; border: 2px solid var(--gray-200); border-radius: 8px; font-size: 1rem; width: 100%; margin-top: 0.25rem;">
                         </div>
                         <div class="form-group">
-                            <label>Value (₱) *</label>
-                            <input type="number" name="value" step="0.01" min="0.01" required>
+                            <label for="certificateValue"><i class="fas fa-peso-sign" style="margin-right: 0.5rem; color: var(--primary-color);"></i>Value (₱) *</label>
+                            <input type="number" id="certificateValue" name="value" step="0.01" min="0.01" placeholder="0.00" required style="padding: 0.75rem; border: 2px solid var(--gray-200); border-radius: 8px; font-size: 1rem; width: 100%; margin-top: 0.25rem;">
                         </div>
                         <div class="form-group">
-                            <label>Occasion</label>
-                            <select name="occasion">
+                            <label for="certificateOccasion"><i class="fas fa-calendar-alt" style="margin-right: 0.5rem; color: var(--primary-color);"></i>Occasion</label>
+                            <select id="certificateOccasion" name="occasion" style="padding: 0.75rem; border: 2px solid var(--gray-200); border-radius: 8px; font-size: 1rem; width: 100%; margin-top: 0.25rem; background: white;">
                                 <option value="General">General</option>
                                 <option value="Birthday">Birthday</option>
                                 <option value="Wedding">Wedding</option>
@@ -991,16 +986,16 @@ class GiftCertificateManager {
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Personal Message</label>
-                            <textarea name="message" rows="3"></textarea>
+                            <label for="personalMessage"><i class="fas fa-comment" style="margin-right: 0.5rem; color: var(--primary-color);"></i>Personal Message</label>
+                            <textarea id="personalMessage" name="personalMessage" rows="3" placeholder="Add a personal touch to your gift certificate..." style="padding: 0.75rem; border: 2px solid var(--gray-200); border-radius: 8px; font-size: 1rem; width: 100%; margin-top: 0.25rem; resize: vertical; font-family: inherit;"></textarea>
                         </div>
                         <div class="form-group">
-                            <label>Validity (Days)</label>
-                            <input type="number" name="validityDays" value="365" min="1">
+                            <label for="validityDays"><i class="fas fa-clock" style="margin-right: 0.5rem; color: var(--primary-color);"></i>Validity (Days)</label>
+                            <input type="number" id="validityDays" name="validityDays" value="365" min="1" placeholder="365" style="padding: 0.75rem; border: 2px solid var(--gray-200); border-radius: 8px; font-size: 1rem; width: 100%; margin-top: 0.25rem;">
                         </div>
-                        <div class="form-actions">
-                            <button type="submit" class="btn-primary">Create Certificate</button>
-                            <button type="button" class="btn-secondary" data-action="close-modal">Cancel</button>
+                        <div class="form-actions" style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: flex-end;">
+                            <button type="button" class="btn-secondary" data-action="close-modal" style="padding: 0.75rem 1.5rem; border: 2px solid var(--gray-300); background: white; color: var(--gray-700); border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cancel</button>
+                            <button type="submit" class="btn-primary" style="padding: 0.75rem 1.5rem; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;"><i class="fas fa-plus" style="margin-right: 0.5rem;"></i>Create Certificate</button>
                         </div>
                     </form>
                 </div>

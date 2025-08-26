@@ -49,7 +49,8 @@ cd backend && npm run test
 # Watch mode testing
 cd backend && npm run test:watch
 
-# Frontend testing - open test-utilities.html in browser for integrated testing
+# Frontend testing - manual testing via browser with PWA/marketing sites
+# No automated frontend test suite currently configured
 ```
 
 ## High-Level Architecture
@@ -88,27 +89,24 @@ Modern modular JavaScript architecture with:
 The codebase uses unified utility systems that eliminated 85% of code duplication:
 
 #### Logging System
-All logging goes through unified logger helper functions that work consistently across platforms:
+All logging goes through unified logger that works consistently across platforms:
 ```javascript
-import { logError, logInfo, logDebug, logSuccess } from './js/utils/logger-helper.js';
+// Import the complete logger system
+import './js/logger-complete.js';
+// Use global logger functions available after import
 ```
 
-#### Notification System  
-Unified toast-style notifications with auto-detection and queue management:
+#### State Management
+Centralized state management with automatic UI synchronization:
 ```javascript
-import { showSuccess, showError, showWarning, showInfo } from './js/utils/notification-manager.js';
-```
-
-#### Error Handling
-Centralized error handling with user-friendly messages and automatic logging:
-```javascript
-import { withErrorHandling, handleError } from './js/utils/error-handler.js';
+import StateManager from './js/state-manager.js';
 ```
 
 #### API Client System
-Resource-specific API clients with automatic retry, error handling, and timeout management:
+HTTP client with automatic retry, error handling, and authentication:
 ```javascript
-import { apiClient, productsAPI, authAPI } from './js/utils/base-api-client.js';
+import { api } from './js/api.js';
+// Usage: await api.get('/products'), api.post('/users', data)
 ```
 
 #### Backend Route Handlers
@@ -120,11 +118,11 @@ import BaseRouteHandler from './backend/utils/base-route-handler.js';
 ## Key Patterns
 
 ### Frontend Development
-1. **Always import unified utilities** - Use the centralized systems instead of duplicating code
-2. **Use resource APIs** - Prefer `productsAPI.list()` over `apiClient.get('/api/products')`  
-3. **Consistent logging categories** - Use predefined categories (AUTH, DATABASE, API, UI, VALIDATION, SYNC, POS, INVENTORY, EMPLOYEES)
-4. **Error handling wrapper** - Wrap risky operations with `withErrorHandling()`
-5. **State management** - Use StateManager for application state instead of local variables
+1. **Use modular architecture** - Import specific modules as needed from `js/` directory
+2. **Use StateManager** - Centralized state management with automatic UI updates
+3. **Use unified logger** - Import `logger-complete.js` for consistent logging across components
+4. **Follow component patterns** - Use existing patterns in `js/` modules for consistency
+5. **Development workflow** - Work in `js/` directory, copy to `PWA-Repository/js/` for deployment
 
 ### Backend Development
 1. **Use BaseRouteHandler** - Create CRUD routes with the unified base handler
@@ -155,13 +153,13 @@ import BaseRouteHandler from './backend/utils/base-route-handler.js';
 - `backend/middleware/errorHandler.js` - Unified error handling
 - `backend/utils/logger.js` - Winston logging system
 
-### Unified Utility Systems
-- `js/utils/unified-logger.js` - Core logging system
-- `js/utils/logger-helper.js` - Convenient logging functions
-- `js/utils/notification-manager.js` - Toast notification system
-- `js/utils/error-handler.js` - Centralized error handling
-- `js/utils/base-api-client.js` - HTTP client with retry logic
-- `js/utils/resource-apis.js` - Resource-specific API clients
+### JavaScript Modules (PWA)
+- `js/` and `PWA-Repository/js/` - PWA JavaScript modules (development and production)
+- `js/logger-complete.js` - Unified logging system
+- `js/state-manager.js` - Centralized state management  
+- `js/api.js` - HTTP API client
+- `js/utilities.js` - Common utility functions
+- `js/auth.js` - Authentication handling
 
 ### Documentation
 - `TEAM_GUIDE.md` - Comprehensive guide for using unified systems
@@ -174,7 +172,8 @@ import BaseRouteHandler from './backend/utils/base-route-handler.js';
 ### Making Changes to PWA
 1. Work in the `js/` directory for development
 2. Copy changes to `PWA-Repository/js/` for deployment
-3. Test with `test-utilities.html` to ensure unified systems work correctly
+3. Test manually with browser by opening `PWA-Repository/index.html`
+4. Use browser developer tools for debugging and validation
 
 ### Making Changes to Backend
 1. All backend changes in `backend/` directory
@@ -189,9 +188,9 @@ import BaseRouteHandler from './backend/utils/base-route-handler.js';
 
 ## Testing Strategy
 - **Backend Tests** - Jest testing framework with supertest for API testing
-- **Integration Testing** - `test-utilities.html` for testing unified frontend systems
-- **Manual Testing** - Use development servers for full application testing
-- **Database Testing** - Seed scripts for consistent test data
+- **Frontend Testing** - Manual browser testing with PWA and marketing sites
+- **Database Testing** - Seed scripts for consistent test data via `npm run seed`
+- **Integration Testing** - Test PWA with backend API during development
 
 ## Performance Considerations
 - **Modular Loading** - JavaScript modules loaded on demand
