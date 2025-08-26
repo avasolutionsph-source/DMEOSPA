@@ -338,13 +338,40 @@ class ExpenseManager {
     }
 
     async openCameraCapture() {
-        console.log('📸 Opening camera directly...');
+        console.log('📸 Opening camera with MediaStream...');
         
-        // Create a hidden file input with camera capture
+        try {
+            // Check if we're on HTTPS or localhost (required for camera access)
+            const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+            
+            if (!isSecure) {
+                console.warn('Camera requires HTTPS. Falling back to file input.');
+                this.fallbackToCameraInput();
+                return;
+            }
+            
+            // Check if getUserMedia is available
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.warn('getUserMedia not supported. Falling back to file input.');
+                this.fallbackToCameraInput();
+                return;
+            }
+            
+            // Create and show camera modal
+            this.showCameraModal();
+            
+        } catch (error) {
+            console.error('Error accessing camera:', error);
+            this.fallbackToCameraInput();
+        }
+    }
+    
+    fallbackToCameraInput() {
+        // Fallback to file input with camera capture
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
-        input.capture = 'camera'; // This forces camera on mobile devices
+        input.capture = 'environment'; // Use rear camera on mobile
         
         input.onchange = (e) => {
             const file = e.target.files[0];
@@ -353,14 +380,214 @@ class ExpenseManager {
                 reader.onload = (event) => {
                     this.receiptImageData = event.target.result;
                     this.displayImagePreview(this.receiptImageData);
-                    console.log('✅ Photo captured successfully');
+                    console.log('✅ Photo captured successfully via file input');
                 };
                 reader.readAsDataURL(file);
             }
         };
         
-        // Trigger the camera
         input.click();
+    }
+    
+    showCameraModal() {
+        // Create camera modal
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'block';
+        modal.style.zIndex = '10000';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h2><i class="fas fa-camera"></i> Take Photo</h2>
+                    <button class="close-btn" onclick="this.closest('.modal').remove();">×</button>
+                </div>
+                <div class="modal-body" style="text-align: center; padding: 1rem;">
+                    <video id="cameraVideo" autoplay playsinline style="
+                        width: 100%;
+                        max-width: 500px;
+                        border-radius: 8px;
+                        background: #000;
+                        display: block;
+                        margin: 0 auto 1rem;
+                    "></video>
+                    <canvas id="cameraCanvas" style="display: none;"></canvas>
+                    <div id="capturedImage" style="display: none;">
+                        <img id="capturedPhoto" style="
+                            width: 100%;
+                            max-width: 500px;
+                            border-radius: 8px;
+                            margin-bottom: 1rem;
+                        " />
+                    </div>
+                    <div id="cameraControls" style="display: flex; gap: 1rem; justify-content: center; margin-top: 1rem;">
+                        <button id="startCameraBtn" onclick="expenseManager.startCamera()" style="
+                            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                            color: white; border: none; border-radius: 8px; padding: 0.75rem 1.5rem;
+                            font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
+                        ">
+                            <i class="fas fa-video"></i> Start Camera
+                        </button>
+                        <button id="captureBtn" onclick="expenseManager.capturePhoto()" style="
+                            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                            color: white; border: none; border-radius: 8px; padding: 0.75rem 1.5rem;
+                            font-size: 1rem; cursor: pointer; display: none; align-items: center; gap: 0.5rem;
+                        ">
+                            <i class="fas fa-camera"></i> Capture
+                        </button>
+                        <button id="retakeBtn" onclick="expenseManager.retakePhoto()" style="
+                            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                            color: white; border: none; border-radius: 8px; padding: 0.75rem 1.5rem;
+                            font-size: 1rem; cursor: pointer; display: none; align-items: center; gap: 0.5rem;
+                        ">
+                            <i class="fas fa-redo"></i> Retake
+                        </button>
+                        <button id="usePhotoBtn" onclick="expenseManager.usePhoto()" style="
+                            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                            color: white; border: none; border-radius: 8px; padding: 0.75rem 1.5rem;
+                            font-size: 1rem; cursor: pointer; display: none; align-items: center; gap: 0.5rem;
+                        ">
+                            <i class="fas fa-check"></i> Use Photo
+                        </button>
+                    </div>
+                    <div id="cameraError" style="
+                        color: #ef4444;
+                        margin-top: 1rem;
+                        display: none;
+                        padding: 1rem;
+                        background: #fee;
+                        border-radius: 8px;
+                    "></div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        this.cameraModal = modal;
+        this.cameraStream = null;
+    }
+    
+    async startCamera() {
+        try {
+            const video = document.getElementById('cameraVideo');
+            const startBtn = document.getElementById('startCameraBtn');
+            const captureBtn = document.getElementById('captureBtn');
+            const errorDiv = document.getElementById('cameraError');
+            
+            // Hide error message
+            errorDiv.style.display = 'none';
+            
+            // Request camera permission
+            this.cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'environment', // Use rear camera on mobile
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            });
+            
+            // Display video stream
+            video.srcObject = this.cameraStream;
+            
+            // Update buttons
+            startBtn.style.display = 'none';
+            captureBtn.style.display = 'flex';
+            
+            console.log('✅ Camera started successfully');
+            
+        } catch (error) {
+            console.error('Camera error:', error);
+            const errorDiv = document.getElementById('cameraError');
+            errorDiv.style.display = 'block';
+            errorDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i> 
+                Camera access denied or not available. 
+                <br><small>${error.message}</small>
+                <br><br>
+                <button onclick="expenseManager.fallbackToCameraInput(); this.closest('.modal').remove();" style="
+                    background: #3b82f6;
+                    color: white;
+                    border: none;
+                    padding: 0.5rem 1rem;
+                    border-radius: 6px;
+                    cursor: pointer;
+                ">Use File Upload Instead</button>
+            `;
+        }
+    }
+    
+    capturePhoto() {
+        const video = document.getElementById('cameraVideo');
+        const canvas = document.getElementById('cameraCanvas');
+        const capturedImage = document.getElementById('capturedImage');
+        const capturedPhoto = document.getElementById('capturedPhoto');
+        const captureBtn = document.getElementById('captureBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const usePhotoBtn = document.getElementById('usePhotoBtn');
+        
+        // Set canvas dimensions to video dimensions
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // Draw video frame to canvas
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        
+        // Convert to data URL
+        const imageData = canvas.toDataURL('image/jpeg', 0.8);
+        
+        // Display captured image
+        capturedPhoto.src = imageData;
+        video.style.display = 'none';
+        capturedImage.style.display = 'block';
+        
+        // Update buttons
+        captureBtn.style.display = 'none';
+        retakeBtn.style.display = 'flex';
+        usePhotoBtn.style.display = 'flex';
+        
+        // Store captured image
+        this.tempImageData = imageData;
+        
+        console.log('📸 Photo captured');
+    }
+    
+    retakePhoto() {
+        const video = document.getElementById('cameraVideo');
+        const capturedImage = document.getElementById('capturedImage');
+        const captureBtn = document.getElementById('captureBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const usePhotoBtn = document.getElementById('usePhotoBtn');
+        
+        // Show video again
+        video.style.display = 'block';
+        capturedImage.style.display = 'none';
+        
+        // Update buttons
+        captureBtn.style.display = 'flex';
+        retakeBtn.style.display = 'none';
+        usePhotoBtn.style.display = 'none';
+        
+        this.tempImageData = null;
+    }
+    
+    usePhoto() {
+        if (this.tempImageData) {
+            this.receiptImageData = this.tempImageData;
+            this.displayImagePreview(this.receiptImageData);
+            console.log('✅ Photo accepted and saved');
+        }
+        
+        // Stop camera stream
+        if (this.cameraStream) {
+            this.cameraStream.getTracks().forEach(track => track.stop());
+            this.cameraStream = null;
+        }
+        
+        // Close modal
+        if (this.cameraModal) {
+            this.cameraModal.remove();
+            this.cameraModal = null;
+        }
     }
 
     showCameraPermissionRequest() {
