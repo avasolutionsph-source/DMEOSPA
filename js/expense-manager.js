@@ -255,6 +255,16 @@
     async openCameraCapture() {
         console.log('📸 Opening camera capture...');
         
+        // Detect if desktop browser (better to use file input on desktop)
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                        (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+        
+        if (!isMobile) {
+            console.log('Desktop browser detected. Using file input for better experience.');
+            this.fallbackToCameraInput();
+            return;
+        }
+        
         // Check if we're in a secure context (HTTPS or localhost)
         const isSecureContext = window.isSecureContext;
         const isLocalhost = ['localhost', '127.0.0.1', ''].includes(window.location.hostname);
@@ -273,10 +283,26 @@
         }
         
         try {
+            // Check camera permission first if available
+            if (navigator.permissions && navigator.permissions.query) {
+                try {
+                    const permission = await navigator.permissions.query({ name: 'camera' });
+                    if (permission.state === 'denied') {
+                        console.log('Camera permission already denied. Using file input.');
+                        this.fallbackToCameraInput();
+                        return;
+                    }
+                } catch (e) {
+                    // Permission API not supported, continue
+                }
+            }
+            
             // Try to access camera with environment facing preference
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { 
-                    facingMode: 'environment' // Use back camera on mobile
+                    facingMode: 'environment', // Use back camera on mobile
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
                 },
                 audio: false 
             });
@@ -627,7 +653,7 @@
     }
 
     fallbackToCameraInput() {
-        console.log('📷 Using mobile-optimized capture...');
+        console.log('📷 Opening file selector for receipt capture...');
         
         // Create input element for camera/file capture
         const input = document.createElement('input');
@@ -635,15 +661,16 @@
         input.accept = 'image/*';
         
         // Detect if mobile device
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                        (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
         
         if (isMobile) {
             // On mobile, use capture attribute to trigger camera
-            input.setAttribute('capture', 'environment'); // or 'camera' for front camera
+            input.setAttribute('capture', 'environment'); // Use back camera
             console.log('Mobile device detected - camera should open directly');
         } else {
-            // On desktop, just allow file selection
-            console.log('Desktop device - file selection dialog will open');
+            // On desktop, allow file selection
+            console.log('Desktop device - select an image file or use webcam software to capture');
         }
         
         input.onchange = (e) => {
