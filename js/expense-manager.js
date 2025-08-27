@@ -358,7 +358,7 @@
                             background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);
                             color: white; border: 2px solid white; border-radius: 50px;
                             padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: 600;
-                            cursor: pointer; align-items: center; gap: 0.5rem;
+                            cursor: pointer; align-items: center; justify-content: center; gap: 0.5rem;
                         ">
                             <i class="fas fa-redo"></i> Retake
                         </button>
@@ -367,7 +367,7 @@
                             background: #10b981;
                             color: white; border: none; border-radius: 50px;
                             padding: 0.75rem 2rem; font-size: 1rem; font-weight: 600;
-                            cursor: pointer; align-items: center; gap: 0.5rem;
+                            cursor: pointer; align-items: center; justify-content: center; gap: 0.5rem;
                             box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
                         ">
                             <i class="fas fa-check"></i> Use This Photo
@@ -423,9 +423,26 @@
         
         // Use photo
         usePhotoBtn.onclick = () => {
+            console.log('Use photo clicked');
             this.receiptImageData = photo.src;
             this.displayImagePreview(this.receiptImageData);
-            this.closeCameraModal(modal, stream);
+            
+            // Close modal and stop camera
+            if (this.currentStream) {
+                this.currentStream.getTracks().forEach(track => {
+                    track.stop();
+                    console.log('Stopped track:', track.label);
+                });
+            }
+            
+            // Remove modal from DOM
+            if (modal && modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+                console.log('Modal removed');
+            }
+            
+            this.currentStream = null;
+            
             if (window.showSuccess) {
                 window.showSuccess('Photo captured successfully!');
             }
@@ -433,7 +450,19 @@
         
         // Close modal
         closeBtn.onclick = () => {
-            this.closeCameraModal(modal, stream);
+            console.log('Close button clicked');
+            
+            // Stop camera stream
+            if (this.currentStream) {
+                this.currentStream.getTracks().forEach(track => track.stop());
+            }
+            
+            // Remove modal
+            if (modal && modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+            
+            this.currentStream = null;
         };
     }
     
