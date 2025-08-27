@@ -253,9 +253,159 @@
     }
 
     async openCameraCapture() {
-        // Directly use HTML5 input capture API - most reliable across all browsers
         console.log('📸 Opening camera capture...');
-        this.fallbackToCameraInput();
+        
+        try {
+            // Use MediaStream API to directly access camera
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: 'environment' // Use back camera on mobile
+                },
+                audio: false 
+            });
+            
+            // Create video element to show camera stream
+            this.showCameraPreview(stream);
+            
+        } catch (error) {
+            console.error('Camera access failed:', error);
+            
+            // If camera access fails, try with basic constraints
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true,
+                    audio: false 
+                });
+                this.showCameraPreview(stream);
+            } catch (fallbackError) {
+                console.error('Fallback camera access failed:', fallbackError);
+                // Only use file input as last resort
+                this.fallbackToCameraInput();
+            }
+        }
+    }
+
+    showCameraPreview(stream) {
+        // Create modal for camera preview
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.style.cssText = 'display: flex !important; align-items: center; justify-content: center; z-index: 10000;';
+        
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 600px; width: 90%; background: white; border-radius: 12px; overflow: hidden;">
+                <div class="modal-header" style="padding: 1rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600;"><i class="fas fa-camera"></i> Take Photo</h3>
+                    <button id="closeCameraBtn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body" style="padding: 1rem; text-align: center;">
+                    <video id="cameraVideo" autoplay playsinline style="width: 100%; max-width: 500px; border-radius: 8px; background: #000;"></video>
+                    <canvas id="cameraCanvas" style="display: none;"></canvas>
+                    <img id="capturedPhoto" style="display: none; width: 100%; max-width: 500px; border-radius: 8px;">
+                    
+                    <div style="margin-top: 1rem; display: flex; gap: 1rem; justify-content: center;">
+                        <button id="captureBtn" style="
+                            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                            color: white; border: none; border-radius: 8px;
+                            padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: 600;
+                            cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
+                        ">
+                            <i class="fas fa-camera"></i> Capture
+                        </button>
+                        <button id="retakeBtn" style="
+                            display: none;
+                            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                            color: white; border: none; border-radius: 8px;
+                            padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: 600;
+                            cursor: pointer; align-items: center; gap: 0.5rem;
+                        ">
+                            <i class="fas fa-redo"></i> Retake
+                        </button>
+                        <button id="usePhotoBtn" style="
+                            display: none;
+                            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                            color: white; border: none; border-radius: 8px;
+                            padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: 600;
+                            cursor: pointer; align-items: center; gap: 0.5rem;
+                        ">
+                            <i class="fas fa-check"></i> Use Photo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Setup video stream
+        const video = modal.querySelector('#cameraVideo');
+        const canvas = modal.querySelector('#cameraCanvas');
+        const photo = modal.querySelector('#capturedPhoto');
+        const captureBtn = modal.querySelector('#captureBtn');
+        const retakeBtn = modal.querySelector('#retakeBtn');
+        const usePhotoBtn = modal.querySelector('#usePhotoBtn');
+        const closeBtn = modal.querySelector('#closeCameraBtn');
+        
+        video.srcObject = stream;
+        
+        // Store stream for cleanup
+        this.currentStream = stream;
+        
+        // Capture photo
+        captureBtn.onclick = () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            // Convert to data URL
+            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+            
+            // Show captured photo
+            photo.src = imageData;
+            photo.style.display = 'block';
+            video.style.display = 'none';
+            captureBtn.style.display = 'none';
+            retakeBtn.style.display = 'flex';
+            usePhotoBtn.style.display = 'flex';
+        };
+        
+        // Retake photo
+        retakeBtn.onclick = () => {
+            photo.style.display = 'none';
+            video.style.display = 'block';
+            captureBtn.style.display = 'flex';
+            retakeBtn.style.display = 'none';
+            usePhotoBtn.style.display = 'none';
+        };
+        
+        // Use photo
+        usePhotoBtn.onclick = () => {
+            this.receiptImageData = photo.src;
+            this.displayImagePreview(this.receiptImageData);
+            this.closeCameraModal(modal, stream);
+            if (window.showSuccess) {
+                window.showSuccess('Photo captured successfully!');
+            }
+        };
+        
+        // Close modal
+        closeBtn.onclick = () => {
+            this.closeCameraModal(modal, stream);
+        };
+    }
+    
+    closeCameraModal(modal, stream) {
+        // Stop all tracks
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+        // Remove modal
+        if (modal && modal.parentNode) {
+            modal.parentNode.removeChild(modal);
+        }
+        this.currentStream = null;
     }
 
     async tryMultipleCameraConfigurations(device = null) {
