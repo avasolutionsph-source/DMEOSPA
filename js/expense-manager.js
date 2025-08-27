@@ -25,6 +25,11 @@
         window.editExpense = (id) => this.editExpense(id);
         window.deleteExpense = (id) => this.deleteExpense(id);
         window.viewReceipt = (id) => this.viewReceipt(id);
+        
+        // Load expenses on initialization
+        setTimeout(() => {
+            this.loadExpenses();
+        }, 100);
     }
 
     async showExpenseModal() {
@@ -911,20 +916,33 @@
     }
 
     getExpenses() {
-        if (this.stateManager) {
-            return this.stateManager.getState('expenses') || [];
-        }
-        // Fallback to localStorage
+        // Always try localStorage first for persistence
         const stored = localStorage.getItem('expenses');
-        return stored ? JSON.parse(stored) : [];
+        const localExpenses = stored ? JSON.parse(stored) : [];
+        
+        // If we have a state manager, sync with it
+        if (this.stateManager) {
+            const stateExpenses = this.stateManager.getState('expenses') || [];
+            // Merge if needed, preferring localStorage for persistence
+            if (localExpenses.length > 0 || stateExpenses.length === 0) {
+                return localExpenses;
+            }
+            return stateExpenses;
+        }
+        
+        return localExpenses;
     }
     
     saveExpenses(expenses) {
+        // Always save to localStorage for persistence
+        localStorage.setItem('expenses', JSON.stringify(expenses));
+        
+        // Also update state manager if available
         if (this.stateManager) {
             this.stateManager.setState('expenses', expenses);
-        } else {
-            localStorage.setItem('expenses', JSON.stringify(expenses));
         }
+        
+        console.log('Expenses saved to localStorage:', expenses);
     }
     
     async loadExpenses() {
