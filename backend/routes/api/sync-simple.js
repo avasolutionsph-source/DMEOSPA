@@ -100,12 +100,24 @@ router.post('/inventory', async (req, res) => {
       // Delete existing inventory for this user
       await Inventory.deleteMany({ userId });
       
-      // Save new inventory items
+      // Save new inventory items - map fields correctly
       const inventoryToSave = inventory.map(item => ({
-        ...item,
         userId,
-        lastModified: new Date(),
-        syncedAt: new Date()
+        name: item.name || 'Unknown Item',
+        sku: item.sku || '',
+        description: item.description || item.notes || '',
+        currentStock: item.quantity || item.currentStock || 0,  // Map quantity to currentStock
+        minStock: item.minStock || 5,
+        maxStock: item.maxStock,
+        unit: item.unit || 'units',
+        costPrice: item.cost || item.costPrice || 0,
+        sellingPrice: item.price || item.unitPrice || item.sellingPrice || 0,
+        supplier: item.supplier || '',
+        category: item.category || 'Uncategorized',
+        isActive: true,
+        syncStatus: 'synced',
+        lastSyncDate: new Date(),
+        lastRestocked: item.lastRestocked || null
       }));
       
       await Inventory.insertMany(inventoryToSave);
@@ -197,16 +209,30 @@ router.post('/employees', async (req, res) => {
       // Delete existing employees for this user
       await Employee.deleteMany({ userId });
       
-      // Save new employees
-      const employeesToSave = employees.map(employee => ({
-        ...employee,
-        userId,
-        hiredDate: employee.hiredDate || new Date(),
-        totalSales: employee.totalSales || 0,
-        commission: employee.commission || 0,
-        totalCommission: employee.totalCommission || 0,
-        syncedAt: new Date()
-      }));
+      // Save new employees - map fields correctly
+      const employeesToSave = employees.map(employee => {
+        // Split name into firstName and lastName
+        const nameParts = (employee.name || 'Unknown Employee').trim().split(' ');
+        const firstName = nameParts[0] || 'Unknown';
+        const lastName = nameParts.slice(1).join(' ') || 'Employee';
+        
+        return {
+          userId,
+          firstName,
+          lastName,
+          email: employee.email || '',
+          phone: employee.phone || '',
+          position: employee.position || 'No Position',
+          hireDate: employee.hiredDate || employee.hireDate || new Date(),
+          commissionRate: employee.commission || employee.commissionRate || 0,
+          totalSales: employee.totalSales || 0,
+          totalCommission: employee.totalCommission || 0,
+          totalTransactions: employee.transactions || 0,
+          isActive: true,
+          syncStatus: 'synced',
+          lastSyncDate: new Date()
+        };
+      });
       
       await Employee.insertMany(employeesToSave);
       

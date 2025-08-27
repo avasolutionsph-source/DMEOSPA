@@ -133,14 +133,15 @@ router.get('/employees', async (req, res) => {
     res.json({
       employees: employees.map(emp => ({
         id: emp._id,
-        name: emp.name,
+        name: emp.fullName || `${emp.firstName} ${emp.lastName}`,
         position: emp.position,
         email: emp.email,
         phone: emp.phone,
-        hiredDate: emp.hiredDate,
+        hiredDate: emp.hireDate || emp.hiredDate,
         totalSales: emp.totalSales || 0,
-        commission: emp.commission || 0,
-        totalCommission: emp.totalCommission || 0
+        commission: emp.commissionRate || emp.commission || 0,
+        totalCommission: emp.totalCommission || 0,
+        transactions: emp.totalTransactions || 0
       })),
       totalEmployees: employees.length,
       lastSyncDate: new Date()
@@ -162,13 +163,15 @@ router.get('/inventory', async (req, res) => {
     
     const inventory = await Inventory.find({ userId });
     
-    const lowStockItems = inventory.filter(item => 
-      item.quantity <= (item.minStock || 5)
-    ).length;
+    const lowStockItems = inventory.filter(item => {
+      const stock = item.currentStock || item.quantity || 0;
+      return stock <= (item.minStock || 5) && stock > 0;
+    }).length;
     
-    const outOfStockItems = inventory.filter(item => 
-      item.quantity === 0
-    ).length;
+    const outOfStockItems = inventory.filter(item => {
+      const stock = item.currentStock || item.quantity || 0;
+      return stock === 0;
+    }).length;
     
     res.json({
       inventory: inventory.map(item => ({
@@ -176,10 +179,10 @@ router.get('/inventory', async (req, res) => {
         name: item.name,
         sku: item.sku,
         category: item.category,
-        quantity: item.quantity,
+        quantity: item.currentStock || item.quantity || 0,  // Use currentStock as quantity
         unit: item.unit,
         minStock: item.minStock,
-        price: item.price,
+        price: item.sellingPrice || item.price || 0,
         supplier: item.supplier
       })),
       totalItems: inventory.length,
