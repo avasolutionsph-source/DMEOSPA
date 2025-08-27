@@ -255,8 +255,25 @@
     async openCameraCapture() {
         console.log('📸 Opening camera capture...');
         
+        // Check if we're in a secure context (HTTPS or localhost)
+        const isSecureContext = window.isSecureContext;
+        const isLocalhost = ['localhost', '127.0.0.1', ''].includes(window.location.hostname);
+        
+        if (!isSecureContext && !isLocalhost) {
+            console.warn('Camera requires HTTPS. Using file input.');
+            this.fallbackToCameraInput();
+            return;
+        }
+        
+        // Check if getUserMedia is available
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            console.log('getUserMedia not supported. Using file input.');
+            this.fallbackToCameraInput();
+            return;
+        }
+        
         try {
-            // Use MediaStream API to directly access camera
+            // Try to access camera with environment facing preference
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { 
                     facingMode: 'environment' // Use back camera on mobile
@@ -268,19 +285,29 @@
             this.showCameraPreview(stream);
             
         } catch (error) {
-            console.error('Camera access failed:', error);
+            console.error('Camera access denied or blocked:', error.name, error.message);
             
-            // If camera access fails, try with basic constraints
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: true,
-                    audio: false 
-                });
-                this.showCameraPreview(stream);
-            } catch (fallbackError) {
-                console.error('Fallback camera access failed:', fallbackError);
-                // Only use file input as last resort
+            // Check if it's a permission error
+            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                // Permission denied - use file input directly
+                console.log('Camera permission denied. Using file input.');
                 this.fallbackToCameraInput();
+            } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+                // No camera found
+                console.log('No camera found. Using file input.');
+                this.fallbackToCameraInput();
+            } else {
+                // Try once more with basic constraints
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: true,
+                        audio: false 
+                    });
+                    this.showCameraPreview(stream);
+                } catch (fallbackError) {
+                    console.error('Camera access failed completely:', fallbackError);
+                    this.fallbackToCameraInput();
+                }
             }
         }
     }
@@ -600,47 +627,72 @@
     }
 
     fallbackToCameraInput() {
-        // Use HTML5 input capture API - most reliable method across all devices
-        console.log('📷 Using HTML5 capture API...');
+        console.log('📷 Using mobile-optimized capture...');
         
+        // Create input element for camera/file capture
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
         
-        // Add capture attribute for mobile devices
-        // Set to 'camera' for better cross-platform compatibility
-        input.setAttribute('capture', 'camera');
+        // Detect if mobile device
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobile) {
+            // On mobile, use capture attribute to trigger camera
+            input.setAttribute('capture', 'environment'); // or 'camera' for front camera
+            console.log('Mobile device detected - camera should open directly');
+        } else {
+            // On desktop, just allow file selection
+            console.log('Desktop device - file selection dialog will open');
+        }
         
         input.onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
+                // Check file size (limit to 10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    if (window.showError) {
+                        window.showError('Image too large. Please use an image under 10MB.');
+                    }
+                    return;
+                }
+                
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     this.receiptImageData = event.target.result;
                     this.displayImagePreview(this.receiptImageData);
-                    console.log('✅ Photo captured successfully');
+                    console.log('✅ Photo captured/uploaded successfully');
                     if (window.showSuccess) {
-                        window.showSuccess('Photo captured successfully!');
+                        window.showSuccess('Receipt image added successfully!');
+                    }
+                };
+                reader.onerror = () => {
+                    console.error('Error reading file');
+                    if (window.showError) {
+                        window.showError('Error reading image file. Please try again.');
                     }
                 };
                 reader.readAsDataURL(file);
             }
         };
         
-        // Add to document temporarily for better compatibility
-        input.style.display = 'none';
+        // Add input to DOM temporarily (required for some browsers)
+        input.style.cssText = 'position: absolute; left: -9999px; visibility: hidden;';
         document.body.appendChild(input);
         
-        // Trigger click with small delay for better reliability
-        setTimeout(() => {
+        // Trigger the file/camera dialog
+        try {
             input.click();
-            // Clean up after a delay
-            setTimeout(() => {
-                if (input.parentNode) {
-                    input.parentNode.removeChild(input);
-                }
-            }, 1000);
-        }, 100);
+        } catch (e) {
+            console.error('Could not trigger file input:', e);
+        }
+        
+        // Clean up after a delay
+        setTimeout(() => {
+            if (input.parentNode) {
+                document.body.removeChild(input);
+            }
+        }, 3000);
     }
 
     showCameraModal(stream) {
