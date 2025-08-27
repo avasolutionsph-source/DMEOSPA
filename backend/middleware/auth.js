@@ -27,13 +27,20 @@ export const optionalAuth = (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
+    console.log('OptionalAuth: No token provided');
     return next();
   }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (!err) {
       req.user = user;
-      req.userId = user.id || user.userId;
+      req.userId = user.id || user.userId || user._id || user.user_id;
+      console.log('OptionalAuth: Token verified', {
+        userId: req.userId,
+        userKeys: Object.keys(user)
+      });
+    } else {
+      console.log('OptionalAuth: Token verification failed', err.message);
     }
     next();
   });

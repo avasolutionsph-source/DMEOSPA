@@ -13,7 +13,26 @@ router.use(optionalAuth);
 
 // Helper function to get userId safely
 const getUserId = (req) => {
-  return req.userId || req.user?.userId || req.user?.id || req.user?._id || 'anonymous';
+  // Try multiple possible sources for userId
+  const userId = req.userId || 
+                req.user?.userId || 
+                req.user?.id || 
+                req.user?._id ||
+                req.user?.user_id ||
+                'anonymous';
+  
+  // Log for debugging
+  if (userId === 'anonymous') {
+    logger.warn('No userId found in request', {
+      hasUser: !!req.user,
+      userKeys: req.user ? Object.keys(req.user) : [],
+      hasAuth: !!req.headers.authorization
+    });
+  } else {
+    logger.info('UserId extracted', { userId });
+  }
+  
+  return userId;
 };
 
 // POST /api/sync/products - Sync products
