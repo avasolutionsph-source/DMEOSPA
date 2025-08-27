@@ -4,8 +4,8 @@
     
     class ExpenseManager {
     constructor() {
-        // Get StateManager from window (it's loaded before this script)
-        this.stateManager = window.StateManager ? window.StateManager.getInstance() : null;
+        // Get StateManager from window (it's a singleton instance, not a class)
+        this.stateManager = window.StateManager || null;
         if (!this.stateManager) {
             console.warn('StateManager not available, using local storage fallback');
         }
@@ -29,69 +29,149 @@
 
     async showExpenseModal() {
         const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.style.display = 'block';
+        modal.className = 'modal active';
+        modal.style.cssText = 'display: flex !important; align-items: center !important; justify-content: center !important;';
         modal.innerHTML = `
-            <div class="modal-content">
+            <div class="modal-content" style="max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
                 <div class="modal-header">
                     <h2><i class="fas fa-receipt"></i> Add New Expense</h2>
-                    <span class="close" onclick="this.parentElement.parentElement.parentElement.remove()">&times;</span>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" style="padding: 1.5rem;">
                     <form id="expense-form">
-                        <div class="form-group">
-                            <label for="expense-category">Category</label>
-                            <select id="expense-category" required>
-                                <option value="">Select Category</option>
-                                <option value="Food & Dining">Food & Dining</option>
-                                <option value="Transportation">Transportation</option>
-                                <option value="Shopping">Shopping</option>
-                                <option value="Entertainment">Entertainment</option>
-                                <option value="Bills & Utilities">Bills & Utilities</option>
-                                <option value="Healthcare">Healthcare</option>
-                                <option value="Education">Education</option>
-                                <option value="Travel">Travel</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="expense-amount">Amount</label>
-                            <input type="number" id="expense-amount" placeholder="0.00" step="0.01" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="expense-description">Description</label>
-                            <input type="text" id="expense-description" placeholder="What did you spend on?" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="expense-date">Date</label>
-                            <input type="date" id="expense-date" required value="${new Date().toISOString().split('T')[0]}">
-                        </div>
-                        <div class="form-group">
-                            <label>Receipt Photo</label>
-                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                <button type="button" onclick="openCameraCapture()" style="
-                                    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-                                    color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem;
-                                    font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
-                                    flex: 1;
-                                ">
-                                    <i class="fas fa-camera"></i> Take Photo
-                                </button>
-                                <label for="expense-receipt" style="
-                                    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-                                    color: white; border: none; border-radius: 8px; padding: 0.5rem 1rem;
-                                    font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
-                                    flex: 1; justify-content: center;
-                                ">
-                                    <i class="fas fa-upload"></i> Upload File
-                                    <input type="file" id="expense-receipt" accept="image/*" onchange="handleImageUpload(this)" style="display: none;">
+                        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <div class="form-group">
+                                <label for="expense-category" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                                    Category <span class="required" style="color: #ef4444;">*</span>
                                 </label>
+                                <select id="expense-category" class="form-control" required style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
+                                    <option value="">Select Category</option>
+                                    <option value="Supplies">Supplies</option>
+                                    <option value="Equipment">Equipment</option>
+                                    <option value="Utilities">Utilities</option>
+                                    <option value="Marketing">Marketing</option>
+                                    <option value="Rent">Rent</option>
+                                    <option value="Salaries">Salaries</option>
+                                    <option value="Transportation">Transportation</option>
+                                    <option value="Maintenance">Maintenance</option>
+                                    <option value="Other">Other</option>
+                                </select>
                             </div>
-                            <div id="receipt-preview" style="margin-top: 0.5rem;"></div>
+                            <div class="form-group">
+                                <label for="expense-amount" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                                    Amount <span class="required" style="color: #ef4444;">*</span>
+                                </label>
+                                <div class="input-group" style="display: flex; align-items: center;">
+                                    <span class="input-addon" style="padding: 0.75rem 1rem; background: #f9fafb; border: 1px solid #e5e7eb; border-right: none; border-radius: 8px 0 0 8px; color: #6b7280;">₱</span>
+                                    <input type="number" id="expense-amount" class="form-control" placeholder="0.00" step="0.01" required style="flex: 1; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 0 8px 8px 0; font-size: 1rem;">
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-actions">
-                            <button type="submit">Save Expense</button>
-                            <button type="button" onclick="this.closest('.modal').remove()">Cancel</button>
+                        
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label for="expense-description" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                                Description <span class="required" style="color: #ef4444;">*</span>
+                            </label>
+                            <input type="text" id="expense-description" class="form-control" placeholder="What was this expense for?" required style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
+                        </div>
+                        
+                        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <div class="form-group">
+                                <label for="expense-date" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                                    Date <span class="required" style="color: #ef4444;">*</span>
+                                </label>
+                                <input type="date" id="expense-date" class="form-control" required value="${new Date().toISOString().split('T')[0]}" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
+                            </div>
+                            <div class="form-group">
+                                <label for="expense-vendor" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">
+                                    Vendor/Supplier
+                                </label>
+                                <input type="text" id="expense-vendor" class="form-control" placeholder="Optional" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">Receipt Photo</label>
+                            <div class="receipt-upload-container" style="border: 2px dashed #e5e7eb; border-radius: 12px; padding: 1.5rem; text-align: center; background: #f9fafb;">
+                                <div class="upload-buttons" style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 1rem;">
+                                    <button type="button" class="btn btn-secondary" onclick="if(window.expenseManager) window.expenseManager.openCameraCapture()" style="
+                                        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                                        color: white;
+                                        border: none;
+                                        border-radius: 8px;
+                                        padding: 0.75rem 1.5rem;
+                                        font-size: 1rem;
+                                        font-weight: 600;
+                                        cursor: pointer;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 0.5rem;
+                                        transition: all 0.2s ease;
+                                    " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                        <i class="fas fa-camera"></i> Take Photo
+                                    </button>
+                                    <label class="btn btn-primary" style="
+                                        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                                        color: white;
+                                        border: none;
+                                        border-radius: 8px;
+                                        padding: 0.75rem 1.5rem;
+                                        font-size: 1rem;
+                                        font-weight: 600;
+                                        cursor: pointer;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 0.5rem;
+                                        transition: all 0.2s ease;
+                                    " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                        <i class="fas fa-upload"></i> Upload File
+                                        <input type="file" id="expense-receipt" accept="image/*" onchange="if(window.expenseManager) window.expenseManager.handleImageUpload(this)" style="display: none;">
+                                    </label>
+                                </div>
+                                <div id="receipt-preview" class="receipt-preview"></div>
+                                <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">
+                                    <i class="fas fa-info-circle"></i> Attach a photo of your receipt for record keeping
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="expense-notes" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">Notes</label>
+                            <textarea id="expense-notes" class="form-control" rows="3" placeholder="Additional notes (optional)" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 1rem; resize: vertical;"></textarea>
+                        </div>
+                        
+                        <div class="form-actions" style="display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()" style="
+                                background: #f3f4f6;
+                                color: #374151;
+                                border: 1px solid #e5e7eb;
+                                border-radius: 8px;
+                                padding: 0.75rem 1.5rem;
+                                font-size: 1rem;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.2s ease;
+                            " onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary" style="
+                                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                                color: white;
+                                border: none;
+                                border-radius: 8px;
+                                padding: 0.75rem 1.5rem;
+                                font-size: 1rem;
+                                font-weight: 600;
+                                cursor: pointer;
+                                display: flex;
+                                align-items: center;
+                                gap: 0.5rem;
+                                transition: all 0.2s ease;
+                            " onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                <i class="fas fa-save"></i> Save Expense
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -173,52 +253,9 @@
     }
 
     async openCameraCapture() {
-        console.log('📸 Opening camera with enhanced detection...');
-        
-        try {
-            // Check if we're on HTTPS or localhost (required for camera access)
-            const isSecure = location.protocol === 'https:' || 
-                           location.hostname === 'localhost' || 
-                           location.hostname === '127.0.0.1';
-            
-            if (!isSecure) {
-                console.warn('⚠️ Camera requires HTTPS. Showing options...');
-                this.showCameraOptionsModal();
-                return;
-            }
-            
-            // Check if getUserMedia is available
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                console.warn('⚠️ getUserMedia not supported. Using fallback...');
-                this.fallbackToCameraInput();
-                return;
-            }
-            
-            // First, enumerate all available devices
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter(device => device.kind === 'videoinput');
-            
-            console.log(`🎥 Found ${videoDevices.length} camera device(s):`, videoDevices);
-            
-            if (videoDevices.length === 0) {
-                window.showError('No cameras detected. Please ensure your camera is connected and enabled.');
-                this.fallbackToCameraInput();
-                return;
-            }
-            
-            // Show device selection if multiple cameras
-            if (videoDevices.length > 1) {
-                await this.showCameraSelectionModal(videoDevices);
-            } else {
-                // Try to access the single camera with multiple constraint configurations
-                await this.tryMultipleCameraConfigurations(videoDevices[0]);
-            }
-            
-        } catch (error) {
-            console.error('❌ Camera initialization failed:', error);
-            window.showError(`Camera error: ${error.message}. Using file upload instead.`);
-            this.fallbackToCameraInput();
-        }
+        // Directly use HTML5 input capture API - most reliable across all browsers
+        console.log('📸 Opening camera capture...');
+        this.fallbackToCameraInput();
     }
 
     async tryMultipleCameraConfigurations(device = null) {
@@ -413,11 +450,16 @@
     }
 
     fallbackToCameraInput() {
-        // Create a file input that attempts to trigger camera on mobile
+        // Use HTML5 input capture API - most reliable method across all devices
+        console.log('📷 Using HTML5 capture API...');
+        
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
-        input.capture = 'environment'; // Prefer rear camera
+        
+        // Add capture attribute for mobile devices
+        // Set to 'camera' for better cross-platform compatibility
+        input.setAttribute('capture', 'camera');
         
         input.onchange = (e) => {
             const file = e.target.files[0];
@@ -435,7 +477,20 @@
             }
         };
         
-        input.click();
+        // Add to document temporarily for better compatibility
+        input.style.display = 'none';
+        document.body.appendChild(input);
+        
+        // Trigger click with small delay for better reliability
+        setTimeout(() => {
+            input.click();
+            // Clean up after a delay
+            setTimeout(() => {
+                if (input.parentNode) {
+                    input.parentNode.removeChild(input);
+                }
+            }, 1000);
+        }, 100);
     }
 
     showCameraModal(stream) {
