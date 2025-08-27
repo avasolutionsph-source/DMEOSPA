@@ -41,7 +41,8 @@
     "deny": [],
     "ask": [],
     "additionalDirectories": [
-      "C:\\Users\\opet_\\OneDrive\\Desktop\\AvasolutionsWebApp"
+      "C:\\Users\\opet_\\OneDrive\\Desktop\\AvasolutionsWebApp",
+      "C:\\Users\\opet_\\OneDrive\\Desktop"
     ]
   }
 }
