@@ -1193,7 +1193,8 @@
                 if (!token) return;
 
                 // Fetch real business stats from API
-                const response = await fetch('/api/business/stats', {
+                const apiBase = window.location.origin; // Use current origin
+                const response = await fetch(`${apiBase}/api/business/stats`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -1258,7 +1259,8 @@
                     return;
                 }
 
-                const response = await fetch('/api/business/employees', {
+                const apiBase = window.location.origin; // Use current origin
+                const response = await fetch(`${apiBase}/api/business/employees`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -1366,7 +1368,8 @@
                     return;
                 }
 
-                const response = await fetch('/api/business/inventory', {
+                const apiBase = window.location.origin; // Use current origin
+                const response = await fetch(`${apiBase}/api/business/inventory`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -1485,7 +1488,8 @@
                 console.log('🔧 Testing employee sync...');
                 
                 // First, let's see what the current user has in the database
-                const response = await fetch('/api/business/employees', {
+                const apiBase = window.location.origin; // Use current origin
+                const response = await fetch(`${apiBase}/api/business/employees`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -1542,7 +1546,8 @@ Check console for detailed data.`);
                 };
 
                 // Send directly to the sync endpoint
-                const response = await fetch('/api/employees/sync', {
+                const apiBase = window.location.origin; // Use current origin
+                const response = await fetch(`${apiBase}/api/employees/sync`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -1671,7 +1676,8 @@ The PWA will open now...`;
                 downloadBtn.style.pointerEvents = 'none';
 
                 // Fetch latest stats
-                const response = await fetch('/api/business/stats', {
+                const apiBase = window.location.origin; // Use current origin
+                const response = await fetch(`${apiBase}/api/business/stats`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
