@@ -193,6 +193,8 @@
         const amount = parseFloat(document.getElementById('expense-amount').value);
         const description = document.getElementById('expense-description').value;
         const date = document.getElementById('expense-date').value;
+        const vendor = document.getElementById('expense-vendor')?.value || '';
+        const notes = document.getElementById('expense-notes')?.value || '';
         
         const expense = {
             id: Date.now(),
@@ -200,6 +202,8 @@
             amount,
             description,
             date,
+            vendor,
+            notes,
             receipt: this.receiptImageData,
             timestamp: new Date().toISOString()
         };
@@ -218,7 +222,10 @@
             window.showSuccess('Expense added successfully!');
         }
         
-        // Refresh any expense displays
+        // Reload the expenses display immediately
+        await this.loadExpenses();
+        
+        // Also refresh the app display if needed
         if (window.app && window.app.currentFeature === 'expenses') {
             window.app.loadFeature('expenses');
         }
@@ -922,6 +929,7 @@
     
     async loadExpenses() {
         const expenses = this.getExpenses();
+        console.log('Loading expenses:', expenses);
         
         // Update dashboard stats if they exist
         const totalSpent = expenses.reduce((sum, exp) => sum + exp.amount, 0);
@@ -950,15 +958,30 @@
             countEl.textContent = expenses.length;
         }
         
-        // Find the expenses list container
+        // Find the expenses list container - check multiple possible locations
         let content = document.getElementById('expenses-list');
         
-        // If not found, try main-content
+        // Try alternative container IDs
+        if (!content) {
+            content = document.querySelector('.expenses-list');
+        }
+        
         if (!content) {
             content = document.getElementById('main-content');
         }
         
-        if (!content) return;
+        if (!content) {
+            // Try to find the expenses section
+            const expensesSection = document.querySelector('[data-feature="expenses"]');
+            if (expensesSection) {
+                content = expensesSection.querySelector('.content-area') || expensesSection;
+            }
+        }
+        
+        if (!content) {
+            console.error('Could not find expenses list container');
+            return;
+        }
         
         // Update expenses list content
         content.innerHTML = expenses.length === 0 ? `
