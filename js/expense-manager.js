@@ -255,86 +255,69 @@
     async openCameraCapture() {
         console.log('📸 Opening camera capture...');
         
-        // Try to use camera API for both desktop and mobile
-        // Remove the desktop detection to allow camera access on PC
-        
-        // Check if we're in a secure context (HTTPS or localhost)
-        const isSecureContext = window.isSecureContext;
-        const isLocalhost = ['localhost', '127.0.0.1', ''].includes(window.location.hostname);
-        
-        if (!isSecureContext && !isLocalhost) {
-            console.warn('Camera requires HTTPS or localhost. Using file input.');
+        // Check if we're in a secure context (required for camera)
+        if (!window.isSecureContext) {
+            console.log('Not in secure context, using file input');
             this.fallbackToCameraInput();
             return;
         }
         
-        // Check if getUserMedia is available
+        // Check if camera API is available
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            console.log('getUserMedia not supported. Using file input.');
+            console.log('Camera API not available, using file input');
             this.fallbackToCameraInput();
             return;
         }
         
         try {
-            // Check camera permission first if available
-            if (navigator.permissions && navigator.permissions.query) {
-                try {
-                    const permission = await navigator.permissions.query({ name: 'camera' });
-                    if (permission.state === 'denied') {
-                        console.log('Camera permission already denied. Using file input.');
-                        this.fallbackToCameraInput();
-                        return;
-                    }
-                } catch (e) {
-                    // Permission API not supported, continue
-                }
+            // Show loading state
+            if (window.showInfo) {
+                window.showInfo('Opening camera...');
             }
             
-            // Try to access camera - on desktop, this will use the default webcam
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            // Request camera permission and stream immediately
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { ideal: 'environment' }, // Prefer back camera but allow any
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                },
+                audio: false
+            });
             
-            const constraints = {
-                video: isMobile ? 
-                    { 
-                        facingMode: 'environment', // Use back camera on mobile
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
-                    } : 
-                    { 
-                        // For desktop, use any available camera
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
-                    },
-                audio: false 
-            };
-            
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            
-            // Create video element to show camera stream
+            // Camera opened successfully - show preview
+            console.log('Camera stream obtained successfully');
             this.showCameraPreview(stream);
             
         } catch (error) {
-            console.error('Camera access denied or blocked:', error.name, error.message);
+            console.error('Camera error:', error.name);
             
-            // Check if it's a permission error
+            // Handle specific errors
             if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-                // Permission denied - use file input directly
-                console.log('Camera permission denied. Using file input.');
+                if (window.showError) {
+                    window.showError('Camera permission denied. Please allow camera access and try again.');
+                }
+                // On permission denial, still open file input as fallback
                 this.fallbackToCameraInput();
             } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-                // No camera found
-                console.log('No camera found. Using file input.');
+                if (window.showError) {
+                    window.showError('No camera found. Using file upload instead.');
+                }
                 this.fallbackToCameraInput();
             } else {
-                // Try once more with basic constraints
+                // For other errors, try simplified constraints
                 try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                    const fallbackStream = await navigator.mediaDevices.getUserMedia({
                         video: true,
-                        audio: false 
+                        audio: false
                     });
-                    this.showCameraPreview(stream);
-                } catch (fallbackError) {
-                    console.error('Camera access failed completely:', fallbackError);
+                    console.log('Camera opened with fallback constraints');
+                    this.showCameraPreview(fallbackStream);
+                } catch (finalError) {
+                    console.error('Final camera attempt failed:', finalError);
+                    if (window.showError) {
+                        window.showError('Camera unavailable. Using file upload instead.');
+                    }
                     this.fallbackToCameraInput();
                 }
             }
@@ -342,37 +325,38 @@
     }
 
     showCameraPreview(stream) {
-        // Create modal for camera preview
+        // Create full-screen modal for camera preview (Instagram-style)
         const modal = document.createElement('div');
         modal.className = 'modal active';
-        modal.style.cssText = 'display: flex !important; align-items: center; justify-content: center; z-index: 10000;';
+        modal.style.cssText = 'display: flex !important; align-items: center; justify-content: center; z-index: 10000; background: rgba(0,0,0,0.95);';
         
         modal.innerHTML = `
-            <div class="modal-content" style="max-width: 600px; width: 90%; background: white; border-radius: 12px; overflow: hidden;">
-                <div class="modal-header" style="padding: 1rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600;"><i class="fas fa-camera"></i> Take Photo</h3>
-                    <button id="closeCameraBtn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">
+            <div class="modal-content" style="max-width: 90%; width: 600px; background: black; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+                <div class="modal-header" style="padding: 1rem; background: rgba(0,0,0,0.8); display: flex; justify-content: space-between; align-items: center; position: absolute; top: 0; left: 0; right: 0; z-index: 10;">
+                    <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600; color: white;"><i class="fas fa-camera"></i> Capture Receipt</h3>
+                    <button id="closeCameraBtn" style="background: rgba(255,255,255,0.2); border: none; font-size: 1.25rem; cursor: pointer; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
-                <div class="modal-body" style="padding: 1rem; text-align: center;">
-                    <video id="cameraVideo" autoplay playsinline style="width: 100%; max-width: 500px; border-radius: 8px; background: #000;"></video>
+                <div class="modal-body" style="padding: 0; text-align: center; position: relative;">
+                    <video id="cameraVideo" autoplay playsinline muted style="width: 100%; height: 500px; object-fit: cover; background: #000;"></video>
                     <canvas id="cameraCanvas" style="display: none;"></canvas>
-                    <img id="capturedPhoto" style="display: none; width: 100%; max-width: 500px; border-radius: 8px;">
+                    <img id="capturedPhoto" style="display: none; width: 100%; height: 500px; object-fit: contain; background: #000;">
                     
-                    <div style="margin-top: 1rem; display: flex; gap: 1rem; justify-content: center;">
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 1.5rem; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); display: flex; gap: 1rem; justify-content: center;">
                         <button id="captureBtn" style="
-                            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-                            color: white; border: none; border-radius: 8px;
-                            padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: 600;
-                            cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
-                        ">
-                            <i class="fas fa-camera"></i> Capture
+                            background: white;
+                            color: black; border: 3px solid white; border-radius: 50%;
+                            width: 70px; height: 70px; font-size: 1.5rem;
+                            cursor: pointer; display: flex; align-items: center; justify-content: center;
+                            transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                        " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                            <i class="fas fa-camera"></i>
                         </button>
                         <button id="retakeBtn" style="
                             display: none;
-                            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-                            color: white; border: none; border-radius: 8px;
+                            background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);
+                            color: white; border: 2px solid white; border-radius: 50px;
                             padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: 600;
                             cursor: pointer; align-items: center; gap: 0.5rem;
                         ">
@@ -380,12 +364,13 @@
                         </button>
                         <button id="usePhotoBtn" style="
                             display: none;
-                            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-                            color: white; border: none; border-radius: 8px;
-                            padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: 600;
+                            background: #10b981;
+                            color: white; border: none; border-radius: 50px;
+                            padding: 0.75rem 2rem; font-size: 1rem; font-weight: 600;
                             cursor: pointer; align-items: center; gap: 0.5rem;
+                            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
                         ">
-                            <i class="fas fa-check"></i> Use Photo
+                            <i class="fas fa-check"></i> Use This Photo
                         </button>
                     </div>
                 </div>
