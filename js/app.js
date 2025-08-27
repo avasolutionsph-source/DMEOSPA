@@ -890,103 +890,37 @@ class App {
         return this.businessConfig?.features?.[featureName] || false;
     }
 
-    // Update feature access based on entitlements
+    // Update feature access - all features are now enabled
     updateFeatureAccess(entitlements) {
-        if (!entitlements) {
-            console.warn('No entitlements provided to updateFeatureAccess');
-            return;
-        }
+        console.log('🔓 All features enabled - no subscription restrictions');
 
-        console.log('🔐 Updating feature access based on entitlements:', entitlements);
-
-        // Update navigation items visibility based on entitlements
+        // Enable all navigation items
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(item => {
-            const page = item.dataset.page;
+            // Remove all restrictions
+            item.classList.remove('locked', 'premium-locked');
+            item.style.opacity = '1';
             
-            // Check if user has access to this feature
-            let hasAccess = false;
-            switch(page) {
-                case 'dashboard':
-                    hasAccess = entitlements.dashboard !== 'none';
-                    break;
-                case 'pos':
-                    hasAccess = entitlements.pos === true;
-                    break;
-                case 'products':
-                case 'inventory':
-                    hasAccess = entitlements.inventory === true;
-                    break;
-                case 'employees':
-                    hasAccess = entitlements.employees === true;
-                    break;
-                case 'rooms':
-                    hasAccess = entitlements.rooms === true;
-                    break;
-                case 'gift-certificates':
-                    hasAccess = entitlements['gift-certificates'] === true;
-                    break;
-                case 'expenses':
-                    hasAccess = entitlements.expenses === true;
-                    break;
-                case 'chatbot':
-                    hasAccess = entitlements.chatbot === true;
-                    break;
-                case 'settings':
-                    hasAccess = true; // Settings always accessible
-                    break;
-                default:
-                    hasAccess = true; // Unknown features default to accessible
-            }
-            
-            // Apply visual changes based on access
-            if (!hasAccess) {
-                item.classList.add('locked', 'premium-locked');
-                item.style.opacity = '0.6';
-                
-                // Add lock icon if not present
-                if (!item.querySelector('.fa-lock')) {
-                    const lockIcon = document.createElement('i');
-                    lockIcon.className = 'fas fa-lock';
-                    lockIcon.style.marginLeft = '5px';
-                    lockIcon.style.fontSize = '0.8em';
-                    item.querySelector('span').appendChild(lockIcon);
-                }
-            } else {
-                item.classList.remove('locked', 'premium-locked');
-                item.style.opacity = '1';
-                
-                // Remove lock icon if present
-                const lockIcon = item.querySelector('.fa-lock');
-                if (lockIcon) {
-                    lockIcon.remove();
-                }
+            // Remove any lock icons
+            const lockIcon = item.querySelector('.fa-lock');
+            if (lockIcon) {
+                lockIcon.remove();
             }
         });
 
-        // Update dashboard based on entitlements
-        if (entitlements.dashboard === 'basic') {
-            // Hide advanced analytics charts
-            const advancedCharts = document.querySelectorAll('.advanced-chart, .analytics-pro');
-            advancedCharts.forEach(chart => {
-                chart.style.display = 'none';
-            });
+        // Show all advanced features
+        const advancedCharts = document.querySelectorAll('.advanced-chart, .analytics-pro');
+        advancedCharts.forEach(chart => {
+            chart.style.display = '';
+        });
+
+        // Show employee selection in POS
+        const employeeSelect = document.getElementById('employeeSelect');
+        if (employeeSelect) {
+            employeeSelect.style.display = '';
         }
 
-        // Update POS features based on entitlements
-        if (!entitlements.employees) {
-            // Hide employee selection in POS
-            const employeeSelect = document.getElementById('employeeSelect');
-            if (employeeSelect) {
-                employeeSelect.style.display = 'none';
-            }
-        }
-
-        // Update analytics history based on plan limits
-        if (typeof entitlements.analyticsHistory === 'number' && entitlements.analyticsHistory > 0) {
-            // Limit analytics data to specified days
-            console.log(`📊 Analytics limited to ${entitlements.analyticsHistory} days`);
-        }
+        console.log('✅ All features activated');
     }
 
     // Add this method to check if a module is enabled
