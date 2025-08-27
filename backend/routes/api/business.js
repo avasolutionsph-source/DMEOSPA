@@ -157,7 +157,7 @@ router.get('/employees', async (req, res) => {
 // GET /api/business/inventory - Get inventory data
 router.get('/inventory', async (req, res) => {
   try {
-    const Inventory = (await import('../../models/Inventory.js')).default;
+    const Inventory = (await import('../../models/InventoryItem.js')).default;
     const userId = req.userId || req.user?.userId || req.user?.id;
     
     const inventory = await Inventory.find({ userId });

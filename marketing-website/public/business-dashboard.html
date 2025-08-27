@@ -1193,7 +1193,7 @@
                 if (!token) return;
 
                 // Fetch real business stats from API
-                const apiBase = window.location.origin; // Use current origin
+                const apiBase = 'https://ava-pwa-backend.onrender.com'; // Direct backend URL
                 const response = await fetch(`${apiBase}/api/business/stats`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -1259,7 +1259,7 @@
                     return;
                 }
 
-                const apiBase = window.location.origin; // Use current origin
+                const apiBase = 'https://ava-pwa-backend.onrender.com'; // Direct backend URL
                 const response = await fetch(`${apiBase}/api/business/employees`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -1368,7 +1368,7 @@
                     return;
                 }
 
-                const apiBase = window.location.origin; // Use current origin
+                const apiBase = 'https://ava-pwa-backend.onrender.com'; // Direct backend URL
                 const response = await fetch(`${apiBase}/api/business/inventory`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -1488,7 +1488,7 @@
                 console.log('🔧 Testing employee sync...');
                 
                 // First, let's see what the current user has in the database
-                const apiBase = window.location.origin; // Use current origin
+                const apiBase = 'https://ava-pwa-backend.onrender.com'; // Direct backend URL
                 const response = await fetch(`${apiBase}/api/business/employees`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -1546,7 +1546,7 @@ Check console for detailed data.`);
                 };
 
                 // Send directly to the sync endpoint
-                const apiBase = window.location.origin; // Use current origin
+                const apiBase = 'https://ava-pwa-backend.onrender.com'; // Direct backend URL
                 const response = await fetch(`${apiBase}/api/employees/sync`, {
                     method: 'POST',
                     headers: {
@@ -1676,7 +1676,7 @@ The PWA will open now...`;
                 downloadBtn.style.pointerEvents = 'none';
 
                 // Fetch latest stats
-                const apiBase = window.location.origin; // Use current origin
+                const apiBase = 'https://ava-pwa-backend.onrender.com'; // Direct backend URL
                 const response = await fetch(`${apiBase}/api/business/stats`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,

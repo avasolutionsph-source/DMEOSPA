@@ -2,7 +2,7 @@ import express from 'express';
 import { optionalAuth } from '../../middleware/auth.js';
 import logger from '../../utils/logger.js';
 import Product from '../../models/Product.js';
-import Inventory from '../../models/Inventory.js';
+import Inventory from '../../models/InventoryItem.js';
 import Transaction from '../../models/Transaction.js';
 import Employee from '../../models/Employee.js';
 
