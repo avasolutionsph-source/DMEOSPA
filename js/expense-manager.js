@@ -255,22 +255,15 @@
     async openCameraCapture() {
         console.log('📸 Opening camera capture...');
         
-        // Detect if desktop browser (better to use file input on desktop)
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                        (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
-        
-        if (!isMobile) {
-            console.log('Desktop browser detected. Using file input for better experience.');
-            this.fallbackToCameraInput();
-            return;
-        }
+        // Try to use camera API for both desktop and mobile
+        // Remove the desktop detection to allow camera access on PC
         
         // Check if we're in a secure context (HTTPS or localhost)
         const isSecureContext = window.isSecureContext;
         const isLocalhost = ['localhost', '127.0.0.1', ''].includes(window.location.hostname);
         
         if (!isSecureContext && !isLocalhost) {
-            console.warn('Camera requires HTTPS. Using file input.');
+            console.warn('Camera requires HTTPS or localhost. Using file input.');
             this.fallbackToCameraInput();
             return;
         }
@@ -297,15 +290,25 @@
                 }
             }
             
-            // Try to access camera with environment facing preference
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    facingMode: 'environment', // Use back camera on mobile
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
-                },
+            // Try to access camera - on desktop, this will use the default webcam
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            const constraints = {
+                video: isMobile ? 
+                    { 
+                        facingMode: 'environment', // Use back camera on mobile
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    } : 
+                    { 
+                        // For desktop, use any available camera
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
                 audio: false 
-            });
+            };
+            
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
             
             // Create video element to show camera stream
             this.showCameraPreview(stream);
