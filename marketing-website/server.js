@@ -170,7 +170,7 @@ app.get('/api/business/employees', async (req, res) => {
     }
 
     // Forward request to PWA backend
-    const pwaBackendUrl = 'https://ava-pwa-backend.onrender.com';
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';
     const response = await fetch(`${pwaBackendUrl}/api/business/employees`, {
       method: 'GET',
       headers: {
@@ -202,7 +202,7 @@ app.get('/api/business/inventory', async (req, res) => {
     }
 
     // Forward request to PWA backend
-    const pwaBackendUrl = 'https://ava-pwa-backend.onrender.com';
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';
     const response = await fetch(`${pwaBackendUrl}/api/business/inventory`, {
       method: 'GET',
       headers: {
@@ -234,7 +234,7 @@ app.get('/api/business/stats', async (req, res) => {
     }
 
     // Forward request to PWA backend
-    const pwaBackendUrl = 'https://ava-pwa-backend.onrender.com';
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';
     const response = await fetch(`${pwaBackendUrl}/api/business/stats`, {
       method: 'GET',
       headers: {
@@ -425,7 +425,7 @@ app.use('*', (req, res) => {
   }
 });
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001;
 app.listen(port, () => {
   console.log(`🌐 Ava Solutions Marketing Website running on port ${port}`);
   console.log(`🏠 Homepage: http://localhost:${port}`);

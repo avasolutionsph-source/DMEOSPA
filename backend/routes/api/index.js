@@ -4,11 +4,11 @@
 import { Router } from 'express';
 import authRoutes from './auth.js';
 import userRoutes from './user.js';
-// import businessRoutes from './business.js';
-// import productsRoutes from './products.js';
-// import inventoryRoutes from './inventory.js';
-// import employeesRoutes from './employees.js';
-// import transactionsRoutes from './transactions.js';
+import businessRoutes from './business.js';
+import productsRoutes from './products.js';
+import inventoryRoutes from './inventory.js';
+import employeesRoutes from './employees.js';
+import transactionsRoutes from './transactions.js';
 // import subscriptionRoutes from './subscription.js';
 // import settingsRoutes from './settings.js';
 // import analyticsRoutes from './analytics.js';
@@ -69,12 +69,12 @@ router.use('/chatbot', chatbotRoutes);
 // Sync routes (optional auth for now)
 router.use('/sync', syncSimpleRoutes);
 
-// Commented out routes that don't have implementations yet
-// router.use('/products', optionalAuth, productsRoutes);
-// router.use('/business', authenticateJWT, businessRoutes);
-// router.use('/inventory', authenticateJWT, inventoryRoutes);
-// router.use('/employees', authenticateJWT, employeesRoutes);
-// router.use('/transactions', authenticateJWT, transactionsRoutes);
+// Business and data management routes (with authentication)
+router.use('/products', optionalAuth, productsRoutes);
+router.use('/business', authenticateJWT, businessRoutes);
+router.use('/inventory', authenticateJWT, inventoryRoutes);
+router.use('/employees', authenticateJWT, employeesRoutes);
+router.use('/transactions', authenticateJWT, transactionsRoutes);
 // router.use('/subscription', authenticateJWT, subscriptionRoutes);
 // router.use('/settings', authenticateJWT, settingsRoutes);
 // router.use('/analytics', authenticateJWT, analyticsRoutes);
