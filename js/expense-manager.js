@@ -1093,8 +1093,109 @@
     }
 
     editExpense(id) {
-        // Implementation for editing expense
-        console.log('Edit expense:', id);
+        const expenses = this.getExpenses();
+        const expense = expenses.find(exp => exp.id === id);
+        
+        if (!expense) {
+            console.error('Expense not found:', id);
+            return;
+        }
+        
+        // Create edit modal
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.style.cssText = 'display: flex !important; align-items: center !important; justify-content: center !important;';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h2><i class="fas fa-edit"></i> Edit Expense</h2>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="edit-expense-form" style="padding: 1.5rem;">
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label for="edit-expense-category" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Category *</label>
+                        <select id="edit-expense-category" required style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px;">
+                            <option value="Supplies" ${expense.category === 'Supplies' ? 'selected' : ''}>Supplies</option>
+                            <option value="Equipment" ${expense.category === 'Equipment' ? 'selected' : ''}>Equipment</option>
+                            <option value="Utilities" ${expense.category === 'Utilities' ? 'selected' : ''}>Utilities</option>
+                            <option value="Marketing" ${expense.category === 'Marketing' ? 'selected' : ''}>Marketing</option>
+                            <option value="Travel" ${expense.category === 'Travel' ? 'selected' : ''}>Travel</option>
+                            <option value="Office" ${expense.category === 'Office' ? 'selected' : ''}>Office</option>
+                            <option value="Other" ${expense.category === 'Other' ? 'selected' : ''}>Other</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div class="form-group">
+                            <label for="edit-expense-amount" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Amount *</label>
+                            <div style="position: relative;">
+                                <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #6b7280;">₱</span>
+                                <input type="number" id="edit-expense-amount" value="${expense.amount}" required step="0.01" style="width: 100%; padding: 0.75rem 0.75rem 0.75rem 2rem; border: 1px solid #e5e7eb; border-radius: 8px;">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-expense-date" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Date *</label>
+                            <input type="date" id="edit-expense-date" value="${expense.date}" required style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label for="edit-expense-description" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Description *</label>
+                        <input type="text" id="edit-expense-description" value="${expense.description || ''}" required placeholder="What was this expense for?" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px;">
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label for="edit-expense-vendor" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Vendor/Supplier</label>
+                        <input type="text" id="edit-expense-vendor" value="${expense.vendor || ''}" placeholder="Optional" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px;">
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label for="edit-expense-notes" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Notes</label>
+                        <textarea id="edit-expense-notes" rows="3" placeholder="Additional notes (optional)" style="width: 100%; padding: 0.75rem; border: 1px solid #e5e7eb; border-radius: 8px;">${expense.notes || ''}</textarea>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                        <button type="button" onclick="this.closest('.modal').remove()" style="padding: 0.75rem 1.5rem; border: 1px solid #e5e7eb; background: white; color: #6b7280; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                            Cancel
+                        </button>
+                        <button type="submit" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Handle form submission
+        document.getElementById('edit-expense-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Update expense
+            expense.category = document.getElementById('edit-expense-category').value;
+            expense.amount = parseFloat(document.getElementById('edit-expense-amount').value);
+            expense.description = document.getElementById('edit-expense-description').value;
+            expense.date = document.getElementById('edit-expense-date').value;
+            expense.vendor = document.getElementById('edit-expense-vendor').value;
+            expense.notes = document.getElementById('edit-expense-notes').value;
+            
+            // Save updated expenses
+            this.saveExpenses(expenses);
+            
+            // Show success message
+            if (window.showSuccess) {
+                window.showSuccess('Expense updated successfully!');
+            }
+            
+            // Reload expenses display
+            await this.loadExpenses();
+            
+            // Close modal
+            modal.remove();
+        });
     }
 
     deleteExpense(id) {
