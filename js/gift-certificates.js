@@ -1,4 +1,5 @@
-// Gift Certificate Management System
+// Gift Certificate Management System v2.1 - Modern Button Styling
+console.log('🎫 Loading Gift Certificate System v2.1 with modern button styling');
 // Check if already defined
 if (!window.GiftCertificateManager) {
 
@@ -133,6 +134,17 @@ class GiftCertificateManager {
     }
 
     async createCertificate(data) {
+        // Calculate expiration date
+        let expirationDate;
+        if (data.expirationDate) {
+            expirationDate = new Date(data.expirationDate).toISOString();
+        } else {
+            const validityDays = parseInt(data.validityDays) || 365;
+            expirationDate = new Date();
+            expirationDate.setDate(expirationDate.getDate() + validityDays);
+            expirationDate = expirationDate.toISOString();
+        }
+        
         const certificate = {
             id: Date.now(), // Add ID for main database
             controlNumber: this.generateControlNumber(),
@@ -143,6 +155,7 @@ class GiftCertificateManager {
             message: data.personalMessage || data.message || '', // Handle both field names
             status: 'active',
             createdDate: new Date().toISOString(),
+            expirationDate: expirationDate,
             expiryDate: data.expiryDate || this.calculateExpiryDate(data.validityDays || 365),
             issuedBy: localStorage.getItem('userName') || 'System',
             design: await this.generateAIDesign(data),
@@ -155,6 +168,10 @@ class GiftCertificateManager {
             // Use main app database add method
             await window.db.add('products', certificate);
             this.certificates.push(certificate);
+            
+            // Save to localStorage as backup
+            localStorage.setItem('giftCertificates', JSON.stringify(this.certificates));
+            
             this.updateDashboard();
             this.renderCertificatesList();
             return certificate;
@@ -172,15 +189,37 @@ class GiftCertificateManager {
 
     async loadCertificates() {
         try {
-            // Load gift certificates from main database
-            const allProducts = await window.db.getAll('products');
-            this.certificates = allProducts.filter(item => item.type === 'gift_certificate');
+            // Try loading from database first
+            if (window.db) {
+                const allProducts = await window.db.getAll('products');
+                const dbCertificates = allProducts.filter(item => item.type === 'gift_certificate');
+                
+                // Also check localStorage for backup
+                const storedCertificates = localStorage.getItem('giftCertificates');
+                const localCertificates = storedCertificates ? JSON.parse(storedCertificates) : [];
+                
+                // Merge both sources, removing duplicates by ID
+                const certificatesMap = new Map();
+                [...dbCertificates, ...localCertificates].forEach(cert => {
+                    certificatesMap.set(cert.id || cert.controlNumber, cert);
+                });
+                
+                this.certificates = Array.from(certificatesMap.values());
+            } else {
+                // Fallback to localStorage only
+                const storedCertificates = localStorage.getItem('giftCertificates');
+                this.certificates = storedCertificates ? JSON.parse(storedCertificates) : [];
+            }
+            
+            console.log('Loaded certificates:', this.certificates);
             this.checkExpiredCertificates();
             return this.certificates;
         } catch (error) {
             console.error('Error loading certificates:', error);
-            this.certificates = [];
-            return [];
+            // Try localStorage as final fallback
+            const storedCertificates = localStorage.getItem('giftCertificates');
+            this.certificates = storedCertificates ? JSON.parse(storedCertificates) : [];
+            return this.certificates;
         }
     }
 
@@ -336,6 +375,7 @@ class GiftCertificateManager {
     }
 
     renderCertificatesList() {
+        console.log('🔄 Rendering certificates list with modern button styling v2.1');
         const container = document.getElementById('certificates-list');
         if (!container) {
             console.log('Certificate list container not found, will retry...');
@@ -882,10 +922,6 @@ class GiftCertificateManager {
                     console.log('Opening validate modal...');
                     self.showValidateModal();
                     break;
-                case 'export-certificates-btn':
-                    console.log('Exporting certificates...');
-                    self.exportCertificates();
-                    break;
                 case 'perform-validation-btn':
                     console.log('Performing validation...');
                     self.performValidation();
@@ -1010,8 +1046,30 @@ class GiftCertificateManager {
                         </div>
                         <div class="form-group">
                             <label for="validityDays"><i class="fas fa-clock" style="margin-right: 0.5rem; color: var(--primary-color);"></i>Validity (Days)</label>
-                            <input type="number" id="validityDays" name="validityDays" value="365" min="1" placeholder="365" style="padding: 0.75rem; border: 2px solid var(--gray-200); border-radius: 8px; font-size: 1rem; width: 100%; margin-top: 0.25rem;">
+                            <input type="number" id="validityDays" name="validityDays" value="365" min="1" placeholder="365" style="padding: 0.75rem; border: 2px solid var(--gray-200); border-radius: 8px; font-size: 1rem; width: 100%; margin-top: 0.25rem;" onchange="updateExpirationDate()">
                         </div>
+                        <div class="form-group">
+                            <label for="expirationDate"><i class="fas fa-calendar-check" style="margin-right: 0.5rem; color: var(--primary-color);"></i>Expiration Date *</label>
+                            <input type="date" id="expirationDate" name="expirationDate" required style="padding: 0.75rem; border: 2px solid var(--gray-200); border-radius: 8px; font-size: 1rem; width: 100%; margin-top: 0.25rem;" onchange="updateValidityDays()">
+                            <small style="color: var(--gray-600); display: block; margin-top: 0.25rem;">Certificate will expire on this date</small>
+                        </div>
+                        <script>
+                            function updateExpirationDate() {
+                                const validityDays = document.getElementById('validityDays').value || 365;
+                                const expirationDate = new Date();
+                                expirationDate.setDate(expirationDate.getDate() + parseInt(validityDays));
+                                document.getElementById('expirationDate').value = expirationDate.toISOString().split('T')[0];
+                            }
+                            function updateValidityDays() {
+                                const expirationDate = new Date(document.getElementById('expirationDate').value);
+                                const today = new Date();
+                                const diffTime = Math.abs(expirationDate - today);
+                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                document.getElementById('validityDays').value = diffDays;
+                            }
+                            // Set initial expiration date
+                            updateExpirationDate();
+                        </script>
                         <div class="form-actions" style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: flex-end;">
                             <button type="button" class="btn-secondary" data-action="close-modal" style="padding: 0.75rem 1.5rem; border: 2px solid var(--gray-300); background: white; color: var(--gray-700); border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;">Cancel</button>
                             <button type="submit" class="btn-primary" style="padding: 0.75rem 1.5rem; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;"><i class="fas fa-plus" style="margin-right: 0.5rem;"></i>Create Certificate</button>
@@ -1146,28 +1204,6 @@ class GiftCertificateManager {
         }
     }
 
-    async exportCertificates() {
-        const certificates = this.getFilteredCertificates();
-        const csv = [
-            ['Control Number', 'Recipient', 'Value', 'Remaining Value', 'Status', 'Created Date', 'Expiry Date'].join(','),
-            ...certificates.map(c => [
-                c.controlNumber,
-                c.recipientName,
-                c.value,
-                c.remainingValue,
-                c.status,
-                new Date(c.createdDate).toLocaleDateString(),
-                new Date(c.expiryDate).toLocaleDateString()
-            ].join(','))
-        ].join('\n');
-
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `gift-certificates-${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-    }
 }
 
 // Export for use in other modules
@@ -1202,7 +1238,7 @@ window.loadGiftCertificates = window.loadGiftCertificates || async function() {
         console.log('Gift Certificate Manager initialized');
         
         // Verify methods exist
-        const requiredMethods = ['showCreateModal', 'showValidateModal', 'exportCertificates', 'renderCertificatesList'];
+        const requiredMethods = ['showCreateModal', 'showValidateModal', 'renderCertificatesList'];
         const missingMethods = requiredMethods.filter(method => 
             typeof window.giftCertificateManager[method] !== 'function'
         );
@@ -1215,7 +1251,6 @@ window.loadGiftCertificates = window.loadGiftCertificates || async function() {
             // Make methods globally accessible as fallback
             window.showGCCreateModal = () => window.giftCertificateManager.showCreateModal();
             window.showGCValidateModal = () => window.giftCertificateManager.showValidateModal();
-            window.exportGCCertificates = () => window.giftCertificateManager.exportCertificates();
             
             console.log('Global helper functions created');
         }
