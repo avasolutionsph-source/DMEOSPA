@@ -73,7 +73,7 @@ router.post('/register', [
   }
 });
 
-// Login
+// Login - PROXY TO PWA BACKEND FOR UNIFIED AUTH
 router.post('/login', [
   body('email').isEmail().normalizeEmail(),
   body('password').isLength({ min: 1 })
@@ -86,47 +86,40 @@ router.post('/login', [
 
     const { email, password } = req.body;
 
-    // Find user
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // Check password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // Update last active
-    user.businessMetrics.lastActiveDate = new Date();
-    await user.save();
-
-    // Generate JWT
-    const token = jwt.sign(
-      { 
-        userId: user._id, 
-        email: user.email, 
-        role: user.role,
-        subscriptionPlan: user.subscriptionPlan,
-        businessName: user.businessName
+    // Forward login request to PWA backend for unified authentication
+    console.log(`🔐 Forwarding login request for ${email} to PWA backend`);
+    const pwaBackendUrl = 'https://ava-pwa-backend.onrender.com';
+    
+    const response = await fetch(`${pwaBackendUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
       },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: process.env.JWT_EXPIRE || '999y' }
-    );
+      body: JSON.stringify({ email, password })
+    });
 
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error(`❌ PWA backend login failed for ${email}:`, data.error);
+      return res.status(response.status).json({ error: data.error || 'Login failed' });
+    }
+
+    console.log(`✅ PWA backend login successful for ${email}`);
+    
+    // Return PWA backend's response (includes token and user data)
     res.json({
       success: true,
       message: 'Login successful',
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        businessName: user.businessName,
-        subscriptionPlan: user.subscriptionPlan,
-        role: user.role
+      token: data.token,
+      user: data.user || {
+        id: data.userId,
+        email: email,
+        firstName: data.firstName || email.split('@')[0],
+        lastName: data.lastName || '',
+        businessName: data.businessName || email.split('@')[0],
+        subscriptionPlan: data.subscriptionPlan || 'free',
+        role: data.role || 'user'
       }
     });
   } catch (error) {

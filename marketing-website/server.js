@@ -161,7 +161,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api', syncRoutes); // Mount sync routes under /api
 
-// Business employees endpoint
+// Business employees endpoint - PROXY TO PWA BACKEND
 app.get('/api/business/employees', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
@@ -169,34 +169,31 @@ app.get('/api/business/employees', async (req, res) => {
       return res.status(401).json({ error: 'No token provided' });
     }
 
-    const jwt = await import('jsonwebtoken');
-    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    
-    const User = (await import('./models/User.js')).default;
-    const user = await User.findById(decoded.userId);
-    
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Return detailed employee data
-    console.log('📋 Fetching employees for user:', decoded.userId);
-    console.log('👥 Found employees:', user.employees?.length || 0);
-    console.log('📊 Employee data:', user.employees?.map(emp => ({ name: emp.name, position: emp.position })) || []);
-    
-    res.json({
-      employees: user.employees || [],
-      totalEmployees: user.businessMetrics?.totalEmployees || 0,
-      lastSyncDate: user.businessMetrics?.lastSyncDate || null
+    // Forward request to PWA backend
+    const pwaBackendUrl = 'https://ava-pwa-backend.onrender.com';
+    const response = await fetch(`${pwaBackendUrl}/api/business/employees`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
 
+    if (!response.ok) {
+      const error = await response.text();
+      return res.status(response.status).json({ error: error || 'Failed to fetch from PWA backend' });
+    }
+
+    const data = await response.json();
+    res.json(data);
+
   } catch (error) {
-    console.error('Business employees error:', error);
+    console.error('Business employees proxy error:', error);
     res.status(500).json({ error: 'Failed to fetch employee data' });
   }
 });
 
-// Business inventory endpoint
+// Business inventory endpoint - PROXY TO PWA BACKEND
 app.get('/api/business/inventory', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
@@ -204,39 +201,31 @@ app.get('/api/business/inventory', async (req, res) => {
       return res.status(401).json({ error: 'No token provided' });
     }
 
-    const jwt = await import('jsonwebtoken');
-    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    
-    const User = (await import('./models/User.js')).default;
-    const user = await User.findById(decoded.userId);
-    
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Return detailed inventory data
-    console.log('📦 Fetching inventory for user:', decoded.userId);
-    console.log('📦 Found inventory items:', user.inventory?.length || 0);
-    
-    res.json({
-      inventory: user.inventory || [],
-      totalItems: user.inventory?.length || 0,
-      lowStockItems: user.inventory?.filter(item => 
-        item.quantity <= (item.minStock || 5)
-      ).length || 0,
-      outOfStockItems: user.inventory?.filter(item => 
-        item.quantity === 0
-      ).length || 0,
-      lastSyncDate: user.businessMetrics?.lastSyncDate || null
+    // Forward request to PWA backend
+    const pwaBackendUrl = 'https://ava-pwa-backend.onrender.com';
+    const response = await fetch(`${pwaBackendUrl}/api/business/inventory`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
 
+    if (!response.ok) {
+      const error = await response.text();
+      return res.status(response.status).json({ error: error || 'Failed to fetch from PWA backend' });
+    }
+
+    const data = await response.json();
+    res.json(data);
+
   } catch (error) {
-    console.error('Business inventory error:', error);
+    console.error('Business inventory proxy error:', error);
     res.status(500).json({ error: 'Failed to fetch inventory data' });
   }
 });
 
-// Business stats endpoint
+// Business stats endpoint - PROXY TO PWA BACKEND
 app.get('/api/business/stats', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
@@ -244,35 +233,26 @@ app.get('/api/business/stats', async (req, res) => {
       return res.status(401).json({ error: 'No token provided' });
     }
 
-    const jwt = await import('jsonwebtoken');
-    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    
-    // Import User model
-    const User = (await import('./models/User.js')).default;
-    const user = await User.findById(decoded.userId);
-    
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Return user's business metrics including time-based data
-    res.json({
-      totalSales: user.businessMetrics?.totalSales || 0,
-      totalTransactions: user.businessMetrics?.totalTransactions || 0,
-      totalProducts: user.businessMetrics?.totalProducts || 0,
-      totalEmployees: user.businessMetrics?.totalEmployees || 0,
-      // Time-based sales data
-      todaySales: user.businessMetrics?.todaySales || 0,
-      todayTransactions: user.businessMetrics?.todayTransactions || 0,
-      monthSales: user.businessMetrics?.monthSales || 0,
-      monthTransactions: user.businessMetrics?.monthTransactions || 0,
-      yearSales: user.businessMetrics?.yearSales || 0,
-      yearTransactions: user.businessMetrics?.yearTransactions || 0,
-      lastSyncDate: user.businessMetrics?.lastSyncDate || null
+    // Forward request to PWA backend
+    const pwaBackendUrl = 'https://ava-pwa-backend.onrender.com';
+    const response = await fetch(`${pwaBackendUrl}/api/business/stats`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
 
+    if (!response.ok) {
+      const error = await response.text();
+      return res.status(response.status).json({ error: error || 'Failed to fetch from PWA backend' });
+    }
+
+    const data = await response.json();
+    res.json(data);
+
   } catch (error) {
-    console.error('Business stats error:', error);
+    console.error('Business stats proxy error:', error);
     res.status(500).json({ error: 'Failed to fetch business stats' });
   }
 });
