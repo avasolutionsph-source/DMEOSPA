@@ -390,7 +390,7 @@ app.get('/business-dashboard', (req, res) => {
 
 // Dashboard redirect (redirect to PWA for direct access)
 app.get('/dashboard', (req, res) => {
-  res.redirect('http://localhost:8080');
+  res.redirect('https://ava-solutions-pwa.netlify.app');
 });
 
 // Handle upgrade plan routes
