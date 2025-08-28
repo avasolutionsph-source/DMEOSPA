@@ -39,7 +39,8 @@
       "Bash(setup-pwa-repository.bat)",
       "Bash(npm run dev:*)",
       "Bash(taskkill:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": [],
