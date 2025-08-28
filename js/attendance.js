@@ -56,6 +56,13 @@ class AttendanceManager {
                 if (checkinBtn) {
                     checkinBtn.disabled = !e.target.value;
                 }
+                
+                // Also enable/disable facial recognition based on selection
+                const captureBtn = document.getElementById('captureBtn');
+                if (captureBtn && this.stream) {
+                    // Keep capture button enabled when camera is running, regardless of dropdown
+                    captureBtn.disabled = false;
+                }
             });
         }
         
@@ -124,11 +131,25 @@ class AttendanceManager {
 
     populateEmployeeDropdown() {
         const select = document.getElementById('employeeSelect');
-        if (!select) return;
+        if (!select) {
+            console.error('❌ [ATTENDANCE] Employee select element not found');
+            return;
+        }
         
         // Clear existing options except the first one
         while (select.children.length > 1) {
             select.removeChild(select.lastChild);
+        }
+        
+        console.log('📊 [ATTENDANCE] Populating dropdown with employees:', this.employees.length);
+        
+        if (this.employees.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No employees found - Add employees first';
+            option.disabled = true;
+            select.appendChild(option);
+            return;
         }
         
         // Add employee options
@@ -137,11 +158,20 @@ class AttendanceManager {
             option.value = employee.id;
             option.textContent = `${employee.name} - ${employee.position || 'Employee'}`;
             select.appendChild(option);
+            console.log('👤 [ATTENDANCE] Added employee:', employee.name);
         });
     }
 
     async startCamera() {
         try {
+            console.log('📷 [ATTENDANCE] Starting camera...');
+            
+            // Check if navigator.mediaDevices is available
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('Camera API not supported in this browser');
+            }
+            
+            // Request camera access
             this.stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { 
                     facingMode: 'user',
@@ -151,25 +181,55 @@ class AttendanceManager {
             });
             
             const video = document.getElementById('faceVideo');
-            if (video) {
-                video.srcObject = this.stream;
-                
-                // Update button states
-                document.getElementById('startCameraBtn').disabled = true;
-                document.getElementById('stopCameraBtn').disabled = false;
-                document.getElementById('captureBtn').disabled = false;
-                
-                console.log('📷 [ATTENDANCE] Camera started successfully');
-                
-                // Show notification
-                if (window.showNotification) {
-                    window.showNotification('Camera started successfully', 'success');
-                }
+            if (!video) {
+                throw new Error('Video element not found');
             }
+            
+            // Set up video element
+            video.srcObject = this.stream;
+            
+            // Wait for video to load
+            await new Promise((resolve, reject) => {
+                video.onloadedmetadata = () => {
+                    video.play()
+                        .then(resolve)
+                        .catch(reject);
+                };
+                video.onerror = reject;
+            });
+            
+            // Update button states
+            const startBtn = document.getElementById('startCameraBtn');
+            const stopBtn = document.getElementById('stopCameraBtn');
+            const captureBtn = document.getElementById('captureBtn');
+            
+            if (startBtn) startBtn.disabled = true;
+            if (stopBtn) stopBtn.disabled = false;
+            if (captureBtn) captureBtn.disabled = false;
+            
+            console.log('📷 [ATTENDANCE] Camera started successfully');
+            
+            // Show notification
+            if (window.showNotification) {
+                window.showNotification('Camera started successfully', 'success');
+            }
+            
         } catch (error) {
             console.error('❌ [ATTENDANCE] Failed to start camera:', error);
+            
+            let errorMessage = 'Failed to start camera. ';
+            if (error.name === 'NotAllowedError') {
+                errorMessage += 'Camera permission denied. Please allow camera access and try again.';
+            } else if (error.name === 'NotFoundError') {
+                errorMessage += 'No camera found on this device.';
+            } else if (error.name === 'NotSupportedError') {
+                errorMessage += 'Camera not supported in this browser.';
+            } else {
+                errorMessage += error.message || 'Unknown error occurred.';
+            }
+            
             if (window.showNotification) {
-                window.showNotification('Failed to start camera. Please check permissions.', 'error');
+                window.showNotification(errorMessage, 'error');
             }
         }
     }
@@ -200,9 +260,22 @@ class AttendanceManager {
     async captureAndRecognize() {
         const video = document.getElementById('faceVideo');
         const canvas = document.getElementById('faceCanvas');
+        const employeeSelect = document.getElementById('employeeSelect');
         
         if (!video || !canvas) {
             console.error('❌ [ATTENDANCE] Video or canvas element not found');
+            if (window.showNotification) {
+                window.showNotification('Camera elements not found', 'error');
+            }
+            return;
+        }
+        
+        // Check if an employee is selected
+        const selectedEmployeeId = employeeSelect?.value;
+        if (!selectedEmployeeId) {
+            if (window.showNotification) {
+                window.showNotification('Please select an employee first from the dropdown', 'warning');
+            }
             return;
         }
         
@@ -217,11 +290,20 @@ class AttendanceManager {
         const imageData = canvas.toDataURL('image/jpeg', 0.8);
         this.lastCapturedImage = imageData;
         
-        // For now, show a modal to select employee (simplified facial recognition)
-        this.showFacialRecognitionModal(imageData);
+        // Find the selected employee
+        const employee = this.employees.find(emp => emp.id === selectedEmployeeId);
+        if (!employee) {
+            if (window.showNotification) {
+                window.showNotification('Selected employee not found', 'error');
+            }
+            return;
+        }
+        
+        // Show confirmation modal with the selected employee
+        this.showFacialRecognitionModal(imageData, employee);
     }
 
-    showFacialRecognitionModal(imageData) {
+    showFacialRecognitionModal(imageData, employee) {
         // Create modal HTML
         const modalHTML = `
             <div class="modal-overlay" id="facialRecognitionModal">
@@ -234,13 +316,13 @@ class AttendanceManager {
                         <div style="text-align: center; margin-bottom: 1rem;">
                             <img src="${imageData}" alt="Captured Image" style="max-width: 100%; border-radius: 8px; max-height: 200px;">
                         </div>
-                        <p>Select the employee for this check-in:</p>
-                        <select id="facialRecognitionEmployeeSelect" class="form-control" style="margin-bottom: 1rem;">
-                            <option value="">Choose employee...</option>
-                            ${this.employees.map(emp => `<option value="${emp.id}">${emp.name} - ${emp.position || 'Employee'}</option>`).join('')}
-                        </select>
+                        <div style="text-align: center; margin-bottom: 1rem;">
+                            <h3 style="color: var(--primary-color); margin-bottom: 0.5rem;">${employee.name}</h3>
+                            <p style="color: var(--text-muted); margin: 0;">${employee.position || 'Employee'}</p>
+                        </div>
+                        <p style="text-align: center;">Confirm facial recognition check-in for this employee?</p>
                         <div class="modal-actions">
-                            <button class="btn btn-success" onclick="attendanceManager.confirmFacialRecognition()">
+                            <button class="btn btn-success" onclick="attendanceManager.confirmFacialRecognition('${employee.id}')">
                                 <i class="fas fa-check"></i> Confirm Check-in
                             </button>
                             <button class="btn btn-secondary" onclick="attendanceManager.closeFacialRecognitionModal()">
@@ -263,13 +345,10 @@ class AttendanceManager {
         }
     }
 
-    async confirmFacialRecognition() {
-        const select = document.getElementById('facialRecognitionEmployeeSelect');
-        const employeeId = select?.value;
-        
+    async confirmFacialRecognition(employeeId) {
         if (!employeeId) {
             if (window.showNotification) {
-                window.showNotification('Please select an employee', 'error');
+                window.showNotification('Employee ID not provided', 'error');
             }
             return;
         }
@@ -284,6 +363,16 @@ class AttendanceManager {
         
         await this.recordAttendance(employee, 'facial', this.lastCapturedImage);
         this.closeFacialRecognitionModal();
+        
+        // Reset the dropdown after successful check-in
+        const employeeSelect = document.getElementById('employeeSelect');
+        if (employeeSelect) {
+            employeeSelect.value = '';
+            const checkinBtn = document.getElementById('manualCheckinBtn');
+            if (checkinBtn) {
+                checkinBtn.disabled = true;
+            }
+        }
     }
 
     async manualCheckin() {
