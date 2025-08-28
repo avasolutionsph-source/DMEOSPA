@@ -12,6 +12,19 @@ class AttendanceManager {
     async init() {
         console.log('🚀 [ATTENDANCE] Initializing attendance system...');
         try {
+            // First, let's inspect what's available globally
+            console.log('🔍 [ATTENDANCE] Global database inspection:');
+            console.log('- window.db:', !!window.db);
+            console.log('- window.DatabaseManager:', !!window.DatabaseManager);
+            console.log('- ensureDBInit function:', typeof ensureDBInit);
+            console.log('- window.ensureDBInit function:', typeof window.ensureDBInit);
+            
+            // Check if there are any employees in other managers
+            if (window.employeeManager && window.employeeManager.employees) {
+                console.log('🔍 [ATTENDANCE] Found employeeManager with employees:', window.employeeManager.employees.length);
+                console.log('🔍 [ATTENDANCE] Employee data from employeeManager:', window.employeeManager.employees);
+            }
+            
             await this.loadEmployees();
             await this.loadAttendanceRecords();
             this.setupEventListeners();
@@ -122,6 +135,20 @@ class AttendanceManager {
             manualCheckinBtn.addEventListener('click', () => this.manualCheckin());
         }
         
+        // Sync Employees button
+        const syncBtn = document.getElementById('syncEmployeesBtn');
+        if (syncBtn) {
+            syncBtn.addEventListener('click', async () => {
+                console.log('🔄 [ATTENDANCE] Manual employee sync requested');
+                if (window.showNotification) {
+                    window.showNotification('Syncing employees from Employee Management...', 'info');
+                }
+                await this.forceEmployeeSync();
+            });
+        } else {
+            console.warn('⚠️ [ATTENDANCE] Sync Employees button not found');
+        }
+        
         // Refresh button
         const refreshBtn = document.getElementById('refreshAttendanceBtn');
         if (refreshBtn) {
@@ -133,6 +160,35 @@ class AttendanceManager {
         try {
             console.log('📊 [ATTENDANCE] Loading employees...');
             console.log('📊 [ATTENDANCE] Current database status:', !!window.db);
+            
+            // PRIORITY FIX: Try to get employees from employeeManager FIRST
+            console.log('🔧 [ATTENDANCE] PRIORITY: Checking employeeManager first...');
+            if (window.employeeManager) {
+                console.log('✅ [ATTENDANCE] Found employeeManager, loading employees...');
+                try {
+                    // Force reload employees in employeeManager
+                    await window.employeeManager.loadEmployees();
+                    if (window.employeeManager.employees && window.employeeManager.employees.length > 0) {
+                        console.log('🎯 [ATTENDANCE] SUCCESS: Found employees in employeeManager:', window.employeeManager.employees.length);
+                        this.employees = [...window.employeeManager.employees]; // Create copy
+                        
+                        this.employees.forEach((emp, index) => {
+                            console.log(`👤 [ATTENDANCE] Employee ${index + 1}: ${emp.name} (ID: ${emp.id}, Position: ${emp.position})`);
+                        });
+                        
+                        console.log('✅ [ATTENDANCE] Using employees from Employee Management system');
+                        return; // SUCCESS - don't try database
+                    }
+                } catch (empManagerError) {
+                    console.warn('⚠️ [ATTENDANCE] employeeManager failed:', empManagerError);
+                }
+            } else {
+                console.warn('⚠️ [ATTENDANCE] employeeManager not found in window object');
+                console.log('🔍 [ATTENDANCE] Available window objects:', Object.keys(window).filter(key => key.toLowerCase().includes('employee')));
+            }
+            
+            // FALLBACK: Try database method
+            console.log('🔄 [ATTENDANCE] Fallback: Trying database method...');
             
             // Wait for database to be ready with multiple attempts
             let dbInitAttempts = 0;
@@ -213,6 +269,19 @@ class AttendanceManager {
         } catch (error) {
             console.error('❌ [ATTENDANCE] Failed to load employees:', error);
             console.error('❌ [ATTENDANCE] Error stack:', error.stack);
+            
+            // Try to get employees from employeeManager as backup
+            console.log('🔄 [ATTENDANCE] Trying backup employee source...');
+            if (window.employeeManager && window.employeeManager.employees && window.employeeManager.employees.length > 0) {
+                console.log('✅ [ATTENDANCE] Found employees in employeeManager, using as backup');
+                this.employees = window.employeeManager.employees;
+                console.log('📊 [ATTENDANCE] Backup employees loaded:', this.employees.length);
+                this.employees.forEach((emp, index) => {
+                    console.log(`👤 [ATTENDANCE] Backup Employee ${index + 1}: ${emp.name} (ID: ${emp.id})`);
+                });
+                return; // Don't show error if we found backup data
+            }
+            
             this.employees = [];
             
             // Try to provide more helpful error message
@@ -701,8 +770,29 @@ class AttendanceManager {
                 window.showNotification('Refreshing attendance data...', 'info');
             }
             
+            // Try to sync with employeeManager first
+            console.log('🔄 [ATTENDANCE] Trying to sync with Employee Management system...');
+            if (window.employeeManager) {
+                try {
+                    console.log('📊 [ATTENDANCE] Found employeeManager, reloading employees...');
+                    await window.employeeManager.loadEmployees();
+                    if (window.employeeManager.employees && window.employeeManager.employees.length > 0) {
+                        console.log('✅ [ATTENDANCE] Synced with employeeManager:', window.employeeManager.employees.length, 'employees');
+                        this.employees = window.employeeManager.employees;
+                        this.populateEmployeeDropdown();
+                        
+                        if (window.showNotification) {
+                            window.showNotification(`Found ${this.employees.length} employees from Employee Management`, 'success');
+                        }
+                        return;
+                    }
+                } catch (syncError) {
+                    console.warn('⚠️ [ATTENDANCE] Failed to sync with employeeManager:', syncError);
+                }
+            }
+            
             // Force reload employees with fresh database connection
-            console.log('📊 [ATTENDANCE] Force reloading employees...');
+            console.log('📊 [ATTENDANCE] Force reloading employees from database...');
             await this.loadEmployees();
             
             console.log('📊 [ATTENDANCE] Loading attendance records...');
@@ -721,6 +811,56 @@ class AttendanceManager {
             if (window.showNotification) {
                 window.showNotification('Failed to refresh attendance data', 'error');
             }
+        }
+    }
+
+    async forceEmployeeSync() {
+        try {
+            console.log('🔧 [ATTENDANCE] Force syncing employees...');
+            
+            if (window.employeeManager) {
+                console.log('✅ [ATTENDANCE] Found employeeManager, forcing reload...');
+                
+                // Force reload employees in employeeManager
+                await window.employeeManager.loadEmployees();
+                
+                if (window.employeeManager.employees && window.employeeManager.employees.length > 0) {
+                    console.log('🎯 [ATTENDANCE] SUCCESS: Synced employees from Employee Management');
+                    this.employees = [...window.employeeManager.employees];
+                    
+                    console.log('📊 [ATTENDANCE] Synced employees:');
+                    this.employees.forEach((emp, index) => {
+                        console.log(`👤 Employee ${index + 1}: ${emp.name} (${emp.position})`);
+                    });
+                    
+                    // Update UI
+                    this.populateEmployeeDropdown();
+                    
+                    if (window.showNotification) {
+                        window.showNotification(`✅ Synced ${this.employees.length} employees from Employee Management`, 'success');
+                    }
+                    
+                    return true;
+                } else {
+                    console.warn('⚠️ [ATTENDANCE] No employees found in employeeManager after reload');
+                    if (window.showNotification) {
+                        window.showNotification('No employees found. Please add employees in Employee Management first.', 'warning');
+                    }
+                }
+            } else {
+                console.error('❌ [ATTENDANCE] employeeManager not found');
+                if (window.showNotification) {
+                    window.showNotification('Employee Management system not found', 'error');
+                }
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('❌ [ATTENDANCE] Force sync failed:', error);
+            if (window.showNotification) {
+                window.showNotification('Failed to sync employees', 'error');
+            }
+            return false;
         }
     }
 
