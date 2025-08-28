@@ -81,10 +81,32 @@ class AttendanceManager {
         const manualCheckinBtn = document.getElementById('manualCheckinBtn');
         
         if (employeeSelect) {
-            employeeSelect.addEventListener('change', (e) => {
+            employeeSelect.addEventListener('change', async (e) => {
+                const selectedValue = e.target.value;
+                
+                // Handle retry option
+                if (selectedValue === 'retry') {
+                    console.log('🔄 [ATTENDANCE] User selected retry option');
+                    if (window.showNotification) {
+                        window.showNotification('Reloading employees...', 'info');
+                    }
+                    
+                    // Reset dropdown to loading state
+                    e.target.innerHTML = '<option value="">Loading employees...</option>';
+                    
+                    // Reload employees
+                    await this.loadEmployees();
+                    this.populateEmployeeDropdown();
+                    
+                    if (window.showNotification) {
+                        window.showNotification('Employee list refreshed', 'success');
+                    }
+                    return;
+                }
+                
                 const checkinBtn = document.getElementById('manualCheckinBtn');
                 if (checkinBtn) {
-                    checkinBtn.disabled = !e.target.value;
+                    checkinBtn.disabled = !selectedValue || selectedValue === 'retry';
                 }
                 
                 // Also enable/disable facial recognition based on selection
@@ -110,52 +132,97 @@ class AttendanceManager {
     async loadEmployees() {
         try {
             console.log('📊 [ATTENDANCE] Loading employees...');
+            console.log('📊 [ATTENDANCE] Current database status:', !!window.db);
             
-            // Ensure database is initialized
-            if (!window.db) {
-                console.log('📊 [ATTENDANCE] Database not ready, initializing...');
+            // Wait for database to be ready with multiple attempts
+            let dbInitAttempts = 0;
+            const maxAttempts = 3;
+            
+            while (!window.db && dbInitAttempts < maxAttempts) {
+                console.log(`📊 [ATTENDANCE] Database not ready, attempt ${dbInitAttempts + 1}/${maxAttempts}`);
+                dbInitAttempts++;
+                
+                // Try different database initialization methods
                 if (typeof ensureDBInit === 'function') {
+                    console.log('📊 [ATTENDANCE] Using ensureDBInit function');
                     await ensureDBInit();
                 } else if (typeof window.ensureDBInit === 'function') {
+                    console.log('📊 [ATTENDANCE] Using window.ensureDBInit function');
                     await window.ensureDBInit();
+                } else if (window.DatabaseManager && typeof window.DatabaseManager.init === 'function') {
+                    console.log('📊 [ATTENDANCE] Using DatabaseManager.init');
+                    await window.DatabaseManager.init();
                 } else {
-                    console.error('❌ [ATTENDANCE] Database initialization function not found');
-                    throw new Error('Database not available');
+                    console.log('📊 [ATTENDANCE] Waiting 1 second for database to initialize...');
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             }
+            
+            if (!window.db) {
+                console.error('❌ [ATTENDANCE] Database still not available after all attempts');
+                console.log('💡 [ATTENDANCE] Available global objects:', Object.keys(window).filter(key => key.includes('db') || key.includes('DB')));
+                throw new Error('Database not available after initialization attempts');
+            }
+            
+            console.log('✅ [ATTENDANCE] Database is ready');
+            console.log('📊 [ATTENDANCE] Database object stores:', Array.from(window.db.objectStoreNames));
             
             // Check if employees store exists
             if (!window.db.objectStoreNames.contains('employees')) {
                 console.warn('⚠️ [ATTENDANCE] Employees store not found in database');
+                console.log('📊 [ATTENDANCE] Available stores:', Array.from(window.db.objectStoreNames));
                 this.employees = [];
                 return;
             }
             
+            console.log('📊 [ATTENDANCE] Employees store found, creating transaction...');
             const transaction = window.db.transaction(['employees'], 'readonly');
             const store = transaction.objectStore('employees');
             const request = store.getAll();
             
+            console.log('📊 [ATTENDANCE] Requesting all employees...');
             const employees = await new Promise((resolve, reject) => {
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-                transaction.onerror = () => reject(transaction.error);
+                request.onsuccess = () => {
+                    console.log('📊 [ATTENDANCE] Employee request successful');
+                    resolve(request.result);
+                };
+                request.onerror = () => {
+                    console.error('❌ [ATTENDANCE] Employee request failed:', request.error);
+                    reject(request.error);
+                };
+                transaction.onerror = () => {
+                    console.error('❌ [ATTENDANCE] Transaction failed:', transaction.error);
+                    reject(transaction.error);
+                };
             });
             
             this.employees = employees || [];
             console.log('📊 [ATTENDANCE] Successfully loaded employees:', this.employees.length);
+            console.log('📊 [ATTENDANCE] Raw employee data:', this.employees);
             
             // Log employee names for debugging
-            this.employees.forEach((emp, index) => {
-                console.log(`👤 [ATTENDANCE] Employee ${index + 1}: ${emp.name} (ID: ${emp.id})`);
-            });
+            if (this.employees.length > 0) {
+                this.employees.forEach((emp, index) => {
+                    console.log(`👤 [ATTENDANCE] Employee ${index + 1}: ${emp.name} (ID: ${emp.id}, Position: ${emp.position})`);
+                });
+            } else {
+                console.warn('⚠️ [ATTENDANCE] No employees found in database');
+                console.log('💡 [ATTENDANCE] Try adding employees in the Employee Management section first');
+            }
             
         } catch (error) {
             console.error('❌ [ATTENDANCE] Failed to load employees:', error);
+            console.error('❌ [ATTENDANCE] Error stack:', error.stack);
             this.employees = [];
             
             // Try to provide more helpful error message
             if (error.message?.includes('not found')) {
                 console.log('💡 [ATTENDANCE] Tip: Add employees first using the Employees page');
+            }
+            
+            // Show user-friendly error
+            if (window.showNotification) {
+                window.showNotification('Failed to load employees. Please refresh the page or add employees first.', 'error');
             }
         }
     }
@@ -195,30 +262,45 @@ class AttendanceManager {
             return;
         }
         
+        console.log('📊 [ATTENDANCE] Populating dropdown with employees:', this.employees.length);
+        console.log('📊 [ATTENDANCE] Employee data for dropdown:', this.employees);
+        
         // Clear existing options except the first one
         while (select.children.length > 1) {
             select.removeChild(select.lastChild);
         }
         
-        console.log('📊 [ATTENDANCE] Populating dropdown with employees:', this.employees.length);
-        
         if (this.employees.length === 0) {
+            console.warn('⚠️ [ATTENDANCE] No employees to populate in dropdown');
             const option = document.createElement('option');
             option.value = '';
-            option.textContent = 'No employees found - Add employees first';
+            option.textContent = 'No employees found - Click Refresh or add employees first';
             option.disabled = true;
+            option.style.color = '#ff6b6b';
             select.appendChild(option);
+            
+            // Also add a retry option
+            const retryOption = document.createElement('option');
+            retryOption.value = 'retry';
+            retryOption.textContent = '🔄 Click here to retry loading employees';
+            retryOption.style.color = '#4dabf7';
+            select.appendChild(retryOption);
             return;
         }
         
+        console.log('📊 [ATTENDANCE] Adding employees to dropdown...');
+        
         // Add employee options
-        this.employees.forEach(employee => {
+        this.employees.forEach((employee, index) => {
+            console.log(`👤 [ATTENDANCE] Processing employee ${index + 1}:`, employee);
             const option = document.createElement('option');
-            option.value = employee.id;
+            option.value = employee.id || employee._id || index.toString();
             option.textContent = `${employee.name} - ${employee.position || 'Employee'}`;
             select.appendChild(option);
-            console.log('👤 [ATTENDANCE] Added employee:', employee.name);
+            console.log(`✅ [ATTENDANCE] Added employee to dropdown: ${employee.name}`);
         });
+        
+        console.log('✅ [ATTENDANCE] Dropdown population completed');
     }
 
     async startCamera() {
@@ -614,13 +696,25 @@ class AttendanceManager {
 
     async refreshAttendance() {
         try {
+            console.log('🔄 [ATTENDANCE] Refreshing attendance data...');
+            if (window.showNotification) {
+                window.showNotification('Refreshing attendance data...', 'info');
+            }
+            
+            // Force reload employees with fresh database connection
+            console.log('📊 [ATTENDANCE] Force reloading employees...');
             await this.loadEmployees();
+            
+            console.log('📊 [ATTENDANCE] Loading attendance records...');
             await this.loadAttendanceRecords();
+            
+            console.log('📊 [ATTENDANCE] Updating UI...');
             this.populateEmployeeDropdown();
             this.renderAttendanceRecords();
             
+            console.log('✅ [ATTENDANCE] Refresh completed successfully');
             if (window.showNotification) {
-                window.showNotification('Attendance data refreshed', 'success');
+                window.showNotification(`Attendance data refreshed - Found ${this.employees.length} employees`, 'success');
             }
         } catch (error) {
             console.error('❌ [ATTENDANCE] Failed to refresh:', error);
