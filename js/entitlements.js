@@ -619,6 +619,9 @@ class EntitlementsSystem {
                 case 'settings':
                     canAccess = true; // Settings always accessible
                     break;
+                case 'attendance':
+                    canAccess = true; // Attendance always accessible
+                    break;
                 default:
                     // Unknown features - check plan
                     canAccess = this.currentPlan !== 'unpaid';
