@@ -350,36 +350,26 @@ class EntitlementsSystem {
         }
     }
 
-    // Update the plan badge in the sidebar
+    // Update the plan badge in the sidebar - DISABLED
     updatePlanBadge() {
-        const planBadge = document.querySelector('.plan-badge') || 
-                         document.querySelector('[class*="pro"]') ||
-                         document.querySelector('[class*="unpaid"]');
-        
-        if (planBadge) {
-            planBadge.className = 'plan-badge';
-            
-            // Handle different plan types with null safety
-            if (this.currentPlan === 'pro' || this.currentPlan === 'professional') {
-                planBadge.classList.add('pro-badge');
-                planBadge.textContent = 'PRO';
-                planBadge.style.cssText = 'background: #4CAF50; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold;';
-            } else if (this.currentPlan === 'basic') {
-                planBadge.classList.add('basic-badge');
-                planBadge.textContent = 'BASIC';
-                planBadge.style.cssText = 'background: #2196F3; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold;';
-            } else if (this.currentPlan === 'enterprise') {
-                planBadge.classList.add('enterprise-badge');
-                planBadge.textContent = 'ENTERPRISE';
-                planBadge.style.cssText = 'background: #9C27B0; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold;';
-            } else {
-                planBadge.classList.add('unpaid-badge');
-                planBadge.textContent = this.currentPlan ? this.currentPlan.toUpperCase() : 'UNPAID';
-                planBadge.style.cssText = 'background: #f44336; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: bold;';
+        // Remove any existing plan badges
+        const planBadges = document.querySelectorAll('.plan-badge, .pro-badge, .basic-badge, .enterprise-badge, .unpaid-badge, [class*="badge"]');
+        planBadges.forEach(badge => {
+            if (badge.textContent === 'PRO' || badge.textContent === 'BASIC' || badge.textContent === 'ENTERPRISE' || badge.textContent === 'UNPAID') {
+                badge.remove();
             }
-            
-            console.log(`🏷️ Updated plan badge to: ${this.currentPlan?.toUpperCase() || 'UNKNOWN'}`);
-        }
+        });
+        
+        // Also check for any element with just "PRO" text
+        const allElements = document.querySelectorAll('*');
+        allElements.forEach(el => {
+            if (el.textContent === 'PRO' && el.children.length === 0) {
+                el.remove();
+            }
+        });
+        
+        // Plan badges are now disabled - shown only in user profile
+        return;
     }
 
     // Show upgrade prompt for locked features
