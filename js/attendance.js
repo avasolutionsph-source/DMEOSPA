@@ -18,6 +18,16 @@ class AttendanceManager {
             console.log('- window.DatabaseManager:', !!window.DatabaseManager);
             console.log('- ensureDBInit function:', typeof ensureDBInit);
             console.log('- window.ensureDBInit function:', typeof window.ensureDBInit);
+            console.log('- window.employeeManager:', !!window.employeeManager);
+            console.log('- window.loadEmployees:', typeof window.loadEmployees);
+            
+            // CRITICAL: Ensure employee manager is initialized first
+            if (!window.employeeManager && window.loadEmployees) {
+                console.log('📊 [ATTENDANCE] Initializing employee manager first...');
+                await window.loadEmployees();
+                // Give it a moment to fully initialize
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
             
             // Check if there are any employees in other managers
             if (window.employeeManager && window.employeeManager.employees) {
@@ -31,6 +41,14 @@ class AttendanceManager {
             this.populateEmployeeDropdown();
             this.renderAttendanceRecords();
             console.log('✅ [ATTENDANCE] Initialization complete');
+            
+            // Auto-refresh if no employees found
+            if (this.employees.length === 0) {
+                console.log('⚠️ [ATTENDANCE] No employees found, attempting auto-refresh...');
+                setTimeout(() => {
+                    this.forceEmployeeSync();
+                }, 1000);
+            }
         } catch (error) {
             console.error('❌ [ATTENDANCE] Initialization failed:', error);
             if (window.showNotification) {
@@ -229,6 +247,42 @@ class AttendanceManager {
             if (!window.db) {
                 console.error('❌ [ATTENDANCE] Database still not available after all attempts');
                 console.log('💡 [ATTENDANCE] Available global objects:', Object.keys(window).filter(key => key.includes('db') || key.includes('DB')));
+                
+                // Try one more time with direct IndexedDB access
+                console.log('🔄 [ATTENDANCE] Attempting direct IndexedDB access...');
+                try {
+                    const dbRequest = indexedDB.open('BusinessManagementDB');
+                    await new Promise((resolve, reject) => {
+                        dbRequest.onsuccess = () => {
+                            const db = dbRequest.result;
+                            const transaction = db.transaction(['employees'], 'readonly');
+                            const store = transaction.objectStore('employees');
+                            const getAllRequest = store.getAll();
+                            
+                            getAllRequest.onsuccess = () => {
+                                const employees = getAllRequest.result || [];
+                                console.log('📊 [ATTENDANCE] Direct IndexedDB query found employees:', employees.length);
+                                if (employees.length > 0) {
+                                    this.employees = employees;
+                                    employees.forEach((emp, index) => {
+                                        console.log(`👤 [ATTENDANCE] Employee ${index + 1}: ${emp.name} (ID: ${emp.id})`);
+                                    });
+                                }
+                                resolve();
+                            };
+                            getAllRequest.onerror = reject;
+                        };
+                        dbRequest.onerror = reject;
+                    });
+                    
+                    if (this.employees.length > 0) {
+                        console.log('✅ [ATTENDANCE] Successfully loaded employees via direct IndexedDB');
+                        return;
+                    }
+                } catch (directDbError) {
+                    console.error('❌ [ATTENDANCE] Direct IndexedDB access failed:', directDbError);
+                }
+                
                 throw new Error('Database not available after initialization attempts');
             }
             
