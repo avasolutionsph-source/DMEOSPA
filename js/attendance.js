@@ -163,6 +163,18 @@ class AttendanceManager {
             
             // PRIORITY FIX: Try to get employees from employeeManager FIRST
             console.log('🔧 [ATTENDANCE] PRIORITY: Checking employeeManager first...');
+            
+            // If employeeManager doesn't exist yet, initialize it
+            if (!window.employeeManager) {
+                console.log('⚠️ [ATTENDANCE] employeeManager not found, initializing...');
+                
+                // Check if loadEmployees function exists (from employees.js)
+                if (window.loadEmployees && typeof window.loadEmployees === 'function') {
+                    console.log('📊 [ATTENDANCE] Calling window.loadEmployees() to initialize employeeManager...');
+                    await window.loadEmployees();
+                }
+            }
+            
             if (window.employeeManager) {
                 console.log('✅ [ATTENDANCE] Found employeeManager, loading employees...');
                 try {
@@ -183,7 +195,7 @@ class AttendanceManager {
                     console.warn('⚠️ [ATTENDANCE] employeeManager failed:', empManagerError);
                 }
             } else {
-                console.warn('⚠️ [ATTENDANCE] employeeManager not found in window object');
+                console.warn('⚠️ [ATTENDANCE] employeeManager not found in window object even after initialization');
                 console.log('🔍 [ATTENDANCE] Available window objects:', Object.keys(window).filter(key => key.toLowerCase().includes('employee')));
             }
             
