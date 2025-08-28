@@ -465,3 +465,44 @@ class AttendanceManager {
 const attendanceManager = new AttendanceManager();
 window.attendanceManager = attendanceManager;
 console.log('✅ AttendanceManager created and ready');
+
+// Debug function to check database directly
+window.checkEmployeesInDB = async function() {
+    console.log('🔍 Checking employees in database...');
+    
+    // Try the actual database name: AvaSolutionsDB
+    const dbRequest = indexedDB.open('AvaSolutionsDB');
+    
+    dbRequest.onsuccess = () => {
+        const db = dbRequest.result;
+        const transaction = db.transaction(['employees'], 'readonly');
+        const store = transaction.objectStore('employees');
+        const getAllRequest = store.getAll();
+        
+        getAllRequest.onsuccess = () => {
+            const employees = getAllRequest.result;
+            console.log('📊 Employees found in AvaSolutionsDB:', employees.length);
+            console.log('📊 Employee data:', employees);
+            
+            // Try to populate dropdown directly
+            const select = document.getElementById('employeeSelect');
+            if (select && employees.length > 0) {
+                select.innerHTML = '<option value="">Choose an employee...</option>';
+                employees.forEach(emp => {
+                    if (emp && emp.name) {
+                        const option = document.createElement('option');
+                        option.value = emp.id || emp._id || emp.name;
+                        option.textContent = emp.name;
+                        select.appendChild(option);
+                        console.log('✅ Added to dropdown:', emp.name);
+                    }
+                });
+                console.log('✅ Dropdown populated with', select.options.length - 1, 'employees');
+            }
+        };
+    };
+    
+    dbRequest.onerror = (e) => {
+        console.error('❌ Failed to open AvaSolutionsDB:', e);
+    };
+};
