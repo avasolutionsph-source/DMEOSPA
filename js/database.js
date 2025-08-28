@@ -752,6 +752,9 @@ function ensureDBInit() {
     return dbInitPromise;
 }
 
+// Make ensureDBInit globally available for other modules
+window.ensureDBInit = ensureDBInit;
+
 // Database diagnostic and repair function
 window.diagnoseDatabase = async function() {
     console.log('🔍 Running database diagnostics...');

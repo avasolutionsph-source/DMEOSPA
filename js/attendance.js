@@ -12,30 +12,39 @@ class AttendanceManager {
     async init() {
         console.log('🚀 [ATTENDANCE] Initializing attendance system...');
         try {
-            // Simple wait for database
-            if (!window.db) {
-                console.log('⏳ [ATTENDANCE] Waiting for database...');
-                await new Promise(resolve => setTimeout(resolve, 1000));
+            // PROPERLY wait for database initialization
+            console.log('⏳ [ATTENDANCE] Ensuring database is ready...');
+            
+            // Check if ensureDBInit function exists
+            if (typeof window.ensureDBInit === 'function') {
+                await window.ensureDBInit();
+                console.log('✅ [ATTENDANCE] Database initialized via ensureDBInit');
+            } else if (typeof ensureDBInit === 'function') {
+                await ensureDBInit();
+                console.log('✅ [ATTENDANCE] Database initialized via ensureDBInit (global)');
+            } else {
+                console.warn('⚠️ [ATTENDANCE] ensureDBInit not found, waiting 2 seconds...');
+                await new Promise(resolve => setTimeout(resolve, 2000));
             }
             
-            // Load employees directly from database
-            if (window.db) {
-                this.employees = await window.db.getAll('employees');
-                console.log('📊 [INIT] Loaded', this.employees.length, 'employees from database');
-                
-                // Force populate dropdown immediately
-                const select = document.getElementById('employeeSelect');
-                if (select && this.employees.length > 0) {
-                    select.innerHTML = '<option value="">Choose an employee...</option>';
-                    this.employees.forEach(emp => {
-                        if (emp && emp.name) {
-                            const option = document.createElement('option');
-                            option.value = emp.id || emp._id || emp.name;
-                            option.textContent = emp.name;
-                            select.appendChild(option);
-                        }
-                    });
-                }
+            // Now load employees - database should be ready
+            console.log('📊 [ATTENDANCE] Loading employees from database...');
+            this.employees = await window.db.getAll('employees');
+            console.log('✅ [INIT] Loaded', this.employees.length, 'employees from database');
+            
+            // Force populate dropdown immediately
+            const select = document.getElementById('employeeSelect');
+            if (select && this.employees.length > 0) {
+                select.innerHTML = '<option value="">Choose an employee...</option>';
+                this.employees.forEach(emp => {
+                    if (emp && emp.name) {
+                        const option = document.createElement('option');
+                        option.value = emp.id || emp._id || emp.name;
+                        option.textContent = emp.name;
+                        select.appendChild(option);
+                        console.log('✅ [INIT] Added to dropdown:', emp.name);
+                    }
+                });
             }
             
             await this.loadAttendanceRecords();
