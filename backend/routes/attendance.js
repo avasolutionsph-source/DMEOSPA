@@ -2,7 +2,7 @@
 import express from 'express';
 import Attendance from '../models/Attendance.js';
 import Employee from '../models/Employee.js';
-import { authenticateUser } from '../middleware/auth.js';
+import { authenticateJWT } from '../middleware/auth.js';
 import logger from '../utils/logger.js';
 import multer from 'multer';
 import path from 'path';
@@ -47,7 +47,7 @@ const upload = multer({
 });
 
 // Get all attendance records
-router.get('/', authenticateUser, async (req, res) => {
+router.get('/', authenticateJWT, async (req, res) => {
     try {
         const { date, employeeId, type, limit = 100, offset = 0 } = req.query;
         
@@ -95,7 +95,7 @@ router.get('/', authenticateUser, async (req, res) => {
 });
 
 // Record attendance (check-in/check-out)
-router.post('/', authenticateUser, upload.single('faceImage'), async (req, res) => {
+router.post('/', authenticateJWT, upload.single('faceImage'), async (req, res) => {
     try {
         const { employeeId, type, timestamp, location } = req.body;
         
@@ -177,7 +177,7 @@ router.post('/', authenticateUser, upload.single('faceImage'), async (req, res) 
 });
 
 // Get attendance statistics
-router.get('/stats', authenticateUser, async (req, res) => {
+router.get('/stats', authenticateJWT, async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         
@@ -247,7 +247,7 @@ router.get('/stats', authenticateUser, async (req, res) => {
 });
 
 // Get attendance report for an employee
-router.get('/employee/:employeeId', authenticateUser, async (req, res) => {
+router.get('/employee/:employeeId', authenticateJWT, async (req, res) => {
     try {
         const { employeeId } = req.params;
         const { startDate, endDate } = req.query;
@@ -313,7 +313,7 @@ router.get('/employee/:employeeId', authenticateUser, async (req, res) => {
 });
 
 // Delete attendance record
-router.delete('/:id', authenticateUser, async (req, res) => {
+router.delete('/:id', authenticateJWT, async (req, res) => {
     try {
         const attendance = await Attendance.findOneAndDelete({
             _id: req.params.id,
@@ -352,7 +352,7 @@ router.delete('/:id', authenticateUser, async (req, res) => {
 });
 
 // Export attendance data
-router.get('/export', authenticateUser, async (req, res) => {
+router.get('/export', authenticateJWT, async (req, res) => {
     try {
         const { format = 'json', startDate, endDate } = req.query;
         
