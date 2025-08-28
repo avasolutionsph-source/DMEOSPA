@@ -18,10 +18,28 @@ class AttendanceManager {
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
             
-            await this.loadEmployees();
+            // Load employees directly from database
+            if (window.db) {
+                this.employees = await window.db.getAll('employees');
+                console.log('📊 [INIT] Loaded', this.employees.length, 'employees from database');
+                
+                // Force populate dropdown immediately
+                const select = document.getElementById('employeeSelect');
+                if (select && this.employees.length > 0) {
+                    select.innerHTML = '<option value="">Choose an employee...</option>';
+                    this.employees.forEach(emp => {
+                        if (emp && emp.name) {
+                            const option = document.createElement('option');
+                            option.value = emp.id || emp._id || emp.name;
+                            option.textContent = emp.name;
+                            select.appendChild(option);
+                        }
+                    });
+                }
+            }
+            
             await this.loadAttendanceRecords();
             this.setupEventListeners();
-            this.populateEmployeeDropdown();
             this.renderAttendanceRecords();
             console.log('✅ [ATTENDANCE] Initialization complete');
         } catch (error) {
@@ -120,10 +138,47 @@ class AttendanceManager {
         if (syncBtn) {
             syncBtn.addEventListener('click', async () => {
                 console.log('🔄 Syncing employees...');
-                await this.loadEmployees();
-                this.populateEmployeeDropdown();
-                if (window.showNotification) {
-                    window.showNotification(`Found ${this.employees.length} employees`, 'info');
+                
+                // Force fresh load from database
+                if (window.db) {
+                    const emps = await window.db.getAll('employees');
+                    console.log('📊 [SYNC] Direct DB query found:', emps.length, 'employees');
+                    console.log('📊 [SYNC] Employee data:', emps);
+                    
+                    // Set employees directly
+                    this.employees = emps;
+                    
+                    // Force dropdown update
+                    const select = document.getElementById('employeeSelect');
+                    if (select) {
+                        // Clear completely
+                        select.innerHTML = '';
+                        
+                        // Add default option
+                        const defaultOpt = document.createElement('option');
+                        defaultOpt.value = '';
+                        defaultOpt.textContent = 'Choose an employee...';
+                        select.appendChild(defaultOpt);
+                        
+                        // Add each employee directly
+                        emps.forEach(emp => {
+                            if (emp && emp.name) {
+                                const option = document.createElement('option');
+                                option.value = emp.id || emp._id || emp.name;
+                                option.textContent = emp.name;
+                                select.appendChild(option);
+                                console.log('✅ [SYNC] Added:', emp.name);
+                            }
+                        });
+                        
+                        console.log('📊 [SYNC] Dropdown now has', select.options.length - 1, 'employees');
+                    }
+                    
+                    if (window.showNotification) {
+                        window.showNotification(`Found ${emps.length} employees`, 'info');
+                    }
+                } else {
+                    console.error('❌ [SYNC] Database not available');
                 }
             });
         }
@@ -362,9 +417,42 @@ class AttendanceManager {
     }
 
     async refreshAttendance() {
-        await this.loadEmployees();
+        // Force fresh load from database directly
+        if (window.db) {
+            const emps = await window.db.getAll('employees');
+            console.log('📊 [REFRESH] Direct DB query found:', emps.length, 'employees');
+            
+            // Set employees directly
+            this.employees = emps;
+            
+            // Force dropdown update inline
+            const select = document.getElementById('employeeSelect');
+            if (select) {
+                // Clear completely
+                select.innerHTML = '';
+                
+                // Add default option
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = '';
+                defaultOpt.textContent = 'Choose an employee...';
+                select.appendChild(defaultOpt);
+                
+                // Add each employee directly
+                emps.forEach(emp => {
+                    if (emp && emp.name) {
+                        const option = document.createElement('option');
+                        option.value = emp.id || emp._id || emp.name;
+                        option.textContent = emp.name;
+                        select.appendChild(option);
+                        console.log('✅ [REFRESH] Added:', emp.name);
+                    }
+                });
+                
+                console.log('📊 [REFRESH] Dropdown now has', select.options.length - 1, 'employees');
+            }
+        }
+        
         await this.loadAttendanceRecords();
-        this.populateEmployeeDropdown();
         this.renderAttendanceRecords();
         
         if (window.showNotification) {
