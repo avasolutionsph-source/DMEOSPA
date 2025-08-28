@@ -321,18 +321,25 @@ class POSSystem {
         }
 
         // Generate HTML
-        grid.innerHTML = items.map(item => `
-            <div class="product-card" onclick="posSystem.addToCart(${item.id}, '${item.type || 'inventory'}')">
-                <i class="fas fa-${item.type === 'service' ? 'concierge-bell' : item.sku ? 'box' : 'shopping-bag'}"></i>
-                <h4>${item.name}</h4>
-                <p class="price">${app.formatCurrency(item.price || item.unitPrice || 0)}</p>
-                ${item.currentStock !== undefined ? `<small>Stock: ${item.currentStock}</small>` : ''}
-                ${item.type === 'service' ? '<small style="color: #6366f1;"><i class="fas fa-user-check"></i> Requires Employee</small>' : ''}
-            </div>
-        `).join('');
-
-        if (items.length === 0) {
-            grid.innerHTML = '<div class="no-products">No products found</div>';
+        if (items.length > 0) {
+            grid.innerHTML = items.map(item => `
+                <div class="product-card" onclick="posSystem.addToCart(${item.id}, '${item.type || 'inventory'}')">
+                    <i class="fas fa-${item.type === 'service' ? 'concierge-bell' : item.sku ? 'box' : 'shopping-bag'}"></i>
+                    <h4>${item.name}</h4>
+                    <p class="price">${app.formatCurrency(item.price || item.unitPrice || 0)}</p>
+                    ${item.currentStock !== undefined ? `<small>Stock: ${item.currentStock}</small>` : ''}
+                    ${item.type === 'service' ? '<small style="color: #6366f1;"><i class="fas fa-user-check"></i> Requires Employee</small>' : ''}
+                </div>
+            `).join('');
+        } else {
+            // No products found - show helpful message
+            grid.innerHTML = `
+                <div class="no-products" style="text-align: center; padding: 2rem; color: #6b7280;">
+                    <i class="fas fa-box-open" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                    <h3>No Services Available</h3>
+                    <p>Add services in the Services page to start using the POS system.</p>
+                </div>
+            `;
         }
     }
 
