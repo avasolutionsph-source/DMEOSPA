@@ -41,7 +41,8 @@
       "Bash(taskkill:*)",
       "Bash(powershell:*)",
       "mcp__ide__getDiagnostics",
-      "Bash(npx http-server:*)"
+      "Bash(npx http-server:*)",
+      "Bash(npm audit:*)"
     ],
     "deny": [],
     "ask": [],

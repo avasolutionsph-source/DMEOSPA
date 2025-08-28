@@ -1070,46 +1070,33 @@ class EntitlementsSystem {
         document.body.appendChild(modal);
     }
 
-    // Get plan-specific limits
+    // Get plan-specific limits - ALL UNLIMITED NOW
     getPlanLimits() {
-        const limits = {
-            free: {
-                transactions: 50,
-                products: 10,
-                employees: 1,
-                inventory: 0
-            },
-            basic: {
-                transactions: 500,
-                products: 50,
-                employees: 3,
-                inventory: 100
-            },
-            pro: {
-                transactions: -1, // unlimited
-                products: -1,
-                employees: -1,
-                inventory: -1
-            }
+        // All plans now have unlimited access to all features
+        const unlimitedAccess = {
+            transactions: -1, // unlimited
+            products: -1,     // unlimited
+            employees: -1,    // unlimited
+            inventory: -1     // unlimited
         };
         
-        return limits[this.currentPlan] || limits.free;
+        const limits = {
+            free: unlimitedAccess,
+            unpaid: unlimitedAccess,
+            basic: unlimitedAccess,
+            professional: unlimitedAccess,
+            pro: unlimitedAccess,
+            enterprise: unlimitedAccess
+        };
+        
+        // Always return unlimited access regardless of plan
+        return unlimitedAccess;
     }
 
-    // Check if user has reached plan limits
+    // Check if user has reached plan limits - ALWAYS RETURNS FALSE (NO LIMITS)
     async checkPlanLimits(type) {
-        const limits = this.getPlanLimits();
-        const limit = limits[type];
-        
-        if (limit === -1) return false; // Unlimited
-        
-        try {
-            const count = await this.getCurrentCount(type);
-            return count >= limit;
-        } catch (error) {
-            console.error('Error checking plan limits:', error);
-            return false;
-        }
+        // Always return false - no limits for any plan or feature
+        return false; // No limit reached - unlimited access for everyone
     }
 
     // Get current count for limit checking
@@ -1132,39 +1119,11 @@ class EntitlementsSystem {
         }
     }
 
-    // Show limit reached message
+    // Show limit reached message - DISABLED (no limits anymore)
     showLimitReachedMessage(type) {
-        const limits = this.getPlanLimits();
-        const limit = limits[type];
-        
-        const modal = document.createElement('div');
-        modal.className = 'modal active';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2><i class="fas fa-exclamation-triangle"></i> Plan Limit Reached</h2>
-                    <button class="modal-close" onclick="this.closest('.modal').remove()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="limit-reached-content">
-                        <p>You've reached your ${this.currentPlan.toUpperCase()} plan limit of <strong>${limit} ${type}</strong>.</p>
-                        <p>Upgrade your plan to add more ${type}.</p>
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">
-                        Okay
-                    </button>
-                    <button class="btn btn-primary" onclick="entitlementsSystem.showUpgradeModal(); this.closest('.modal').remove();">
-                        <i class="fas fa-arrow-up"></i> Upgrade Plan
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
+        // Do nothing - limits are removed, this function should never be called
+        console.log('Plan limits have been removed - unlimited access enabled');
+        return; // Exit without showing any modal
     }
 }
 
