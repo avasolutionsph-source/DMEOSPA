@@ -1,13 +1,19 @@
 // Attendance Routes
-const express = require('express');
+import express from 'express';
+import Attendance from '../models/Attendance.js';
+import Employee from '../models/Employee.js';
+import { authenticateUser } from '../middleware/auth.js';
+import logger from '../utils/logger.js';
+import multer from 'multer';
+import path from 'path';
+import { promises as fs } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 const router = express.Router();
-const Attendance = require('../models/Attendance');
-const Employee = require('../models/Employee');
-const { authenticateUser } = require('../middleware/auth');
-const logger = require('../utils/logger');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs').promises;
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
@@ -396,4 +402,4 @@ router.get('/export', authenticateUser, async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

@@ -1,5 +1,5 @@
 // Attendance Model
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const attendanceSchema = new mongoose.Schema({
     userId: {
@@ -175,4 +175,4 @@ attendanceSchema.statics.getDailyReport = async function(userId, date) {
 
 const Attendance = mongoose.model('Attendance', attendanceSchema);
 
-module.exports = Attendance;
+export default Attendance;
