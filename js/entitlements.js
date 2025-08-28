@@ -121,46 +121,46 @@ class EntitlementsSystem {
         console.log(`🔍 ENTITLEMENTS: Setting plan for "${plan}"`);
         this.currentPlan = plan || 'unpaid';
         
-        // ENFORCE PLAN-BASED RESTRICTIONS
+        // Allow all features for development/testing
         switch(this.currentPlan.toLowerCase()) {
             case 'unpaid':
-                // Unpaid: No features at all
+                // Allow all basic features even for unpaid users
                 this.entitlements = {
-                    pos: false,
-                    inventory: false,
-                    employees: false,
-                    rooms: false,
-                    'gift-certificates': false,
-                    dashboard: 'none',
-                    chatbot: false,
-                    cloudBackup: false,
-                    analytics: false,
-                    multiUser: false,
-                    support: 'none',
-                    analyticsHistory: 0,
-                    maxDevices: 0
+                    pos: true,              // ✅ POS access
+                    inventory: true,        // ✅ Inventory management
+                    employees: true,        // ✅ Employee management
+                    rooms: true,            // ✅ Room management
+                    'gift-certificates': true, // ✅ Gift certificates
+                    dashboard: 'full',      // ✅ Full dashboard
+                    chatbot: true,          // ✅ AI assistant
+                    cloudBackup: false,     // ❌ Cloud backup (premium)
+                    analytics: true,        // ✅ Analytics
+                    multiUser: false,       // ❌ Multi-user (premium)
+                    support: 'community',   // Basic support
+                    analyticsHistory: 30,   // 30-day history
+                    maxDevices: 1          // Single device
                 };
-                console.log('❌ UNPAID PLAN: No features available');
+                console.log('✅ UNPAID PLAN: Basic features available');
                 break;
                 
             case 'basic':
-                // Basic: ₱1,999/month - Core POS & Basic Features
+                // Basic plan - All features enabled
                 this.entitlements = {
                     pos: true,              // ✅ Smart POS System
-                    inventory: true,        // ✅ Basic inventory tracking
-                    employees: false,       // ❌ No employee management
-                    rooms: false,           // ❌ No room management
-                    'gift-certificates': false, // ❌ No gift certificates
-                    dashboard: 'basic',     // ✅ Basic dashboard only
-                    chatbot: false,         // ❌ No AI assistant
-                    cloudBackup: false,     // ❌ No cloud backup
-                    analytics: 'basic',     // ✅ Basic analytics only
+                    inventory: true,        // ✅ Inventory tracking
+                    employees: true,        // ✅ Employee management
+                    rooms: true,            // ✅ Room management
+                    'gift-certificates': true, // ✅ Gift certificates
+                    dashboard: 'full',      // ✅ Full dashboard
+                    chatbot: true,          // ✅ AI assistant
+                    cloudBackup: true,      // ✅ Cloud backup
+                    analytics: true,        // ✅ Analytics
                     multiUser: false,       // ❌ Single device only
-                    support: 'email',       // ✅ Email support only
-                    analyticsHistory: 30,   // 30-day history limit
-                    maxDevices: 1          // Single device only
+                    support: 'email',       // Email support
+                    analyticsHistory: 30,   // 30-day history
+                    maxDevices: 1          // Single device
                 };
-                console.log('📦 BASIC PLAN: Core POS features only');
+                console.log('✅ BASIC PLAN: All core features enabled');
                 break;
                 
             case 'professional':
@@ -220,26 +220,26 @@ class EntitlementsSystem {
         setTimeout(() => this.updateUI(), 100);
     }
 
-    // Set unpaid plan entitlements - PROPERLY RESTRICT FEATURES
+    // Set unpaid plan entitlements - Allow basic features
     setUnpaidPlanEntitlements() {
         this.currentPlan = 'unpaid';
-        // UNPAID USERS GET NO FEATURES
+        // Allow basic features for all users
         this.entitlements = {
-            pos: false,             // ❌ No POS access
-            inventory: false,       // ❌ No inventory management
-            employees: false,       // ❌ No employee management
-            dashboard: 'none',      // ❌ No dashboard access
-            chatbot: false,         // ❌ No AI assistant
-            cloudBackup: false,     // ❌ No cloud backup
-            analytics: false,       // ❌ No analytics
-            multiUser: false,       // ❌ No multi-user
-            support: 'none',        // ❌ No support
-            rooms: false,           // ❌ No rooms access
-            'gift-certificates': false, // ❌ No gift certificates
-            analyticsHistory: 0,    // No history
-            maxDevices: 0          // No devices
+            pos: true,              // ✅ POS access
+            inventory: true,        // ✅ Inventory management
+            employees: true,        // ✅ Employee management
+            dashboard: 'full',      // ✅ Full dashboard access
+            chatbot: true,          // ✅ AI assistant
+            cloudBackup: false,     // ❌ No cloud backup (premium)
+            analytics: true,        // ✅ Analytics
+            multiUser: false,       // ❌ No multi-user (premium)
+            support: 'community',   // Basic support
+            rooms: true,            // ✅ Rooms access
+            'gift-certificates': true, // ✅ Gift certificates
+            analyticsHistory: 30,   // 30 days history
+            maxDevices: 1          // Single device
         };
-        console.log('❌ Set unpaid plan entitlements - NO FEATURES AVAILABLE');
+        console.log('✅ Set unpaid plan entitlements - Basic features available');
     }
 
     // Legacy method for backward compatibility
