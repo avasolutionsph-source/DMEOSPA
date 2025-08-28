@@ -1236,6 +1236,81 @@
         
         document.body.appendChild(modal);
     }
+    
+    filterExpenses(category) {
+        const expenses = this.getExpenses();
+        
+        let filteredExpenses = expenses;
+        if (category && category !== 'all') {
+            filteredExpenses = expenses.filter(exp => 
+                exp.category && exp.category.toLowerCase() === category.toLowerCase()
+            );
+        }
+        
+        // Re-render expenses list with filtered data
+        const listContainer = document.getElementById('expenses-list');
+        if (!listContainer) return;
+        
+        if (filteredExpenses.length === 0) {
+            listContainer.innerHTML = `
+                <div class="empty-state" style="text-align: center; padding: 3rem; color: #666;">
+                    <i class="fas fa-receipt" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                    <h3 style="color: #333; margin-bottom: 0.5rem;">No ${category !== 'all' ? category.charAt(0).toUpperCase() + category.slice(1) : ''} Expenses Found</h3>
+                    <p style="color: #666;">No expenses found in this category</p>
+                </div>
+            `;
+        } else {
+            // Use the existing displayExpenses method logic
+            listContainer.innerHTML = `
+                ${filteredExpenses.map(expense => `
+                    <div class="expense-card" style="
+                        background: white; 
+                        border-radius: 12px; 
+                        padding: 1.5rem; 
+                        margin-bottom: 1rem; 
+                        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        border-left: 4px solid ${this.getCategoryColor(expense.category)};
+                        transition: transform 0.2s ease;
+                        cursor: pointer;
+                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 20px rgba(0, 0, 0, 0.1)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 12px rgba(0, 0, 0, 0.05)'">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            ${this.getCategoryIcon(expense.category)}
+                        </div>
+                        <div style="flex: 1; margin-left: 1rem;">
+                            <div style="font-weight: 600; color: #1e293b; margin-bottom: 0.25rem;">${expense.description}</div>
+                            <div style="font-size: 0.875rem; color: #64748b;">${expense.category} • ${new Date(expense.date).toLocaleDateString()}</div>
+                        </div>
+                        <div style="font-weight: 700; font-size: 1.25rem; color: #1e293b;">₱${expense.amount.toFixed(2)}</div>
+                        <div style="display: flex; gap: 0.5rem; margin-left: 1rem;">
+                            ${expense.receipt ? `
+                                <button onclick="if(window.expenseManager) window.expenseManager.viewReceipt(${expense.id});" style="
+                                    background: #f0f9ff; color: #3b82f6; border: none; border-radius: 8px; 
+                                    padding: 0.5rem; cursor: pointer; transition: all 0.2s ease;
+                                " onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#f0f9ff'">
+                                    <i class="fas fa-image"></i>
+                                </button>
+                            ` : ''}
+                            <button onclick="if(window.expenseManager) window.expenseManager.editExpense(${expense.id});" style="
+                                background: #f0fdf4; color: #16a34a; border: none; border-radius: 8px; 
+                                padding: 0.5rem; cursor: pointer; transition: all 0.2s ease;
+                            " onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="if(window.expenseManager) window.expenseManager.deleteExpense(${expense.id});" style="
+                                background: #fef2f2; color: #ef4444; border: none; border-radius: 8px; 
+                                padding: 0.5rem; cursor: pointer; transition: all 0.2s ease;
+                            " onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+        }
+    }
 }
     
     // Create and expose singleton instance
