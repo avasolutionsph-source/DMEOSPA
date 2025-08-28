@@ -559,10 +559,53 @@ class AuthSystem {
             if (userInfo) {
                 userInfo.style.display = 'block';
                 userInfo.innerHTML = `
-                    <div class="user-profile">
-                        <span class="user-name">${this.currentUser.businessName || this.currentUser.firstName}</span>
-                        <span class="user-plan">${this.currentUser.subscriptionPlan || 'Basic'} Plan</span>
-                        <button onclick="authSystem.logout()" class="btn-logout">Logout</button>
+                    <div class="user-profile" style="
+                        padding: 1rem;
+                        text-align: center;
+                    ">
+                        <div style="
+                            width: 48px;
+                            height: 48px;
+                            background: #f3f4f6;
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            margin: 0 auto 0.75rem auto;
+                        ">
+                            <i class="fas fa-user" style="color: #4b5563; font-size: 1.25rem;"></i>
+                        </div>
+                        <span class="user-name" style="
+                            display: block;
+                            color: #ffffff;
+                            font-weight: 600;
+                            font-size: 0.95rem;
+                            margin-bottom: 0.25rem;
+                        ">${this.currentUser.businessName || this.currentUser.firstName}</span>
+                        <span class="user-plan" style="
+                            display: inline-block;
+                            color: #9ca3af;
+                            font-size: 0.75rem;
+                            margin-bottom: 1rem;
+                        ">${this.currentUser.subscriptionPlan === 'Professional' || this.currentUser.subscriptionPlan === 'PRO' ? 'Professional' : this.currentUser.subscriptionPlan || 'Basic'}</span>
+                        <button onclick="authSystem.logout()" class="btn-logout" style="
+                            background: #1e293b;
+                            color: white;
+                            border: 1px solid #334155;
+                            border-radius: 8px;
+                            padding: 0.5rem 1rem;
+                            font-size: 0.85rem;
+                            font-weight: 500;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 0.5rem;
+                            width: 100%;
+                            justify-content: center;
+                        " onmouseover="this.style.background='#334155'" onmouseout="this.style.background='#1e293b'">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
                     </div>
                 `;
             }
