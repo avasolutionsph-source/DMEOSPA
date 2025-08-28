@@ -50,6 +50,9 @@ class AttendanceManager {
             await this.loadAttendanceRecords();
             this.setupEventListeners();
             this.renderAttendanceRecords();
+            
+            // Mark as initialized
+            window.attendanceManager.initialized = true;
             console.log('✅ [ATTENDANCE] Initialization complete');
         } catch (error) {
             console.error('❌ [ATTENDANCE] Initialization failed:', error);
@@ -474,6 +477,62 @@ class AttendanceManager {
 const attendanceManager = new AttendanceManager();
 window.attendanceManager = attendanceManager;
 console.log('✅ AttendanceManager created and ready');
+
+// Auto-init when page becomes visible
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('📊 [ATTENDANCE] DOM loaded, checking if on attendance page...');
+    const attendancePage = document.getElementById('attendance');
+    if (attendancePage && attendancePage.style.display !== 'none') {
+        console.log('📊 [ATTENDANCE] On attendance page, auto-initializing...');
+        setTimeout(async () => {
+            if (window.attendanceManager && !window.attendanceManager.initialized) {
+                await window.attendanceManager.init();
+            }
+        }, 1000);
+    }
+});
+
+// Mark initialization status
+window.attendanceManager.initialized = false;
+
+// Manual populate function
+window.populateAttendanceDropdown = async function() {
+    console.log('🔧 Manually populating attendance dropdown...');
+    
+    try {
+        // Ensure database is ready
+        if (typeof window.ensureDBInit === 'function') {
+            await window.ensureDBInit();
+        }
+        
+        // Load employees directly
+        const employees = await window.db.getAll('employees');
+        console.log('📊 Found employees:', employees);
+        
+        const select = document.getElementById('employeeSelect');
+        if (select) {
+            select.innerHTML = '<option value="">Choose an employee...</option>';
+            
+            employees.forEach(emp => {
+                if (emp && emp.name) {
+                    const option = document.createElement('option');
+                    option.value = emp.id || emp._id || emp.name;
+                    option.textContent = emp.name;
+                    select.appendChild(option);
+                    console.log('✅ Added:', emp.name);
+                }
+            });
+            
+            console.log('✅ Dropdown populated with', employees.length, 'employees');
+            return true;
+        }
+        console.error('❌ Dropdown element not found');
+        return false;
+    } catch (error) {
+        console.error('❌ Failed to populate dropdown:', error);
+        return false;
+    }
+};
 
 // Debug function to check database directly
 window.checkEmployeesInDB = async function() {

@@ -408,6 +408,17 @@ class App {
                     await window.loadEmployees();
                 }
                 break;
+            case 'attendance':
+                console.log('📊 [APP] Loading attendance page...');
+                console.log('📊 [APP] window.attendanceManager exists?', !!window.attendanceManager);
+                if (window.attendanceManager) {
+                    console.log('📊 [APP] Calling attendanceManager.init()...');
+                    await window.attendanceManager.init();
+                    console.log('📊 [APP] attendanceManager.init() completed');
+                } else {
+                    console.error('❌ [APP] attendanceManager not found!');
+                }
+                break;
             case 'rooms':
                 if (window.loadRooms) {
                     await window.loadRooms();
