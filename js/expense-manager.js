@@ -11,6 +11,7 @@
         }
         this.receiptImageData = null;
         this.currentStream = null;
+        this.currentFilter = 'all'; // Initialize filter to 'all'
         this.initializeExpenseListeners();
     }
 
@@ -946,21 +947,21 @@
     }
     
     async loadExpenses() {
-        const expenses = this.getExpenses();
-        console.log('Loading expenses:', expenses);
+        const allExpenses = this.getExpenses();
+        console.log('Loading expenses:', allExpenses);
         
-        // Update dashboard stats if they exist
-        const totalSpent = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+        // Update dashboard stats with ALL expenses (not filtered)
+        const totalSpent = allExpenses.reduce((sum, exp) => sum + exp.amount, 0);
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
         
-        const thisMonthExpenses = expenses.filter(exp => {
+        const thisMonthExpenses = allExpenses.filter(exp => {
             const date = new Date(exp.date);
             return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
         });
         const thisMonthTotal = thisMonthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
         
-        // Update stat cards if they exist
+        // Update stat cards with total values (not filtered)
         const totalExpensesEl = document.getElementById('total-expenses');
         if (totalExpensesEl) {
             totalExpensesEl.textContent = `₱${totalSpent.toFixed(2)}`;
@@ -973,7 +974,15 @@
         
         const countEl = document.getElementById('total-expense-count');
         if (countEl) {
-            countEl.textContent = expenses.length;
+            countEl.textContent = allExpenses.length;
+        }
+        
+        // Apply filter if one is set
+        let expenses = allExpenses;
+        if (this.currentFilter && this.currentFilter !== 'all') {
+            expenses = allExpenses.filter(exp => 
+                exp.category && exp.category.toLowerCase() === this.currentFilter.toLowerCase()
+            );
         }
         
         // Find the expenses list container - check multiple possible locations
@@ -1238,6 +1247,14 @@
     }
     
     filterExpenses(category) {
+        // Store the current filter
+        this.currentFilter = category || 'all';
+        
+        // Just reload expenses with the filter applied
+        this.loadExpenses();
+    }
+    
+    displayFilteredExpenses(category) {
         const expenses = this.getExpenses();
         
         let filteredExpenses = expenses;
@@ -1251,12 +1268,20 @@
         const listContainer = document.getElementById('expenses-list');
         if (!listContainer) return;
         
-        if (filteredExpenses.length === 0) {
+        if (filteredExpenses.length === 0 && category !== 'all') {
             listContainer.innerHTML = `
                 <div class="empty-state" style="text-align: center; padding: 3rem; color: #666;">
                     <i class="fas fa-receipt" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
-                    <h3 style="color: #333; margin-bottom: 0.5rem;">No ${category !== 'all' ? category.charAt(0).toUpperCase() + category.slice(1) : ''} Expenses Found</h3>
+                    <h3 style="color: #333; margin-bottom: 0.5rem;">No ${category.charAt(0).toUpperCase() + category.slice(1)} Expenses Found</h3>
                     <p style="color: #666;">No expenses found in this category</p>
+                </div>
+            `;
+        } else if (filteredExpenses.length === 0) {
+            listContainer.innerHTML = `
+                <div class="empty-state" style="text-align: center; padding: 3rem; color: #666;">
+                    <i class="fas fa-receipt" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                    <h3 style="color: #333; margin-bottom: 0.5rem;">No Expenses Recorded</h3>
+                    <p style="color: #666;">Start tracking your business expenses by adding your first expense record</p>
                 </div>
             `;
         } else {
