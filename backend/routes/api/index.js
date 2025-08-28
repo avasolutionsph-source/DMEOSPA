@@ -8,6 +8,7 @@ import businessRoutes from './business.js';
 import productsRoutes from './products.js';
 import inventoryRoutes from './inventory.js';
 import employeesRoutes from './employees.js';
+import attendanceRoutes from '../attendance.js';
 import transactionsRoutes from './transactions.js';
 // import subscriptionRoutes from './subscription.js';
 // import settingsRoutes from './settings.js';
@@ -36,6 +37,7 @@ router.get('/', (req, res) => {
       products: '/api/products',
       inventory: '/api/inventory',
       employees: '/api/employees',
+      attendance: '/api/attendance',
       transactions: '/api/transactions',
       subscription: '/api/subscription',
       settings: '/api/settings',
@@ -74,6 +76,7 @@ router.use('/products', optionalAuth, productsRoutes);
 router.use('/business', authenticateJWT, businessRoutes);
 router.use('/inventory', authenticateJWT, inventoryRoutes);
 router.use('/employees', authenticateJWT, employeesRoutes);
+router.use('/attendance', authenticateJWT, attendanceRoutes);
 router.use('/transactions', authenticateJWT, transactionsRoutes);
 // router.use('/subscription', authenticateJWT, subscriptionRoutes);
 // router.use('/settings', authenticateJWT, settingsRoutes);
