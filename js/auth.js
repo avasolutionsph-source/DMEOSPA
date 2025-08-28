@@ -558,6 +558,13 @@ class AuthSystem {
             // Show user info
             if (userInfo) {
                 userInfo.style.display = 'block';
+                
+                // Get saved profile image from localStorage
+                const savedProfileImage = localStorage.getItem('userProfileImage');
+                const profileImageHtml = savedProfileImage 
+                    ? `<img src="${savedProfileImage}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">`
+                    : `<i class="fas fa-user" style="color: #4b5563; font-size: 1.25rem;"></i>`;
+                
                 userInfo.innerHTML = `
                     <div class="user-profile" style="
                         padding: 1rem;
@@ -572,8 +579,12 @@ class AuthSystem {
                             align-items: center;
                             justify-content: center;
                             margin: 0 auto 0.75rem auto;
-                        ">
-                            <i class="fas fa-user" style="color: #4b5563; font-size: 1.25rem;"></i>
+                            position: relative;
+                            cursor: pointer;
+                            overflow: hidden;
+                        " id="profileImageContainer" title="Click to upload image">
+                            ${profileImageHtml}
+                            <input type="file" id="profileImageInput" accept="image/*" style="display: none;">
                         </div>
                         <span class="user-name" style="
                             display: block;
@@ -608,6 +619,38 @@ class AuthSystem {
                         </button>
                     </div>
                 `;
+                
+                // Add click handler for profile image upload
+                const profileImageContainer = document.getElementById('profileImageContainer');
+                const profileImageInput = document.getElementById('profileImageInput');
+                
+                if (profileImageContainer && profileImageInput) {
+                    profileImageContainer.addEventListener('click', () => {
+                        profileImageInput.click();
+                    });
+                    
+                    profileImageInput.addEventListener('change', (e) => {
+                        const file = e.target.files[0];
+                        if (file && file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                const imageData = e.target.result;
+                                localStorage.setItem('userProfileImage', imageData);
+                                
+                                // Update the image display
+                                profileImageContainer.innerHTML = `
+                                    <img src="${imageData}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">
+                                    <input type="file" id="profileImageInput" accept="image/*" style="display: none;">
+                                `;
+                                
+                                // Re-attach the input element
+                                const newInput = profileImageContainer.querySelector('#profileImageInput');
+                                newInput.addEventListener('change', arguments.callee);
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                }
             }
             
             // Update business name display

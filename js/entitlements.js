@@ -737,46 +737,12 @@ class EntitlementsSystem {
 
     // Update subscription status in UI
     updateSubscriptionStatus() {
-        // Add subscription indicator to sidebar
-        let statusIndicator = document.getElementById('subscriptionStatus');
-        
-        if (!statusIndicator) {
-            statusIndicator = document.createElement('div');
-            statusIndicator.id = 'subscriptionStatus';
-            statusIndicator.className = 'subscription-status';
-            
-            // Insert after connection status
-            const connectionStatus = document.getElementById('connectionStatus');
-            if (connectionStatus) {
-                connectionStatus.parentNode.insertBefore(statusIndicator, connectionStatus.nextSibling);
-            }
+        // Remove any existing subscription status badge from sidebar
+        const statusIndicator = document.getElementById('subscriptionStatus');
+        if (statusIndicator) {
+            statusIndicator.remove();
         }
-        
-        const planColors = {
-            free: '#6b7280',
-            basic: '#3b82f6',
-            pro: '#10b981',
-            enterprise: '#8b5cf6'
-        };
-        
-        const plan = this.currentPlan || 'free';
-        statusIndicator.innerHTML = `
-            <div class="plan-badge" style="background-color: ${planColors[plan] || '#6c757d'}">
-                <i class="fas fa-${plan === 'free' ? 'gift' : 'crown'}"></i>
-                <span>${plan.toUpperCase()}</span>
-            </div>
-        `;
-        
-        // Add upgrade button for free/basic plans
-        if (this.currentPlan === 'free' || this.currentPlan === 'basic') {
-            if (!statusIndicator.querySelector('.upgrade-btn')) {
-                const upgradeBtn = document.createElement('button');
-                upgradeBtn.className = 'upgrade-btn btn-sm btn-primary';
-                upgradeBtn.innerHTML = '<i class="fas fa-arrow-up"></i> Upgrade';
-                upgradeBtn.onclick = () => this.showUpgradeModal();
-                statusIndicator.appendChild(upgradeBtn);
-            }
-        }
+        // Plan status is now shown in the user profile section only
     }
 
     // Show upgrade modal
