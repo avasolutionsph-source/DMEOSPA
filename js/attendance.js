@@ -40,10 +40,17 @@ class AttendanceManager {
             if (window.db) {
                 this.employees = await window.db.getAll('employees');
                 console.log('✅ [ATTENDANCE] Loaded employees:', this.employees.length);
+                console.log('📊 [ATTENDANCE] Full employee data:', JSON.stringify(this.employees, null, 2));
                 
                 if (this.employees.length > 0) {
                     this.employees.forEach((emp, index) => {
-                        console.log(`👤 Employee ${index + 1}: ${emp.name} (ID: ${emp.id})`);
+                        console.log(`👤 Employee ${index + 1}:`, {
+                            name: emp.name,
+                            id: emp.id,
+                            _id: emp._id,
+                            position: emp.position,
+                            fullObject: emp
+                        });
                     });
                 }
             } else {
@@ -63,30 +70,41 @@ class AttendanceManager {
             return;
         }
         
-        console.log('📊 [ATTENDANCE] Populating dropdown with employees:', this.employees.length);
+        console.log('📊 [ATTENDANCE] Starting dropdown population...');
+        console.log('📊 [ATTENDANCE] Current employees array:', this.employees);
+        console.log('📊 [ATTENDANCE] Number of employees:', this.employees.length);
         
         // Clear and reset dropdown
         select.innerHTML = '<option value="">Choose an employee...</option>';
         
-        if (this.employees.length === 0) {
+        if (!this.employees || this.employees.length === 0) {
+            console.warn('⚠️ [ATTENDANCE] No employees to add to dropdown');
             const option = document.createElement('option');
             option.value = '';
-            option.textContent = 'No employees found - Add employees first';
+            option.textContent = 'No employees found - Click Sync Employees';
             option.disabled = true;
             select.appendChild(option);
             return;
         }
         
         // Add each employee - SIMPLE AND CLEAN
-        this.employees.forEach(employee => {
+        console.log('📊 [ATTENDANCE] Adding employees to dropdown...');
+        this.employees.forEach((employee, index) => {
+            console.log(`📊 [ATTENDANCE] Processing employee ${index + 1}:`, employee);
+            
+            if (!employee.name) {
+                console.warn(`⚠️ [ATTENDANCE] Employee ${index + 1} has no name, skipping`);
+                return;
+            }
+            
             const option = document.createElement('option');
-            option.value = employee.id || employee._id;
+            option.value = employee.id || employee._id || index.toString();
             option.textContent = employee.name;
             select.appendChild(option);
-            console.log(`✅ Added to dropdown: ${employee.name}`);
+            console.log(`✅ Added to dropdown: "${employee.name}" with value: ${option.value}`);
         });
         
-        console.log('✅ [ATTENDANCE] Dropdown populated');
+        console.log('✅ [ATTENDANCE] Dropdown populated with', select.options.length - 1, 'employees');
     }
 
     setupEventListeners() {
