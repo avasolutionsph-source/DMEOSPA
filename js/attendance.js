@@ -10,11 +10,20 @@ class AttendanceManager {
     }
 
     async init() {
-        await this.loadEmployees();
-        await this.loadAttendanceRecords();
-        this.setupEventListeners();
-        this.populateEmployeeDropdown();
-        this.renderAttendanceRecords();
+        console.log('🚀 [ATTENDANCE] Initializing attendance system...');
+        try {
+            await this.loadEmployees();
+            await this.loadAttendanceRecords();
+            this.setupEventListeners();
+            this.populateEmployeeDropdown();
+            this.renderAttendanceRecords();
+            console.log('✅ [ATTENDANCE] Initialization complete');
+        } catch (error) {
+            console.error('❌ [ATTENDANCE] Initialization failed:', error);
+            if (window.showNotification) {
+                window.showNotification('Failed to initialize attendance system', 'error');
+            }
+        }
     }
 
     setupEventListeners() {
@@ -35,15 +44,36 @@ class AttendanceManager {
         const captureBtn = document.getElementById('captureBtn');
         
         if (startCameraBtn) {
-            startCameraBtn.addEventListener('click', () => this.startCamera());
+            console.log('📷 [ATTENDANCE] Setting up Start Camera button event listener');
+            startCameraBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('📷 [ATTENDANCE] Start Camera button clicked');
+                this.startCamera();
+            });
+        } else {
+            console.error('❌ [ATTENDANCE] Start Camera button not found');
         }
         
         if (stopCameraBtn) {
-            stopCameraBtn.addEventListener('click', () => this.stopCamera());
+            console.log('📷 [ATTENDANCE] Setting up Stop Camera button event listener');
+            stopCameraBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('📷 [ATTENDANCE] Stop Camera button clicked');
+                this.stopCamera();
+            });
+        } else {
+            console.error('❌ [ATTENDANCE] Stop Camera button not found');
         }
         
         if (captureBtn) {
-            captureBtn.addEventListener('click', () => this.captureAndRecognize());
+            console.log('📷 [ATTENDANCE] Setting up Capture button event listener');
+            captureBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('📷 [ATTENDANCE] Capture button clicked');
+                this.captureAndRecognize();
+            });
+        } else {
+            console.error('❌ [ATTENDANCE] Capture button not found');
         }
         
         // Manual selection
@@ -79,9 +109,26 @@ class AttendanceManager {
 
     async loadEmployees() {
         try {
+            console.log('📊 [ATTENDANCE] Loading employees...');
+            
+            // Ensure database is initialized
             if (!window.db) {
-                console.log('📊 [ATTENDANCE] Database not ready, waiting...');
-                await ensureDBInit();
+                console.log('📊 [ATTENDANCE] Database not ready, initializing...');
+                if (typeof ensureDBInit === 'function') {
+                    await ensureDBInit();
+                } else if (typeof window.ensureDBInit === 'function') {
+                    await window.ensureDBInit();
+                } else {
+                    console.error('❌ [ATTENDANCE] Database initialization function not found');
+                    throw new Error('Database not available');
+                }
+            }
+            
+            // Check if employees store exists
+            if (!window.db.objectStoreNames.contains('employees')) {
+                console.warn('⚠️ [ATTENDANCE] Employees store not found in database');
+                this.employees = [];
+                return;
             }
             
             const transaction = window.db.transaction(['employees'], 'readonly');
@@ -91,13 +138,25 @@ class AttendanceManager {
             const employees = await new Promise((resolve, reject) => {
                 request.onsuccess = () => resolve(request.result);
                 request.onerror = () => reject(request.error);
+                transaction.onerror = () => reject(transaction.error);
             });
             
             this.employees = employees || [];
-            console.log('📊 [ATTENDANCE] Loaded employees:', this.employees.length);
+            console.log('📊 [ATTENDANCE] Successfully loaded employees:', this.employees.length);
+            
+            // Log employee names for debugging
+            this.employees.forEach((emp, index) => {
+                console.log(`👤 [ATTENDANCE] Employee ${index + 1}: ${emp.name} (ID: ${emp.id})`);
+            });
+            
         } catch (error) {
             console.error('❌ [ATTENDANCE] Failed to load employees:', error);
             this.employees = [];
+            
+            // Try to provide more helpful error message
+            if (error.message?.includes('not found')) {
+                console.log('💡 [ATTENDANCE] Tip: Add employees first using the Employees page');
+            }
         }
     }
 
@@ -164,12 +223,21 @@ class AttendanceManager {
 
     async startCamera() {
         try {
-            console.log('📷 [ATTENDANCE] Starting camera...');
+            console.log('📷 [ATTENDANCE] Starting camera function called...');
             
-            // Check if navigator.mediaDevices is available
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            // Check if browser supports camera
+            console.log('📷 [ATTENDANCE] Checking camera API support...');
+            if (!navigator.mediaDevices) {
+                console.error('❌ [ATTENDANCE] navigator.mediaDevices not available');
+                throw new Error('Camera API not available - try using HTTPS or a modern browser');
+            }
+            
+            if (!navigator.mediaDevices.getUserMedia) {
+                console.error('❌ [ATTENDANCE] getUserMedia not available');
                 throw new Error('Camera API not supported in this browser');
             }
+            
+            console.log('📷 [ATTENDANCE] Camera API supported, requesting access...');
             
             // Request camera access
             this.stream = await navigator.mediaDevices.getUserMedia({ 
@@ -180,34 +248,68 @@ class AttendanceManager {
                 } 
             });
             
+            console.log('📷 [ATTENDANCE] Camera access granted, setting up video element...');
+            
             const video = document.getElementById('faceVideo');
             if (!video) {
+                console.error('❌ [ATTENDANCE] Video element #faceVideo not found');
                 throw new Error('Video element not found');
             }
+            
+            console.log('📷 [ATTENDANCE] Video element found, connecting stream...');
             
             // Set up video element
             video.srcObject = this.stream;
             
+            console.log('📷 [ATTENDANCE] Waiting for video to load...');
+            
             // Wait for video to load
             await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error('Video loading timeout'));
+                }, 10000); // 10 second timeout
+                
                 video.onloadedmetadata = () => {
+                    console.log('📷 [ATTENDANCE] Video metadata loaded, starting playback...');
+                    clearTimeout(timeout);
                     video.play()
-                        .then(resolve)
-                        .catch(reject);
+                        .then(() => {
+                            console.log('📷 [ATTENDANCE] Video playback started successfully');
+                            resolve();
+                        })
+                        .catch((playError) => {
+                            console.error('❌ [ATTENDANCE] Video play failed:', playError);
+                            reject(playError);
+                        });
                 };
-                video.onerror = reject;
+                video.onerror = (videoError) => {
+                    console.error('❌ [ATTENDANCE] Video error:', videoError);
+                    clearTimeout(timeout);
+                    reject(videoError);
+                };
             });
+            
+            console.log('📷 [ATTENDANCE] Updating button states...');
             
             // Update button states
             const startBtn = document.getElementById('startCameraBtn');
             const stopBtn = document.getElementById('stopCameraBtn');
             const captureBtn = document.getElementById('captureBtn');
             
-            if (startBtn) startBtn.disabled = true;
-            if (stopBtn) stopBtn.disabled = false;
-            if (captureBtn) captureBtn.disabled = false;
+            if (startBtn) {
+                startBtn.disabled = true;
+                console.log('📷 [ATTENDANCE] Start button disabled');
+            }
+            if (stopBtn) {
+                stopBtn.disabled = false;
+                console.log('📷 [ATTENDANCE] Stop button enabled');
+            }
+            if (captureBtn) {
+                captureBtn.disabled = false;
+                console.log('📷 [ATTENDANCE] Capture button enabled');
+            }
             
-            console.log('📷 [ATTENDANCE] Camera started successfully');
+            console.log('✅ [ATTENDANCE] Camera started successfully!');
             
             // Show notification
             if (window.showNotification) {
@@ -216,21 +318,35 @@ class AttendanceManager {
             
         } catch (error) {
             console.error('❌ [ATTENDANCE] Failed to start camera:', error);
+            console.error('❌ [ATTENDANCE] Error stack:', error.stack);
             
             let errorMessage = 'Failed to start camera. ';
             if (error.name === 'NotAllowedError') {
                 errorMessage += 'Camera permission denied. Please allow camera access and try again.';
+                console.log('💡 [ATTENDANCE] User needs to grant camera permission');
             } else if (error.name === 'NotFoundError') {
                 errorMessage += 'No camera found on this device.';
+                console.log('💡 [ATTENDANCE] No camera device available');
             } else if (error.name === 'NotSupportedError') {
                 errorMessage += 'Camera not supported in this browser.';
+                console.log('💡 [ATTENDANCE] Browser does not support camera');
             } else {
                 errorMessage += error.message || 'Unknown error occurred.';
+                console.log('💡 [ATTENDANCE] Unexpected error:', error.message);
             }
             
             if (window.showNotification) {
                 window.showNotification(errorMessage, 'error');
             }
+            
+            // Reset button states on error
+            const startBtn = document.getElementById('startCameraBtn');
+            const stopBtn = document.getElementById('stopCameraBtn');
+            const captureBtn = document.getElementById('captureBtn');
+            
+            if (startBtn) startBtn.disabled = false;
+            if (stopBtn) stopBtn.disabled = true;
+            if (captureBtn) captureBtn.disabled = true;
         }
     }
 
@@ -525,6 +641,12 @@ class AttendanceManager {
 
 // Create global instance
 const attendanceManager = new AttendanceManager();
+
+// Make it globally accessible
+if (typeof window !== 'undefined') {
+    window.attendanceManager = attendanceManager;
+    console.log('✅ [ATTENDANCE] AttendanceManager created and made globally accessible');
+}
 
 // Export for module usage
 if (typeof module !== 'undefined' && module.exports) {
