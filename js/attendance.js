@@ -346,10 +346,8 @@ class AttendanceManager {
         console.log('📊 [ATTENDANCE] Populating dropdown with employees:', this.employees.length);
         console.log('📊 [ATTENDANCE] Employee data for dropdown:', this.employees);
         
-        // Clear existing options except the first one
-        while (select.children.length > 1) {
-            select.removeChild(select.lastChild);
-        }
+        // Clear all options first
+        select.innerHTML = '<option value="">Choose an employee...</option>';
         
         if (this.employees.length === 0) {
             console.warn('⚠️ [ATTENDANCE] No employees to populate in dropdown');
@@ -375,10 +373,17 @@ class AttendanceManager {
         this.employees.forEach((employee, index) => {
             console.log(`👤 [ATTENDANCE] Processing employee ${index + 1}:`, employee);
             const option = document.createElement('option');
-            option.value = employee.id || employee._id || index.toString();
-            option.textContent = `${employee.name} - ${employee.position || 'Employee'}`;
+            
+            // Handle different ID formats
+            const employeeId = employee.id || employee._id || index.toString();
+            const employeeName = employee.name || 'Unknown Employee';
+            const employeePosition = employee.position || 'Employee';
+            
+            option.value = employeeId;
+            option.textContent = employeeName; // Just show the name, not position
+            
             select.appendChild(option);
-            console.log(`✅ [ATTENDANCE] Added employee to dropdown: ${employee.name}`);
+            console.log(`✅ [ATTENDANCE] Added to dropdown: "${employeeName}" with ID: ${employeeId}`);
         });
         
         console.log('✅ [ATTENDANCE] Dropdown population completed');
