@@ -1,4 +1,4 @@
-// Attendance System with Facial Recognition
+// Simple Attendance System - Uses exact same method as Employee Management
 
 class AttendanceManager {
     constructor() {
@@ -12,27 +12,10 @@ class AttendanceManager {
     async init() {
         console.log('🚀 [ATTENDANCE] Initializing attendance system...');
         try {
-            // First, let's inspect what's available globally
-            console.log('🔍 [ATTENDANCE] Global database inspection:');
-            console.log('- window.db:', !!window.db);
-            console.log('- window.DatabaseManager:', !!window.DatabaseManager);
-            console.log('- ensureDBInit function:', typeof ensureDBInit);
-            console.log('- window.ensureDBInit function:', typeof window.ensureDBInit);
-            console.log('- window.employeeManager:', !!window.employeeManager);
-            console.log('- window.loadEmployees:', typeof window.loadEmployees);
-            
-            // CRITICAL: Ensure employee manager is initialized first
-            if (!window.employeeManager && window.loadEmployees) {
-                console.log('📊 [ATTENDANCE] Initializing employee manager first...');
-                await window.loadEmployees();
-                // Give it a moment to fully initialize
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            
-            // Check if there are any employees in other managers
-            if (window.employeeManager && window.employeeManager.employees) {
-                console.log('🔍 [ATTENDANCE] Found employeeManager with employees:', window.employeeManager.employees.length);
-                console.log('🔍 [ATTENDANCE] Employee data from employeeManager:', window.employeeManager.employees);
+            // Simple wait for database
+            if (!window.db) {
+                console.log('⏳ [ATTENDANCE] Waiting for database...');
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
             
             await this.loadEmployees();
@@ -41,14 +24,6 @@ class AttendanceManager {
             this.populateEmployeeDropdown();
             this.renderAttendanceRecords();
             console.log('✅ [ATTENDANCE] Initialization complete');
-            
-            // Auto-refresh if no employees found
-            if (this.employees.length === 0) {
-                console.log('⚠️ [ATTENDANCE] No employees found, attempting auto-refresh...');
-                setTimeout(() => {
-                    this.forceEmployeeSync();
-                }, 1000);
-            }
         } catch (error) {
             console.error('❌ [ATTENDANCE] Initialization failed:', error);
             if (window.showNotification) {
@@ -57,336 +32,27 @@ class AttendanceManager {
         }
     }
 
-    setupEventListeners() {
-        if (this._listenersAttached) return;
-        
-        // Check if we're on the attendance page
-        const attendancePage = document.getElementById('attendance');
-        if (!attendancePage) {
-            console.log('🔍 [ATTENDANCE] Not on attendance page, skipping event listener setup');
-            return;
-        }
-        
-        this._listenersAttached = true;
-        
-        // Camera controls
-        const startCameraBtn = document.getElementById('startCameraBtn');
-        const stopCameraBtn = document.getElementById('stopCameraBtn');
-        const captureBtn = document.getElementById('captureBtn');
-        
-        if (startCameraBtn) {
-            console.log('📷 [ATTENDANCE] Setting up Start Camera button event listener');
-            startCameraBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log('📷 [ATTENDANCE] Start Camera button clicked');
-                this.startCamera();
-            });
-        } else {
-            console.error('❌ [ATTENDANCE] Start Camera button not found');
-        }
-        
-        if (stopCameraBtn) {
-            console.log('📷 [ATTENDANCE] Setting up Stop Camera button event listener');
-            stopCameraBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log('📷 [ATTENDANCE] Stop Camera button clicked');
-                this.stopCamera();
-            });
-        } else {
-            console.error('❌ [ATTENDANCE] Stop Camera button not found');
-        }
-        
-        if (captureBtn) {
-            console.log('📷 [ATTENDANCE] Setting up Capture button event listener');
-            captureBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log('📷 [ATTENDANCE] Capture button clicked');
-                this.captureAndRecognize();
-            });
-        } else {
-            console.error('❌ [ATTENDANCE] Capture button not found');
-        }
-        
-        // Manual selection
-        const employeeSelect = document.getElementById('employeeSelect');
-        const manualCheckinBtn = document.getElementById('manualCheckinBtn');
-        
-        if (employeeSelect) {
-            employeeSelect.addEventListener('change', async (e) => {
-                const selectedValue = e.target.value;
-                
-                // Handle retry option
-                if (selectedValue === 'retry') {
-                    console.log('🔄 [ATTENDANCE] User selected retry option');
-                    if (window.showNotification) {
-                        window.showNotification('Reloading employees...', 'info');
-                    }
-                    
-                    // Reset dropdown to loading state
-                    e.target.innerHTML = '<option value="">Loading employees...</option>';
-                    
-                    // Reload employees
-                    await this.loadEmployees();
-                    this.populateEmployeeDropdown();
-                    
-                    if (window.showNotification) {
-                        window.showNotification('Employee list refreshed', 'success');
-                    }
-                    return;
-                }
-                
-                const checkinBtn = document.getElementById('manualCheckinBtn');
-                if (checkinBtn) {
-                    checkinBtn.disabled = !selectedValue || selectedValue === 'retry';
-                }
-                
-                // Also enable/disable facial recognition based on selection
-                const captureBtn = document.getElementById('captureBtn');
-                if (captureBtn && this.stream) {
-                    // Keep capture button enabled when camera is running, regardless of dropdown
-                    captureBtn.disabled = false;
-                }
-            });
-        }
-        
-        if (manualCheckinBtn) {
-            manualCheckinBtn.addEventListener('click', () => this.manualCheckin());
-        }
-        
-        // Sync Employees button
-        const syncBtn = document.getElementById('syncEmployeesBtn');
-        if (syncBtn) {
-            syncBtn.addEventListener('click', async () => {
-                console.log('🔄 [ATTENDANCE] Manual employee sync requested');
-                if (window.showNotification) {
-                    window.showNotification('Syncing employees from Employee Management...', 'info');
-                }
-                await this.forceEmployeeSync();
-            });
-        } else {
-            console.warn('⚠️ [ATTENDANCE] Sync Employees button not found');
-        }
-        
-        // Refresh button
-        const refreshBtn = document.getElementById('refreshAttendanceBtn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.refreshAttendance());
-        }
-    }
-
     async loadEmployees() {
         try {
-            console.log('📊 [ATTENDANCE] Loading employees...');
-            console.log('📊 [ATTENDANCE] Current database status:', !!window.db);
+            console.log('📊 [ATTENDANCE] Loading employees using EXACT same method as Employee Management...');
             
-            // PRIORITY FIX: Try to get employees from employeeManager FIRST
-            console.log('🔧 [ATTENDANCE] PRIORITY: Checking employeeManager first...');
-            
-            // If employeeManager doesn't exist yet, initialize it
-            if (!window.employeeManager) {
-                console.log('⚠️ [ATTENDANCE] employeeManager not found, initializing...');
+            // EXACT SAME METHOD AS EMPLOYEE MANAGEMENT
+            if (window.db) {
+                this.employees = await window.db.getAll('employees');
+                console.log('✅ [ATTENDANCE] Loaded employees:', this.employees.length);
                 
-                // Check if loadEmployees function exists (from employees.js)
-                if (window.loadEmployees && typeof window.loadEmployees === 'function') {
-                    console.log('📊 [ATTENDANCE] Calling window.loadEmployees() to initialize employeeManager...');
-                    await window.loadEmployees();
-                }
-            }
-            
-            if (window.employeeManager) {
-                console.log('✅ [ATTENDANCE] Found employeeManager, loading employees...');
-                try {
-                    // Force reload employees in employeeManager
-                    await window.employeeManager.loadEmployees();
-                    if (window.employeeManager.employees && window.employeeManager.employees.length > 0) {
-                        console.log('🎯 [ATTENDANCE] SUCCESS: Found employees in employeeManager:', window.employeeManager.employees.length);
-                        this.employees = [...window.employeeManager.employees]; // Create copy
-                        
-                        this.employees.forEach((emp, index) => {
-                            console.log(`👤 [ATTENDANCE] Employee ${index + 1}: ${emp.name} (ID: ${emp.id}, Position: ${emp.position})`);
-                        });
-                        
-                        console.log('✅ [ATTENDANCE] Using employees from Employee Management system');
-                        return; // SUCCESS - don't try database
-                    }
-                } catch (empManagerError) {
-                    console.warn('⚠️ [ATTENDANCE] employeeManager failed:', empManagerError);
-                }
-            } else {
-                console.warn('⚠️ [ATTENDANCE] employeeManager not found in window object even after initialization');
-                console.log('🔍 [ATTENDANCE] Available window objects:', Object.keys(window).filter(key => key.toLowerCase().includes('employee')));
-            }
-            
-            // FALLBACK: Try database method
-            console.log('🔄 [ATTENDANCE] Fallback: Trying database method...');
-            
-            // Wait for database to be ready with multiple attempts
-            let dbInitAttempts = 0;
-            const maxAttempts = 3;
-            
-            while (!window.db && dbInitAttempts < maxAttempts) {
-                console.log(`📊 [ATTENDANCE] Database not ready, attempt ${dbInitAttempts + 1}/${maxAttempts}`);
-                dbInitAttempts++;
-                
-                // Try different database initialization methods
-                if (typeof ensureDBInit === 'function') {
-                    console.log('📊 [ATTENDANCE] Using ensureDBInit function');
-                    await ensureDBInit();
-                } else if (typeof window.ensureDBInit === 'function') {
-                    console.log('📊 [ATTENDANCE] Using window.ensureDBInit function');
-                    await window.ensureDBInit();
-                } else if (window.DatabaseManager && typeof window.DatabaseManager.init === 'function') {
-                    console.log('📊 [ATTENDANCE] Using DatabaseManager.init');
-                    await window.DatabaseManager.init();
-                } else {
-                    console.log('📊 [ATTENDANCE] Waiting 1 second for database to initialize...');
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-            }
-            
-            if (!window.db) {
-                console.error('❌ [ATTENDANCE] Database still not available after all attempts');
-                console.log('💡 [ATTENDANCE] Available global objects:', Object.keys(window).filter(key => key.includes('db') || key.includes('DB')));
-                
-                // Try one more time with direct IndexedDB access
-                console.log('🔄 [ATTENDANCE] Attempting direct IndexedDB access...');
-                try {
-                    const dbRequest = indexedDB.open('BusinessManagementDB');
-                    await new Promise((resolve, reject) => {
-                        dbRequest.onsuccess = () => {
-                            const db = dbRequest.result;
-                            const transaction = db.transaction(['employees'], 'readonly');
-                            const store = transaction.objectStore('employees');
-                            const getAllRequest = store.getAll();
-                            
-                            getAllRequest.onsuccess = () => {
-                                const employees = getAllRequest.result || [];
-                                console.log('📊 [ATTENDANCE] Direct IndexedDB query found employees:', employees.length);
-                                if (employees.length > 0) {
-                                    this.employees = employees;
-                                    employees.forEach((emp, index) => {
-                                        console.log(`👤 [ATTENDANCE] Employee ${index + 1}: ${emp.name} (ID: ${emp.id})`);
-                                    });
-                                }
-                                resolve();
-                            };
-                            getAllRequest.onerror = reject;
-                        };
-                        dbRequest.onerror = reject;
+                if (this.employees.length > 0) {
+                    this.employees.forEach((emp, index) => {
+                        console.log(`👤 Employee ${index + 1}: ${emp.name} (ID: ${emp.id})`);
                     });
-                    
-                    if (this.employees.length > 0) {
-                        console.log('✅ [ATTENDANCE] Successfully loaded employees via direct IndexedDB');
-                        return;
-                    }
-                } catch (directDbError) {
-                    console.error('❌ [ATTENDANCE] Direct IndexedDB access failed:', directDbError);
                 }
-                
-                throw new Error('Database not available after initialization attempts');
-            }
-            
-            console.log('✅ [ATTENDANCE] Database is ready');
-            console.log('📊 [ATTENDANCE] Database object stores:', Array.from(window.db.objectStoreNames));
-            
-            // Check if employees store exists
-            if (!window.db.objectStoreNames.contains('employees')) {
-                console.warn('⚠️ [ATTENDANCE] Employees store not found in database');
-                console.log('📊 [ATTENDANCE] Available stores:', Array.from(window.db.objectStoreNames));
-                this.employees = [];
-                return;
-            }
-            
-            console.log('📊 [ATTENDANCE] Employees store found, creating transaction...');
-            const transaction = window.db.transaction(['employees'], 'readonly');
-            const store = transaction.objectStore('employees');
-            const request = store.getAll();
-            
-            console.log('📊 [ATTENDANCE] Requesting all employees...');
-            const employees = await new Promise((resolve, reject) => {
-                request.onsuccess = () => {
-                    console.log('📊 [ATTENDANCE] Employee request successful');
-                    resolve(request.result);
-                };
-                request.onerror = () => {
-                    console.error('❌ [ATTENDANCE] Employee request failed:', request.error);
-                    reject(request.error);
-                };
-                transaction.onerror = () => {
-                    console.error('❌ [ATTENDANCE] Transaction failed:', transaction.error);
-                    reject(transaction.error);
-                };
-            });
-            
-            this.employees = employees || [];
-            console.log('📊 [ATTENDANCE] Successfully loaded employees:', this.employees.length);
-            console.log('📊 [ATTENDANCE] Raw employee data:', this.employees);
-            
-            // Log employee names for debugging
-            if (this.employees.length > 0) {
-                this.employees.forEach((emp, index) => {
-                    console.log(`👤 [ATTENDANCE] Employee ${index + 1}: ${emp.name} (ID: ${emp.id}, Position: ${emp.position})`);
-                });
             } else {
-                console.warn('⚠️ [ATTENDANCE] No employees found in database');
-                console.log('💡 [ATTENDANCE] Try adding employees in the Employee Management section first');
+                console.warn('⚠️ [ATTENDANCE] Database not ready');
+                this.employees = [];
             }
-            
         } catch (error) {
             console.error('❌ [ATTENDANCE] Failed to load employees:', error);
-            console.error('❌ [ATTENDANCE] Error stack:', error.stack);
-            
-            // Try to get employees from employeeManager as backup
-            console.log('🔄 [ATTENDANCE] Trying backup employee source...');
-            if (window.employeeManager && window.employeeManager.employees && window.employeeManager.employees.length > 0) {
-                console.log('✅ [ATTENDANCE] Found employees in employeeManager, using as backup');
-                this.employees = window.employeeManager.employees;
-                console.log('📊 [ATTENDANCE] Backup employees loaded:', this.employees.length);
-                this.employees.forEach((emp, index) => {
-                    console.log(`👤 [ATTENDANCE] Backup Employee ${index + 1}: ${emp.name} (ID: ${emp.id})`);
-                });
-                return; // Don't show error if we found backup data
-            }
-            
             this.employees = [];
-            
-            // Try to provide more helpful error message
-            if (error.message?.includes('not found')) {
-                console.log('💡 [ATTENDANCE] Tip: Add employees first using the Employees page');
-            }
-            
-            // Show user-friendly error
-            if (window.showNotification) {
-                window.showNotification('Failed to load employees. Please refresh the page or add employees first.', 'error');
-            }
-        }
-    }
-
-    async loadAttendanceRecords() {
-        try {
-            if (!window.db) {
-                console.log('📊 [ATTENDANCE] Database not ready, waiting...');
-                await ensureDBInit();
-            }
-            
-            // Get today's date in YYYY-MM-DD format
-            const today = new Date().toISOString().split('T')[0];
-            
-            const transaction = window.db.transaction(['attendance'], 'readonly');
-            const store = transaction.objectStore('attendance');
-            const index = store.index('date');
-            const request = index.getAll(today);
-            
-            const todayRecords = await new Promise((resolve, reject) => {
-                request.onsuccess = () => resolve(request.result || []);
-                request.onerror = () => reject(request.error);
-            });
-                
-            this.attendanceRecords = todayRecords;
-            console.log('📊 [ATTENDANCE] Loaded attendance records:', todayRecords.length);
-        } catch (error) {
-            console.error('❌ [ATTENDANCE] Failed to load attendance records:', error);
-            this.attendanceRecords = [];
         }
     }
 
@@ -398,177 +64,240 @@ class AttendanceManager {
         }
         
         console.log('📊 [ATTENDANCE] Populating dropdown with employees:', this.employees.length);
-        console.log('📊 [ATTENDANCE] Employee data for dropdown:', this.employees);
         
-        // Clear all options first
+        // Clear and reset dropdown
         select.innerHTML = '<option value="">Choose an employee...</option>';
         
         if (this.employees.length === 0) {
-            console.warn('⚠️ [ATTENDANCE] No employees to populate in dropdown');
             const option = document.createElement('option');
             option.value = '';
-            option.textContent = 'No employees found - Click Refresh or add employees first';
+            option.textContent = 'No employees found - Add employees first';
             option.disabled = true;
-            option.style.color = '#ff6b6b';
             select.appendChild(option);
-            
-            // Also add a retry option
-            const retryOption = document.createElement('option');
-            retryOption.value = 'retry';
-            retryOption.textContent = '🔄 Click here to retry loading employees';
-            retryOption.style.color = '#4dabf7';
-            select.appendChild(retryOption);
             return;
         }
         
-        console.log('📊 [ATTENDANCE] Adding employees to dropdown...');
-        
-        // Add employee options
-        this.employees.forEach((employee, index) => {
-            console.log(`👤 [ATTENDANCE] Processing employee ${index + 1}:`, employee);
+        // Add each employee - SIMPLE AND CLEAN
+        this.employees.forEach(employee => {
             const option = document.createElement('option');
-            
-            // Handle different ID formats
-            const employeeId = employee.id || employee._id || index.toString();
-            const employeeName = employee.name || 'Unknown Employee';
-            const employeePosition = employee.position || 'Employee';
-            
-            option.value = employeeId;
-            option.textContent = employeeName; // Just show the name, not position
-            
+            option.value = employee.id || employee._id;
+            option.textContent = employee.name;
             select.appendChild(option);
-            console.log(`✅ [ATTENDANCE] Added to dropdown: "${employeeName}" with ID: ${employeeId}`);
+            console.log(`✅ Added to dropdown: ${employee.name}`);
         });
         
-        console.log('✅ [ATTENDANCE] Dropdown population completed');
+        console.log('✅ [ATTENDANCE] Dropdown populated');
+    }
+
+    setupEventListeners() {
+        if (this._listenersAttached) return;
+        
+        const attendancePage = document.getElementById('attendance');
+        if (!attendancePage) return;
+        
+        this._listenersAttached = true;
+        
+        // Sync button
+        const syncBtn = document.getElementById('syncEmployeesBtn');
+        if (syncBtn) {
+            syncBtn.addEventListener('click', async () => {
+                console.log('🔄 Syncing employees...');
+                await this.loadEmployees();
+                this.populateEmployeeDropdown();
+                if (window.showNotification) {
+                    window.showNotification(`Found ${this.employees.length} employees`, 'info');
+                }
+            });
+        }
+        
+        // Employee dropdown
+        const employeeSelect = document.getElementById('employeeSelect');
+        if (employeeSelect) {
+            employeeSelect.addEventListener('change', (e) => {
+                const checkinBtn = document.getElementById('manualCheckinBtn');
+                if (checkinBtn) {
+                    checkinBtn.disabled = !e.target.value;
+                }
+            });
+        }
+        
+        // Check-in button
+        const manualCheckinBtn = document.getElementById('manualCheckinBtn');
+        if (manualCheckinBtn) {
+            manualCheckinBtn.addEventListener('click', () => this.manualCheckin());
+        }
+        
+        // Camera buttons
+        const startCameraBtn = document.getElementById('startCameraBtn');
+        if (startCameraBtn) {
+            startCameraBtn.addEventListener('click', () => this.startCamera());
+        }
+        
+        const stopCameraBtn = document.getElementById('stopCameraBtn');
+        if (stopCameraBtn) {
+            stopCameraBtn.addEventListener('click', () => this.stopCamera());
+        }
+        
+        const captureBtn = document.getElementById('captureBtn');
+        if (captureBtn) {
+            captureBtn.addEventListener('click', () => this.captureAndRecognize());
+        }
+        
+        // Refresh button
+        const refreshBtn = document.getElementById('refreshAttendanceBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.refreshAttendance());
+        }
+    }
+
+    async manualCheckin() {
+        const select = document.getElementById('employeeSelect');
+        const employeeId = select.value;
+        
+        if (!employeeId) {
+            if (window.showNotification) {
+                window.showNotification('Please select an employee', 'error');
+            }
+            return;
+        }
+        
+        const employee = this.employees.find(emp => 
+            (emp.id && emp.id.toString() === employeeId) || 
+            (emp._id && emp._id.toString() === employeeId)
+        );
+        
+        if (!employee) {
+            console.error('Employee not found');
+            return;
+        }
+        
+        await this.recordAttendance(employee, 'manual');
+    }
+
+    async recordAttendance(employee, method = 'manual') {
+        try {
+            const now = new Date();
+            const attendanceRecord = {
+                employeeId: employee.id || employee._id,
+                employeeName: employee.name,
+                employeePosition: employee.position || 'Employee',
+                date: now.toISOString().split('T')[0],
+                checkInTime: now.toISOString(),
+                checkOutTime: null,
+                method: method,
+                capturedImage: this.lastCapturedImage || null,
+                createdAt: now.toISOString()
+            };
+            
+            await window.db.add('attendance', attendanceRecord);
+            
+            if (window.showNotification) {
+                window.showNotification(`✅ ${employee.name} checked in successfully`, 'success');
+            }
+            
+            // Reset form
+            document.getElementById('employeeSelect').value = '';
+            document.getElementById('manualCheckinBtn').disabled = true;
+            
+            // Reload attendance records
+            await this.loadAttendanceRecords();
+            this.renderAttendanceRecords();
+            
+        } catch (error) {
+            console.error('Failed to record attendance:', error);
+            if (window.showNotification) {
+                window.showNotification('Failed to record attendance', 'error');
+            }
+        }
+    }
+
+    async loadAttendanceRecords() {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            
+            if (!window.db) {
+                console.warn('Database not ready');
+                this.attendanceRecords = [];
+                return;
+            }
+            
+            const allRecords = await window.db.getAll('attendance');
+            this.attendanceRecords = allRecords.filter(record => record.date === today);
+            
+            console.log(`Loaded ${this.attendanceRecords.length} attendance records for today`);
+        } catch (error) {
+            console.error('Failed to load attendance records:', error);
+            this.attendanceRecords = [];
+        }
+    }
+
+    renderAttendanceRecords() {
+        const container = document.getElementById('attendanceRecords');
+        if (!container) return;
+        
+        if (this.attendanceRecords.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: #666;">
+                    <i class="fas fa-clipboard-list" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <p>No attendance records for today</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = `
+            <div class="attendance-list">
+                ${this.attendanceRecords.map(record => `
+                    <div class="attendance-record">
+                        <div class="attendance-record-info">
+                            <h4>${record.employeeName}</h4>
+                            <p>${record.employeePosition}</p>
+                            <p class="attendance-time">
+                                Check-in: ${new Date(record.checkInTime).toLocaleTimeString()}
+                            </p>
+                            ${record.checkOutTime ? `
+                                <p class="attendance-time">
+                                    Check-out: ${new Date(record.checkOutTime).toLocaleTimeString()}
+                                </p>
+                            ` : ''}
+                        </div>
+                        <div class="attendance-record-method">
+                            <span class="badge ${record.method === 'facial' ? 'badge-success' : 'badge-info'}">
+                                ${record.method === 'facial' ? 'Facial Recognition' : 'Manual Check-in'}
+                            </span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
     }
 
     async startCamera() {
         try {
-            console.log('📷 [ATTENDANCE] Starting camera function called...');
-            
-            // Check if browser supports camera
-            console.log('📷 [ATTENDANCE] Checking camera API support...');
-            if (!navigator.mediaDevices) {
-                console.error('❌ [ATTENDANCE] navigator.mediaDevices not available');
-                throw new Error('Camera API not available - try using HTTPS or a modern browser');
-            }
-            
-            if (!navigator.mediaDevices.getUserMedia) {
-                console.error('❌ [ATTENDANCE] getUserMedia not available');
-                throw new Error('Camera API not supported in this browser');
-            }
-            
-            console.log('📷 [ATTENDANCE] Camera API supported, requesting access...');
-            
-            // Request camera access
-            this.stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    facingMode: 'user',
-                    width: { ideal: 640 },
-                    height: { ideal: 480 }
-                } 
-            });
-            
-            console.log('📷 [ATTENDANCE] Camera access granted, setting up video element...');
-            
             const video = document.getElementById('faceVideo');
             if (!video) {
-                console.error('❌ [ATTENDANCE] Video element #faceVideo not found');
-                throw new Error('Video element not found');
+                console.error('Video element not found');
+                return;
             }
             
-            console.log('📷 [ATTENDANCE] Video element found, connecting stream...');
-            
-            // Set up video element
-            video.srcObject = this.stream;
-            
-            console.log('📷 [ATTENDANCE] Waiting for video to load...');
-            
-            // Wait for video to load
-            await new Promise((resolve, reject) => {
-                const timeout = setTimeout(() => {
-                    reject(new Error('Video loading timeout'));
-                }, 10000); // 10 second timeout
-                
-                video.onloadedmetadata = () => {
-                    console.log('📷 [ATTENDANCE] Video metadata loaded, starting playback...');
-                    clearTimeout(timeout);
-                    video.play()
-                        .then(() => {
-                            console.log('📷 [ATTENDANCE] Video playback started successfully');
-                            resolve();
-                        })
-                        .catch((playError) => {
-                            console.error('❌ [ATTENDANCE] Video play failed:', playError);
-                            reject(playError);
-                        });
-                };
-                video.onerror = (videoError) => {
-                    console.error('❌ [ATTENDANCE] Video error:', videoError);
-                    clearTimeout(timeout);
-                    reject(videoError);
-                };
+            this.stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'user' } 
             });
             
-            console.log('📷 [ATTENDANCE] Updating button states...');
+            video.srcObject = this.stream;
             
-            // Update button states
-            const startBtn = document.getElementById('startCameraBtn');
-            const stopBtn = document.getElementById('stopCameraBtn');
-            const captureBtn = document.getElementById('captureBtn');
+            document.getElementById('startCameraBtn').disabled = true;
+            document.getElementById('stopCameraBtn').disabled = false;
+            document.getElementById('captureBtn').disabled = false;
             
-            if (startBtn) {
-                startBtn.disabled = true;
-                console.log('📷 [ATTENDANCE] Start button disabled');
-            }
-            if (stopBtn) {
-                stopBtn.disabled = false;
-                console.log('📷 [ATTENDANCE] Stop button enabled');
-            }
-            if (captureBtn) {
-                captureBtn.disabled = false;
-                console.log('📷 [ATTENDANCE] Capture button enabled');
-            }
-            
-            console.log('✅ [ATTENDANCE] Camera started successfully!');
-            
-            // Show notification
             if (window.showNotification) {
-                window.showNotification('Camera started successfully', 'success');
+                window.showNotification('Camera started', 'success');
             }
-            
         } catch (error) {
-            console.error('❌ [ATTENDANCE] Failed to start camera:', error);
-            console.error('❌ [ATTENDANCE] Error stack:', error.stack);
-            
-            let errorMessage = 'Failed to start camera. ';
-            if (error.name === 'NotAllowedError') {
-                errorMessage += 'Camera permission denied. Please allow camera access and try again.';
-                console.log('💡 [ATTENDANCE] User needs to grant camera permission');
-            } else if (error.name === 'NotFoundError') {
-                errorMessage += 'No camera found on this device.';
-                console.log('💡 [ATTENDANCE] No camera device available');
-            } else if (error.name === 'NotSupportedError') {
-                errorMessage += 'Camera not supported in this browser.';
-                console.log('💡 [ATTENDANCE] Browser does not support camera');
-            } else {
-                errorMessage += error.message || 'Unknown error occurred.';
-                console.log('💡 [ATTENDANCE] Unexpected error:', error.message);
-            }
-            
+            console.error('Failed to start camera:', error);
             if (window.showNotification) {
-                window.showNotification(errorMessage, 'error');
+                window.showNotification('Failed to start camera', 'error');
             }
-            
-            // Reset button states on error
-            const startBtn = document.getElementById('startCameraBtn');
-            const stopBtn = document.getElementById('stopCameraBtn');
-            const captureBtn = document.getElementById('captureBtn');
-            
-            if (startBtn) startBtn.disabled = false;
-            if (stopBtn) stopBtn.disabled = true;
-            if (captureBtn) captureBtn.disabled = true;
         }
     }
 
@@ -582,12 +311,9 @@ class AttendanceManager {
                 video.srcObject = null;
             }
             
-            // Update button states
             document.getElementById('startCameraBtn').disabled = false;
             document.getElementById('stopCameraBtn').disabled = true;
             document.getElementById('captureBtn').disabled = true;
-            
-            console.log('📷 [ATTENDANCE] Camera stopped');
             
             if (window.showNotification) {
                 window.showNotification('Camera stopped', 'info');
@@ -598,362 +324,38 @@ class AttendanceManager {
     async captureAndRecognize() {
         const video = document.getElementById('faceVideo');
         const canvas = document.getElementById('faceCanvas');
-        const employeeSelect = document.getElementById('employeeSelect');
         
-        if (!video || !canvas) {
-            console.error('❌ [ATTENDANCE] Video or canvas element not found');
-            if (window.showNotification) {
-                window.showNotification('Camera elements not found', 'error');
-            }
-            return;
-        }
-        
-        // Check if an employee is selected
-        const selectedEmployeeId = employeeSelect?.value;
-        if (!selectedEmployeeId) {
-            if (window.showNotification) {
-                window.showNotification('Please select an employee first from the dropdown', 'warning');
-            }
-            return;
-        }
+        if (!video || !canvas) return;
         
         const context = canvas.getContext('2d');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0);
         
-        // Capture the current frame
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        this.lastCapturedImage = canvas.toDataURL('image/jpeg');
         
-        // Convert to base64 for storage
-        const imageData = canvas.toDataURL('image/jpeg', 0.8);
-        this.lastCapturedImage = imageData;
-        
-        // Find the selected employee
-        const employee = this.employees.find(emp => emp.id === selectedEmployeeId);
-        if (!employee) {
-            if (window.showNotification) {
-                window.showNotification('Selected employee not found', 'error');
-            }
-            return;
+        // For now, just show employee selection
+        if (window.showNotification) {
+            window.showNotification('Photo captured! Please select your name from the dropdown.', 'info');
         }
         
-        // Show confirmation modal with the selected employee
-        this.showFacialRecognitionModal(imageData, employee);
-    }
-
-    showFacialRecognitionModal(imageData, employee) {
-        // Create modal HTML
-        const modalHTML = `
-            <div class="modal-overlay" id="facialRecognitionModal">
-                <div class="modal-content" style="max-width: 500px;">
-                    <div class="modal-header">
-                        <h2>Facial Recognition Check-in</h2>
-                        <button class="modal-close" onclick="attendanceManager.closeFacialRecognitionModal()">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <div style="text-align: center; margin-bottom: 1rem;">
-                            <img src="${imageData}" alt="Captured Image" style="max-width: 100%; border-radius: 8px; max-height: 200px;">
-                        </div>
-                        <div style="text-align: center; margin-bottom: 1rem;">
-                            <h3 style="color: var(--primary-color); margin-bottom: 0.5rem;">${employee.name}</h3>
-                            <p style="color: var(--text-muted); margin: 0;">${employee.position || 'Employee'}</p>
-                        </div>
-                        <p style="text-align: center;">Confirm facial recognition check-in for this employee?</p>
-                        <div class="modal-actions">
-                            <button class="btn btn-success" onclick="attendanceManager.confirmFacialRecognition('${employee.id}')">
-                                <i class="fas fa-check"></i> Confirm Check-in
-                            </button>
-                            <button class="btn btn-secondary" onclick="attendanceManager.closeFacialRecognitionModal()">
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Add modal to page
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-    }
-
-    closeFacialRecognitionModal() {
-        const modal = document.getElementById('facialRecognitionModal');
-        if (modal) {
-            modal.remove();
-        }
-    }
-
-    async confirmFacialRecognition(employeeId) {
-        if (!employeeId) {
-            if (window.showNotification) {
-                window.showNotification('Employee ID not provided', 'error');
-            }
-            return;
-        }
-        
-        const employee = this.employees.find(emp => emp.id === employeeId);
-        if (!employee) {
-            if (window.showNotification) {
-                window.showNotification('Employee not found', 'error');
-            }
-            return;
-        }
-        
-        await this.recordAttendance(employee, 'facial', this.lastCapturedImage);
-        this.closeFacialRecognitionModal();
-        
-        // Reset the dropdown after successful check-in
-        const employeeSelect = document.getElementById('employeeSelect');
-        if (employeeSelect) {
-            employeeSelect.value = '';
-            const checkinBtn = document.getElementById('manualCheckinBtn');
-            if (checkinBtn) {
-                checkinBtn.disabled = true;
-            }
-        }
-    }
-
-    async manualCheckin() {
-        const select = document.getElementById('employeeSelect');
-        const employeeId = select?.value;
-        
-        if (!employeeId) {
-            if (window.showNotification) {
-                window.showNotification('Please select an employee', 'error');
-            }
-            return;
-        }
-        
-        const employee = this.employees.find(emp => emp.id === employeeId);
-        if (!employee) {
-            if (window.showNotification) {
-                window.showNotification('Employee not found', 'error');
-            }
-            return;
-        }
-        
-        await this.recordAttendance(employee, 'manual');
-        
-        // Reset selection
-        select.value = '';
-        document.getElementById('manualCheckinBtn').disabled = true;
-    }
-
-    async recordAttendance(employee, method, imageData = null) {
-        try {
-            const now = new Date();
-            const timestamp = now.toISOString();
-            const date = now.toISOString().split('T')[0];
-            const timeString = now.toLocaleTimeString();
-            
-            // Check if employee already checked in today
-            const existingRecord = this.attendanceRecords.find(record => 
-                record.employeeId === employee.id && record.date === date
-            );
-            
-            if (existingRecord) {
-                if (window.showNotification) {
-                    window.showNotification(`${employee.name} has already checked in today at ${new Date(existingRecord.timestamp).toLocaleTimeString()}`, 'warning');
-                }
-                return;
-            }
-            
-            const record = {
-                employeeId: employee.id,
-                employeeName: employee.name,
-                employeePosition: employee.position || 'Employee',
-                timestamp,
-                date,
-                method,
-                imageData
-            };
-            
-            // Save to database
-            const transaction = window.db.transaction(['attendance'], 'readwrite');
-            const store = transaction.objectStore('attendance');
-            const request = store.add(record);
-            
-            await new Promise((resolve, reject) => {
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-            
-            // Add to local array
-            this.attendanceRecords.push(record);
-            
-            // Update UI
-            this.renderAttendanceRecords();
-            
-            console.log('✅ [ATTENDANCE] Recorded attendance:', record);
-            
-            if (window.showNotification) {
-                window.showNotification(
-                    `✅ ${employee.name} checked in successfully at ${timeString}`, 
-                    'success'
-                );
-            }
-            
-        } catch (error) {
-            console.error('❌ [ATTENDANCE] Failed to record attendance:', error);
-            if (window.showNotification) {
-                window.showNotification('Failed to record attendance', 'error');
-            }
-        }
-    }
-
-    renderAttendanceRecords() {
-        const container = document.getElementById('attendanceRecords');
-        if (!container) return;
-        
-        if (this.attendanceRecords.length === 0) {
-            container.innerHTML = '<div class="loading">No attendance records for today</div>';
-            return;
-        }
-        
-        // Sort by timestamp (newest first)
-        const sortedRecords = [...this.attendanceRecords].sort((a, b) => 
-            new Date(b.timestamp) - new Date(a.timestamp)
-        );
-        
-        const html = sortedRecords.map(record => {
-            const time = new Date(record.timestamp).toLocaleTimeString();
-            const methodClass = record.method === 'facial' ? 'method-facial' : 'method-manual';
-            const methodText = record.method === 'facial' ? 'Facial Recognition' : 'Manual Selection';
-            
-            return `
-                <div class="attendance-record">
-                    <div class="record-info">
-                        <div class="record-name">${record.employeeName}</div>
-                        <div class="record-time">${time} • ${record.employeePosition || 'Employee'}</div>
-                    </div>
-                    <div class="record-method ${methodClass}">${methodText}</div>
-                </div>
-            `;
-        }).join('');
-        
-        container.innerHTML = html;
+        // Focus on dropdown
+        document.getElementById('employeeSelect').focus();
     }
 
     async refreshAttendance() {
-        try {
-            console.log('🔄 [ATTENDANCE] Refreshing attendance data...');
-            if (window.showNotification) {
-                window.showNotification('Refreshing attendance data...', 'info');
-            }
-            
-            // Try to sync with employeeManager first
-            console.log('🔄 [ATTENDANCE] Trying to sync with Employee Management system...');
-            if (window.employeeManager) {
-                try {
-                    console.log('📊 [ATTENDANCE] Found employeeManager, reloading employees...');
-                    await window.employeeManager.loadEmployees();
-                    if (window.employeeManager.employees && window.employeeManager.employees.length > 0) {
-                        console.log('✅ [ATTENDANCE] Synced with employeeManager:', window.employeeManager.employees.length, 'employees');
-                        this.employees = window.employeeManager.employees;
-                        this.populateEmployeeDropdown();
-                        
-                        if (window.showNotification) {
-                            window.showNotification(`Found ${this.employees.length} employees from Employee Management`, 'success');
-                        }
-                        return;
-                    }
-                } catch (syncError) {
-                    console.warn('⚠️ [ATTENDANCE] Failed to sync with employeeManager:', syncError);
-                }
-            }
-            
-            // Force reload employees with fresh database connection
-            console.log('📊 [ATTENDANCE] Force reloading employees from database...');
-            await this.loadEmployees();
-            
-            console.log('📊 [ATTENDANCE] Loading attendance records...');
-            await this.loadAttendanceRecords();
-            
-            console.log('📊 [ATTENDANCE] Updating UI...');
-            this.populateEmployeeDropdown();
-            this.renderAttendanceRecords();
-            
-            console.log('✅ [ATTENDANCE] Refresh completed successfully');
-            if (window.showNotification) {
-                window.showNotification(`Attendance data refreshed - Found ${this.employees.length} employees`, 'success');
-            }
-        } catch (error) {
-            console.error('❌ [ATTENDANCE] Failed to refresh:', error);
-            if (window.showNotification) {
-                window.showNotification('Failed to refresh attendance data', 'error');
-            }
+        await this.loadEmployees();
+        await this.loadAttendanceRecords();
+        this.populateEmployeeDropdown();
+        this.renderAttendanceRecords();
+        
+        if (window.showNotification) {
+            window.showNotification('Attendance data refreshed', 'success');
         }
-    }
-
-    async forceEmployeeSync() {
-        try {
-            console.log('🔧 [ATTENDANCE] Force syncing employees...');
-            
-            if (window.employeeManager) {
-                console.log('✅ [ATTENDANCE] Found employeeManager, forcing reload...');
-                
-                // Force reload employees in employeeManager
-                await window.employeeManager.loadEmployees();
-                
-                if (window.employeeManager.employees && window.employeeManager.employees.length > 0) {
-                    console.log('🎯 [ATTENDANCE] SUCCESS: Synced employees from Employee Management');
-                    this.employees = [...window.employeeManager.employees];
-                    
-                    console.log('📊 [ATTENDANCE] Synced employees:');
-                    this.employees.forEach((emp, index) => {
-                        console.log(`👤 Employee ${index + 1}: ${emp.name} (${emp.position})`);
-                    });
-                    
-                    // Update UI
-                    this.populateEmployeeDropdown();
-                    
-                    if (window.showNotification) {
-                        window.showNotification(`✅ Synced ${this.employees.length} employees from Employee Management`, 'success');
-                    }
-                    
-                    return true;
-                } else {
-                    console.warn('⚠️ [ATTENDANCE] No employees found in employeeManager after reload');
-                    if (window.showNotification) {
-                        window.showNotification('No employees found. Please add employees in Employee Management first.', 'warning');
-                    }
-                }
-            } else {
-                console.error('❌ [ATTENDANCE] employeeManager not found');
-                if (window.showNotification) {
-                    window.showNotification('Employee Management system not found', 'error');
-                }
-            }
-            
-            return false;
-        } catch (error) {
-            console.error('❌ [ATTENDANCE] Force sync failed:', error);
-            if (window.showNotification) {
-                window.showNotification('Failed to sync employees', 'error');
-            }
-            return false;
-        }
-    }
-
-    // Cleanup method
-    cleanup() {
-        if (this.stream) {
-            this.stopCamera();
-        }
-        this._listenersAttached = false;
     }
 }
 
-// Create global instance
+// Create and initialize
 const attendanceManager = new AttendanceManager();
-
-// Make it globally accessible
-if (typeof window !== 'undefined') {
-    window.attendanceManager = attendanceManager;
-    console.log('✅ [ATTENDANCE] AttendanceManager created and made globally accessible');
-}
-
-// Export for module usage
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = AttendanceManager;
-}
+window.attendanceManager = attendanceManager;
+console.log('✅ AttendanceManager created and ready');
