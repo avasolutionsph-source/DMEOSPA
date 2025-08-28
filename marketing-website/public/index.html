@@ -25,6 +25,27 @@
     <link rel="stylesheet" href="/assets/cookie-consent.css">
 </head>
 <body>
+    <!-- Age Verification Modal (Philippine Law Compliance) -->
+    <div id="ageVerificationModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10001;">
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:40px; border-radius:12px; max-width:500px; text-align:center;">
+            <h2 style="color:#1a202c; margin-bottom:20px;">Age Verification Required</h2>
+            <p style="color:#4a5568; margin-bottom:30px;">
+                In compliance with Philippine law, you must be at least 18 years old to use our business services.
+                Please confirm your age to continue.
+            </p>
+            <div style="display:flex; gap:20px; justify-content:center;">
+                <button onclick="verifyAge(true)" style="padding:12px 30px; background:#48bb78; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">
+                    I am 18 or older
+                </button>
+                <button onclick="verifyAge(false)" style="padding:12px 30px; background:#e53e3e; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">
+                    I am under 18
+                </button>
+            </div>
+            <p style="color:#718096; font-size:12px; margin-top:20px;">
+                This verification is required under Philippine Data Privacy Act (RA 10173)
+            </p>
+        </div>
+    </div>
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
@@ -330,6 +351,54 @@
     <!-- Cookie Consent Script -->
     <script src="/assets/cookie-consent.js"></script>
     
+    <!-- Age Verification Script -->
+    <script>
+        // Age verification for Philippine compliance
+        function checkAgeVerification() {
+            const ageVerified = localStorage.getItem('ageVerified');
+            const verificationDate = localStorage.getItem('ageVerificationDate');
+            
+            // Check if verification is older than 30 days
+            if (ageVerified && verificationDate) {
+                const daysSinceVerification = (Date.now() - new Date(verificationDate)) / (1000 * 60 * 60 * 24);
+                if (daysSinceVerification > 30) {
+                    localStorage.removeItem('ageVerified');
+                    localStorage.removeItem('ageVerificationDate');
+                    return false;
+                }
+                return ageVerified === 'true';
+            }
+            return false;
+        }
+        
+        function verifyAge(isAdult) {
+            if (isAdult) {
+                localStorage.setItem('ageVerified', 'true');
+                localStorage.setItem('ageVerificationDate', new Date().toISOString());
+                document.getElementById('ageVerificationModal').style.display = 'none';
+                
+                // Log for compliance
+                fetch('/api/age-verification', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        verified: true,
+                        timestamp: new Date().toISOString()
+                    })
+                }).catch(err => console.error('Failed to log age verification:', err));
+            } else {
+                // Redirect to age-restricted page
+                window.location.href = '/age-restricted';
+            }
+        }
+        
+        // Check age verification on load
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!checkAgeVerification()) {
+                document.getElementById('ageVerificationModal').style.display = 'block';
+            }
+        });
+    </script>
     
     <!-- Philippine Legal Compliance Notice -->
     <script>
