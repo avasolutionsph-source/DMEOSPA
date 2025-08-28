@@ -2,7 +2,7 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 6; // Incremented for expenses store
+        this.version = 7; // Incremented for attendance store
         this.db = null;
         this.userId = null;
         this.isInitializing = false;
@@ -234,6 +234,16 @@ class Database {
                     expensesStore.createIndex('date', 'date', { unique: false });
                     expensesStore.createIndex('purchaser', 'purchaser', { unique: false });
                     expensesStore.createIndex('syncStatus', 'syncStatus', { unique: false });
+                }
+
+                // Attendance store
+                if (!this.db.objectStoreNames.contains('attendance')) {
+                    const attendanceStore = this.db.createObjectStore('attendance', { keyPath: 'id', autoIncrement: true });
+                    attendanceStore.createIndex('employeeId', 'employeeId', { unique: false });
+                    attendanceStore.createIndex('date', 'date', { unique: false });
+                    attendanceStore.createIndex('timestamp', 'timestamp', { unique: false });
+                    attendanceStore.createIndex('method', 'method', { unique: false });
+                    attendanceStore.createIndex('syncStatus', 'syncStatus', { unique: false });
                 }
 
                 // Settings store
