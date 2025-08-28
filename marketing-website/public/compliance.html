@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal Compliance - Ava Solutions Philippines</title>
+    <meta name="description" content="Complete legal compliance documentation for Ava Solutions Philippines">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/style.css">
+    <style>
+        .compliance-header {
+            background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+            color: white;
+            padding: 100px 20px 60px;
+            text-align: center;
+        }
+        
+        .compliance-container {
+            max-width: 1200px;
+            margin: -40px auto 60px;
+            padding: 0 20px;
+        }
+        
+        .compliance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+        
+        .compliance-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+        
+        .compliance-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+        }
+        
+        .card-header {
+            padding: 25px;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border-bottom: 3px solid #3b82f6;
+        }
+        
+        .card-header h3 {
+            margin: 0 0 10px 0;
+            color: #1f2937;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-header p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .card-content {
+            padding: 25px;
+        }
+        
+        .compliance-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .compliance-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .compliance-icon {
+            width: 40px;
+            height: 40px;
+            background: #dbeafe;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .compliance-icon.verified {
+            background: #d1fae5;
+        }
+        
+        .compliance-icon.verified i {
+            color: #10b981;
+        }
+        
+        .compliance-icon i {
+            color: #3b82f6;
+            font-size: 18px;
+        }
+        
+        .compliance-details h4 {
+            margin: 0 0 5px 0;
+            color: #1f2937;
+            font-size: 16px;
+        }
+        
+        .compliance-details p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .compliance-details a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .compliance-details a:hover {
+            text-decoration: underline;
+        }
+        
+        .certification-badge {
+            display: inline-block;
+            background: #fef3c7;
+            color: #92400e;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        
+        .documents-section {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+        }
+        
+        .documents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .doc-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #1f2937;
+            transition: all 0.3s ease;
+        }
+        
+        .doc-link:hover {
+            background: #e5e7eb;
+            transform: translateY(-2px);
+        }
+        
+        .doc-link i {
+            font-size: 32px;
+            color: #3b82f6;
+            margin-bottom: 10px;
+        }
+        
+        .doc-link span {
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+        }
+        
+        .last-updated {
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 40px;
+            padding-top: 40px;
+            border-top: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-spa"></i>
+                <span>Ava Solutions</span>
+            </div>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/pricing">Pricing</a>
+                <a href="/features">Features</a>
+                <a href="/contact">Contact</a>
+                <a href="/compliance" class="active">Compliance</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="compliance-header">
+        <h1>Legal Compliance Center</h1>
+        <p>Complete transparency in our legal compliance with Philippine laws and regulations</p>
+    </div>
+
+    <div class="compliance-container">
+        <div class="compliance-grid">
+            <!-- Data Privacy Compliance -->
+            <div class="compliance-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-shield-alt"></i> Data Privacy Compliance</h3>
+                    <p>Republic Act No. 10173</p>
+                </div>
+                <div class="card-content">
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>NPC Registration</h4>
+                            <p>Registered with the National Privacy Commission</p>
+                            <span class="certification-badge">Registration #: [Your NPC Number]</span>
+                        </div>
+                    </div>
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>Data Protection Officer</h4>
+                            <p>Appointed DPO: [Your DPO Name]</p>
+                            <p>Contact: dpo@avasolutions.ph</p>
+                        </div>
+                    </div>
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>Privacy Impact Assessment</h4>
+                            <p>Last conducted: January 2025</p>
+                            <a href="/privacy-policy">View Privacy Policy →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Registration -->
+            <div class="compliance-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-building"></i> Business Registration</h3>
+                    <p>Government Permits & Licenses</p>
+                </div>
+                <div class="card-content">
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>DTI Registration</h4>
+                            <p>Department of Trade and Industry</p>
+                            <span class="certification-badge">DTI Reg #: [Your DTI Number]</span>
+                        </div>
+                    </div>
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>BIR Registration</h4>
+                            <p>Bureau of Internal Revenue</p>
+                            <span class="certification-badge">TIN: [Your TIN]</span>
+                        </div>
+                    </div>
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>Mayor's Permit</h4>
+                            <p>Local Government Unit</p>
+                            <span class="certification-badge">Permit #: [Your Permit Number]</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- E-Commerce Compliance -->
+            <div class="compliance-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-shopping-cart"></i> E-Commerce Compliance</h3>
+                    <p>Republic Act No. 8792</p>
+                </div>
+                <div class="card-content">
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>Electronic Transactions</h4>
+                            <p>Compliant with E-Commerce Act standards</p>
+                        </div>
+                    </div>
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>Digital Signatures</h4>
+                            <p>Support for legally binding e-signatures</p>
+                        </div>
+                    </div>
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>Online Dispute Resolution</h4>
+                            <p>DTI-accredited ODR provider</p>
+                            <a href="/terms#dispute-resolution">View Process →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Consumer Protection -->
+            <div class="compliance-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-users"></i> Consumer Protection</h3>
+                    <p>Republic Act No. 7394</p>
+                </div>
+                <div class="card-content">
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>Fair Trade Practices</h4>
+                            <p>DTI-compliant pricing and advertising</p>
+                        </div>
+                    </div>
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>Refund Policy</h4>
+                            <p>7-day cooling-off period honored</p>
+                            <a href="/terms#refund-policy">View Policy →</a>
+                        </div>
+                    </div>
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>Customer Complaints</h4>
+                            <p>DTI-1384 Consumer Hotline ready</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cybersecurity Compliance -->
+            <div class="compliance-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-lock"></i> Cybersecurity</h3>
+                    <p>Republic Act No. 10175</p>
+                </div>
+                <div class="card-content">
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>Security Measures</h4>
+                            <p>ISO 27001 aligned security controls</p>
+                        </div>
+                    </div>
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>Incident Response</h4>
+                            <p>24-hour breach notification policy</p>
+                        </div>
+                    </div>
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>Data Encryption</h4>
+                            <p>256-bit AES encryption in transit and at rest</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Compliance -->
+            <div class="compliance-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-credit-card"></i> Payment Processing</h3>
+                    <p>BSP Regulations</p>
+                </div>
+                <div class="card-content">
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>PCI DSS Compliance</h4>
+                            <p>Level 1 Service Provider certified</p>
+                        </div>
+                    </div>
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>BSP Authorized</h4>
+                            <p>Licensed payment gateway partner</p>
+                        </div>
+                    </div>
+                    <div class="compliance-item">
+                        <div class="compliance-icon verified">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="compliance-details">
+                            <h4>Anti-Money Laundering</h4>
+                            <p>AMLC compliant procedures</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legal Documents Section -->
+        <div class="documents-section">
+            <h2 style="color: #1f2937; margin-bottom: 10px;">Legal Documents & Policies</h2>
+            <p style="color: #6b7280;">Access all our legal documentation and compliance certificates</p>
+            
+            <div class="documents-grid">
+                <a href="/privacy-policy" class="doc-link">
+                    <i class="fas fa-file-shield"></i>
+                    <span>Privacy Policy</span>
+                </a>
+                <a href="/terms" class="doc-link">
+                    <i class="fas fa-file-contract"></i>
+                    <span>Terms of Service</span>
+                </a>
+                <a href="/cookie-policy" class="doc-link">
+                    <i class="fas fa-cookie-bite"></i>
+                    <span>Cookie Policy</span>
+                </a>
+                <a href="/data-processing-agreement" class="doc-link">
+                    <i class="fas fa-file-signature"></i>
+                    <span>Data Processing Agreement</span>
+                </a>
+                <a href="/security-policy" class="doc-link">
+                    <i class="fas fa-file-lock"></i>
+                    <span>Security Policy</span>
+                </a>
+                <a href="/acceptable-use" class="doc-link">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Acceptable Use Policy</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="documents-section">
+            <h2 style="color: #1f2937; margin-bottom: 20px;">Compliance Contact Information</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px;">
+                <div>
+                    <h4 style="color: #4b5563; margin-bottom: 10px;">Data Protection Officer</h4>
+                    <p style="color: #6b7280;">Email: dpo@avasolutions.ph<br>Phone: +63 (2) 8888-8888 ext. 101</p>
+                </div>
+                <div>
+                    <h4 style="color: #4b5563; margin-bottom: 10px;">Legal Department</h4>
+                    <p style="color: #6b7280;">Email: legal@avasolutions.ph<br>Phone: +63 (2) 8888-8888 ext. 102</p>
+                </div>
+                <div>
+                    <h4 style="color: #4b5563; margin-bottom: 10px;">Compliance Officer</h4>
+                    <p style="color: #6b7280;">Email: compliance@avasolutions.ph<br>Phone: +63 (2) 8888-8888 ext. 103</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="last-updated">
+            <p>This compliance page was last updated on January 1, 2025</p>
+            <p>All certifications and registrations are current as of this date</p>
+            <p style="margin-top: 10px;">
+                <strong>Report Compliance Issues:</strong> compliance@avasolutions.ph | NPC Hotline: +63 (2) 8234-2228
+            </p>
+        </div>
+    </div>
+
+    <script src="/assets/main.js"></script>
+    <script src="/assets/cookie-consent.js"></script>
+</body>
+</html>
