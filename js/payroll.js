@@ -30,6 +30,7 @@ class PayrollManager {
             this.displayPayrollRecordsTable();
             this.displayAttendanceRecords();
             this.displayHolidaysList();
+            this.displayPendingRequests();
             
             console.log('✅ Payroll System initialized with', this.employees.length, 'employees');
         } catch (error) {
@@ -1189,13 +1190,20 @@ Net Pay: ₱${record.netPay.toFixed(2)}
         const totalEmployees = document.getElementById('totalEmployeesCount');
         const pendingPayroll = document.getElementById('pendingPayrollCount');
         const monthlyTotal = document.getElementById('monthlyTotalPayroll');
-        const pendingRequests = document.getElementById('pendingRequestsCount');
+        const pendingRequestsCount = document.getElementById('pendingRequestsCount');
         
         if (totalEmployees) totalEmployees.textContent = this.employees.length;
         if (pendingPayroll) {
             const pending = this.payrollRecords.filter(r => r.status === 'pending').length;
             pendingPayroll.textContent = pending;
         }
+        
+        // Update pending requests count
+        if (pendingRequestsCount) {
+            const pendingReqs = this.requests.filter(r => r.status === 'pending').length;
+            pendingRequestsCount.textContent = pendingReqs;
+        }
+        
         if (monthlyTotal) {
             const thisMonth = this.payrollRecords.filter(r => {
                 const recordDate = new Date(r.createdAt);
@@ -1456,6 +1464,362 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                 }
             }
         }
+    }
+
+    displayPendingRequests() {
+        const requestsList = document.getElementById('pendingRequestsList');
+        if (!requestsList) return;
+        
+        // Filter pending requests
+        const pendingRequests = this.requests.filter(r => r.status === 'pending');
+        
+        // Update badge count
+        const badge = document.querySelector('.requests-section .badge');
+        if (badge) {
+            badge.textContent = pendingRequests.length;
+        }
+        
+        if (pendingRequests.length === 0) {
+            requestsList.innerHTML = '<p style="color: #9ca3af; text-align: center; padding: 2rem;">No pending requests</p>';
+            return;
+        }
+        
+        requestsList.innerHTML = `
+            <div class="requests-container">
+                ${pendingRequests.map(request => `
+                    <div class="request-card" style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                            <div>
+                                <h4 style="margin: 0; color: #1f2937;">${request.employeeName || 'Unknown Employee'}</h4>
+                                <p style="margin: 0.25rem 0; color: #6b7280; font-size: 0.875rem;">
+                                    ${request.requestType === 'leave' ? 'Leave Request' : 'Overtime Request'}
+                                </p>
+                            </div>
+                            <span style="background: #fbbf24; color: #92400e; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500;">
+                                Pending
+                            </span>
+                        </div>
+                        
+                        <div style="color: #374151; font-size: 0.875rem; margin-bottom: 0.75rem;">
+                            <p style="margin: 0.25rem 0;">
+                                <strong>Date:</strong> ${new Date(request.requestDate).toLocaleDateString()}
+                                ${request.endDate ? ` - ${new Date(request.endDate).toLocaleDateString()}` : ''}
+                            </p>
+                            ${request.hours ? `<p style="margin: 0.25rem 0;"><strong>Hours:</strong> ${request.hours}</p>` : ''}
+                            ${request.reason ? `<p style="margin: 0.25rem 0;"><strong>Reason:</strong> ${request.reason}</p>` : ''}
+                        </div>
+                        
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button onclick="window.payrollManager.approveRequest('${request.id}')" 
+                                    style="flex: 1; background: #10b981; color: white; border: none; padding: 0.5rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                                <i class="fas fa-check"></i> Approve
+                            </button>
+                            <button onclick="window.payrollManager.rejectRequest('${request.id}')" 
+                                    style="flex: 1; background: #ef4444; color: white; border: none; padding: 0.5rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                                <i class="fas fa-times"></i> Reject
+                            </button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    async approveRequest(requestId) {
+        try {
+            const request = this.requests.find(r => r.id === requestId);
+            if (!request) return;
+            
+            request.status = 'approved';
+            request.approvedDate = new Date().toISOString();
+            
+            await window.db.put('employeeRequests', request);
+            
+            // Reload and refresh display
+            await this.loadRequests();
+            this.displayPendingRequests();
+            this.updateDashboardStats();
+            
+            if (window.showNotification) {
+                window.showNotification('Request approved', 'success');
+            }
+        } catch (error) {
+            console.error('Failed to approve request:', error);
+            if (window.showNotification) {
+                window.showNotification('Failed to approve request', 'error');
+            }
+        }
+    }
+
+    async rejectRequest(requestId) {
+        try {
+            const request = this.requests.find(r => r.id === requestId);
+            if (!request) return;
+            
+            request.status = 'rejected';
+            request.rejectedDate = new Date().toISOString();
+            
+            await window.db.put('employeeRequests', request);
+            
+            // Reload and refresh display
+            await this.loadRequests();
+            this.displayPendingRequests();
+            this.updateDashboardStats();
+            
+            if (window.showNotification) {
+                window.showNotification('Request rejected', 'success');
+            }
+        } catch (error) {
+            console.error('Failed to reject request:', error);
+            if (window.showNotification) {
+                window.showNotification('Failed to reject request', 'error');
+            }
+        }
+    }
+
+    // Report generation functions
+    viewPayrollSummaryReport() {
+        // Generate payroll summary report
+        const reportWindow = window.open('', '_blank');
+        const reportHTML = `
+            <html>
+            <head>
+                <title>Payroll Summary Report</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; }
+                    h1 { color: #1f2937; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { padding: 10px; text-align: left; border: 1px solid #e5e7eb; }
+                    th { background: #f3f4f6; font-weight: bold; }
+                    .total-row { font-weight: bold; background: #f9fafb; }
+                </style>
+            </head>
+            <body>
+                <h1>Payroll Summary Report</h1>
+                <p>Generated: ${new Date().toLocaleString()}</p>
+                
+                <h2>Monthly Payroll by Department</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Department</th>
+                            <th>Gross Pay</th>
+                            <th>Deductions</th>
+                            <th>Net Pay</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${this.payrollRecords.map(record => `
+                            <tr>
+                                <td>${record.employeeName}</td>
+                                <td>${record.department || 'General'}</td>
+                                <td>₱${record.grossPay.toFixed(2)}</td>
+                                <td>₱${record.totalDeductions.toFixed(2)}</td>
+                                <td>₱${record.netPay.toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                        <tr class="total-row">
+                            <td colspan="2">Total</td>
+                            <td>₱${this.payrollRecords.reduce((sum, r) => sum + r.grossPay, 0).toFixed(2)}</td>
+                            <td>₱${this.payrollRecords.reduce((sum, r) => sum + r.totalDeductions, 0).toFixed(2)}</td>
+                            <td>₱${this.payrollRecords.reduce((sum, r) => sum + r.netPay, 0).toFixed(2)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `;
+        reportWindow.document.write(reportHTML);
+        reportWindow.document.close();
+    }
+
+    generatePayslips() {
+        // Generate bulk payslips
+        if (this.payrollRecords.length === 0) {
+            if (window.showNotification) {
+                window.showNotification('No payroll records to generate payslips', 'warning');
+            }
+            return;
+        }
+        
+        // Generate payslips for all records
+        this.payrollRecords.forEach(record => {
+            this.generatePayslip(record.id);
+        });
+        
+        if (window.showNotification) {
+            window.showNotification(`Generated ${this.payrollRecords.length} payslips`, 'success');
+        }
+    }
+
+    viewAttendanceReport() {
+        // Generate attendance report
+        const reportWindow = window.open('', '_blank');
+        const reportHTML = `
+            <html>
+            <head>
+                <title>Attendance Report</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; }
+                    h1 { color: #1f2937; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    th, td { padding: 10px; text-align: left; border: 1px solid #e5e7eb; }
+                    th { background: #f3f4f6; font-weight: bold; }
+                    .late { color: #ef4444; }
+                    .on-time { color: #10b981; }
+                </style>
+            </head>
+            <body>
+                <h1>Employee Attendance Report</h1>
+                <p>Generated: ${new Date().toLocaleString()}</p>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Total Days</th>
+                            <th>Present</th>
+                            <th>Late</th>
+                            <th>Absent</th>
+                            <th>Attendance Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${this.employees.map(employee => {
+                            const records = this.attendanceRecords.filter(r => r.employeeId === employee.id);
+                            const lateRecords = records.filter(r => r.isLate);
+                            const attendanceRate = records.length > 0 ? ((records.length / 30) * 100).toFixed(1) : 0;
+                            
+                            return `
+                                <tr>
+                                    <td>${employee.name}</td>
+                                    <td>30</td>
+                                    <td>${records.length}</td>
+                                    <td class="late">${lateRecords.length}</td>
+                                    <td>${30 - records.length}</td>
+                                    <td class="${attendanceRate >= 90 ? 'on-time' : 'late'}">${attendanceRate}%</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `;
+        reportWindow.document.write(reportHTML);
+        reportWindow.document.close();
+    }
+
+    generateGovernmentRemittances() {
+        // Generate government remittances report
+        const reportWindow = window.open('', '_blank');
+        const reportHTML = `
+            <html>
+            <head>
+                <title>Government Remittances Report</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; }
+                    h1 { color: #1f2937; }
+                    .section { margin-bottom: 30px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th, td { padding: 10px; text-align: left; border: 1px solid #e5e7eb; }
+                    th { background: #f3f4f6; font-weight: bold; }
+                    .total-row { font-weight: bold; background: #f9fafb; }
+                </style>
+            </head>
+            <body>
+                <h1>Government Remittances Report</h1>
+                <p>Generated: ${new Date().toLocaleString()}</p>
+                
+                <div class="section">
+                    <h2>SSS Contributions</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>SSS Number</th>
+                                <th>Employee Share</th>
+                                <th>Employer Share</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${this.payrollRecords.map(record => `
+                                <tr>
+                                    <td>${record.employeeName}</td>
+                                    <td>${record.sssNumber || 'N/A'}</td>
+                                    <td>₱${record.sss.toFixed(2)}</td>
+                                    <td>₱${record.sss.toFixed(2)}</td>
+                                    <td>₱${(record.sss * 2).toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                            <tr class="total-row">
+                                <td colspan="2">Total</td>
+                                <td>₱${this.payrollRecords.reduce((sum, r) => sum + r.sss, 0).toFixed(2)}</td>
+                                <td>₱${this.payrollRecords.reduce((sum, r) => sum + r.sss, 0).toFixed(2)}</td>
+                                <td>₱${this.payrollRecords.reduce((sum, r) => sum + (r.sss * 2), 0).toFixed(2)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="section">
+                    <h2>PhilHealth Contributions</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>PhilHealth Number</th>
+                                <th>Contribution</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${this.payrollRecords.map(record => `
+                                <tr>
+                                    <td>${record.employeeName}</td>
+                                    <td>${record.philHealthNumber || 'N/A'}</td>
+                                    <td>₱${record.philHealth.toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                            <tr class="total-row">
+                                <td colspan="2">Total</td>
+                                <td>₱${this.payrollRecords.reduce((sum, r) => sum + r.philHealth, 0).toFixed(2)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="section">
+                    <h2>Pag-IBIG Contributions</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Pag-IBIG Number</th>
+                                <th>Contribution</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${this.payrollRecords.map(record => `
+                                <tr>
+                                    <td>${record.employeeName}</td>
+                                    <td>${record.pagIbigNumber || 'N/A'}</td>
+                                    <td>₱${record.pagIbig.toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                            <tr class="total-row">
+                                <td colspan="2">Total</td>
+                                <td>₱${this.payrollRecords.reduce((sum, r) => sum + r.pagIbig, 0).toFixed(2)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </body>
+            </html>
+        `;
+        reportWindow.document.write(reportHTML);
+        reportWindow.document.close();
     }
 }
 
