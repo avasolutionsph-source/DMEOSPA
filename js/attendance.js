@@ -7,39 +7,25 @@ class AttendanceManager {
         this.stream = null;
         this.isRecognitionEnabled = false;
         this.lastCapturedImage = null;
+        this.mediaRecorder = null;
+        this.recordedChunks = [];
+        this.isRecordingVideo = false;
+        this.recordedVideoBlob = null;
     }
 
     async init() {
         console.log('🚀 [ATTENDANCE] Initializing attendance system...');
         try {
-            // PROPERLY wait for database initialization
-            console.log('⏳ [ATTENDANCE] Ensuring database is ready...');
-            
-            // Always ensure database is initialized
-            if (typeof window.ensureDBInit === 'function') {
-                await window.ensureDBInit();
-                console.log('✅ [ATTENDANCE] Database initialized via ensureDBInit');
-            } else {
-                console.warn('⚠️ [ATTENDANCE] ensureDBInit not found, waiting for database...');
-                // Wait for database to be available
-                let attempts = 0;
-                while ((!window.db || !window.db.db) && attempts < 20) {
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    attempts++;
-                }
-                if (!window.db || !window.db.db) {
-                    throw new Error('Database not available after waiting');
-                }
-            }
-            
-            // Load employees directly from database
-            console.log('📊 [ATTENDANCE] Loading employees from database...');
-            await this.loadEmployeesDirectly();
+            // Simple initialization like POS
+            // Load employees
+            await this.loadEmployeesSimple();
             
             // Load attendance records and setup UI
             await this.loadAttendanceRecords();
             this.setupEventListeners();
             this.renderAttendanceRecords();
+            this.renderAttendanceHistoryTable();
+            this.updateAttendanceStats();
             
             // Mark as initialized
             window.attendanceManager.initialized = true;
@@ -59,35 +45,65 @@ class AttendanceManager {
         }
     }
     
+    // Simple load method exactly like POS
+    async loadEmployeesSimple() {
+        try {
+            const employees = await window.db.getAll('employees');
+            this.employees = employees || [];
+            const select = document.getElementById('attendanceEmployeeSelect');
+            if (select) {
+                select.innerHTML = '<option value="">Select Employee</option>';
+                this.employees.forEach(emp => {
+                    const option = document.createElement('option');
+                    option.value = emp.id;
+                    option.textContent = `${emp.name} - ${emp.position}`;
+                    select.appendChild(option);
+                });
+            }
+            console.log('✅ Loaded and populated', this.employees.length, 'employees');
+        } catch (error) {
+            console.error('Failed to load employees:', error);
+            this.employees = [];
+        }
+    }
+    
     async loadEmployeesDirectly() {
-        // COPY EXACT POS METHOD - IT WORKS!
+        // EXACT COPY OF POS METHOD THAT WORKS
         try {
             // Ensure database is initialized first
             if (!window.db || !window.db.db) {
                 console.warn('⚠️ Database not ready, waiting...');
-                await window.ensureDBInit();
+                if (typeof window.ensureDBInit === 'function') {
+                    await window.ensureDBInit();
+                }
             }
             
+            // Load employees exactly like POS does
             this.employees = await window.db.getAll('employees');
-            console.log('✅ Loaded', this.employees.length, 'employees');
+            console.log('✅ Loaded', this.employees.length, 'employees from database');
             
-            // Debug log to check employee structure
-            if (this.employees.length > 0) {
-                console.log('📊 First employee structure:', this.employees[0]);
-                console.log('📊 All employee names:', this.employees.map(e => e.name));
+            // Populate the dropdown exactly like POS
+            const select = document.getElementById('attendanceEmployeeSelect');
+            if (select) {
+                select.innerHTML = '<option value="">Select Employee</option>';
+                this.employees.forEach(emp => {
+                    const option = document.createElement('option');
+                    option.value = emp.id;
+                    option.textContent = `${emp.name} - ${emp.position}`;
+                    select.appendChild(option);
+                });
+                console.log('✅ Dropdown populated with', this.employees.length, 'employees');
+            } else {
+                console.error('❌ attendanceEmployeeSelect element not found!');
             }
-            
-            this.populateDropdownNow();
         } catch (error) {
             console.error('❌ Failed to load employees:', error);
             this.employees = [];
-            // Still try to populate dropdown with empty message
-            this.populateDropdownNow();
         }
     }
     
     populateDropdownNow() {
-        const select = document.getElementById('employeeSelect');
+        const select = document.getElementById('attendanceEmployeeSelect');
         if (!select) {
             console.error('❌ Dropdown not found!');
             return;
@@ -126,7 +142,7 @@ class AttendanceManager {
     }
     
     async populateDropdownDirectly() {
-        const select = document.getElementById('employeeSelect');
+        const select = document.getElementById('attendanceEmployeeSelect');
         if (!select) {
             console.error('❌ [ATTENDANCE] Employee select element not found');
             return;
@@ -211,7 +227,7 @@ class AttendanceManager {
     }
 
     populateEmployeeDropdown() {
-        const select = document.getElementById('employeeSelect');
+        const select = document.getElementById('attendanceEmployeeSelect');
         if (!select) {
             console.error('❌ [ATTENDANCE] Employee select element not found');
             return;
@@ -262,48 +278,8 @@ class AttendanceManager {
         
         this._listenersAttached = true;
         
-        // Sync button
-        const syncBtn = document.getElementById('syncEmployeesBtn');
-        if (syncBtn) {
-            syncBtn.addEventListener('click', async () => {
-                console.log('🔄 Syncing employees...');
-                
-                // Show loading state
-                syncBtn.disabled = true;
-                const originalText = syncBtn.innerHTML;
-                syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
-                
-                try {
-                    // Ensure database is ready
-                    if (typeof window.ensureDBInit === 'function') {
-                        await window.ensureDBInit();
-                    }
-                    
-                    // Load directly from IndexedDB
-                    await this.loadEmployeesDirectly();
-                    
-                    if (window.showNotification) {
-                        if (this.employees.length > 0) {
-                            window.showNotification(`Found ${this.employees.length} employees`, 'success');
-                        } else {
-                            window.showNotification('No employees found. Add employees in Employee Management first.', 'info');
-                        }
-                    }
-                } catch (error) {
-                    console.error('❌ Failed to sync employees:', error);
-                    if (window.showNotification) {
-                        window.showNotification('Failed to sync employees', 'error');
-                    }
-                } finally {
-                    // Restore button state
-                    syncBtn.disabled = false;
-                    syncBtn.innerHTML = originalText;
-                }
-            });
-        }
-        
         // Employee dropdown
-        const employeeSelect = document.getElementById('employeeSelect');
+        const employeeSelect = document.getElementById('attendanceEmployeeSelect');
         if (employeeSelect) {
             employeeSelect.addEventListener('change', (e) => {
                 const checkinBtn = document.getElementById('manualCheckinBtn');
@@ -330,20 +306,21 @@ class AttendanceManager {
             stopCameraBtn.addEventListener('click', () => this.stopCamera());
         }
         
-        const captureBtn = document.getElementById('captureBtn');
-        if (captureBtn) {
-            captureBtn.addEventListener('click', () => this.captureAndRecognize());
-        }
-        
-        // Refresh button
-        const refreshBtn = document.getElementById('refreshAttendanceBtn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.refreshAttendance());
+        // Video recording button is the main capture method now
+        const recordVideoBtn = document.getElementById('recordVideoBtn');
+        if (recordVideoBtn) {
+            recordVideoBtn.addEventListener('click', () => {
+                if (this.isRecordingVideo) {
+                    this.stopVideoRecording();
+                } else {
+                    this.startVideoRecording();
+                }
+            });
         }
     }
 
     async manualCheckin() {
-        const select = document.getElementById('employeeSelect');
+        const select = document.getElementById('attendanceEmployeeSelect');
         const employeeId = select.value;
         
         if (!employeeId) {
@@ -371,6 +348,14 @@ class AttendanceManager {
     async recordAttendance(employee, method = 'manual') {
         try {
             const now = new Date();
+            
+            // Calculate if late (assuming 8:00 AM start with 5 min grace)
+            const businessOpen = new Date();
+            businessOpen.setHours(8, 0, 0, 0);
+            const graceTime = new Date(businessOpen.getTime() + 5 * 60000); // 5 minutes grace
+            const isLate = now > graceTime;
+            const lateMinutes = isLate ? Math.floor((now - graceTime) / 60000) : 0;
+            
             const attendanceRecord = {
                 employeeId: employee.id || employee._id,
                 employeeName: employee.name,
@@ -380,6 +365,9 @@ class AttendanceManager {
                 checkOutTime: null,
                 method: method,
                 capturedImage: this.lastCapturedImage || null,
+                capturedVideo: this.recordedVideoData || null,
+                isLate: isLate,
+                lateMinutes: lateMinutes,
                 createdAt: now.toISOString()
             };
             
@@ -389,9 +377,18 @@ class AttendanceManager {
                 window.showNotification(`✅ ${employee.name} checked in successfully`, 'success');
             }
             
-            // Reset form
-            document.getElementById('employeeSelect').value = '';
+            // Reset form and clear captured data
+            document.getElementById('attendanceEmployeeSelect').value = '';
             document.getElementById('manualCheckinBtn').disabled = true;
+            this.lastCapturedImage = null;
+            this.recordedVideoData = null;
+            
+            // Hide video preview
+            const videoPreview = document.getElementById('capturedVideoPreview');
+            if (videoPreview) {
+                videoPreview.style.display = 'none';
+                videoPreview.src = '';
+            }
             
             // Reload attendance records
             await this.loadAttendanceRecords();
@@ -415,13 +412,28 @@ class AttendanceManager {
                 return;
             }
             
+            // Load ALL attendance records for display
             const allRecords = await window.db.getAll('attendance');
+            
+            // Sort by date, newest first
+            allRecords.sort((a, b) => {
+                const dateA = new Date(a.date || a.createdAt);
+                const dateB = new Date(b.date || b.createdAt);
+                return dateB - dateA;
+            });
+            
+            // Store today's records separately
             this.attendanceRecords = allRecords.filter(record => record.date === today);
             
+            // Store all records for display
+            this.allAttendanceRecords = allRecords;
+            
             console.log(`Loaded ${this.attendanceRecords.length} attendance records for today`);
+            console.log(`Total attendance records in database: ${allRecords.length}`);
         } catch (error) {
             console.error('Failed to load attendance records:', error);
             this.attendanceRecords = [];
+            this.allAttendanceRecords = [];
         }
     }
 
@@ -441,29 +453,98 @@ class AttendanceManager {
         
         container.innerHTML = `
             <div class="attendance-list">
-                ${this.attendanceRecords.map(record => `
-                    <div class="attendance-record">
-                        <div class="attendance-record-info">
-                            <h4>${record.employeeName}</h4>
-                            <p>${record.employeePosition}</p>
-                            <p class="attendance-time">
+                ${this.attendanceRecords.map((record, index) => `
+                    <div class="attendance-record" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 1rem;">
+                        ${record.capturedImage ? `
+                            <div class="attendance-photo" style="flex-shrink: 0;">
+                                <img src="${record.capturedImage}" alt="${record.employeeName}" 
+                                     style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd;">
+                            </div>
+                        ` : `
+                            <div class="attendance-photo" style="flex-shrink: 0;">
+                                <div style="width: 60px; height: 60px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-user" style="color: #999;"></i>
+                                </div>
+                            </div>
+                        `}
+                        <div class="attendance-record-info" style="flex: 1;">
+                            <h4 style="margin: 0;">${record.employeeName}</h4>
+                            <p style="margin: 0.25rem 0; color: #666;">${record.employeePosition}</p>
+                            <p class="attendance-time" style="margin: 0.25rem 0; font-size: 0.9em;">
                                 Check-in: ${new Date(record.checkInTime).toLocaleTimeString()}
+                                ${record.isLate ? `<span style="color: #dc3545; font-weight: bold;"> (Late by ${record.lateMinutes} mins)</span>` : ''}
                             </p>
                             ${record.checkOutTime ? `
-                                <p class="attendance-time">
+                                <p class="attendance-time" style="margin: 0.25rem 0; font-size: 0.9em;">
                                     Check-out: ${new Date(record.checkOutTime).toLocaleTimeString()}
                                 </p>
                             ` : ''}
                         </div>
-                        <div class="attendance-record-method">
-                            <span class="badge ${record.method === 'facial' ? 'badge-success' : 'badge-info'}">
-                                ${record.method === 'facial' ? 'Facial Recognition' : 'Manual Check-in'}
+                        <div class="attendance-record-actions" style="display: flex; gap: 0.5rem; align-items: center;">
+                            <button class="btn btn-primary btn-sm" onclick="window.attendanceManager.viewAttendanceDetails(${index})" style="padding: 0.5rem 1rem;">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <span class="badge ${record.capturedVideo ? 'badge-success' : 'badge-secondary'}" style="padding: 0.5rem;">
+                                ${record.capturedVideo ? '<i class="fas fa-video"></i>' : '<i class="fas fa-image"></i>'}
                             </span>
                         </div>
                     </div>
                 `).join('')}
             </div>
         `;
+    }
+    
+    // View attendance details in modal
+    viewAttendanceDetails(index) {
+        const record = this.attendanceRecords[index];
+        if (!record) return;
+        
+        const modal = document.getElementById('attendanceDetailsModal');
+        const content = document.getElementById('attendanceDetailsContent');
+        
+        if (!modal || !content) return;
+        
+        content.innerHTML = `
+            <div style="padding: 1rem;">
+                <div style="display: flex; gap: 2rem; margin-bottom: 1.5rem;">
+                    <div style="flex: 1;">
+                        <h3 style="margin-top: 0;">${record.employeeName}</h3>
+                        <p style="color: #666;">${record.employeePosition}</p>
+                        <div style="margin-top: 1rem;">
+                            <p><strong>Date:</strong> ${new Date(record.date).toLocaleDateString()}</p>
+                            <p><strong>Check-in Time:</strong> ${new Date(record.checkInTime).toLocaleTimeString()}</p>
+                            ${record.checkOutTime ? `<p><strong>Check-out Time:</strong> ${new Date(record.checkOutTime).toLocaleTimeString()}</p>` : ''}
+                            <p><strong>Method:</strong> ${record.method === 'facial' ? 'Facial Recognition' : 'Manual Check-in'}</p>
+                        </div>
+                    </div>
+                    ${record.capturedImage ? `
+                        <div style="text-align: center;">
+                            <img src="${record.capturedImage}" alt="${record.employeeName}" 
+                                 style="width: 150px; height: 150px; border-radius: 8px; object-fit: cover; border: 2px solid #ddd;">
+                            <p style="margin-top: 0.5rem; color: #666; font-size: 0.9em;">Photo Capture</p>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                ${record.capturedVideo ? `
+                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd;">
+                        <h4>Captured Video</h4>
+                        <video controls style="width: 100%; max-width: 400px; border-radius: 8px; margin-top: 1rem;">
+                            <source src="${record.capturedVideo}" type="video/webm">
+                            Your browser does not support video playback.
+                        </video>
+                    </div>
+                ` : ''}
+                
+                <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; text-align: right;">
+                    <button class="btn btn-secondary" onclick="document.getElementById('attendanceDetailsModal').style.display='none'">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        modal.style.display = 'block';
     }
 
     async startCamera() {
@@ -482,7 +563,12 @@ class AttendanceManager {
             
             document.getElementById('startCameraBtn').disabled = true;
             document.getElementById('stopCameraBtn').disabled = false;
-            document.getElementById('captureBtn').disabled = false;
+            
+            // Enable record button
+            const recordBtn = document.getElementById('recordVideoBtn');
+            if (recordBtn) {
+                recordBtn.disabled = false;
+            }
             
             if (window.showNotification) {
                 window.showNotification('Camera started', 'success');
@@ -493,6 +579,102 @@ class AttendanceManager {
                 window.showNotification('Failed to start camera', 'error');
             }
         }
+    }
+
+    viewAttendanceRecord(index) {
+        const records = this.allAttendanceRecords || [];
+        const record = records[index];
+        if (!record) return;
+        
+        // Create and show modal with attendance details
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+        
+        const content = document.createElement('div');
+        content.style.cssText = `
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        `;
+        
+        const hoursWorked = record.hoursWorked ? record.hoursWorked.toFixed(1) + ' hours' : 'Not checked out';
+        const status = record.isLate ? 'Late Arrival' : 'On Time';
+        const statusColor = record.isLate ? '#f59e0b' : '#10b981';
+        
+        content.innerHTML = `
+            <div style="border-bottom: 1px solid #e5e7eb; padding-bottom: 1rem; margin-bottom: 1rem;">
+                <h2 style="margin: 0 0 0.5rem 0; color: #1f2937;">Attendance Details</h2>
+                <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280;">&times;</button>
+            </div>
+            
+            <div style="display: grid; gap: 1rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label style="display: block; color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Employee</label>
+                        <p style="margin: 0; font-weight: 500; color: #1f2937;">${record.employeeName || 'Unknown'}</p>
+                    </div>
+                    <div>
+                        <label style="display: block; color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Date</label>
+                        <p style="margin: 0; font-weight: 500; color: #1f2937;">${new Date(record.date).toLocaleDateString()}</p>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label style="display: block; color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Check In</label>
+                        <p style="margin: 0; font-weight: 500; color: #1f2937;">${record.checkInTime || '--'}</p>
+                    </div>
+                    <div>
+                        <label style="display: block; color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Check Out</label>
+                        <p style="margin: 0; font-weight: 500; color: #1f2937;">${record.checkOutTime || '--'}</p>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label style="display: block; color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Hours Worked</label>
+                        <p style="margin: 0; font-weight: 500; color: #1f2937;">${hoursWorked}</p>
+                    </div>
+                    <div>
+                        <label style="display: block; color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Status</label>
+                        <span style="display: inline-block; background: ${statusColor}; color: white; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.875rem; font-weight: 500;">
+                            ${status}
+                        </span>
+                    </div>
+                </div>
+                
+                ${record.notes ? `
+                <div>
+                    <label style="display: block; color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Notes</label>
+                    <p style="margin: 0; color: #1f2937;">${record.notes}</p>
+                </div>
+                ` : ''}
+            </div>
+            
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e5e7eb; text-align: right;">
+                <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove()" style="background: #6b7280; color: white; border: none; padding: 0.5rem 1.5rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                    Close
+                </button>
+            </div>
+        `;
+        
+        modal.appendChild(content);
+        document.body.appendChild(modal);
     }
 
     stopCamera() {
@@ -507,7 +689,12 @@ class AttendanceManager {
             
             document.getElementById('startCameraBtn').disabled = false;
             document.getElementById('stopCameraBtn').disabled = true;
-            document.getElementById('captureBtn').disabled = true;
+            
+            // Disable record button
+            const recordBtn = document.getElementById('recordVideoBtn');
+            if (recordBtn) {
+                recordBtn.disabled = true;
+            }
             
             if (window.showNotification) {
                 window.showNotification('Camera stopped', 'info');
@@ -521,25 +708,170 @@ class AttendanceManager {
         
         if (!video || !canvas) return;
         
+        // Capture high-quality image
         const context = canvas.getContext('2d');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0);
         
-        this.lastCapturedImage = canvas.toDataURL('image/jpeg');
+        // Save as high quality JPEG
+        this.lastCapturedImage = canvas.toDataURL('image/jpeg', 0.9);
         
-        // For now, just show employee selection
+        // Show the captured image in a preview area if exists
+        const preview = document.getElementById('capturedImagePreview');
+        if (preview) {
+            preview.src = this.lastCapturedImage;
+            preview.style.display = 'block';
+        }
+        
         if (window.showNotification) {
             window.showNotification('Photo captured! Please select your name from the dropdown.', 'info');
         }
         
         // Focus on dropdown
-        document.getElementById('employeeSelect').focus();
+        document.getElementById('attendanceEmployeeSelect').focus();
+    }
+    
+    // Start video recording with countdown
+    async startVideoRecording() {
+        if (!this.stream) {
+            if (window.showNotification) {
+                window.showNotification('Please start camera first', 'error');
+            }
+            return;
+        }
+        
+        try {
+            const options = {
+                mimeType: 'video/webm;codecs=vp8',
+                videoBitsPerSecond: 2500000
+            };
+            
+            this.recordedChunks = [];
+            this.mediaRecorder = new MediaRecorder(this.stream, options);
+            
+            this.mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    this.recordedChunks.push(event.data);
+                }
+            };
+            
+            this.mediaRecorder.onstop = () => {
+                this.recordedVideoBlob = new Blob(this.recordedChunks, {
+                    type: 'video/webm'
+                });
+                
+                // Convert to base64 for storage
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    this.recordedVideoData = reader.result;
+                    console.log('Video recorded and converted to base64');
+                    
+                    // Show preview
+                    const preview = document.getElementById('capturedVideoPreview');
+                    if (preview) {
+                        preview.src = this.recordedVideoData;
+                        preview.style.display = 'block';
+                    }
+                    
+                    // Also capture a thumbnail frame
+                    this.captureVideoThumbnail();
+                };
+                reader.readAsDataURL(this.recordedVideoBlob);
+            };
+            
+            this.mediaRecorder.start();
+            this.isRecordingVideo = true;
+            
+            // Show recording status
+            const recordingStatus = document.getElementById('recordingStatus');
+            if (recordingStatus) {
+                recordingStatus.style.display = 'block';
+            }
+            
+            // Update UI
+            const recordBtn = document.getElementById('recordVideoBtn');
+            if (recordBtn) {
+                recordBtn.disabled = true;
+            }
+            
+            // Countdown timer
+            let timeLeft = 5;
+            const timerElement = document.getElementById('recordingTimer');
+            const countdownInterval = setInterval(() => {
+                timeLeft--;
+                if (timerElement) {
+                    timerElement.textContent = timeLeft;
+                }
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+            
+            if (window.showNotification) {
+                window.showNotification('Recording started - keep your face in view', 'info');
+            }
+            
+            // Auto-stop after 5 seconds
+            setTimeout(() => {
+                if (this.isRecordingVideo) {
+                    this.stopVideoRecording();
+                }
+            }, 5000);
+            
+        } catch (error) {
+            console.error('Failed to start recording:', error);
+            if (window.showNotification) {
+                window.showNotification('Failed to start recording', 'error');
+            }
+        }
+    }
+    
+    // Stop video recording
+    stopVideoRecording() {
+        if (this.mediaRecorder && this.isRecordingVideo) {
+            this.mediaRecorder.stop();
+            this.isRecordingVideo = false;
+            
+            // Hide recording status
+            const recordingStatus = document.getElementById('recordingStatus');
+            if (recordingStatus) {
+                recordingStatus.style.display = 'none';
+            }
+            
+            // Update UI
+            const recordBtn = document.getElementById('recordVideoBtn');
+            if (recordBtn) {
+                recordBtn.innerHTML = '<i class="fas fa-video"></i> Record Video (5 sec)';
+                recordBtn.disabled = false;
+            }
+            
+            if (window.showNotification) {
+                window.showNotification('Video captured! Select your name and check in.', 'success');
+            }
+            
+            // Focus on dropdown
+            document.getElementById('attendanceEmployeeSelect').focus();
+        }
+    }
+    
+    // Capture video thumbnail for display
+    captureVideoThumbnail() {
+        const video = document.getElementById('faceVideo');
+        const canvas = document.getElementById('faceCanvas');
+        
+        if (video && canvas) {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+            this.lastCapturedImage = canvas.toDataURL('image/jpeg', 0.9);
+        }
     }
 
     async refreshAttendance() {
-        // Load directly from IndexedDB
-        await this.loadEmployeesDirectly();
+        // Use simple load method like POS
+        await this.loadEmployeesSimple();
         
         await this.loadAttendanceRecords();
         this.renderAttendanceRecords();
@@ -563,6 +895,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Mark initialization status
 window.attendanceManager.initialized = false;
+
+// Simple direct employee load function for debugging
+window.loadEmployeesDirectly = async function() {
+    console.log('🔧 Direct employee load attempt...');
+    try {
+        // Wait for database
+        if (!window.db || !window.db.db) {
+            console.log('⏳ Waiting for database...');
+            if (typeof window.ensureDBInit === 'function') {
+                await window.ensureDBInit();
+            } else {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+        }
+        
+        // Load employees
+        const employees = await window.db.getAll('employees');
+        console.log('📊 Found employees:', employees);
+        
+        // Update attendance manager
+        if (window.attendanceManager) {
+            window.attendanceManager.employees = employees;
+            window.attendanceManager.populateDropdownNow();
+        }
+        
+        return employees;
+    } catch (error) {
+        console.error('❌ Direct load failed:', error);
+        return [];
+    }
+};
 
 // Manual populate function
 window.populateAttendanceDropdown = async function() {
@@ -617,7 +980,7 @@ window.checkEmployeesInDB = async function() {
             });
             
             // Try to populate dropdown directly with all possible name fields
-            const select = document.getElementById('employeeSelect');
+            const select = document.getElementById('attendanceEmployeeSelect');
             if (select && employees.length > 0) {
                 select.innerHTML = '<option value="">Choose an employee...</option>';
                 employees.forEach((emp, i) => {
@@ -669,7 +1032,7 @@ window.fixAttendanceDropdown = async function() {
                 console.log('📊 Direct IndexedDB query found:', employees.length, 'employees');
                 console.log('📊 Raw data:', employees);
                 
-                const select = document.getElementById('employeeSelect');
+                const select = document.getElementById('attendanceEmployeeSelect');
                 if (!select) {
                     console.error('❌ Dropdown element not found!');
                     resolve(false);
