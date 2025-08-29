@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reload Sample Data</title>
+</head>
+<body>
+    <h1>Reload Sample Data</h1>
+    <button onclick="clearAndReload()">Clear Data and Reload Sample Data</button>
+    <div id="status"></div>
+
+    <script>
+        // Import database utilities
+        const script1 = document.createElement('script');
+        script1.src = 'PWA-Repository/js/database.js';
+        script1.type = 'module';
+        document.head.appendChild(script1);
+
+        script1.onload = () => {
+            const script2 = document.createElement('script');
+            script2.src = 'PWA-Repository/js/sample-data-initializer.js';
+            script2.type = 'module';
+            document.head.appendChild(script2);
+        };
+
+        async function clearAndReload() {
+            const status = document.getElementById('status');
+            status.innerHTML = '<p>Clearing existing data...</p>';
+            
+            try {
+                // Clear localStorage initialization flag
+                localStorage.removeItem('sampleDataInitialized');
+                status.innerHTML += '<p>✅ Cleared initialization flag</p>';
+
+                // Clear all IndexedDB data
+                if (window.db) {
+                    const stores = ['employees', 'products', 'inventory', 'transactions', 'expenses', 'giftCertificates', 'payrollRequests', 'holidays', 'rooms'];
+                    
+                    for (const store of stores) {
+                        await window.db.clear(store);
+                        status.innerHTML += `<p>✅ Cleared ${store} data</p>`;
+                    }
+                }
+
+                status.innerHTML += '<p>🔄 Initializing new sample data...</p>';
+
+                // Wait a moment then initialize
+                setTimeout(async () => {
+                    if (window.SampleDataInitializer) {
+                        const initializer = new window.SampleDataInitializer();
+                        await initializer.initializeAll();
+                        status.innerHTML += '<p>✅ Sample data loaded successfully!</p>';
+                        status.innerHTML += '<p>🎉 You can now login with pok@gmail.com and test all spa features!</p>';
+                    } else {
+                        status.innerHTML += '<p>❌ Sample data initializer not found</p>';
+                    }
+                }, 1000);
+
+            } catch (error) {
+                status.innerHTML += `<p>❌ Error: ${error.message}</p>`;
+                console.error('Error reloading data:', error);
+            }
+        }
+    </script>
+</body>
+</html>
