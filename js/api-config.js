@@ -61,7 +61,8 @@
                 PROFILE: '/api/user/profile',
                 UPDATE: '/api/user/update',
                 SETTINGS: '/api/user/settings',
-                SUBSCRIPTION: '/api/user/subscription'
+                SUBSCRIPTION: '/api/user/subscription',
+                BUSINESS_NAME: '/api/user/business-name'
             },
             
             // Business

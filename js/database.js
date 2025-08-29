@@ -2,7 +2,7 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 7; // Incremented for attendance store
+        this.version = 8; // Incremented for activities store
         this.db = null;
         this.userId = null;
         this.isInitializing = false;
@@ -244,6 +244,15 @@ class Database {
                     attendanceStore.createIndex('timestamp', 'timestamp', { unique: false });
                     attendanceStore.createIndex('method', 'method', { unique: false });
                     attendanceStore.createIndex('syncStatus', 'syncStatus', { unique: false });
+                }
+                
+                // Activities store for activity logger
+                if (!this.db.objectStoreNames.contains('activities')) {
+                    const activitiesStore = this.db.createObjectStore('activities', { keyPath: 'id', autoIncrement: true });
+                    activitiesStore.createIndex('timestamp', 'timestamp', { unique: false });
+                    activitiesStore.createIndex('type', 'type', { unique: false });
+                    activitiesStore.createIndex('category', 'category', { unique: false });
+                    activitiesStore.createIndex('userId', 'userId', { unique: false });
                 }
 
                 // Settings store

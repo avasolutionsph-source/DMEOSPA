@@ -412,6 +412,8 @@ class App {
                 console.log('📊 [APP] Loading attendance page...');
                 console.log('📊 [APP] window.attendanceManager exists?', !!window.attendanceManager);
                 if (window.attendanceManager) {
+                    // Small delay to ensure DOM is ready after page switch
+                    await new Promise(resolve => setTimeout(resolve, 50));
                     console.log('📊 [APP] Calling attendanceManager.init()...');
                     await window.attendanceManager.init();
                     console.log('📊 [APP] attendanceManager.init() completed');

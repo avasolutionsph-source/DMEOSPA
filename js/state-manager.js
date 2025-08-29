@@ -368,9 +368,15 @@ class StateManager {
     
     notifyGlobalChange(path, updates) {
         if (this.subscribers.has('*')) {
+            // Ensure updates is in the expected format for subscribers
+            const formattedUpdates = {
+                path: path,
+                updates: Array.isArray(updates) ? updates : (typeof updates === 'object' && updates.updates ? updates.updates : [])
+            };
+            
             this.subscribers.get('*').forEach(sub => {
                 try {
-                    sub.callback({ path, updates }, this.state);
+                    sub.callback(formattedUpdates, this.state);
                 } catch (error) {
                     this.handleError('Global subscriber error', error);
                 }
