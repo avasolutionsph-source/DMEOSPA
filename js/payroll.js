@@ -221,6 +221,50 @@ class PayrollManager {
     async loadRequests() {
         try {
             this.requests = await window.db.getAll('employeeRequests');
+            
+            // Add sample requests for pok@gmail.com account ONLY if no requests exist
+            const currentUser = window.currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
+            
+            // Check if we've already initialized sample data
+            const samplesInitialized = localStorage.getItem('payrollSamplesInitialized');
+            
+            if (currentUser.email === 'pok@gmail.com' && this.requests.length === 0 && !samplesInitialized) {
+                // Create sample requests
+                const sampleRequests = [
+                    {
+                        id: Date.now().toString() + '1',
+                        requestType: 'leave',
+                        employeeId: this.employees[0]?.id || '1',
+                        employeeName: this.employees[0]?.name || 'John Doe',
+                        requestDate: new Date().toISOString().split('T')[0],
+                        endDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                        reason: 'Family vacation',
+                        status: 'pending',
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        id: Date.now().toString() + '2',
+                        requestType: 'overtime',
+                        employeeId: this.employees[1]?.id || '2',
+                        employeeName: this.employees[1]?.name || 'Jane Smith',
+                        requestDate: new Date().toISOString().split('T')[0],
+                        hours: 3,
+                        reason: 'Project deadline',
+                        status: 'pending',
+                        createdAt: new Date().toISOString()
+                    }
+                ];
+                
+                // Save sample requests
+                for (const request of sampleRequests) {
+                    await window.db.add('employeeRequests', request);
+                }
+                
+                this.requests = sampleRequests;
+                
+                // Mark samples as initialized to prevent re-creation
+                localStorage.setItem('payrollSamplesInitialized', 'true');
+            }
         } catch (error) {
             console.error('Failed to load requests:', error);
             this.requests = [];
@@ -1462,6 +1506,154 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                 if (window.showNotification) {
                     window.showNotification('Failed to remove holiday', 'error');
                 }
+            }
+        }
+    }
+
+    showNewRequestModal() {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+        
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        `;
+        
+        modalContent.innerHTML = `
+            <div style="border-bottom: 1px solid #e5e7eb; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0; color: #1f2937;">New Request</h2>
+            </div>
+            
+            <div style="display: grid; gap: 1rem;">
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #374151; font-weight: 500;">Request Type</label>
+                    <select id="requestType" class="form-control" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px;">
+                        <option value="leave">Leave Request</option>
+                        <option value="overtime">Overtime Request</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #374151; font-weight: 500;">Employee</label>
+                    <select id="requestEmployee" class="form-control" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px;">
+                        <option value="">Select Employee</option>
+                        ${this.employees.map(emp => `
+                            <option value="${emp.id}">${emp.name}</option>
+                        `).join('')}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #374151; font-weight: 500;">Start Date</label>
+                    <input type="date" id="requestStartDate" class="form-control" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px;">
+                </div>
+                
+                <div class="form-group" id="endDateGroup">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #374151; font-weight: 500;">End Date</label>
+                    <input type="date" id="requestEndDate" class="form-control" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px;">
+                </div>
+                
+                <div class="form-group" id="hoursGroup" style="display: none;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #374151; font-weight: 500;">Overtime Hours</label>
+                    <input type="number" id="requestHours" class="form-control" min="1" max="8" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px;" placeholder="Enter hours">
+                </div>
+                
+                <div class="form-group">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #374151; font-weight: 500;">Reason/Notes</label>
+                    <textarea id="requestReason" class="form-control" rows="3" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 6px; resize: vertical;" placeholder="Enter reason for request"></textarea>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: flex-end;">
+                <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove()" style="padding: 0.5rem 1.5rem; border: 1px solid #d1d5db; background: white; color: #374151; border-radius: 6px; cursor: pointer;">
+                    Cancel
+                </button>
+                <button onclick="window.payrollManager.submitNewRequest()" style="padding: 0.5rem 1.5rem; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    Submit Request
+                </button>
+            </div>
+        `;
+        
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        // Set default date to today
+        document.getElementById('requestStartDate').valueAsDate = new Date();
+        document.getElementById('requestEndDate').valueAsDate = new Date();
+        
+        // Toggle fields based on request type
+        document.getElementById('requestType').addEventListener('change', (e) => {
+            const isOvertime = e.target.value === 'overtime';
+            document.getElementById('endDateGroup').style.display = isOvertime ? 'none' : 'block';
+            document.getElementById('hoursGroup').style.display = isOvertime ? 'block' : 'none';
+        });
+    }
+
+    async submitNewRequest() {
+        const type = document.getElementById('requestType').value;
+        const employeeId = document.getElementById('requestEmployee').value;
+        const startDate = document.getElementById('requestStartDate').value;
+        const endDate = document.getElementById('requestEndDate').value;
+        const hours = document.getElementById('requestHours').value;
+        const reason = document.getElementById('requestReason').value;
+        
+        if (!employeeId || !startDate || !reason) {
+            if (window.showNotification) {
+                window.showNotification('Please fill in all required fields', 'error');
+            }
+            return;
+        }
+        
+        const employee = this.employees.find(e => e.id === employeeId);
+        
+        try {
+            const request = {
+                id: Date.now().toString(),
+                requestType: type,
+                employeeId: employeeId,
+                employeeName: employee ? employee.name : 'Unknown',
+                requestDate: startDate,
+                endDate: type === 'leave' ? endDate : null,
+                hours: type === 'overtime' ? parseFloat(hours) : null,
+                reason: reason,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+            
+            await window.db.add('employeeRequests', request);
+            this.requests.push(request);
+            
+            // Update displays
+            this.displayPendingRequests();
+            this.updateDashboardStats();
+            
+            // Close modal
+            document.querySelector('div[style*="position: fixed"]').remove();
+            
+            if (window.showNotification) {
+                window.showNotification('Request submitted successfully', 'success');
+            }
+        } catch (error) {
+            console.error('Failed to submit request:', error);
+            if (window.showNotification) {
+                window.showNotification('Failed to submit request', 'error');
             }
         }
     }
