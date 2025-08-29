@@ -15,51 +15,168 @@ class AttendanceManager {
             // PROPERLY wait for database initialization
             console.log('⏳ [ATTENDANCE] Ensuring database is ready...');
             
-            // Check if ensureDBInit function exists
+            // Always ensure database is initialized
             if (typeof window.ensureDBInit === 'function') {
                 await window.ensureDBInit();
                 console.log('✅ [ATTENDANCE] Database initialized via ensureDBInit');
-            } else if (typeof ensureDBInit === 'function') {
-                await ensureDBInit();
-                console.log('✅ [ATTENDANCE] Database initialized via ensureDBInit (global)');
             } else {
-                console.warn('⚠️ [ATTENDANCE] ensureDBInit not found, waiting 2 seconds...');
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                console.warn('⚠️ [ATTENDANCE] ensureDBInit not found, waiting for database...');
+                // Wait for database to be available
+                let attempts = 0;
+                while ((!window.db || !window.db.db) && attempts < 20) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    attempts++;
+                }
+                if (!window.db || !window.db.db) {
+                    throw new Error('Database not available after waiting');
+                }
             }
             
-            // Now load employees - database should be ready
+            // Load employees directly from database
             console.log('📊 [ATTENDANCE] Loading employees from database...');
-            this.employees = await window.db.getAll('employees');
-            console.log('✅ [INIT] Loaded', this.employees.length, 'employees from database');
+            await this.loadEmployeesDirectly();
             
-            // Force populate dropdown immediately
-            const select = document.getElementById('employeeSelect');
-            if (select && this.employees.length > 0) {
-                select.innerHTML = '<option value="">Choose an employee...</option>';
-                this.employees.forEach(emp => {
-                    if (emp && emp.name) {
-                        const option = document.createElement('option');
-                        option.value = emp.id || emp._id || emp.name;
-                        option.textContent = emp.name;
-                        select.appendChild(option);
-                        console.log('✅ [INIT] Added to dropdown:', emp.name);
-                    }
-                });
-            }
-            
+            // Load attendance records and setup UI
             await this.loadAttendanceRecords();
             this.setupEventListeners();
             this.renderAttendanceRecords();
             
             // Mark as initialized
             window.attendanceManager.initialized = true;
-            console.log('✅ [ATTENDANCE] Initialization complete');
+            console.log('✅ [ATTENDANCE] Initialization complete with', this.employees.length, 'employees loaded');
+            
+            // Show notification about employees loaded
+            if (window.showNotification && this.employees.length === 0) {
+                window.showNotification('No employees found. Add employees in Employee Management first.', 'info');
+            }
         } catch (error) {
             console.error('❌ [ATTENDANCE] Initialization failed:', error);
             if (window.showNotification) {
                 window.showNotification('Failed to initialize attendance system', 'error');
             }
+            // Still mark as initialized to prevent re-initialization loops
+            window.attendanceManager.initialized = true;
         }
+    }
+    
+    async loadEmployeesDirectly() {
+        // COPY EXACT POS METHOD - IT WORKS!
+        try {
+            // Ensure database is initialized first
+            if (!window.db || !window.db.db) {
+                console.warn('⚠️ Database not ready, waiting...');
+                await window.ensureDBInit();
+            }
+            
+            this.employees = await window.db.getAll('employees');
+            console.log('✅ Loaded', this.employees.length, 'employees');
+            
+            // Debug log to check employee structure
+            if (this.employees.length > 0) {
+                console.log('📊 First employee structure:', this.employees[0]);
+                console.log('📊 All employee names:', this.employees.map(e => e.name));
+            }
+            
+            this.populateDropdownNow();
+        } catch (error) {
+            console.error('❌ Failed to load employees:', error);
+            this.employees = [];
+            // Still try to populate dropdown with empty message
+            this.populateDropdownNow();
+        }
+    }
+    
+    populateDropdownNow() {
+        const select = document.getElementById('employeeSelect');
+        if (!select) {
+            console.error('❌ Dropdown not found!');
+            return;
+        }
+        
+        // Clear and add default option
+        select.innerHTML = '<option value="">Select Employee</option>';
+        
+        // Check if we have employees
+        if (!this.employees || this.employees.length === 0) {
+            console.warn('⚠️ No employees to populate');
+            const noEmployeesOption = document.createElement('option');
+            noEmployeesOption.value = '';
+            noEmployeesOption.textContent = 'No employees found - Add employees in Employee Management';
+            noEmployeesOption.disabled = true;
+            select.appendChild(noEmployeesOption);
+            return;
+        }
+        
+        // Add each employee
+        this.employees.forEach(emp => {
+            if (emp && emp.name) {
+                const option = document.createElement('option');
+                option.value = emp.id || emp._id || '';
+                // Display name and position if available
+                const displayText = emp.position ? `${emp.name} - ${emp.position}` : emp.name;
+                option.textContent = displayText;
+                select.appendChild(option);
+                console.log(`✅ Added employee: ${displayText} (ID: ${option.value})`);
+            } else {
+                console.warn('⚠️ Skipping employee with missing name:', emp);
+            }
+        });
+        
+        console.log(`✅ Dropdown populated with ${select.options.length - 1} employees`);
+    }
+    
+    async populateDropdownDirectly() {
+        const select = document.getElementById('employeeSelect');
+        if (!select) {
+            console.error('❌ [ATTENDANCE] Employee select element not found');
+            return;
+        }
+        
+        console.log('📊 [ATTENDANCE] Populating dropdown with', this.employees.length, 'employees');
+        console.log('📊 [ATTENDANCE] Full employee data:', JSON.stringify(this.employees, null, 2));
+        
+        // Clear and reset dropdown
+        select.innerHTML = '';
+        
+        // Add default option
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'Choose an employee...';
+        select.appendChild(defaultOption);
+        
+        if (this.employees.length === 0) {
+            console.warn('⚠️ [ATTENDANCE] No employees to add to dropdown');
+            const noEmployeesOption = document.createElement('option');
+            noEmployeesOption.value = '';
+            noEmployeesOption.textContent = 'No employees found - Add employees in Employee Management';
+            noEmployeesOption.disabled = true;
+            select.appendChild(noEmployeesOption);
+            return;
+        }
+        
+        // Add each employee - with detailed debugging
+        this.employees.forEach((emp, index) => {
+            console.log(`🔍 [POPULATE] Checking employee ${index}:`, emp);
+            console.log(`🔍 [POPULATE] Employee properties:`, Object.keys(emp));
+            console.log(`🔍 [POPULATE] Employee.name:`, emp.name);
+            
+            // Check all possible name fields
+            const employeeName = emp.name || emp.Name || emp.employeeName || emp.fullName || 'Unknown Employee';
+            
+            if (emp) {
+                const option = document.createElement('option');
+                // Use the auto-generated ID from IndexedDB
+                option.value = emp.id || emp._id || index.toString();
+                option.textContent = employeeName;
+                select.appendChild(option);
+                console.log(`✅ [POPULATE] Added "${employeeName}" with ID: ${option.value}`);
+            } else {
+                console.warn(`⚠️ [POPULATE] Employee ${index} is null or undefined`);
+            }
+        });
+        
+        console.log('✅ [ATTENDANCE] Dropdown populated. Total options:', select.options.length);
+        console.log('📊 [ATTENDANCE] Final dropdown HTML:', select.innerHTML);
     }
 
     async loadEmployees() {
@@ -151,46 +268,36 @@ class AttendanceManager {
             syncBtn.addEventListener('click', async () => {
                 console.log('🔄 Syncing employees...');
                 
-                // Force fresh load from database
-                if (window.db) {
-                    const emps = await window.db.getAll('employees');
-                    console.log('📊 [SYNC] Direct DB query found:', emps.length, 'employees');
-                    console.log('📊 [SYNC] Employee data:', emps);
-                    
-                    // Set employees directly
-                    this.employees = emps;
-                    
-                    // Force dropdown update
-                    const select = document.getElementById('employeeSelect');
-                    if (select) {
-                        // Clear completely
-                        select.innerHTML = '';
-                        
-                        // Add default option
-                        const defaultOpt = document.createElement('option');
-                        defaultOpt.value = '';
-                        defaultOpt.textContent = 'Choose an employee...';
-                        select.appendChild(defaultOpt);
-                        
-                        // Add each employee directly
-                        emps.forEach(emp => {
-                            if (emp && emp.name) {
-                                const option = document.createElement('option');
-                                option.value = emp.id || emp._id || emp.name;
-                                option.textContent = emp.name;
-                                select.appendChild(option);
-                                console.log('✅ [SYNC] Added:', emp.name);
-                            }
-                        });
-                        
-                        console.log('📊 [SYNC] Dropdown now has', select.options.length - 1, 'employees');
+                // Show loading state
+                syncBtn.disabled = true;
+                const originalText = syncBtn.innerHTML;
+                syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+                
+                try {
+                    // Ensure database is ready
+                    if (typeof window.ensureDBInit === 'function') {
+                        await window.ensureDBInit();
                     }
+                    
+                    // Load directly from IndexedDB
+                    await this.loadEmployeesDirectly();
                     
                     if (window.showNotification) {
-                        window.showNotification(`Found ${emps.length} employees`, 'info');
+                        if (this.employees.length > 0) {
+                            window.showNotification(`Found ${this.employees.length} employees`, 'success');
+                        } else {
+                            window.showNotification('No employees found. Add employees in Employee Management first.', 'info');
+                        }
                     }
-                } else {
-                    console.error('❌ [SYNC] Database not available');
+                } catch (error) {
+                    console.error('❌ Failed to sync employees:', error);
+                    if (window.showNotification) {
+                        window.showNotification('Failed to sync employees', 'error');
+                    }
+                } finally {
+                    // Restore button state
+                    syncBtn.disabled = false;
+                    syncBtn.innerHTML = originalText;
                 }
             });
         }
@@ -246,13 +353,15 @@ class AttendanceManager {
             return;
         }
         
-        const employee = this.employees.find(emp => 
-            (emp.id && emp.id.toString() === employeeId) || 
-            (emp._id && emp._id.toString() === employeeId)
-        );
+        // Find employee by comparing as string (IndexedDB IDs are numbers)
+        const employee = this.employees.find(emp => {
+            const empId = emp.id ? emp.id.toString() : '';
+            return empId === employeeId;
+        });
         
         if (!employee) {
-            console.error('Employee not found');
+            console.error('Employee not found for ID:', employeeId);
+            console.log('Available employees:', this.employees.map(e => ({id: e.id, name: e.name})));
             return;
         }
         
@@ -429,40 +538,8 @@ class AttendanceManager {
     }
 
     async refreshAttendance() {
-        // Force fresh load from database directly
-        if (window.db) {
-            const emps = await window.db.getAll('employees');
-            console.log('📊 [REFRESH] Direct DB query found:', emps.length, 'employees');
-            
-            // Set employees directly
-            this.employees = emps;
-            
-            // Force dropdown update inline
-            const select = document.getElementById('employeeSelect');
-            if (select) {
-                // Clear completely
-                select.innerHTML = '';
-                
-                // Add default option
-                const defaultOpt = document.createElement('option');
-                defaultOpt.value = '';
-                defaultOpt.textContent = 'Choose an employee...';
-                select.appendChild(defaultOpt);
-                
-                // Add each employee directly
-                emps.forEach(emp => {
-                    if (emp && emp.name) {
-                        const option = document.createElement('option');
-                        option.value = emp.id || emp._id || emp.name;
-                        option.textContent = emp.name;
-                        select.appendChild(option);
-                        console.log('✅ [REFRESH] Added:', emp.name);
-                    }
-                });
-                
-                console.log('📊 [REFRESH] Dropdown now has', select.options.length - 1, 'employees');
-            }
-        }
+        // Load directly from IndexedDB
+        await this.loadEmployeesDirectly();
         
         await this.loadAttendanceRecords();
         this.renderAttendanceRecords();
@@ -480,16 +557,8 @@ console.log('✅ AttendanceManager created and ready');
 
 // Auto-init when page becomes visible
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('📊 [ATTENDANCE] DOM loaded, checking if on attendance page...');
-    const attendancePage = document.getElementById('attendance');
-    if (attendancePage && attendancePage.style.display !== 'none') {
-        console.log('📊 [ATTENDANCE] On attendance page, auto-initializing...');
-        setTimeout(async () => {
-            if (window.attendanceManager && !window.attendanceManager.initialized) {
-                await window.attendanceManager.init();
-            }
-        }, 1000);
-    }
+    console.log('📊 [ATTENDANCE] DOM loaded, NOT auto-initializing (will be done by app.js)');
+    // DO NOT auto-init here - app.js will call init() when showing the page
 });
 
 // Mark initialization status
@@ -505,29 +574,16 @@ window.populateAttendanceDropdown = async function() {
             await window.ensureDBInit();
         }
         
-        // Load employees directly
-        const employees = await window.db.getAll('employees');
-        console.log('📊 Found employees:', employees);
-        
-        const select = document.getElementById('employeeSelect');
-        if (select) {
-            select.innerHTML = '<option value="">Choose an employee...</option>';
-            
-            employees.forEach(emp => {
-                if (emp && emp.name) {
-                    const option = document.createElement('option');
-                    option.value = emp.id || emp._id || emp.name;
-                    option.textContent = emp.name;
-                    select.appendChild(option);
-                    console.log('✅ Added:', emp.name);
-                }
-            });
-            
-            console.log('✅ Dropdown populated with', employees.length, 'employees');
+        // Load employees and populate
+        if (window.attendanceManager) {
+            window.attendanceManager.employees = await window.db.getAll('employees');
+            await window.attendanceManager.populateDropdownDirectly();
+            console.log('✅ Dropdown populated with', window.attendanceManager.employees.length, 'employees');
             return true;
+        } else {
+            console.error('❌ AttendanceManager not found');
+            return false;
         }
-        console.error('❌ Dropdown element not found');
-        return false;
     } catch (error) {
         console.error('❌ Failed to populate dropdown:', error);
         return false;
@@ -550,19 +606,38 @@ window.checkEmployeesInDB = async function() {
         getAllRequest.onsuccess = () => {
             const employees = getAllRequest.result;
             console.log('📊 Employees found in AvaSolutionsDB:', employees.length);
-            console.log('📊 Employee data:', employees);
+            console.log('📊 Raw employee data from IndexedDB:', employees);
             
-            // Try to populate dropdown directly
+            // Inspect each employee's structure
+            employees.forEach((emp, i) => {
+                console.log(`Employee ${i}:`, emp);
+                console.log(`Employee ${i} keys:`, Object.keys(emp));
+                console.log(`Employee ${i} has 'name' property:`, emp.hasOwnProperty('name'));
+                console.log(`Employee ${i} name value:`, emp.name);
+            });
+            
+            // Try to populate dropdown directly with all possible name fields
             const select = document.getElementById('employeeSelect');
             if (select && employees.length > 0) {
                 select.innerHTML = '<option value="">Choose an employee...</option>';
-                employees.forEach(emp => {
-                    if (emp && emp.name) {
+                employees.forEach((emp, i) => {
+                    if (emp) {
+                        const possibleNames = [
+                            emp.name,
+                            emp.Name, 
+                            emp.employeeName,
+                            emp.fullName,
+                            emp.firstName,
+                            emp.displayName
+                        ];
+                        
+                        const employeeName = possibleNames.find(n => n && n.trim()) || `Employee ${i + 1}`;
+                        
                         const option = document.createElement('option');
-                        option.value = emp.id || emp._id || emp.name;
-                        option.textContent = emp.name;
+                        option.value = emp.id || emp._id || i.toString();
+                        option.textContent = employeeName;
                         select.appendChild(option);
-                        console.log('✅ Added to dropdown:', emp.name);
+                        console.log(`✅ Added to dropdown: "${employeeName}" (tried fields: ${possibleNames.map((n,idx) => n ? `[${idx}]="${n}"` : `[${idx}]=null`).join(', ')})`);
                     }
                 });
                 console.log('✅ Dropdown populated with', select.options.length - 1, 'employees');
@@ -573,4 +648,107 @@ window.checkEmployeesInDB = async function() {
     dbRequest.onerror = (e) => {
         console.error('❌ Failed to open AvaSolutionsDB:', e);
     };
+};
+
+// Additional debug function to manually fix the dropdown
+window.fixAttendanceDropdown = async function() {
+    console.log('🔧 Attempting emergency fix for attendance dropdown...');
+    
+    // Direct IndexedDB access
+    return new Promise((resolve) => {
+        const dbRequest = indexedDB.open('AvaSolutionsDB');
+        
+        dbRequest.onsuccess = () => {
+            const db = dbRequest.result;
+            const transaction = db.transaction(['employees'], 'readonly');
+            const store = transaction.objectStore('employees');
+            const getAllRequest = store.getAll();
+            
+            getAllRequest.onsuccess = () => {
+                const employees = getAllRequest.result || [];
+                console.log('📊 Direct IndexedDB query found:', employees.length, 'employees');
+                console.log('📊 Raw data:', employees);
+                
+                const select = document.getElementById('employeeSelect');
+                if (!select) {
+                    console.error('❌ Dropdown element not found!');
+                    resolve(false);
+                    return;
+                }
+                
+                // Clear all options
+                while (select.firstChild) {
+                    select.removeChild(select.firstChild);
+                }
+                
+                // Add default option
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = '';
+                defaultOpt.textContent = 'Choose an employee...';
+                select.appendChild(defaultOpt);
+                
+                if (employees.length === 0) {
+                    console.warn('⚠️ No employees in database');
+                    const noEmp = document.createElement('option');
+                    noEmp.value = '';
+                    noEmp.textContent = 'No employees - Add in Employee Management';
+                    noEmp.disabled = true;
+                    select.appendChild(noEmp);
+                } else {
+                    // Add each employee
+                    employees.forEach((emp, i) => {
+                        if (emp) {
+                            const option = document.createElement('option');
+                            // Check ALL possible name fields
+                            const possibleNames = [
+                                emp.name, emp.Name, emp.employeeName, emp.fullName,
+                                emp.firstName, emp.lastName, emp.displayName,
+                                emp.first_name, emp.last_name, emp.full_name,
+                                emp.employee_name, emp.userName, emp.username
+                            ];
+                            
+                            let employeeName = possibleNames.find(n => n && String(n).trim());
+                            
+                            // If still no name, construct from parts or use fallback
+                            if (!employeeName) {
+                                if (emp.firstName && emp.lastName) {
+                                    employeeName = `${emp.firstName} ${emp.lastName}`;
+                                } else if (emp.first_name && emp.last_name) {
+                                    employeeName = `${emp.first_name} ${emp.last_name}`;
+                                } else {
+                                    employeeName = `Employee ${i + 1}`;
+                                }
+                            }
+                            
+                            option.value = emp.id || emp._id || String(i);
+                            option.textContent = employeeName;
+                            select.appendChild(option);
+                            console.log(`✅ Added: "${employeeName}" (ID: ${option.value})`);
+                            console.log('   Employee data:', emp);
+                        }
+                    });
+                }
+                
+                console.log('✅ Emergency fix complete. Dropdown has', select.options.length - 1, 'employees');
+                
+                // Also update attendance manager
+                if (window.attendanceManager) {
+                    window.attendanceManager.employees = employees;
+                    console.log('✅ Updated attendanceManager.employees');
+                }
+                
+                resolve(true);
+            };
+            
+            getAllRequest.onerror = () => {
+                console.error('❌ Failed to get employees from IndexedDB');
+                resolve(false);
+            };
+        };
+        
+        dbRequest.onerror = () => {
+            console.error('❌ Failed to open database');
+            resolve(false);
+        };
+    });
 };
