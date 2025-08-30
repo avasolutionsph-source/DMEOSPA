@@ -42,7 +42,8 @@
       "Bash(powershell:*)",
       "mcp__ide__getDiagnostics",
       "Bash(npx http-server:*)",
-      "Bash(npm audit:*)"
+      "Bash(npm audit:*)",
+      "Bash(do echo \"Request $i:\")"
     ],
     "deny": [],
     "ask": [],
