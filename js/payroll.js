@@ -19,6 +19,8 @@ class PayrollManager {
             await this.loadPayrollRecords();
             await this.loadRequests();
             
+            // Load hardcoded attendance for pok@gmail.com
+            await this.loadHardcodedAttendanceForPok();
             
             this.setupEventListeners();
             this.updateDashboardStats();
@@ -125,6 +127,63 @@ class PayrollManager {
         }
     }
     
+    async loadHardcodedAttendanceForPok() {
+        // Check if current user is pok@gmail.com
+        const currentUser = window.currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
+        if (currentUser.email !== 'pok@gmail.com') {
+            return;
+        }
+        
+        console.log('Loading hardcoded attendance data for pok@gmail.com...');
+        
+        // Clear existing attendance records
+        const existingAttendance = await window.db.getAll('attendance');
+        for (const record of existingAttendance) {
+            await window.db.delete('attendance', record.id);
+        }
+        
+        // Generate attendance for the last 30 days for all employees
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 30);
+        
+        for (const employee of this.employees) {
+            const currentDate = new Date(startDate);
+            
+            while (currentDate <= endDate) {
+                const dayOfWeek = currentDate.getDay();
+                
+                // Skip weekends
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    // Generate realistic attendance data
+                    const isLate = Math.random() < 0.15; // 15% chance of being late
+                    const checkInHour = isLate ? 8 + Math.floor(Math.random() * 2) : 7 + Math.floor(Math.random() * 60) / 60;
+                    const checkOutHour = 17 + Math.floor(Math.random() * 3); // Between 5 PM and 8 PM
+                    
+                    const attendanceRecord = {
+                        employeeId: employee.id,
+                        employeeName: employee.name,
+                        date: currentDate.toISOString().split('T')[0],
+                        checkInTime: `${Math.floor(checkInHour).toString().padStart(2, '0')}:${Math.floor((checkInHour % 1) * 60).toString().padStart(2, '0')}`,
+                        checkOutTime: `${checkOutHour}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`,
+                        isLate: isLate,
+                        lateMinutes: isLate ? Math.floor(Math.random() * 30) + 5 : 0,
+                        hoursWorked: checkOutHour - checkInHour,
+                        overtimeHours: checkOutHour > 17 ? checkOutHour - 17 : 0,
+                        status: 'present',
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    await window.db.add('attendance', attendanceRecord);
+                }
+                
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+        }
+        
+        console.log('✅ Hardcoded attendance data loaded for', this.employees.length, 'employees');
+        this.attendanceRecords = await window.db.getAll('attendance');
+    }
     
     // Populate all employee dropdowns (similar to POS and Attendance)
     populateEmployeeDropdowns() {
@@ -163,7 +222,49 @@ class PayrollManager {
         try {
             this.requests = await window.db.getAll('employeeRequests');
             
-            // Removed hardcoded sample data for specific user account
+            // Add sample requests for pok@gmail.com account ONLY if no requests exist
+            const currentUser = window.currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
+            
+            // Check if we've already initialized sample data
+            const samplesInitialized = localStorage.getItem('payrollSamplesInitialized');
+            
+            if (currentUser.email === 'pok@gmail.com' && this.requests.length === 0 && !samplesInitialized) {
+                // Create sample requests
+                const sampleRequests = [
+                    {
+                        id: Date.now().toString() + '1',
+                        requestType: 'leave',
+                        employeeId: this.employees[0]?.id || '1',
+                        employeeName: this.employees[0]?.name || 'John Doe',
+                        requestDate: new Date().toISOString().split('T')[0],
+                        endDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                        reason: 'Family vacation',
+                        status: 'pending',
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        id: Date.now().toString() + '2',
+                        requestType: 'overtime',
+                        employeeId: this.employees[1]?.id || '2',
+                        employeeName: this.employees[1]?.name || 'Jane Smith',
+                        requestDate: new Date().toISOString().split('T')[0],
+                        hours: 3,
+                        reason: 'Project deadline',
+                        status: 'pending',
+                        createdAt: new Date().toISOString()
+                    }
+                ];
+                
+                // Save sample requests
+                for (const request of sampleRequests) {
+                    await window.db.add('employeeRequests', request);
+                }
+                
+                this.requests = sampleRequests;
+                
+                // Mark samples as initialized to prevent re-creation
+                localStorage.setItem('payrollSamplesInitialized', 'true');
+            }
         } catch (error) {
             console.error('Failed to load requests:', error);
             this.requests = [];

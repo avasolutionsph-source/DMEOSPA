@@ -14,23 +14,6 @@ class GiftCertificateManager {
     async init() {
         try {
             console.log('Initializing Gift Certificate Manager...');
-            
-            // Check if HTML structure exists, if not create it
-            const container = document.getElementById('gift-certificates');
-            if (!container) {
-                console.error('❌ Gift certificates container not found!');
-                return;
-            }
-            
-            // Check if the structure is already there
-            const existingList = container.querySelector('#certificates-list');
-            if (!existingList) {
-                console.log('📄 HTML structure not found, creating it...');
-                this.createPageStructure();
-            } else {
-                console.log('📄 Using existing HTML structure from app.js');
-            }
-            
             this.db = await this.openDatabase();
             await this.createTables();
             await this.loadCertificates();
@@ -47,126 +30,6 @@ class GiftCertificateManager {
     openDatabase() {
         // Use the main app database instead of separate database
         return window.db;
-    }
-
-    createPageStructure() {
-        console.log('🏗️ Creating Gift Certificate page structure...');
-        const giftCertificatesPage = document.getElementById('gift-certificates');
-        if (!giftCertificatesPage) {
-            console.error('Gift certificates page container not found!');
-            return;
-        }
-
-        // Inject the complete HTML structure
-        giftCertificatesPage.innerHTML = `
-            <div class="page-header">
-                <h1><i class="fas fa-gift" style="margin-right: 0.75rem; color: var(--primary-color);"></i>Gift Certificates</h1>
-                <div class="header-actions">
-                    <button class="btn btn-primary" id="create-certificate-btn">
-                        <i class="fas fa-plus"></i> Create Certificate
-                    </button>
-                    <button class="btn btn-info" id="validate-certificate-btn">
-                        <i class="fas fa-shield-alt"></i> Validate Certificate
-                    </button>
-                </div>
-            </div>
-
-            <!-- Dashboard Stats -->
-            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-                <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; border-radius: 12px; color: white; text-align: center;">
-                    <div class="stat-icon" style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-certificate"></i></div>
-                    <div class="stat-value" id="gc-total-count" style="font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem;">0</div>
-                    <div class="stat-label" style="font-size: 0.9rem; opacity: 0.9;">Total Certificates</div>
-                </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #10b981 0%, #047857 100%); padding: 1.5rem; border-radius: 12px; color: white; text-align: center;">
-                    <div class="stat-icon" style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-check-circle"></i></div>
-                    <div class="stat-value" id="gc-active-count" style="font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem;">0</div>
-                    <div class="stat-label" style="font-size: 0.9rem; opacity: 0.9;">Active</div>
-                </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 1.5rem; border-radius: 12px; color: white; text-align: center;">
-                    <div class="stat-icon" style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-coins"></i></div>
-                    <div class="stat-value" id="gc-redeemed-count" style="font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem;">0</div>
-                    <div class="stat-label" style="font-size: 0.9rem; opacity: 0.9;">Redeemed</div>
-                </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); padding: 1.5rem; border-radius: 12px; color: white; text-align: center;">
-                    <div class="stat-icon" style="font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-clock"></i></div>
-                    <div class="stat-value" id="gc-expired-count" style="font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem;">0</div>
-                    <div class="stat-label" style="font-size: 0.9rem; opacity: 0.9;">Expired</div>
-                </div>
-            </div>
-
-            <!-- Value Stats -->
-            <div class="value-stats" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
-                <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); padding: 1.5rem; border-radius: 12px; color: white; text-align: center;">
-                    <div class="stat-icon" style="font-size: 1.5rem; margin-bottom: 0.5rem;"><i class="fas fa-chart-line"></i></div>
-                    <div class="stat-value" id="gc-total-value" style="font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem;">₱0.00</div>
-                    <div class="stat-label" style="font-size: 0.9rem; opacity: 0.9;">Total Value Issued</div>
-                </div>
-                <div class="stat-card" style="background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%); padding: 1.5rem; border-radius: 12px; color: white; text-align: center;">
-                    <div class="stat-icon" style="font-size: 1.5rem; margin-bottom: 0.5rem;"><i class="fas fa-wallet"></i></div>
-                    <div class="stat-value" id="gc-remaining-value" style="font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem;">₱0.00</div>
-                    <div class="stat-label" style="font-size: 0.9rem; opacity: 0.9;">Remaining Value</div>
-                </div>
-            </div>
-
-            <!-- Filter Controls -->
-            <div class="filter-controls" style="background: white; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <div class="filter-buttons" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                    <button class="filter-btn active" data-filter="all" style="
-                        padding: 0.5rem 1rem; 
-                        border: 2px solid var(--primary-color); 
-                        background: var(--primary-color); 
-                        color: white; 
-                        border-radius: 8px; 
-                        font-weight: 600; 
-                        cursor: pointer; 
-                        transition: all 0.2s;
-                    ">All 0</button>
-                    <button class="filter-btn" data-filter="active" style="
-                        padding: 0.5rem 1rem; 
-                        border: 2px solid #10b981; 
-                        background: white; 
-                        color: #10b981; 
-                        border-radius: 8px; 
-                        font-weight: 600; 
-                        cursor: pointer; 
-                        transition: all 0.2s;
-                    ">Active 0</button>
-                    <button class="filter-btn" data-filter="redeemed" style="
-                        padding: 0.5rem 1rem; 
-                        border: 2px solid #f59e0b; 
-                        background: white; 
-                        color: #f59e0b; 
-                        border-radius: 8px; 
-                        font-weight: 600; 
-                        cursor: pointer; 
-                        transition: all 0.2s;
-                    ">Redeemed 0</button>
-                    <button class="filter-btn" data-filter="expired" style="
-                        padding: 0.5rem 1rem; 
-                        border: 2px solid #ef4444; 
-                        background: white; 
-                        color: #ef4444; 
-                        border-radius: 8px; 
-                        font-weight: 600; 
-                        cursor: pointer; 
-                        transition: all 0.2s;
-                    ">Expired 0</button>
-                </div>
-            </div>
-
-            <!-- Certificates List -->
-            <div class="certificates-container" style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <div class="certificates-header" style="background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 100%); color: white; padding: 1rem; font-weight: 600; font-size: 1.1rem;">
-                    <i class="fas fa-list" style="margin-right: 0.5rem;"></i>Gift Certificates
-                </div>
-                <div id="certificates-list" style="padding: 1rem;">
-                    <!-- Certificate cards will be rendered here -->
-                </div>
-            </div>
-        `;
-
-        console.log('✅ Gift Certificate page structure created');
     }
 
     async createTables() {
@@ -455,7 +318,7 @@ class GiftCertificateManager {
         return this.certificates.filter(c => c.status === this.currentFilter);
     }
 
-    updateDashboard(retryCount = 0) {
+    updateDashboard() {
         const stats = {
             total: this.certificates.length,
             active: this.certificates.filter(c => c.status === 'active').length,
@@ -475,27 +338,12 @@ class GiftCertificateManager {
             'gc-remaining-value': `₱${stats.remainingValue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
         };
 
-        let foundElements = 0;
         Object.entries(elements).forEach(([id, value]) => {
             const element = document.getElementById(id);
             if (element) {
                 element.textContent = value;
-                foundElements++;
             }
         });
-
-        // If no dashboard elements found, the DOM might not be ready
-        if (foundElements === 0) {
-            if (retryCount < 5) { // Max 5 retries
-                console.log(`Dashboard elements not found, retrying in 500ms... (${retryCount + 1}/5)`);
-                setTimeout(() => {
-                    this.updateDashboard(retryCount + 1);
-                }, 500);
-            } else {
-                console.error('❌ Failed to find dashboard elements after 5 retries');
-            }
-            return;
-        }
 
         // Update filter button counts
         this.updateFilterCounts(stats);
@@ -526,19 +374,11 @@ class GiftCertificateManager {
         });
     }
 
-    renderCertificatesList(retryCount = 0) {
+    renderCertificatesList() {
         console.log('🔄 Rendering certificates list with modern button styling v2.1');
         const container = document.getElementById('certificates-list');
         if (!container) {
-            if (retryCount < 5) { // Max 5 retries
-                console.log(`Certificate list container not found, retrying in 500ms... (${retryCount + 1}/5)`);
-                // Retry after a short delay to allow DOM to be ready
-                setTimeout(() => {
-                    this.renderCertificatesList(retryCount + 1);
-                }, 500);
-            } else {
-                console.error('❌ Failed to find certificates list container after 5 retries');
-            }
+            console.log('Certificate list container not found, will retry...');
             return;
         }
 

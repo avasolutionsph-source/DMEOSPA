@@ -1,41 +1,12 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
-import rateLimit from 'express-rate-limit';
 import User from '../../models/User.js';
-import { generateToken, verifyToken, authenticateJWT } from '../../middleware/auth.js';
+import { generateToken, verifyToken } from '../../middleware/auth.js';
 
 const router = express.Router();
 
-// Rate limiting for auth endpoints (safe limits to prevent abuse without breaking normal usage)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // limit each IP to 10 requests per windowMs (generous limit)
-  message: {
-    success: false,
-    error: 'Too many authentication attempts, please try again later.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  // Skip successful requests to avoid limiting legitimate users
-  skipSuccessfulRequests: true
-});
-
-// More restrictive rate limiting for login attempts (brute force protection)
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 login attempts per windowMs
-  message: {
-    success: false,
-    error: 'Too many login attempts, please try again in 15 minutes.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  // Only count failed requests
-  skipSuccessfulRequests: true
-});
-
 // POST /api/auth/register
-router.post('/register', authLimiter, async (req, res) => {
+router.post('/register', async (req, res) => {
   try {
     const { email, password, firstName, lastName, businessName, phone, plan } = req.body;
     
@@ -108,7 +79,7 @@ router.post('/register', authLimiter, async (req, res) => {
 });
 
 // POST /api/auth/login
-router.post('/login', loginLimiter, async (req, res) => {
+router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
@@ -123,17 +94,14 @@ router.post('/login', loginLimiter, async (req, res) => {
     // Find user by email
     const user = await User.findOne({ email: email.toLowerCase() });
     
-    // Check for super admin credentials (now secured via environment variables)
-    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'avasolutionsph@gmail.com';
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Ava12345';
-    
-    if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase() && password === ADMIN_PASSWORD) {
+    // Check for super admin hardcoded credentials
+    if (email.toLowerCase() === 'avasolutionsph@gmail.com' && password === 'Ava12345') {
       // Create or update super admin user
       let superAdmin = user;
       if (!superAdmin) {
         superAdmin = await User.create({
-          email: ADMIN_EMAIL,
-          password: ADMIN_PASSWORD,
+          email: 'avasolutionsph@gmail.com',
+          password: 'Ava12345',
           firstName: 'Super',
           lastName: 'Admin',
           businessName: 'Ava Solutions PH',
@@ -337,6 +305,64 @@ router.post('/verify', async (req, res) => {
   }
 });
 
+// POST /api/auth/refresh
+router.post('/refresh', async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    
+    // For now, just verify the existing token and issue a new one
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        error: 'No token provided'
+      });
+    }
+    
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+    
+    if (!decoded) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid token'
+      });
+    }
+    
+    // Get fresh user data
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    // Generate new token
+    const newToken = generateToken({
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      businessName: user.businessName,
+      subscriptionPlan: user.subscriptionPlan,
+      role: user.role
+    });
+    
+    res.json({
+      success: true,
+      token: newToken,
+      message: 'Token refreshed successfully'
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    res.status(401).json({
+      success: false,
+      error: 'Token refresh failed'
+    });
+  }
+});
+
 // POST /api/auth/forgot-password
 router.post('/forgot-password', async (req, res) => {
   try {
@@ -448,54 +474,6 @@ router.get('/subscription', async (req, res) => {
     res.status(500).json({ 
       success: false,
       error: 'Failed to verify subscription'
-    });
-  }
-});
-
-// POST /api/auth/refresh - Token refresh endpoint
-router.post('/refresh', authenticateJWT, async (req, res) => {
-  try {
-    // User is already authenticated via JWT middleware
-    const user = await User.findById(req.user.id);
-    
-    if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'User not found' 
-      });
-    }
-
-    // Generate new token with same data but fresh expiration
-    const newToken = generateToken({
-      id: user._id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      businessName: user.businessName,
-      subscriptionPlan: user.subscriptionPlan,
-      role: user.role
-    });
-
-    res.json({
-      success: true,
-      message: 'Token refreshed successfully',
-      token: newToken,
-      user: {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        businessName: user.businessName,
-        subscriptionPlan: user.subscriptionPlan,
-        plan: user.subscriptionPlan,
-        role: user.role
-      }
-    });
-  } catch (error) {
-    console.error('Token refresh error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to refresh token' 
     });
   }
 });
