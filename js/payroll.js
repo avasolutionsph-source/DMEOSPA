@@ -19,8 +19,6 @@ class PayrollManager {
             await this.loadPayrollRecords();
             await this.loadRequests();
             
-            // Load hardcoded attendance for pok@gmail.com
-            await this.loadHardcodedAttendanceForPok();
             
             this.setupEventListeners();
             this.updateDashboardStats();
@@ -127,63 +125,6 @@ class PayrollManager {
         }
     }
     
-    async loadHardcodedAttendanceForPok() {
-        // Check if current user is pok@gmail.com
-        const currentUser = window.currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
-        if (currentUser.email !== 'pok@gmail.com') {
-            return;
-        }
-        
-        console.log('Loading hardcoded attendance data for pok@gmail.com...');
-        
-        // Clear existing attendance records
-        const existingAttendance = await window.db.getAll('attendance');
-        for (const record of existingAttendance) {
-            await window.db.delete('attendance', record.id);
-        }
-        
-        // Generate attendance for the last 30 days for all employees
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - 30);
-        
-        for (const employee of this.employees) {
-            const currentDate = new Date(startDate);
-            
-            while (currentDate <= endDate) {
-                const dayOfWeek = currentDate.getDay();
-                
-                // Skip weekends
-                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-                    // Generate realistic attendance data
-                    const isLate = Math.random() < 0.15; // 15% chance of being late
-                    const checkInHour = isLate ? 8 + Math.floor(Math.random() * 2) : 7 + Math.floor(Math.random() * 60) / 60;
-                    const checkOutHour = 17 + Math.floor(Math.random() * 3); // Between 5 PM and 8 PM
-                    
-                    const attendanceRecord = {
-                        employeeId: employee.id,
-                        employeeName: employee.name,
-                        date: currentDate.toISOString().split('T')[0],
-                        checkInTime: `${Math.floor(checkInHour).toString().padStart(2, '0')}:${Math.floor((checkInHour % 1) * 60).toString().padStart(2, '0')}`,
-                        checkOutTime: `${checkOutHour}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`,
-                        isLate: isLate,
-                        lateMinutes: isLate ? Math.floor(Math.random() * 30) + 5 : 0,
-                        hoursWorked: checkOutHour - checkInHour,
-                        overtimeHours: checkOutHour > 17 ? checkOutHour - 17 : 0,
-                        status: 'present',
-                        createdAt: new Date().toISOString()
-                    };
-                    
-                    await window.db.add('attendance', attendanceRecord);
-                }
-                
-                currentDate.setDate(currentDate.getDate() + 1);
-            }
-        }
-        
-        console.log('✅ Hardcoded attendance data loaded for', this.employees.length, 'employees');
-        this.attendanceRecords = await window.db.getAll('attendance');
-    }
     
     // Populate all employee dropdowns (similar to POS and Attendance)
     populateEmployeeDropdowns() {
