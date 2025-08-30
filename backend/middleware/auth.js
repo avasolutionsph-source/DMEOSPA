@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+// Use environment variable for JWT secret, with secure fallback for development
+const JWT_SECRET = process.env.JWT_SECRET || 'ava-solutions-secure-dev-key-2024-' + Date.now();
 
 // Authenticate JWT token
 export const authenticateJWT = (req, res, next) => {

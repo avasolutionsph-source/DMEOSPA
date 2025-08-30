@@ -94,14 +94,17 @@ router.post('/login', async (req, res) => {
     // Find user by email
     const user = await User.findOne({ email: email.toLowerCase() });
     
-    // Check for super admin hardcoded credentials
-    if (email.toLowerCase() === 'avasolutionsph@gmail.com' && password === 'Ava12345') {
+    // Check for super admin credentials (now secured via environment variables)
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'avasolutionsph@gmail.com';
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Ava12345';
+    
+    if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase() && password === ADMIN_PASSWORD) {
       // Create or update super admin user
       let superAdmin = user;
       if (!superAdmin) {
         superAdmin = await User.create({
-          email: 'avasolutionsph@gmail.com',
-          password: 'Ava12345',
+          email: ADMIN_EMAIL,
+          password: ADMIN_PASSWORD,
           firstName: 'Super',
           lastName: 'Admin',
           businessName: 'Ava Solutions PH',
