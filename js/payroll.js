@@ -163,49 +163,7 @@ class PayrollManager {
         try {
             this.requests = await window.db.getAll('employeeRequests');
             
-            // Add sample requests for pok@gmail.com account ONLY if no requests exist
-            const currentUser = window.currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
-            
-            // Check if we've already initialized sample data
-            const samplesInitialized = localStorage.getItem('payrollSamplesInitialized');
-            
-            if (currentUser.email === 'pok@gmail.com' && this.requests.length === 0 && !samplesInitialized) {
-                // Create sample requests
-                const sampleRequests = [
-                    {
-                        id: Date.now().toString() + '1',
-                        requestType: 'leave',
-                        employeeId: this.employees[0]?.id || '1',
-                        employeeName: this.employees[0]?.name || 'John Doe',
-                        requestDate: new Date().toISOString().split('T')[0],
-                        endDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                        reason: 'Family vacation',
-                        status: 'pending',
-                        createdAt: new Date().toISOString()
-                    },
-                    {
-                        id: Date.now().toString() + '2',
-                        requestType: 'overtime',
-                        employeeId: this.employees[1]?.id || '2',
-                        employeeName: this.employees[1]?.name || 'Jane Smith',
-                        requestDate: new Date().toISOString().split('T')[0],
-                        hours: 3,
-                        reason: 'Project deadline',
-                        status: 'pending',
-                        createdAt: new Date().toISOString()
-                    }
-                ];
-                
-                // Save sample requests
-                for (const request of sampleRequests) {
-                    await window.db.add('employeeRequests', request);
-                }
-                
-                this.requests = sampleRequests;
-                
-                // Mark samples as initialized to prevent re-creation
-                localStorage.setItem('payrollSamplesInitialized', 'true');
-            }
+            // Removed hardcoded sample data for specific user account
         } catch (error) {
             console.error('Failed to load requests:', error);
             this.requests = [];
