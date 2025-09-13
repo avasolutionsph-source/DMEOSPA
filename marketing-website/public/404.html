@@ -3,63 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>404 - Page Not Found | Ava Solutions</title>
-    <link href="assets/style.css" rel="stylesheet">
-    <style>
-        .error-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-align: center;
-            padding: 2rem;
-        }
-        .error-content {
-            max-width: 600px;
-        }
-        .error-code {
-            font-size: 8rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            opacity: 0.8;
-        }
-        .error-message {
-            font-size: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .error-description {
-            font-size: 1rem;
-            margin-bottom: 3rem;
-            opacity: 0.9;
-        }
-        .back-button {
-            display: inline-block;
-            padding: 1rem 2rem;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            text-decoration: none;
-            border-radius: 50px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            transition: all 0.3s;
-        }
-        .back-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-    </style>
+    <title>404 - Page Not Found | Daet Massage and Spa</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
-    <div class="error-container">
-        <div class="error-content">
-            <div class="error-code">404</div>
-            <div class="error-message">Page Not Found</div>
-            <div class="error-description">
-                The page you're looking for doesn't exist or has been moved.
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <img src="/assets/logo-daet.png" alt="Daet Massage and Spa" style="height: 40px; width: auto; border-radius: 6px;">
             </div>
-            <a href="/" class="back-button">← Back to Home</a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/about">About</a>
+                <a href="/services">Services</a>
+                <a href="/contact">Contact</a>
+                <div class="nav-auth" id="navAuth">
+                    <a href="/register" class="btn-secondary">Register</a>
+                    <a href="/login" class="btn-primary">Login</a>
+                </div>
+            </div>
+            <div class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
         </div>
-    </div>
+    </nav>
+
+    <!-- 404 Error Section -->
+    <section class="apple-hero" style="min-height: 80vh; display: flex; align-items: center; text-align: center;">
+        <div class="container">
+            <div class="apple-hero-content">
+                <div class="hero-main-content">
+                    <div style="font-size: 8rem; font-weight: 700; color: var(--primary); margin-bottom: 2rem; opacity: 0.8;">
+                        404
+                    </div>
+                    <h1 class="hero-title" style="font-size: 2.5rem; margin-bottom: 1rem;">
+                        <span class="title-light">Page Not</span>
+                        <span class="title-bold">Found</span>
+                    </h1>
+                    
+                    <p class="hero-subtitle" style="margin-bottom: 3rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+                        Sorry, we couldn't find the page you're looking for. The page may have been moved, deleted, or you may have mistyped the URL.
+                    </p>
+                    
+                    <div class="hero-cta-section">
+                        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                            <a href="/" class="btn-apple-primary">
+                                <i class="fas fa-home"></i> Back to Home
+                                <span class="btn-arrow">→</span>
+                            </a>
+                            <a href="/contact" class="btn-secondary btn-large">
+                                <i class="fas fa-question-circle"></i> Get Help
+                            </a>
+                        </div>
+                        <p class="cta-note" style="margin-top: 2rem; color: var(--text-light);">
+                            Or try searching for what you need on our homepage
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Floating accent elements -->
+                <div class="floating-elements">
+                    <div class="float-circle float-1"></div>
+                    <div class="float-circle float-2"></div>
+                    <div class="float-line"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Links Section -->
+    <section class="features" style="padding: 60px 0;">
+        <div class="container">
+            <div class="section-header">
+                <h2>Popular Pages</h2>
+                <p>Here are some pages you might be looking for</p>
+            </div>
+            <div class="features-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <h3>Homepage</h3>
+                    <p>Return to our main page and explore all our services</p>
+                    <a href="/" class="btn-secondary">Visit Homepage</a>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-spa"></i>
+                    </div>
+                    <h3>Our Services</h3>
+                    <p>Browse our massage therapy and spa treatment options</p>
+                    <a href="/services" class="btn-secondary">View Services</a>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <h3>Book Appointment</h3>
+                    <p>Contact us to schedule your relaxation session</p>
+                    <a href="/contact" class="btn-secondary">Contact Us</a>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <h3>About Us</h3>
+                    <p>Learn more about our spa and wellness philosophy</p>
+                    <a href="/about" class="btn-secondary">Learn More</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="brand">
+                        <img src="/assets/logo-daet.png" alt="Daet Massage and Spa" style="height: 32px; width: auto; border-radius: 4px;">
+                    </div>
+                    <p>Experience ultimate relaxation and wellness at Daet's premier massage and spa destination. Professional therapeutic treatments in a serene environment.</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>Services</h4>
+                        <a href="/services">Massage Therapy</a>
+                        <a href="/services">Spa Treatments</a>
+                        <a href="/services">Wellness Packages</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Contact</h4>
+                        <a href="tel:09518999577">09518999577</a>
+                        <a href="mailto:daetmassagespa@gmail.com">Email Us</a>
+                        <a href="/contact">Location</a>
+                        <a href="#services">Book Appointment</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Information</h4>
+                        <a href="/about">About Us</a>
+                        <a href="#business-info">Hours</a>
+                        <a href="/contact">Directions</a>
+                        <a href="#services">Pricing</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Legal</h4>
+                        <a href="/privacy-policy">Privacy Policy</a>
+                        <a href="/terms">Terms of Service</a>
+                        <a href="/cookie-policy">Cookie Policy</a>
+                        <a href="/compliance">Compliance</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom" style="padding: 30px 0; border-top: 1px solid rgba(255,255,255,0.1);">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <p style="font-size: 14px; color: #e2e8f0; margin-bottom: 15px;">
+                        <strong>Business Registration & Compliance</strong>
+                    </p>
+                    <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; font-size: 13px; color: #cbd5e0;">
+                        <span>DTI Registration: [Your DTI Number]</span>
+                        <span>|</span>
+                        <span>BIR TIN: [Your TIN]</span>
+                        <span>|</span>
+                        <span>Mayor's Permit: [Permit Number]</span>
+                        <span>|</span>
+                        <span>NPC Registration: [NPC Number]</span>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 12px; color: #a0aec0;">
+                        Compliant with: RA 10173 (Data Privacy Act) | RA 7394 (Consumer Act) | RA 8792 (E-Commerce Act) | RA 10175 (Cybercrime Prevention Act)
+                    </div>
+                    <div style="margin-top: 8px; font-size: 11px; color: #718096; font-style: italic;">
+                        This service is intended for users 18 years and older only. By using this website, you confirm you meet this requirement.
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                    <p style="font-size: 14px;">&copy; 2025 Daet Massage and Spa Philippines. All rights reserved.</p>
+                    <div class="footer-legal" style="display: flex; gap: 20px;">
+                        <a href="/privacy-policy" style="color: #e2e8f0;">Privacy Policy</a>
+                        <a href="/terms" style="color: #e2e8f0;">Terms of Service</a>
+                        <a href="/cookie-policy" style="color: #e2e8f0;">Cookie Policy</a>
+                        <a href="#" onclick="window.cookieSettings && window.cookieSettings(); return false;" style="color: #e2e8f0;">
+                            <i class="fas fa-cookie-bite"></i> Cookie Settings
+                        </a>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 40'%3E%3Crect width='60' height='20' fill='%23002b7f'/%3E%3Crect y='20' width='60' height='20' fill='%23ce1126'/%3E%3Cpath d='M0,0 L30,20 L0,40 Z' fill='%23fff'/%3E%3Ccircle cx='10' cy='20' r='3' fill='%23fcd116'/%3E%3C/svg%3E" alt="Philippines Flag" style="width: 30px; height: 20px; margin-bottom: 5px;">
+                    <p style="font-size: 11px; color: #a0aec0;">Proudly Philippine-owned and operated | Manila, Philippines</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/assets/main.js"></script>
 </body>
 </html>

@@ -9,10 +9,10 @@ const router = express.Router();
 // Create base route handler for employees
 const employeeHandler = new BaseRouteHandler(Employee, {
     populate: [], // Add population fields if needed
-    searchFields: ['name', 'email', 'phone'],
-    sortField: 'name',
+    searchFields: ['firstName', 'lastName', 'email', 'phone'],
+    sortField: 'firstName',
     sortOrder: 1,
-    requiredFields: ['name', 'role'],
+    requiredFields: ['firstName', 'lastName'],
     uniqueFields: ['email'], // Email should be unique per user
     ownerField: 'userId'
 });
@@ -34,7 +34,7 @@ router.get('/role/:role', withErrorHandling(async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [employees, total] = await Promise.all([
         Employee.find(query)
-            .sort({ name: 1 })
+            .sort({ firstName: 1 })
             .skip(skip)
             .limit(parseInt(limit))
             .lean(),

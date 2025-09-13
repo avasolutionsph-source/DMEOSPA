@@ -56,7 +56,7 @@ const transactionSchema = new mongoose.Schema({
     },
     promo: {
       applied: { type: Boolean, default: false },
-      type: String,
+      promoType: { type: String }, // FIXED: renamed from 'type' to avoid MongoDB reserved keyword conflict
       percentage: Number,
       amount: Number,
       reason: String
@@ -93,13 +93,11 @@ const transactionSchema = new mongoose.Schema({
     default: 'completed'
   },
   
-  // Employee info
-  employeeId: String,
-  employeeName: String,
-  employeeCommission: {
-    type: Number,
-    min: 0,
-    default: 0
+  // Employee info - Standardized single employee reference
+  employee: {
+    id: { type: String, required: false }, // Primary employee identifier (localId or _id)
+    name: String,
+    commission: { type: Number, min: 0, default: 0 } // Commission earned on this transaction
   },
   
   // Customer info (optional)
@@ -143,11 +141,23 @@ const transactionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes
+// Indexes for performance
 transactionSchema.index({ userId: 1, createdAt: -1 });
-transactionSchema.index({ userId: 1, employeeId: 1 });
+transactionSchema.index({ userId: 1, 'employee.id': 1 }); // Updated for new employee structure
 transactionSchema.index({ userId: 1, paymentMethod: 1 });
 transactionSchema.index({ syncStatus: 1 });
-transactionSchema.index({ transactionId: 1 });
+// Removed duplicate transactionId index - field already has unique: true which creates index
+transactionSchema.index({ userId: 1, localId: 1 }, { 
+  sparse: true,
+  partialFilterExpression: { localId: { $exists: true, $ne: null } }
+});
+
+// Note: localId field already defined in main schema above
+// Note: Index already defined above at line 150-153
+
+// Clear any existing model cache to prevent conflicts
+if (mongoose.models.Transaction) {
+  delete mongoose.models.Transaction;
+}
 
 export default mongoose.model('Transaction', transactionSchema);

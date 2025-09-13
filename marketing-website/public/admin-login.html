@@ -3,175 +3,220 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login - Ava Solutions</title>
-    <link href="assets/style.css" rel="stylesheet">
-    <style>
-        .admin-login-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .login-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 400px;
-        }
-        .login-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .login-header h1 {
-            color: #333;
-            margin-bottom: 0.5rem;
-        }
-        .login-header p {
-            color: #666;
-            font-size: 0.9rem;
-        }
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #333;
-            font-weight: 500;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
-        }
-        .login-btn {
-            width: 100%;
-            padding: 0.75rem;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        .login-btn:hover {
-            background: #5a6fd8;
-        }
-        .login-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        .error-message {
-            color: #e74c3c;
-            font-size: 0.9rem;
-            margin-top: 0.5rem;
-            text-align: center;
-        }
-        .back-link {
-            text-align: center;
-            margin-top: 1rem;
-        }
-        .back-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-size: 0.9rem;
-        }
-        .back-link a:hover {
-            text-decoration: underline;
-        }
-    </style>
+    <title>Admin Login - Daet Massage and Spa</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
-    <div class="admin-login-container">
-        <div class="login-card">
-            <div class="login-header">
-                <h1>🔐 Admin Login</h1>
-                <p>Access the Ava Solutions Admin Panel</p>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <img src="/assets/logo-daet.png" alt="Daet Massage and Spa" style="height: 40px; width: auto; border-radius: 6px;">
             </div>
-            
-            <form id="adminLoginForm">
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" required>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/about">About</a>
+                <a href="/services">Services</a>
+                <a href="/contact">Contact</a>
+                <div class="nav-auth" id="navAuth">
+                    <a href="/register" class="btn-secondary">Register</a>
+                    <a href="/login" class="btn-primary">Login</a>
                 </div>
-                
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                
-                <button type="submit" class="login-btn" id="loginBtn">
-                    Sign In
-                </button>
-                
-                <div id="errorMessage" class="error-message" style="display: none;"></div>
-            </form>
-            
-            <div class="back-link">
-                <a href="/">← Back to Website</a>
+            </div>
+            <div class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
             </div>
         </div>
-    </div>
+    </nav>
+
+    <!-- Admin Login Form -->
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-container">
+                <div class="auth-header">
+                    <h1><i class="fas fa-shield-alt"></i> Admin Login</h1>
+                    <p>Access the Daet Massage and Spa Admin Panel</p>
+                </div>
+                
+                <div class="auth-form">
+                    <div class="error-message" id="loginError" style="display: none;"></div>
+                    
+                    <form id="adminLoginForm">
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" class="form-input" name="email" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-input" name="password" required>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary btn-full">
+                            <i class="fas fa-sign-in-alt"></i> Sign In to Admin
+                        </button>
+                    </form>
+                    
+                    <div class="auth-links">
+                        <p><a href="/">← Back to Website</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="brand">
+                        <img src="/assets/logo-daet.png" alt="Daet Massage and Spa" style="height: 32px; width: auto; border-radius: 4px;">
+                    </div>
+                    <p>Experience ultimate relaxation and wellness at Daet's premier massage and spa destination. Professional therapeutic treatments in a serene environment.</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>Services</h4>
+                        <a href="/services">Massage Therapy</a>
+                        <a href="/services">Spa Treatments</a>
+                        <a href="/services">Wellness Packages</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Contact</h4>
+                        <a href="tel:09518999577">09518999577</a>
+                        <a href="mailto:daetmassagespa@gmail.com">Email Us</a>
+                        <a href="/contact">Location</a>
+                        <a href="#services">Book Appointment</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Information</h4>
+                        <a href="/about">About Us</a>
+                        <a href="#business-info">Hours</a>
+                        <a href="/contact">Directions</a>
+                        <a href="#services">Pricing</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Legal</h4>
+                        <a href="/privacy-policy">Privacy Policy</a>
+                        <a href="/terms">Terms of Service</a>
+                        <a href="/cookie-policy">Cookie Policy</a>
+                        <a href="/compliance">Compliance</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom" style="padding: 30px 0; border-top: 1px solid rgba(255,255,255,0.1);">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <p style="font-size: 14px; color: #e2e8f0; margin-bottom: 15px;">
+                        <strong>Business Registration & Compliance</strong>
+                    </p>
+                    <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; font-size: 13px; color: #cbd5e0;">
+                        <span>DTI Registration: [Your DTI Number]</span>
+                        <span>|</span>
+                        <span>BIR TIN: [Your TIN]</span>
+                        <span>|</span>
+                        <span>Mayor's Permit: [Permit Number]</span>
+                        <span>|</span>
+                        <span>NPC Registration: [NPC Number]</span>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 12px; color: #a0aec0;">
+                        Compliant with: RA 10173 (Data Privacy Act) | RA 7394 (Consumer Act) | RA 8792 (E-Commerce Act) | RA 10175 (Cybercrime Prevention Act)
+                    </div>
+                    <div style="margin-top: 8px; font-size: 11px; color: #718096; font-style: italic;">
+                        This service is intended for users 18 years and older only. By using this website, you confirm you meet this requirement.
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                    <p style="font-size: 14px;">&copy; 2025 Daet Massage and Spa Philippines. All rights reserved.</p>
+                    <div class="footer-legal" style="display: flex; gap: 20px;">
+                        <a href="/privacy-policy" style="color: #e2e8f0;">Privacy Policy</a>
+                        <a href="/terms" style="color: #e2e8f0;">Terms of Service</a>
+                        <a href="/cookie-policy" style="color: #e2e8f0;">Cookie Policy</a>
+                        <a href="#" onclick="window.cookieSettings && window.cookieSettings(); return false;" style="color: #e2e8f0;">
+                            <i class="fas fa-cookie-bite"></i> Cookie Settings
+                        </a>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 40'%3E%3Crect width='60' height='20' fill='%23002b7f'/%3E%3Crect y='20' width='60' height='20' fill='%23ce1126'/%3E%3Cpath d='M0,0 L30,20 L0,40 Z' fill='%23fff'/%3E%3Ccircle cx='10' cy='20' r='3' fill='%23fcd116'/%3E%3C/svg%3E" alt="Philippines Flag" style="width: 30px; height: 20px; margin-bottom: 5px;">
+                    <p style="font-size: 11px; color: #a0aec0;">Proudly Philippine-owned and operated | Manila, Philippines</p>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <script>
+        // Check if already logged in
+        if (localStorage.getItem('adminToken') || localStorage.getItem('userToken')) {
+            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+            if (userData.role === 'superAdmin') {
+                window.location.href = '/admin';
+            }
+        }
+
         document.getElementById('adminLoginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const loginBtn = document.getElementById('loginBtn');
-            const errorMessage = document.getElementById('errorMessage');
+            const formData = new FormData(e.target);
+            const email = formData.get('email');
+            const password = formData.get('password');
             
-            // Reset error message
-            errorMessage.style.display = 'none';
-            
-            // Disable button
-            loginBtn.disabled = true;
-            loginBtn.textContent = 'Signing in...';
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
             
             try {
-                const response = await fetch('https://ava-pwa-backend.onrender.com/api/auth/login', {
+                const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ email, password }),
+                    mode: 'cors',
+                    credentials: 'include'
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Store token and redirect
                     localStorage.setItem('adminToken', data.token);
-                    window.location.href = '/admin';
+                    localStorage.setItem('userToken', data.token);
+                    localStorage.setItem('userData', JSON.stringify(data.user));
+                    
+                    if (data.user.role === 'superAdmin') {
+                        window.location.href = '/admin';
+                    } else {
+                        showError('Admin access required. Contact administrator.');
+                    }
                 } else {
-                    throw new Error(data.error || 'Login failed');
+                    showError(data.error || 'Login failed');
                 }
             } catch (error) {
-                errorMessage.textContent = error.message;
-                errorMessage.style.display = 'block';
+                console.error('Login error:', error);
+                showError('Network error. Please try again.');
             } finally {
-                loginBtn.disabled = false;
-                loginBtn.textContent = 'Sign In';
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In to Admin';
             }
         });
         
-        // Check if already logged in
-        if (localStorage.getItem('adminToken')) {
-            window.location.href = '/admin';
+        function showError(message) {
+            const errorElement = document.getElementById('loginError');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            errorElement.style.backgroundColor = '#fee2e2';
+            errorElement.style.color = '#dc2626';
+            errorElement.style.border = '1px solid #fca5a5';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
         }
     </script>
+    <script src="/assets/main.js"></script>
 </body>
 </html>

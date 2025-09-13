@@ -8,6 +8,12 @@ const productSchema = new mongoose.Schema({
     index: true
   },
   
+  // Local ID for sync purposes
+  localId: {
+    type: String,
+    sparse: true // Allow multiple null values, but unique when present
+  },
+  
   // Product details
   name: {
     type: String,
@@ -18,7 +24,7 @@ const productSchema = new mongoose.Schema({
     type: String,
     enum: [
       'service', 'product', 'massage', 'facial', 'wellness', 'skincare', 'therapy', 'treatment',
-      'body', 'nail', 'hair', 'waxing', 'manicure', 'pedicure', 'relaxation', 'beauty',
+      'body', 'nail', 'nails', 'hair', 'waxing', 'manicure', 'pedicure', 'relaxation', 'beauty',
       'spa', 'aromatherapy', 'detox', 'anti-aging', 'acne', 'hydrating', 'exfoliation'
     ],
     required: true
@@ -56,6 +62,12 @@ const productSchema = new mongoose.Schema({
     }
   }],
   
+  // Display settings
+  showInPOS: {
+    type: Boolean,
+    default: true
+  },
+  
   // Status
   isActive: {
     type: Boolean,
@@ -80,6 +92,7 @@ const productSchema = new mongoose.Schema({
 productSchema.index({ userId: 1, name: 1 });
 productSchema.index({ userId: 1, category: 1 });
 productSchema.index({ userId: 1, isActive: 1 });
+productSchema.index({ userId: 1, localId: 1 }, { unique: true, sparse: true });
 productSchema.index({ syncStatus: 1 });
 
 export default mongoose.model('Product', productSchema);

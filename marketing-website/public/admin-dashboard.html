@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Ava Solutions</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary-color: #64748b;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --background-color: #f8fafc;
+            --card-background: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .admin-header {
+            background: var(--card-background);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .admin-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .admin-title h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .admin-badge {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .logout-btn {
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #b91c1c;
+            transform: translateY(-1px);
+        }
+
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            gap: 2rem;
+        }
+
+        .admin-section {
+            background: var(--card-background);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+        }
+
+        .btn-success:hover {
+            background: #047857;
+        }
+
+        /* Branch Data Viewer Styles */
+        .branch-selector {
+            margin-bottom: 2rem;
+        }
+
+        .branch-selector label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .branch-selector select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            background: var(--card-background);
+            color: var(--text-primary);
+        }
+
+        .branch-data-container {
+            display: none;
+            margin-top: 1.5rem;
+        }
+
+        .branch-data-container.active {
+            display: block;
+        }
+
+        .branch-info {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .branch-info h3 {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .branch-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-background);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .loading i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-content {
+            background: var(--card-background);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            transition: all 0.2s;
+        }
+
+        .close-btn:hover {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            background: var(--card-background);
+            color: var(--text-primary);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .security-warning {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .security-warning h4 {
+            color: #92400e;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .security-warning p {
+            color: #78350f;
+            font-size: 0.875rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        /* Account Cards */
+        .account-card {
+            background: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+        }
+
+        .account-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .account-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .account-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .account-info h3 {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .account-info p {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .account-credentials {
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .credential-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .credential-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .credential-label {
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .credential-value {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-family: 'Courier New', monospace;
+            background: var(--card-background);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .copy-btn {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: 0.5rem;
+        }
+
+        .copy-btn:hover {
+            background: #475569;
+        }
+
+        .account-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        /* Business Details Section */
+        .business-details {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .loading-business-data {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .loading-business-data i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+
+        .business-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--card-background);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .business-section {
+            margin-bottom: 2rem;
+            background: var(--card-background);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .business-section h4 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .employee-list, .product-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .employee-item, .product-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--background-color);
+            margin-bottom: 0.5rem;
+            border-radius: 0.25rem;
+        }
+
+        .employee-item:last-child, .product-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .employee-info, .product-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .employee-name, .product-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .employee-position {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .employee-stats, .product-stats {
+            text-align: right;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .admin-container {
+                padding: 1rem;
+            }
+
+            .admin-section {
+                padding: 1.5rem;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .credential-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Admin Header -->
+    <header class="admin-header">
+        <div class="header-content">
+            <div class="admin-title">
+                <i class="fas fa-user-shield" style="color: var(--primary-color);"></i>
+                <h1>Admin Dashboard</h1>
+                <span class="admin-badge">Admin</span>
+            </div>
+            <div class="header-actions">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="adminName">Loading...</span>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Admin Dashboard Content -->
+    <div class="admin-container">
+        <!-- Account Management Section -->
+        <div class="admin-section">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">
+                        <i class="fas fa-user-plus"></i>
+                        Account Management
+                    </h2>
+                    <p class="section-description">Create and manage branch accounts for your organization</p>
+                </div>
+                <button class="btn btn-success" onclick="openCreateAccountModal()">
+                    <i class="fas fa-plus"></i>
+                    Create Branch Account
+                </button>
+            </div>
+            
+            <div style="color: var(--text-secondary); text-align: center; padding: 2rem;">
+                <i class="fas fa-info-circle" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                <p>As an Admin, you can create new branch accounts and manage existing ones.</p>
+                <p style="margin-top: 0.5rem; font-size: 0.875rem;">Click "Create Branch Account" to get started.</p>
+            </div>
+        </div>
+
+        <!-- Created Accounts Section -->
+        <div class="admin-section">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">
+                        <i class="fas fa-users"></i>
+                        My Created Branch Accounts
+                    </h2>
+                    <p class="section-description">View and manage all branch accounts you have created</p>
+                </div>
+                <button class="btn" onclick="loadCreatedAccounts()">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh
+                </button>
+            </div>
+
+            <div id="createdAccountsContainer">
+                <div id="accountsLoading" class="loading">
+                    <i class="fas fa-spinner"></i>
+                    <p>Loading your created accounts...</p>
+                </div>
+                
+                <div id="createdAccountsList" style="display: none;">
+                    <!-- Created accounts will be populated here -->
+                </div>
+
+                <div id="noAccountsMessage" style="display: none; text-align: center; padding: 2rem; color: var(--text-secondary);">
+                    <i class="fas fa-info-circle" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                    <p>You haven't created any branch accounts yet.</p>
+                    <p style="margin-top: 0.5rem; font-size: 0.875rem;">Click "Create Branch Account" above to get started.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Multi-Branch Payroll Management Section -->
+        <div class="admin-section">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">
+                        <i class="fas fa-money-bill-wave"></i>
+                        Multi-Branch Payroll Management
+                    </h2>
+                    <p class="section-description">Process payroll across all your branch locations from a centralized interface</p>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-success" onclick="openBulkPayrollModal()">
+                        <i class="fas fa-calculator"></i>
+                        Process Bulk Payroll
+                    </button>
+                    <button class="btn btn-primary" onclick="openPayrollReportsModal()">
+                        <i class="fas fa-chart-bar"></i>
+                        View Reports
+                    </button>
+                </div>
+            </div>
+
+            <!-- Payroll Dashboard -->
+            <div id="payrollDashboard">
+                <!-- Payroll Summary Cards -->
+                <div class="payroll-summary-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: var(--primary-color);">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="totalBranches">0</div>
+                            <div class="stat-label">Active Branches</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: var(--success-color);">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="totalEmployees">0</div>
+                            <div class="stat-label">Total Employees</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: var(--warning-color);">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="pendingPayrolls">0</div>
+                            <div class="stat-label">Pending Payrolls</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: var(--primary-color);">
+                            <i class="fas fa-peso-sign"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="monthlyPayrollTotal">₱0</div>
+                            <div class="stat-label">Monthly Payroll Total</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Branch Payroll Status -->
+                <div class="branch-payroll-status">
+                    <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
+                        <i class="fas fa-list-check"></i>
+                        Branch Payroll Status
+                    </h3>
+                    <div id="branchPayrollList">
+                        <div class="loading" id="payrollLoading">
+                            <i class="fas fa-spinner"></i>
+                            <p>Loading payroll data...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Payroll Activity -->
+                <div class="recent-payroll-activity" style="margin-top: 2rem;">
+                    <h3 style="margin-bottom: 1rem; color: var(--text-primary);">
+                        <i class="fas fa-history"></i>
+                        Recent Payroll Activity
+                    </h3>
+                    <div id="recentPayrollActivity">
+                        <!-- Recent activity will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Payroll Processing Modal -->
+    <div id="bulkPayrollModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-calculator"></i>
+                    Bulk Payroll Processing
+                </h3>
+                <button class="close-btn" onclick="closeBulkPayrollModal()">×</button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Period Selection -->
+                <div class="form-section">
+                    <h4>Payroll Period</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Period Start</label>
+                            <input type="date" id="bulkPeriodStart" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Period End</label>
+                            <input type="date" id="bulkPeriodEnd" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Payroll Type</label>
+                            <select id="bulkPayrollType" class="form-control">
+                                <option value="monthly">Monthly</option>
+                                <option value="bi-weekly">Bi-weekly</option>
+                                <option value="weekly">Weekly</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Branch Selection -->
+                <div class="form-section">
+                    <h4>Select Branches</h4>
+                    <div id="branchSelectionList">
+                        <!-- Branch checkboxes will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Preview Results -->
+                <div class="form-section" id="bulkPreviewSection" style="display: none;">
+                    <h4>Payroll Preview</h4>
+                    <div id="bulkPayrollPreview">
+                        <!-- Preview results will be shown here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeBulkPayrollModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="calculateBulkPayroll()" id="calculateBulkBtn">
+                    <i class="fas fa-calculator"></i>
+                    Calculate Payroll
+                </button>
+                <button class="btn btn-success" onclick="processBulkPayroll()" id="processBulkBtn" style="display: none;">
+                    <i class="fas fa-check"></i>
+                    Process Payroll
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payroll Reports Modal -->
+    <div id="payrollReportsModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-chart-bar"></i>
+                    Payroll Reports
+                </h3>
+                <button class="close-btn" onclick="closePayrollReportsModal()">×</button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Report Filters -->
+                <div class="form-section">
+                    <h4>Report Filters</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Report Type</label>
+                            <select id="reportType" class="form-control">
+                                <option value="summary">Payroll Summary</option>
+                                <option value="detailed">Detailed Payroll</option>
+                                <option value="government">Government Deductions</option>
+                                <option value="branch-comparison">Branch Comparison</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Period From</label>
+                            <input type="date" id="reportPeriodFrom" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Period To</label>
+                            <input type="date" id="reportPeriodTo" class="form-control">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Report Content -->
+                <div class="form-section">
+                    <div id="reportContent">
+                        <div class="loading">
+                            <i class="fas fa-chart-line"></i>
+                            <p>Select filters and click "Generate Report" to view data</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePayrollReportsModal()">Close</button>
+                <button class="btn btn-primary" onclick="generatePayrollReport()">
+                    <i class="fas fa-chart-line"></i>
+                    Generate Report
+                </button>
+                <button class="btn btn-success" onclick="exportPayrollReport()">
+                    <i class="fas fa-download"></i>
+                    Export
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Account Modal -->
+    <div id="createAccountModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Branch Account</h3>
+                <button class="close-btn" onclick="closeCreateAccountModal()">×</button>
+            </div>
+            
+            <div class="security-warning">
+                <h4>
+                    <i class="fas fa-shield-alt"></i>
+                    Account Security Notice
+                </h4>
+                <p>You are creating a new branch account. The new account will have access to the business management system and can manage their own business data.</p>
+            </div>
+
+            <form id="createAccountForm">
+                <div class="form-group">
+                    <label for="newAccountBusinessName">Business Name *</label>
+                    <input type="text" id="newAccountBusinessName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="newAccountEmail">Email Address *</label>
+                    <input type="email" id="newAccountEmail" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="newAccountPassword">Password *</label>
+                    <input type="password" id="newAccountPassword" required minlength="6">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateAccountModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-user-plus"></i>
+                        Create Branch Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let token = localStorage.getItem('userToken') || localStorage.getItem('token');
+
+        // Check authentication and load admin dashboard
+        window.addEventListener('DOMContentLoaded', function() {
+            if (!token) {
+                window.location.href = '/login?return=/admin-dashboard';
+                return;
+            }
+
+            // Verify admin role
+            checkAdminAccess();
+            loadUserInfo();
+            loadCreatedAccounts();
+        });
+
+        async function checkAdminAccess() {
+            try {
+                const response = await fetch('/api/admin/stats', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.status === 401) {
+                    alert('Your session has expired. Please log in again.');
+                    logout();
+                    return;
+                }
+
+                if (response.status === 403) {
+                    alert('Access denied. Admin role required.');
+                    window.location.href = '/';
+                    return;
+                }
+
+                // Decode token to check role
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                if (payload.role !== 'admin') {
+                    alert('Access denied. This page is for Admin role only.');
+                    // Redirect based on actual role
+                    if (payload.role === 'superAdmin') {
+                        window.location.href = '/admin';
+                    } else {
+                        window.location.href = '/business-dashboard';
+                    }
+                    return;
+                }
+
+            } catch (error) {
+                console.error('Admin access check error:', error);
+                alert('Authentication error. Please log in again.');
+                logout();
+            }
+        }
+
+        async function loadUserInfo() {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                currentUser = payload;
+                document.getElementById('adminName').textContent = `${payload.firstName} ${payload.lastName}`;
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                document.getElementById('adminName').textContent = 'Admin User';
+            }
+        }
+
+        async function loadCreatedAccounts() {
+            const loadingEl = document.getElementById('accountsLoading');
+            const listEl = document.getElementById('createdAccountsList');
+            const noAccountsEl = document.getElementById('noAccountsMessage');
+
+            loadingEl.style.display = 'block';
+            listEl.style.display = 'none';
+            noAccountsEl.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/admin/my-created-accounts', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch created accounts');
+                }
+
+                const data = await response.json();
+                loadingEl.style.display = 'none';
+
+                if (data.accounts.length === 0) {
+                    noAccountsEl.style.display = 'block';
+                    return;
+                }
+
+                // Render account cards with business data
+                listEl.innerHTML = data.accounts.map(account => `
+                    <div class="account-card" data-account-id="${account.id}">
+                        <div class="account-header">
+                            <div class="account-info">
+                                <h3>${account.businessName}</h3>
+                                <p><i class="fas fa-envelope"></i> ${account.email}</p>
+                                <p><i class="fas fa-calendar"></i> Created: ${new Date(account.createdAt).toLocaleDateString()}</p>
+                                <span class="account-status status-active">
+                                    <i class="fas fa-check-circle"></i>
+                                    Active
+                                </span>
+                            </div>
+                            <div class="account-actions">
+                                <button class="btn btn-primary" onclick="toggleAccountDetails('${account.id}')" id="toggle-btn-${account.id}">
+                                    <i class="fas fa-chevron-down"></i>
+                                    View Business Details
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Account Credentials Section -->
+                        <div class="account-credentials">
+                            <h4 style="margin-bottom: 1rem; color: var(--text-primary); font-size: 0.95rem;">
+                                <i class="fas fa-key"></i>
+                                Account Credentials
+                            </h4>
+                            <div class="credential-row">
+                                <span class="credential-label">Business Name:</span>
+                                <div style="display: flex; align-items: center;">
+                                    <span class="credential-value">${account.businessName}</span>
+                                    <button class="copy-btn" onclick="copyToClipboard('${account.businessName}', this)">Copy</button>
+                                </div>
+                            </div>
+                            <div class="credential-row">
+                                <span class="credential-label">Email:</span>
+                                <div style="display: flex; align-items: center;">
+                                    <span class="credential-value">${account.email}</span>
+                                    <button class="copy-btn" onclick="copyToClipboard('${account.email}', this)">Copy</button>
+                                </div>
+                            </div>
+                            <div class="credential-row">
+                                <span class="credential-label">Password:</span>
+                                <div style="display: flex; align-items: center;">
+                                    <span class="credential-value">${account.password || '••••••••'}</span>
+                                    <button class="copy-btn" onclick="copyToClipboard('${account.password || ''}', this)">Copy</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Business Details Section (Initially Hidden) -->
+                        <div class="business-details" id="details-${account.id}" style="display: none;">
+                            <div class="loading-business-data">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>Loading business data...</p>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                listEl.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error loading created accounts:', error);
+                loadingEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i><p>Failed to load created accounts</p>';
+            }
+        }
+
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Show temporary success message
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = '#059669'; // success color
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#64748b'; // secondary color
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                alert('Failed to copy to clipboard');
+            });
+        }
+
+        async function toggleAccountDetails(accountId) {
+            const detailsEl = document.getElementById(`details-${accountId}`);
+            const toggleBtn = document.getElementById(`toggle-btn-${accountId}`);
+            
+            if (detailsEl.style.display === 'none') {
+                // Show details
+                detailsEl.style.display = 'block';
+                toggleBtn.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Business Details';
+                
+                // Load business data if not already loaded
+                if (!detailsEl.dataset.loaded) {
+                    await loadBusinessData(accountId);
+                    detailsEl.dataset.loaded = 'true';
+                }
+            } else {
+                // Hide details
+                detailsEl.style.display = 'none';
+                toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i> View Business Details';
+            }
+        }
+
+        async function loadBusinessData(accountId) {
+            const detailsEl = document.getElementById(`details-${accountId}`);
+            
+            try {
+                const response = await fetch(`/api/admin/branch-data/${accountId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch business data');
+                }
+
+                const data = await response.json();
+                const { user, businessStats, productCount } = data.branchData;
+
+                // Render comprehensive business data
+                detailsEl.innerHTML = `
+                    <h4 style="margin-bottom: 1.5rem; color: var(--text-primary);">
+                        <i class="fas fa-chart-bar"></i>
+                        Complete Business Overview
+                    </h4>
+
+                    <!-- Business Metrics Grid -->
+                    <div class="business-metrics">
+                        <div class="metric-card">
+                            <div class="metric-value">₱${businessStats.totalSales || 0}</div>
+                            <div class="metric-label">Total Sales Revenue</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${businessStats.totalTransactions || 0}</div>
+                            <div class="metric-label">Total Transactions</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">₱${businessStats.monthSales || 0}</div>
+                            <div class="metric-label">This Month Sales</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">₱${businessStats.todaySales || 0}</div>
+                            <div class="metric-label">Today's Sales</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${productCount || 0}</div>
+                            <div class="metric-label">Products</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${user.employees?.length || 0}</div>
+                            <div class="metric-label">Employees</div>
+                        </div>
+                    </div>
+
+                    <!-- Employee Section -->
+                    <div class="business-section">
+                        <h4>
+                            <i class="fas fa-users"></i>
+                            Employee Management
+                        </h4>
+                        ${user.employees && user.employees.length > 0 ? `
+                            <div class="employee-list">
+                                ${user.employees.map(employee => `
+                                    <div class="employee-item">
+                                        <div class="employee-info">
+                                            <div class="employee-name">${employee.name || 'N/A'}</div>
+                                            <div class="employee-position">${employee.position || 'Employee'}</div>
+                                        </div>
+                                        <div class="employee-stats">
+                                            <div>Sales: ₱${employee.totalSales || 0}</div>
+                                            <div>Commission: ₱${employee.totalCommission || 0}</div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : '<div class="no-data">No employees added yet</div>'}
+                    </div>
+
+                    <!-- Inventory Section -->
+                    <div class="business-section">
+                        <h4>
+                            <i class="fas fa-boxes"></i>
+                            Inventory Overview
+                        </h4>
+                        ${user.inventory && user.inventory.length > 0 ? `
+                            <div class="product-list">
+                                ${user.inventory.map(product => `
+                                    <div class="product-item">
+                                        <div class="product-info">
+                                            <div class="product-name">${product.name || 'Unnamed Product'}</div>
+                                        </div>
+                                        <div class="product-stats">
+                                            <div>Stock: ${product.stock || 0}</div>
+                                            <div>Price: ₱${product.price || 0}</div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : '<div class="no-data">No inventory items found</div>'}
+                    </div>
+
+                    <!-- Business Info Section -->
+                    <div class="business-section">
+                        <h4>
+                            <i class="fas fa-info-circle"></i>
+                            Business Information
+                        </h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                            <div>
+                                <strong>Business Name:</strong> ${user.businessName}<br>
+                                <strong>Owner:</strong> ${user.firstName} ${user.lastName}<br>
+                                <strong>Email:</strong> ${user.email}
+                            </div>
+                            <div>
+                                <strong>Created:</strong> ${new Date(user.createdAt).toLocaleDateString()}<br>
+                                <strong>Last Sync:</strong> ${user.businessMetrics?.lastSyncDate ? new Date(user.businessMetrics.lastSyncDate).toLocaleDateString() : 'Never'}<br>
+                                <strong>Status:</strong> <span style="color: #059669;">Active</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error loading business data:', error);
+                detailsEl.innerHTML = `
+                    <div class="no-data">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem; color: #dc2626;"></i>
+                        <p>Failed to load business data</p>
+                        <button class="btn" onclick="loadBusinessData('${accountId}')" style="margin-top: 1rem;">
+                            <i class="fas fa-retry"></i> Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function openCreateAccountModal() {
+            document.getElementById('createAccountModal').classList.add('active');
+        }
+
+        function closeCreateAccountModal() {
+            document.getElementById('createAccountModal').classList.remove('active');
+            document.getElementById('createAccountForm').reset();
+        }
+
+        // Handle account creation form
+        document.getElementById('createAccountForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                role: 'branch', // Admin can only create branch accounts
+                businessName: document.getElementById('newAccountBusinessName').value,
+                email: document.getElementById('newAccountEmail').value,
+                password: document.getElementById('newAccountPassword').value,
+                // Set default values for required fields
+                firstName: document.getElementById('newAccountBusinessName').value.split(' ')[0] || 'Branch',
+                lastName: 'Manager'
+            };
+
+            const submitButton = document.querySelector('#createAccountForm button[type="submit"]');
+            const originalText = submitButton.innerHTML;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            submitButton.disabled = true;
+
+            try {
+                const response = await fetch('/api/admin/create-account', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(`Branch account created successfully!\nBusiness: ${result.user.businessName}\nEmail: ${result.user.email}\nPassword: ${formData.password}`);
+                    closeCreateAccountModal();
+                    loadCreatedAccounts(); // Refresh created accounts list
+                } else {
+                    alert(`Failed to create account: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Account creation error:', error);
+                alert('Failed to create account. Please try again.');
+            } finally {
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem('userToken');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('userData');
+            sessionStorage.clear();
+            window.location.href = '/login';
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('createAccountModal');
+            if (event.target === modal) {
+                closeCreateAccountModal();
+            }
+        });
+    </script>
+</body>
+</html>

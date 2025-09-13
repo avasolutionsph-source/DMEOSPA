@@ -18,20 +18,18 @@ import { fileURLToPath } from 'url';
 // Import unified utilities and middleware
 import { connectDB, getDBConnection } from './config/database.js';
 import logger from './utils/logger.js';
+import { globalErrorHandler } from './middleware/standardErrorHandler.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { setupPassport } from './config/passport.js';
+import { authenticateJWT, requireBusinessUser } from './middleware/auth.js';
+import { requireSuperAdmin } from './middleware/superAdmin.js';
 
 // Import consolidated routers
 import apiRouter from './routes/api/index.js';
 import marketingRouter from './routes/marketing/index.js';
 import adminRouter from './routes/admin/index.js';
 
-// Debug: Check if admin router loaded successfully
-console.log('Admin router loaded:', !!adminRouter, typeof adminRouter);
-if (!adminRouter) {
-  console.error('CRITICAL: Admin router is undefined! Check admin/index.js export');
-}
 import syncRouter from './routes/sync/index.js';
 import realtimeRouter from './routes/realtime/index.js';
 
@@ -41,6 +39,20 @@ const __dirname = path.dirname(__filename);
 // Initialize Express app
 const app = express();
 const server = createServer(app);
+
+// Health check endpoint (must be first!)
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    service: 'Ava Solutions Unified Backend',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    version: process.env.npm_package_version || '2.0.0',
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    cors: 'enabled'
+  });
+});
 
 // Initialize Socket.IO for real-time updates (StateManager integration)
 const io = new SocketIOServer(server, {
@@ -68,11 +80,13 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdn.jsdelivr.net'],
-      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdn.jsdelivr.net', 'https://cdnjs.cloudflare.com'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
+      styleSrcElem: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com'],
       imgSrc: ["'self'", 'data:', 'https:'],
-      connectSrc: ["'self'", 'https:', 'wss:']
+      connectSrc: ["'self'", 'https:', 'wss:'],
+      scriptSrcAttr: ["'unsafe-inline'"]
     }
   },
   crossOriginEmbedderPolicy: false
@@ -87,7 +101,12 @@ const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:3001', 
+      'http://localhost:3002',
+      'http://localhost:3003',
       'http://localhost:8080',
+      'http://localhost:8081',
+      'http://localhost:8082',
+      'http://localhost:8083',
       'http://127.0.0.1:5500',
       'http://localhost:4000',
       'https://ava-solutions-marketing.netlify.app',
@@ -154,10 +173,16 @@ const createRateLimiter = (windowMs, max, message) => rateLimit({
 });
 
 // Apply different rate limits to different routes
-app.use('/api/auth', createRateLimiter(15 * 60 * 1000, 50, 'Too many authentication attempts'));
-app.use('/api/sync', createRateLimiter(1 * 60 * 1000, 100, 'Too many sync requests'));
-app.use('/api', createRateLimiter(15 * 60 * 1000, 500, 'Too many API requests'));
-app.use('/admin', createRateLimiter(15 * 60 * 1000, 100, 'Too many admin requests'));
+// Development mode: Completely disable rate limiting for local testing
+const isDevelopment = process.env.NODE_ENV === 'development';
+if (isDevelopment) {
+  // Skip rate limiting entirely in development
+} else {
+  app.use('/api/auth', createRateLimiter(15 * 60 * 1000, 50, 'Too many authentication attempts'));
+  app.use('/api/sync', createRateLimiter(1 * 60 * 1000, 100, 'Too many sync requests'));
+  app.use('/api', createRateLimiter(15 * 60 * 1000, 500, 'Too many API requests'));
+  app.use('/admin', createRateLimiter(15 * 60 * 1000, 100, 'Too many admin requests'));
+}
 
 // 6. Body parsing
 app.use(express.json({ 
@@ -174,7 +199,7 @@ const sessionConfig = {
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/ava-solutions',
+    mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/ava-marketing-website',
     touchAfter: 24 * 3600 // lazy session update
   }),
   cookie: {
@@ -204,14 +229,34 @@ if (process.env.NODE_ENV !== 'production') {
 // Serve marketing website static files
 app.use('/marketing', express.static(path.join(__dirname, '../marketing-website/public')));
 
-// Marketing website routes (static serving) - MUST come before API routes
+// Serve marketing assets at root level for compatibility
+app.use('/assets', express.static(path.join(__dirname, '../marketing-website/public/assets')));
+
+// ============================================
+// API ROUTES (MUST come before static routes)
+// ============================================
+
+
+// API version endpoint
+app.get('/api/version', (req, res) => {
+  res.json({
+    api_version: 'v1',
+    backend_version: process.env.npm_package_version || '1.0.0',
+    features: {
+      auth: true,
+      sync: true,
+      realtime: true,
+      admin: true,
+      marketing: true
+    }
+  });
+});
+
+// Marketing website routes (static serving) - MUST come after API routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../marketing-website/public/index.html'));
 });
 
-app.get('/pricing', (req, res) => {
-  res.sendFile(path.join(__dirname, '../marketing-website/public/pricing.html'));
-});
 
 app.get('/features', (req, res) => {
   res.sendFile(path.join(__dirname, '../marketing-website/public/features.html'));
@@ -234,51 +279,21 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../marketing-website/public/admin.html'));
 });
 
-// Serve PWA static files (corrected path)
-app.use('/pwa', express.static(path.join(__dirname, '../')));
+// Serve PWA static files from the PWA-Repository folder (do not expose repo root)
+app.use('/pwa', express.static(path.join(__dirname, '../PWA-Repository')));
 
 // PWA SPA routing - serve PWA index.html for all PWA routes
 app.get('/pwa/*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../index.html'));
+  res.sendFile(path.join(__dirname, '../PWA-Repository/index.html'));
 });
 
 // Serve admin dashboard (if exists)
 app.use('/admin/dashboard', express.static(path.join(__dirname, '../admin-dashboard/build')));
 
-// ============================================
-// API ROUTES
-// ============================================
+// CRITICAL SECURITY: ALL /api/admin routes require super admin authentication
+app.use('/api/admin*', authenticateJWT, requireSuperAdmin);
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    service: 'Ava Solutions Unified Backend',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    version: process.env.npm_package_version || '2.0.0',
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    cors: 'enabled'
-  });
-});
-
-// API version endpoint
-app.get('/api/version', (req, res) => {
-  res.json({
-    api_version: 'v1',
-    backend_version: process.env.npm_package_version || '1.0.0',
-    features: {
-      auth: true,
-      sync: true,
-      realtime: true,
-      admin: true,
-      marketing: true
-    }
-  });
-});
-
-// Direct admin routes in server.js (bypass router mounting issues)
+// Direct admin routes in server.js (PROTECTED by super admin middleware above)
 app.get('/api/admin', (req, res) => {
   res.json({ 
     message: 'Admin API - Direct Routes',
@@ -471,7 +486,6 @@ app.put('/api/admin/users/:userId', async (req, res) => {
       });
     }
     
-    console.log(`Admin updated user ${userId}:`, updateData);
     
     res.json({
       success: true,
@@ -512,7 +526,6 @@ app.delete('/api/admin/users/:userId', async (req, res) => {
       });
     }
     
-    console.log(`Admin deleted user ${userId}:`, deletedUser.email);
     
     res.json({
       success: true,
@@ -549,7 +562,6 @@ app.post('/api/admin/fix-user-subscription/:userId', async (req, res) => {
     user.subscriptionStatus = 'active';
     await user.save();
     
-    console.log(`Admin fixed user subscription ${userId}: ${user.subscriptionPlan} → ${plan} (Reason: ${reason})`);
     
     res.json({
       success: true,
@@ -573,20 +585,17 @@ app.post('/api/admin/fix-user-subscription/:userId', async (req, res) => {
 
 // Mount routers with clear separation
 app.use('/api', apiRouter);           // Main API endpoints for PWA
-app.use('/api/sync', syncRouter);     // Sync endpoints for PWA data
+app.use('/api/sync', syncRouter);     // Sync endpoints for PWA data  
 app.use('/api/realtime', realtimeRouter); // Real-time updates via Socket.IO
 
-// Admin router mounting disabled - using direct routes above
-// try {
-//   if (adminRouter) {
-//     app.use('/api/admin', adminRouter);   // Admin API endpoints
-//     console.log('✅ Admin router mounted successfully at /api/admin');
-//   } else {
-//     console.error('❌ Admin router is undefined, cannot mount');
-//   }
-// } catch (error) {
-//   console.error('❌ Error mounting admin router:', error);
-// }
+// Admin router mounting - use proper admin routes with real synced data
+try {
+  if (adminRouter) {
+    app.use('/admin', adminRouter);   // Admin API endpoints (not /api/admin to avoid conflicts)
+  }
+} catch (error) {
+  logger.error('Error mounting admin router:', error);
+}
 
 app.use('/marketing', marketingRouter); // Marketing website specific endpoints
 
@@ -667,7 +676,7 @@ app.use((req, res, next) => {
       method: req.method
     });
   } else {
-    res.status(404).sendFile(path.join(__dirname, '../public/404.html'));
+    res.status(404).sendFile(path.join(__dirname, '../marketing-website/public/404.html'));
   }
 });
 
@@ -729,7 +738,7 @@ process.on('unhandledRejection', (reason, promise) => {
 // START SERVER
 // ============================================
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 4001;
 const HOST = process.env.HOST || '0.0.0.0';
 
 server.listen(PORT, HOST, () => {
@@ -747,17 +756,5 @@ server.listen(PORT, HOST, () => {
   logger.info('='.repeat(60));
 });
 
-// Helper functions (these would typically be in separate modules)
-async function verifyToken(token) {
-  // Implementation would verify JWT token and return user ID
-  // This is a placeholder
-  return null;
-}
-
-async function getUserById(userId) {
-  // Implementation would fetch user from database
-  // This is a placeholder
-  return null;
-}
 
 export default app;

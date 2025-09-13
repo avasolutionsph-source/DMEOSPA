@@ -4,7 +4,9 @@ import Employee from './Employee.js';
 import Transaction from './Transaction.js';
 import InventoryItem from './InventoryItem.js';
 import GiftCertificate from './GiftCertificate.js';
+import Customer from './Customer.js';
 import User from './User.js';
+import PayrollRecord from './PayrollRecord.js';
 
 export {
   Product,
@@ -12,7 +14,9 @@ export {
   Transaction,
   InventoryItem,
   GiftCertificate,
-  User
+  Customer,
+  User,
+  PayrollRecord
 };
 
 export default {
@@ -21,5 +25,7 @@ export default {
   Transaction,
   InventoryItem,
   GiftCertificate,
-  User
+  Customer,
+  User,
+  PayrollRecord
 };

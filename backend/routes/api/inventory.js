@@ -6,21 +6,7 @@ import logger from '../../utils/logger.js';
 
 const router = express.Router();
 
-// Create base route handler for inventory
-const inventoryHandler = new BaseRouteHandler(InventoryItem, {
-    populate: [], // Add population fields if needed
-    searchFields: ['name', 'description', 'sku'],
-    sortField: 'name',
-    sortOrder: 1,
-    requiredFields: ['name', 'currentStock'],
-    uniqueFields: ['sku'], // SKU should be unique per user
-    ownerField: 'userId'
-});
-
-// Standard CRUD routes using base handler
-inventoryHandler.createRoutes(router);
-
-// Additional inventory-specific routes
+// Additional inventory-specific routes (MUST come before base routes)
 router.get('/low-stock', withErrorHandling(async (req, res) => {
     const { threshold = 10 } = req.query;
     
@@ -52,10 +38,31 @@ router.patch('/:id/stock', withErrorHandling(async (req, res) => {
     const { id } = req.params;
     const { quantity, operation = 'set' } = req.body; // 'set', 'add', 'subtract'
     
-    const item = await InventoryItem.findOne({
-        _id: id,
-        userId: req.user._id
-    });
+    // Handle both MongoDB ObjectId and string IDs from frontend
+    let item;
+    try {
+        // Try to find by MongoDB _id first
+        if (id.match(/^[0-9a-fA-F]{24}$/)) {
+            item = await InventoryItem.findOne({
+                _id: id,
+                userId: req.user._id
+            });
+        }
+        
+        // If not found by _id, try to find by name or other identifiers
+        if (!item) {
+            item = await InventoryItem.findOne({
+                $or: [
+                    { _id: id },
+                    { name: { $regex: new RegExp(id, 'i') } } // Case insensitive name search
+                ],
+                userId: req.user._id
+            });
+        }
+    } catch (error) {
+        console.error('❌ [INVENTORY] Error finding item for stock update:', error);
+        item = null;
+    }
     
     if (!item) {
         return res.status(404).json({
@@ -145,5 +152,71 @@ router.post('/restock', withErrorHandling(async (req, res) => {
         message: `${result.modifiedCount} inventory items restocked successfully`
     });
 }));
+
+// Clean up duplicate inventory items
+router.post('/cleanup-duplicates', withErrorHandling(async (req, res) => {
+    console.log('🧹 [INVENTORY] Starting duplicate cleanup for user:', req.user._id);
+    
+    const pipeline = [
+        { $match: { userId: req.user._id } },
+        {
+            $group: {
+                _id: { 
+                    name: "$name", 
+                    category: "$category" 
+                },
+                items: { $push: "$$ROOT" },
+                count: { $sum: 1 }
+            }
+        },
+        { $match: { count: { $gt: 1 } } }
+    ];
+    
+    const duplicateGroups = await InventoryItem.aggregate(pipeline);
+    let deletedCount = 0;
+    
+    for (const group of duplicateGroups) {
+        // Sort by createdAt and keep the oldest item, delete the rest
+        const sortedItems = group.items.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        const itemsToDelete = sortedItems.slice(1); // Keep first (oldest), delete rest
+        
+        for (const item of itemsToDelete) {
+            await InventoryItem.findByIdAndDelete(item._id);
+            deletedCount++;
+            console.log('🗑️ [INVENTORY] Deleted duplicate:', item.name, 'ID:', item._id);
+        }
+    }
+    
+    logger.info('Inventory duplicate cleanup completed', {
+        category: 'DATABASE',
+        operation: 'cleanup_duplicates',
+        data: { 
+            userId: req.user._id,
+            duplicateGroups: duplicateGroups.length,
+            deletedCount 
+        }
+    });
+    
+    res.json({
+        success: true,
+        message: `Cleaned up ${deletedCount} duplicate inventory items`,
+        duplicateGroups: duplicateGroups.length,
+        deletedCount
+    });
+}));
+
+// Create base route handler for inventory (MUST come after specific routes)
+const inventoryHandler = new BaseRouteHandler(InventoryItem, {
+    populate: [], // Add population fields if needed
+    searchFields: ['name', 'description'],
+    sortField: 'name',
+    sortOrder: 1,
+    requiredFields: ['name', 'currentStock'],
+    uniqueFields: [], // REMOVED: SKU uniqueness constraint - not needed
+    ownerField: 'userId'
+});
+
+// Standard CRUD routes using base handler
+inventoryHandler.createRoutes(router);
 
 export default router;

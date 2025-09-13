@@ -100,7 +100,7 @@ router.get('/stats', async (req, res) => {
     const totalProducts = await Product.countDocuments({ userId });
     const totalEmployees = await Employee.countDocuments({ userId });
     
-    res.json({
+    const response = {
       totalSales,
       totalTransactions,
       totalProducts,
@@ -112,7 +112,14 @@ router.get('/stats', async (req, res) => {
       yearSales,
       yearTransactions,
       lastSyncDate: new Date()
-    });
+    };
+    
+    console.log('📊 [BUSINESS-STATS] Sending response:', JSON.stringify(response, null, 2));
+    console.log('📊 [BUSINESS-STATS] Response size:', JSON.stringify(response).length, 'bytes');
+    console.log('📊 [BUSINESS-STATS] Total transactions found:', transactions.length);
+    console.log('📊 [BUSINESS-STATS] Sample transaction:', transactions[0]);
+    
+    res.json(response);
   } catch (error) {
     logger.error('Get business stats error:', error);
     res.status(500).json({

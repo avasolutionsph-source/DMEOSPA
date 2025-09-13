@@ -14,7 +14,7 @@ const productHandler = new BaseRouteHandler(Product, {
     sortField: 'name',
     sortOrder: 1,
     requiredFields: ['name', 'category', 'price'],
-    uniqueFields: ['sku'], // SKU should be unique per user
+    uniqueFields: [], // SKU uniqueness handled at schema level with sparse index
     ownerField: 'userId'
 });
 

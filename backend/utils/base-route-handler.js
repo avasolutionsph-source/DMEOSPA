@@ -44,7 +44,7 @@ export class BaseRouteHandler {
             
             // Add user-specific filtering if owner field exists
             if (this.requireAuth && this.ownerField && req.user) {
-                query[this.ownerField] = req.user._id;
+                query[this.ownerField] = req.user.id || req.user._id;
             }
             
             // Add search functionality
@@ -108,7 +108,7 @@ export class BaseRouteHandler {
             
             // Add user-specific filtering if owner field exists
             if (this.requireAuth && this.ownerField && req.user) {
-                query[this.ownerField] = req.user._id;
+                query[this.ownerField] = req.user.id || req.user._id;
             }
             
             const item = await this.model
@@ -143,7 +143,13 @@ export class BaseRouteHandler {
             
             // Add user ID if owner field exists
             if (this.requireAuth && this.ownerField && req.user) {
-                data[this.ownerField] = req.user._id;
+                data[this.ownerField] = req.user.id || req.user._id;
+            }
+            
+            // Generate unique localId for models with compound unique index if not provided
+            if ((this.modelName === 'Employee' || this.modelName === 'Product') && !data.localId) {
+                // Generate a unique localId using timestamp and random string
+                data.localId = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             }
             
             // Validate required fields
@@ -184,7 +190,7 @@ export class BaseRouteHandler {
             
             // Add user-specific filtering if owner field exists
             if (this.requireAuth && this.ownerField && req.user) {
-                query[this.ownerField] = req.user._id;
+                query[this.ownerField] = req.user.id || req.user._id;
             }
             
             // Check unique fields (excluding current record)
@@ -227,7 +233,7 @@ export class BaseRouteHandler {
             
             // Add user-specific filtering if owner field exists
             if (this.requireAuth && this.ownerField && req.user) {
-                query[this.ownerField] = req.user._id;
+                query[this.ownerField] = req.user.id || req.user._id;
             }
             
             // Only validate unique fields that are being updated
@@ -278,7 +284,7 @@ export class BaseRouteHandler {
             
             // Add user-specific filtering if owner field exists
             if (this.requireAuth && this.ownerField && req.user) {
-                query[this.ownerField] = req.user._id;
+                query[this.ownerField] = req.user.id || req.user._id;
             }
             
             const item = await this.model.findOneAndDelete(query);
@@ -314,7 +320,7 @@ export class BaseRouteHandler {
             // Add user ID to all items if owner field exists
             if (this.requireAuth && this.ownerField && req.user) {
                 items.forEach(item => {
-                    item[this.ownerField] = req.user._id;
+                    item[this.ownerField] = req.user.id || req.user._id;
                 });
             }
             
@@ -350,7 +356,7 @@ export class BaseRouteHandler {
                 
                 // Add user-specific filtering if owner field exists
                 if (this.requireAuth && this.ownerField && req.user) {
-                    filter[this.ownerField] = req.user._id;
+                    filter[this.ownerField] = req.user.id || req.user._id;
                 }
                 
                 return {
@@ -396,7 +402,7 @@ export class BaseRouteHandler {
             
             // Add user-specific filtering if owner field exists
             if (this.requireAuth && this.ownerField && req.user) {
-                query[this.ownerField] = req.user._id;
+                query[this.ownerField] = req.user.id || req.user._id;
             }
             
             const result = await this.model.deleteMany(query);

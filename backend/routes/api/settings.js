@@ -1,18 +1,29 @@
 import express from 'express';
+import { withErrorHandling } from '../../middleware/unifiedErrorHandler.js';
+import logger from '../../utils/logger.js';
 
 const router = express.Router();
 
-// GET /api/settings
-router.get('/', async (req, res) => {
-  res.json({ 
-    message: 'Settings placeholder',
-    settings: {
-      theme: 'light',
-      language: 'en',
-      notifications: true
-    }
-  });
-});
+// Temporary in-memory storage for settings (should be replaced with database model)
+const userSettings = new Map();
+
+// GET /api/settings - Get all settings for the authenticated user
+router.get('/', withErrorHandling(async (req, res) => {
+    const userId = req.user._id;
+    const settings = userSettings.get(userId) || [];
+    
+    logger.info('Settings retrieved', {
+        category: 'DATABASE',
+        operation: 'get_all',
+        data: { userId, count: settings.length }
+    });
+    
+    res.json({
+        success: true,
+        data: settings,
+        count: settings.length
+    });
+}));
 
 // PUT /api/settings
 router.put('/', async (req, res) => {

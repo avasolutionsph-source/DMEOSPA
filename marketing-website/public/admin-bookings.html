@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Management - Admin Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/assets/style.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8fafc;
+        }
+
+        .admin-header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .admin-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .admin-title h1 {
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .admin-nav {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .admin-nav a {
+            color: #64748b;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .admin-nav a:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .admin-nav a.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .booking-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .stat-icon.pending { background: #fbbf24; }
+        .stat-icon.confirmed { background: #10b981; }
+        .stat-icon.completed { background: #3b82f6; }
+        .stat-icon.cancelled { background: #ef4444; }
+
+        .stat-content h3 {
+            margin: 0;
+            font-size: 2rem;
+            color: #1e293b;
+        }
+
+        .stat-content p {
+            margin: 0;
+            color: #64748b;
+        }
+
+        .bookings-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            padding: 0.5rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: white;
+            color: #64748b;
+        }
+
+        .bookings-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .bookings-table th,
+        .bookings-table td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .bookings-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .booking-status {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-confirmed {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-completed {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .status-cancelled {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .booking-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-confirm {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .btn-confirm:hover {
+            background: #bbf7d0;
+        }
+
+        .btn-cancel {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .btn-cancel:hover {
+            background: #fecaca;
+        }
+
+        .btn-view {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .btn-view:hover {
+            background: #c7d2fe;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .admin-nav {
+                justify-content: center;
+            }
+
+            .booking-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .section-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+
+            .bookings-table {
+                font-size: 0.9rem;
+            }
+
+            .booking-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="admin-header">
+        <div class="header-content">
+            <div class="admin-title">
+                <i class="fas fa-calendar-check"></i>
+                <h1>Booking Management</h1>
+            </div>
+            <div class="admin-nav">
+                <a href="/admin">Dashboard</a>
+                <a href="/admin-bookings" class="active">Bookings</a>
+                <a href="/" target="_blank">Website</a>
+                <a href="#" onclick="logout()">Logout</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Booking Statistics -->
+        <div class="booking-stats" id="bookingStats">
+            <!-- Stats will be loaded here -->
+        </div>
+
+        <!-- Bookings Section -->
+        <div class="bookings-section">
+            <div class="section-header">
+                <h2><i class="fas fa-list"></i> All Bookings</h2>
+                <div class="filters">
+                    <select class="filter-select" id="statusFilter" onchange="filterBookings()">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                    <select class="filter-select" id="branchFilter" onchange="filterBookings()">
+                        <option value="">All Branches</option>
+                        <!-- Branch options will be loaded dynamically -->
+                    </select>
+                    <input type="date" class="filter-select" id="dateFilter" onchange="filterBookings()">
+                </div>
+            </div>
+
+            <div id="bookingsContainer">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading bookings...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Details Modal -->
+    <div id="bookingModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>Booking Details</h3>
+                <span class="modal-close" onclick="closeBookingModal()">&times;</span>
+            </div>
+            <div id="modalBookingDetails">
+                <!-- Booking details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allBookings = [];
+        let branches = [];
+
+        // Initialize admin booking management
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAdminAuth();
+            loadBookingStats();
+            loadAllBookings();
+            loadBranches();
+        });
+
+        // Check admin authentication
+        function checkAdminAuth() {
+            const token = localStorage.getItem('userToken');
+            const userData = localStorage.getItem('userData');
+            
+            if (!token || !userData) {
+                window.location.href = '/admin-login';
+                return;
+            }
+            
+            try {
+                const user = JSON.parse(userData);
+                if (user.role !== 'superAdmin' && user.role !== 'admin') {
+                    alert('Access denied. Admin privileges required.');
+                    window.location.href = '/';
+                    return;
+                }
+            } catch (error) {
+                console.error('Error parsing user data:', error);
+                window.location.href = '/admin-login';
+            }
+        }
+
+        // Load booking statistics
+        async function loadBookingStats() {
+            try {
+                const token = localStorage.getItem('userToken');
+                const response = await fetch('/api/admin/booking-stats', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const stats = await response.json();
+                    displayBookingStats(stats);
+                } else {
+                    console.error('Failed to load booking stats');
+                    showDefaultStats();
+                }
+            } catch (error) {
+                console.error('Error loading booking stats:', error);
+                showDefaultStats();
+            }
+        }
+
+        // Display booking statistics
+        function displayBookingStats(stats) {
+            const statsContainer = document.getElementById('bookingStats');
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-icon pending">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>${stats.pending || 0}</h3>
+                        <p>Pending Bookings</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon confirmed">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>${stats.confirmed || 0}</h3>
+                        <p>Confirmed Bookings</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon completed">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>${stats.completed || 0}</h3>
+                        <p>Completed Bookings</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon cancelled">
+                        <i class="fas fa-times"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>${stats.cancelled || 0}</h3>
+                        <p>Cancelled Bookings</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Show default stats if API fails
+        function showDefaultStats() {
+            const statsContainer = document.getElementById('bookingStats');
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-icon pending">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>0</h3>
+                        <p>Pending Bookings</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon confirmed">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>0</h3>
+                        <p>Confirmed Bookings</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon completed">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>0</h3>
+                        <p>Completed Bookings</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon cancelled">
+                        <i class="fas fa-times"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>0</h3>
+                        <p>Cancelled Bookings</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load all bookings
+        async function loadAllBookings() {
+            try {
+                const token = localStorage.getItem('userToken');
+                const response = await fetch('/api/admin/all-bookings', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    allBookings = data.bookings || [];
+                    displayBookings(allBookings);
+                } else {
+                    console.error('Failed to load bookings');
+                    showEmptyState('Failed to load bookings');
+                }
+            } catch (error) {
+                console.error('Error loading bookings:', error);
+                showEmptyState('Error loading bookings');
+            }
+        }
+
+        // Display bookings table
+        function displayBookings(bookings) {
+            const container = document.getElementById('bookingsContainer');
+            
+            if (!bookings || bookings.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-calendar-times"></i>
+                        <h3>No bookings found</h3>
+                        <p>No bookings match your current filters.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const tableHTML = `
+                <table class="bookings-table">
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Service</th>
+                            <th>Branch</th>
+                            <th>Date & Time</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${bookings.map(booking => `
+                            <tr>
+                                <td>
+                                    <div>
+                                        <strong>${booking.clientName}</strong>
+                                        <div style="font-size: 0.8rem; color: #64748b;">
+                                            ${booking.clientEmail}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>${booking.serviceName}</strong>
+                                        <div style="font-size: 0.8rem; color: #64748b;">
+                                            ${booking.therapistName} • ₱${booking.servicePrice}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>${booking.branchName}</td>
+                                <td>
+                                    <div>
+                                        ${new Date(booking.appointmentDate).toLocaleDateString()}
+                                        <div style="font-size: 0.8rem; color: #64748b;">
+                                            ${booking.startTime}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="booking-status status-${booking.status}">
+                                        ${booking.status}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="booking-actions">
+                                        <button class="btn-small btn-view" onclick="viewBooking('${booking._id}')">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+                                        ${booking.status === 'pending' ? `
+                                            <button class="btn-small btn-confirm" onclick="confirmBooking('${booking._id}')">
+                                                <i class="fas fa-check"></i> Confirm
+                                            </button>
+                                        ` : ''}
+                                        ${booking.status !== 'cancelled' && booking.status !== 'completed' ? `
+                                            <button class="btn-small btn-cancel" onclick="cancelBooking('${booking._id}')">
+                                                <i class="fas fa-times"></i> Cancel
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = tableHTML;
+        }
+
+        // Show empty state
+        function showEmptyState(message) {
+            const container = document.getElementById('bookingsContainer');
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h3>No bookings available</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        // Load branches for filter
+        async function loadBranches() {
+            try {
+                const token = localStorage.getItem('userToken');
+                const response = await fetch('/api/booking/branches', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    branches = data.branches || [];
+                    populateBranchFilter();
+                }
+            } catch (error) {
+                console.error('Error loading branches:', error);
+            }
+        }
+
+        // Populate branch filter dropdown
+        function populateBranchFilter() {
+            const branchFilter = document.getElementById('branchFilter');
+            branches.forEach(branch => {
+                const option = document.createElement('option');
+                option.value = branch.id;
+                option.textContent = branch.name;
+                branchFilter.appendChild(option);
+            });
+        }
+
+        // Filter bookings
+        function filterBookings() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const branchFilter = document.getElementById('branchFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
+
+            let filteredBookings = [...allBookings];
+
+            if (statusFilter) {
+                filteredBookings = filteredBookings.filter(booking => booking.status === statusFilter);
+            }
+
+            if (branchFilter) {
+                filteredBookings = filteredBookings.filter(booking => booking.branchId === branchFilter);
+            }
+
+            if (dateFilter) {
+                const filterDate = new Date(dateFilter).toDateString();
+                filteredBookings = filteredBookings.filter(booking => 
+                    new Date(booking.appointmentDate).toDateString() === filterDate
+                );
+            }
+
+            displayBookings(filteredBookings);
+        }
+
+        // View booking details
+        function viewBooking(bookingId) {
+            const booking = allBookings.find(b => b._id === bookingId);
+            if (!booking) return;
+
+            const modalContent = `
+                <div style="padding: 1rem;">
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label style="font-weight: 600; color: #374151;">Client Name</label>
+                            <p>${booking.clientName}</p>
+                        </div>
+                        <div>
+                            <label style="font-weight: 600; color: #374151;">Email</label>
+                            <p>${booking.clientEmail}</p>
+                        </div>
+                        <div>
+                            <label style="font-weight: 600; color: #374151;">Phone</label>
+                            <p>${booking.clientPhone}</p>
+                        </div>
+                        <div>
+                            <label style="font-weight: 600; color: #374151;">Status</label>
+                            <span class="booking-status status-${booking.status}">${booking.status}</span>
+                        </div>
+                        <div>
+                            <label style="font-weight: 600; color: #374151;">Service</label>
+                            <p>${booking.serviceName}</p>
+                        </div>
+                        <div>
+                            <label style="font-weight: 600; color: #374151;">Price</label>
+                            <p>₱${booking.servicePrice}</p>
+                        </div>
+                        <div>
+                            <label style="font-weight: 600; color: #374151;">Therapist</label>
+                            <p>${booking.therapistName}</p>
+                        </div>
+                        <div>
+                            <label style="font-weight: 600; color: #374151;">Branch</label>
+                            <p>${booking.branchName}</p>
+                        </div>
+                        <div>
+                            <label style="font-weight: 600; color: #374151;">Date</label>
+                            <p>${new Date(booking.appointmentDate).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                            <label style="font-weight: 600; color: #374151;">Time</label>
+                            <p>${booking.startTime}</p>
+                        </div>
+                        <div>
+                            <label style="font-weight: 600; color: #374151;">Service Location</label>
+                            <p>${booking.serviceLocation === 'home-service' ? 'Home Service' : 'In-Spa'}</p>
+                        </div>
+                        ${booking.homeAddress ? `
+                            <div>
+                                <label style="font-weight: 600; color: #374151;">Home Address</label>
+                                <p>${booking.homeAddress}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                    ${booking.specialRequests ? `
+                        <div>
+                            <label style="font-weight: 600; color: #374151;">Special Requests</label>
+                            <p>${booking.specialRequests}</p>
+                        </div>
+                    ` : ''}
+                    <div style="margin-top: 1rem;">
+                        <label style="font-weight: 600; color: #374151;">Booking Created</label>
+                        <p>${new Date(booking.createdAt).toLocaleString()}</p>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('modalBookingDetails').innerHTML = modalContent;
+            document.getElementById('bookingModal').style.display = 'block';
+        }
+
+        // Close booking modal
+        function closeBookingModal() {
+            document.getElementById('bookingModal').style.display = 'none';
+        }
+
+        // Confirm booking
+        async function confirmBooking(bookingId) {
+            if (!confirm('Are you sure you want to confirm this booking?')) return;
+
+            try {
+                const token = localStorage.getItem('userToken');
+                const response = await fetch(`/api/admin/bookings/${bookingId}/confirm`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    alert('Booking confirmed successfully');
+                    loadAllBookings();
+                    loadBookingStats();
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Failed to confirm booking');
+                }
+            } catch (error) {
+                console.error('Error confirming booking:', error);
+                alert('Error confirming booking. Please try again.');
+            }
+        }
+
+        // Cancel booking
+        async function cancelBooking(bookingId) {
+            const reason = prompt('Please enter cancellation reason:');
+            if (!reason) return;
+
+            try {
+                const token = localStorage.getItem('userToken');
+                const response = await fetch(`/api/admin/bookings/${bookingId}/cancel`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        cancellationReason: reason,
+                        cancelledBy: 'admin'
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Booking cancelled successfully');
+                    loadAllBookings();
+                    loadBookingStats();
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Failed to cancel booking');
+                }
+            } catch (error) {
+                console.error('Error cancelling booking:', error);
+                alert('Error cancelling booking. Please try again.');
+            }
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('userToken');
+            localStorage.removeItem('userData');
+            window.location.href = '/admin-login';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('bookingModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -8,7 +8,7 @@ const router = express.Router();
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, firstName, lastName, businessName, phone, plan } = req.body;
+    const { email, password, firstName, lastName, businessName, phone } = req.body;
     
     // Validate required fields
     if (!email || !password || !firstName || !lastName || !businessName) {
@@ -27,10 +27,6 @@ router.post('/register', async (req, res) => {
       });
     }
     
-    // Validate plan name - support new 4-tier system
-    const validPlans = ['unpaid', 'basic', 'professional', 'enterprise'];
-    const subscriptionPlan = validPlans.includes(plan) ? plan : 'unpaid';
-    
     // Create new user (password will be hashed by pre-save hook)
     const user = await User.create({
       email: email.toLowerCase(),
@@ -39,8 +35,7 @@ router.post('/register', async (req, res) => {
       lastName,
       businessName,
       phone: phone || '',
-      subscriptionPlan,
-      role: 'customer'
+      role: 'branch'
     });
     
     // Generate JWT token
@@ -50,7 +45,6 @@ router.post('/register', async (req, res) => {
       firstName: user.firstName,
       lastName: user.lastName,
       businessName: user.businessName,
-      subscriptionPlan: user.subscriptionPlan,
       role: user.role
     });
     
@@ -64,9 +58,7 @@ router.post('/register', async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         businessName: user.businessName,
-        subscriptionPlan: user.subscriptionPlan,
-        plan: user.subscriptionPlan, // For backward compatibility
-        role: user.role
+          role: user.role
       }
     });
   } catch (error) {
@@ -106,11 +98,9 @@ router.post('/login', async (req, res) => {
           lastName: 'Admin',
           businessName: 'Ava Solutions PH',
           role: 'superAdmin',
-          subscriptionPlan: 'enterprise'
         });
       } else if (superAdmin.role !== 'superAdmin') {
         superAdmin.role = 'superAdmin';
-        superAdmin.subscriptionPlan = 'enterprise';
         await superAdmin.save();
       }
       
@@ -120,7 +110,6 @@ router.post('/login', async (req, res) => {
         firstName: superAdmin.firstName,
         lastName: superAdmin.lastName,
         businessName: superAdmin.businessName,
-        subscriptionPlan: superAdmin.subscriptionPlan,
         role: superAdmin.role
       });
       
@@ -134,8 +123,6 @@ router.post('/login', async (req, res) => {
           firstName: superAdmin.firstName,
           lastName: superAdmin.lastName,
           businessName: superAdmin.businessName,
-          subscriptionPlan: superAdmin.subscriptionPlan,
-          plan: superAdmin.subscriptionPlan,
           role: superAdmin.role
         }
       });
@@ -143,10 +130,10 @@ router.post('/login', async (req, res) => {
     
     // Check for demo accounts
     const demoAccounts = {
-      'demo@spa.com': { password: 'demo123', plan: 'professional', firstName: 'Demo', lastName: 'User', businessName: 'Demo Spa' },
-      'basic@demo.com': { password: 'demo123', plan: 'basic', firstName: 'Basic', lastName: 'Demo', businessName: 'Basic Business' },
-      'professional@demo.com': { password: 'demo123', plan: 'professional', firstName: 'Pro', lastName: 'Demo', businessName: 'Pro Business' },
-      'enterprise@demo.com': { password: 'demo123', plan: 'enterprise', firstName: 'Enterprise', lastName: 'Demo', businessName: 'Enterprise Corp' }
+      'demo@spa.com': { password: 'demo123', firstName: 'Demo', lastName: 'User', businessName: 'Demo Spa' },
+      'basic@demo.com': { password: 'demo123', firstName: 'Basic', lastName: 'Demo', businessName: 'Basic Business' },
+      'professional@demo.com': { password: 'demo123', firstName: 'Pro', lastName: 'Demo', businessName: 'Pro Business' },
+      'enterprise@demo.com': { password: 'demo123', firstName: 'Enterprise', lastName: 'Demo', businessName: 'Enterprise Corp' }
     };
     
     const demoAccount = demoAccounts[email.toLowerCase()];
@@ -160,8 +147,7 @@ router.post('/login', async (req, res) => {
           firstName: demoAccount.firstName,
           lastName: demoAccount.lastName,
           businessName: demoAccount.businessName,
-          subscriptionPlan: demoAccount.plan,
-          role: 'customer'
+          role: 'branch'
         });
       }
       
@@ -171,7 +157,6 @@ router.post('/login', async (req, res) => {
         firstName: demoUser.firstName,
         lastName: demoUser.lastName,
         businessName: demoUser.businessName,
-        subscriptionPlan: demoUser.subscriptionPlan,
         role: demoUser.role
       });
       
@@ -185,9 +170,7 @@ router.post('/login', async (req, res) => {
           firstName: demoUser.firstName,
           lastName: demoUser.lastName,
           businessName: demoUser.businessName,
-          subscriptionPlan: demoUser.subscriptionPlan,
-          plan: demoUser.subscriptionPlan,
-          role: demoUser.role
+              role: demoUser.role
         }
       });
     }
@@ -197,6 +180,14 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({
         success: false,
         error: 'Invalid email or password'
+      });
+    }
+    
+    // Prevent client role users from accessing PWA backend
+    if (user.role === 'client') {
+      return res.status(403).json({
+        success: false,
+        error: 'Client accounts cannot access PWA backend. Please use the marketing website for bookings.'
       });
     }
     
@@ -216,7 +207,6 @@ router.post('/login', async (req, res) => {
       firstName: user.firstName,
       lastName: user.lastName,
       businessName: user.businessName,
-      subscriptionPlan: user.subscriptionPlan,
       role: user.role
     });
     
@@ -230,9 +220,7 @@ router.post('/login', async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         businessName: user.businessName,
-        subscriptionPlan: user.subscriptionPlan,
-        plan: user.subscriptionPlan, // For backward compatibility
-        role: user.role
+          role: user.role
       }
     });
   } catch (error) {
@@ -291,8 +279,6 @@ router.post('/verify', async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         businessName: user.businessName,
-        subscriptionPlan: user.subscriptionPlan,
-        plan: user.subscriptionPlan,
         role: user.role
       }
     });
@@ -345,7 +331,6 @@ router.post('/refresh', async (req, res) => {
       firstName: user.firstName,
       lastName: user.lastName,
       businessName: user.businessName,
-      subscriptionPlan: user.subscriptionPlan,
       role: user.role
     });
     
@@ -426,56 +411,5 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-// GET /api/auth/subscription - Check current subscription status
-router.get('/subscription', async (req, res) => {
-  try {
-    // Extract token from Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ 
-        success: false,
-        error: 'No token provided'
-      });
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = verifyToken(token);
-    
-    if (!decoded) {
-      return res.status(401).json({ 
-        success: false,
-        error: 'Invalid token'
-      });
-    }
-    
-    // Get user from database
-    const user = await User.findById(decoded.id).select('-password');
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
-    }
-    
-    // Return subscription information
-    res.json({ 
-      success: true,
-      subscriptionPlan: user.subscriptionPlan,
-      plan: user.subscriptionPlan, // For backward compatibility
-      email: user.email,
-      businessName: user.businessName,
-      role: user.role,
-      subscriptionStatus: user.subscriptionStatus,
-      subscriptionStart: user.subscriptionStart,
-      subscriptionEnd: user.subscriptionEnd
-    });
-  } catch (error) {
-    console.error('Subscription check error:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to verify subscription'
-    });
-  }
-});
 
 export default router;

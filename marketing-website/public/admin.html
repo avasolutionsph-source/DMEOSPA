@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Admin - Ava Solutions</title>
+    <title>Super Admin - Daet Massage and Spa</title>
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -422,6 +422,85 @@
                 margin: 10% 1rem;
             }
         }
+        /* Account Management Styles */
+        .quick-actions {
+            background: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            text-align: center;
+            color: var(--text-light);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+            border: 1px solid #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            border-color: #1e7e34;
+        }
+
+        /* Branch Data Styles */
+        .branch-data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .branch-data-card {
+            background: white;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+        }
+
+        .branch-data-card h4 {
+            margin: 0 0 1rem 0;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .data-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .data-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .data-list li:last-child {
+            border-bottom: none;
+        }
+
+        .data-value {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -430,7 +509,7 @@
         <div class="login-header">
             <i class="fas fa-spa" style="font-size: 2rem; color: var(--primary); margin-bottom: 1rem;"></i>
             <h1>Super Admin Login</h1>
-            <p style="color: var(--text-light);">Ava Solutions Admin Panel</p>
+            <p style="color: var(--text-light);">Daet Massage and Spa Admin Panel</p>
         </div>
         
         <div class="error-message" id="loginError"></div>
@@ -456,7 +535,7 @@
         <div class="admin-header">
             <div class="admin-brand">
                 <i class="fas fa-spa"></i>
-                <span>Ava Solutions - Super Admin</span>
+                <span>Daet Massage and Spa - Super Admin</span>
             </div>
             <div class="admin-user">
                 <span id="adminName">Admin User</span>
@@ -519,10 +598,45 @@
                 </div>
             </div>
 
+            <!-- Account Creation -->
+            <div class="admin-section">
+                <div class="section-header">
+                    <h2 class="section-title">Account Management</h2>
+                    <button class="btn btn-success" onclick="openCreateAccountModal()">
+                        <i class="fas fa-plus"></i> Create Account
+                    </button>
+                </div>
+                <div class="section-content">
+                    <!-- Quick Account Creation -->
+                    <div class="quick-actions">
+                        <p>Create new branch accounts and manage existing users</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Branch Data Viewer -->
+            <div class="admin-section">
+                <div class="section-header">
+                    <h2 class="section-title">Branch Business Data</h2>
+                    <select class="filter-select" id="branchSelector" onchange="loadBranchData()">
+                        <option value="">Select a branch to view data...</option>
+                    </select>
+                </div>
+                <div class="section-content">
+                    <div id="branchDataContainer">
+                        <div class="empty-state">
+                            <i class="fas fa-building"></i>
+                            <h3>No Branch Selected</h3>
+                            <p>Select a branch from the dropdown to view their business data</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Users Management -->
             <div class="admin-section">
                 <div class="section-header">
-                    <h2 class="section-title">User Management</h2>
+                    <h2 class="section-title">All Users</h2>
                     <button class="btn btn-primary" onclick="refreshUsers()">
                         <i class="fas fa-sync-alt"></i> Refresh
                     </button>
@@ -531,15 +645,11 @@
                     <!-- Filters -->
                     <div class="filters">
                         <input type="text" class="filter-input" id="searchFilter" placeholder="Search users..." onkeyup="filterUsers()">
-                        <select class="filter-select" id="planFilter" onchange="filterUsers()">
-                            <option value="">All Plans</option>
-                            <option value="unpaid">Unpaid</option>
-                            <option value="pro">Pro</option>
-                        </select>
-                        <select class="filter-select" id="statusFilter" onchange="filterUsers()">
-                            <option value="">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                        <select class="filter-select" id="roleFilter" onchange="filterUsers()">
+                            <option value="">All Roles</option>
+                            <option value="branch">Branch</option>
+                            <option value="admin">Admin</option>
+                            <option value="superAdmin">Super Admin</option>
                         </select>
                     </div>
 
@@ -553,10 +663,64 @@
     </div>
 
     <!-- Edit User Modal -->
+    <!-- Change User Role Modal -->
+    <div id="changeRoleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Change User Role</h3>
+                <button class="close" onclick="closeRoleModal()">&times;</button>
+            </div>
+            
+            <div class="error-message" id="roleModalError"></div>
+            <div class="success-message" id="roleModalSuccess"></div>
+            
+            <form id="changeRoleForm">
+                <input type="hidden" id="changeRoleUserId">
+                <input type="hidden" id="changeRoleUserEmail">
+                
+                <div class="form-group">
+                    <label class="form-label">User</label>
+                    <div id="changeRoleUserInfo" style="color: var(--text-light);"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Current Role</label>
+                    <div id="currentRoleDisplay" style="color: var(--text-light); font-weight: 500;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">New Role</label>
+                    <select class="form-select" id="newRoleSelect" required>
+                        <option value="">Select new role...</option>
+                        <option value="branch">Branch - Business Owner/Manager</option>
+                        <option value="admin">Admin - System Administrator</option>
+                        <option value="superAdmin">Super Admin - Platform Owner</option>
+                    </select>
+                </div>
+                
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 0.25rem; padding: 0.75rem; margin: 1rem 0; font-size: 0.9rem;">
+                    <strong>⚠️ Security Notice:</strong>
+                    <ul style="margin: 0.5rem 0 0 1rem;">
+                        <li>Only superAdmin can change user roles</li>
+                        <li>Cannot change your own role (prevents lockout)</li>
+                        <li><strong>Super Admin promotion grants full platform control</strong></li>
+                        <li>This action will affect the user's permissions immediately</li>
+                    </ul>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn" onclick="closeRoleModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Change Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit User Notes Modal -->
     <div id="editUserModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">Edit User Subscription</h3>
+                <h3 class="modal-title">Edit User Notes</h3>
                 <button class="close" onclick="closeModal()">&times;</button>
             </div>
             
@@ -572,26 +736,6 @@
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Subscription Plan</label>
-                    <select class="form-select" id="editPlan" required>
-                        <option value="unpaid">Unpaid - Limited Access (Free)</option>
-                        <option value="basic">Basic - Essential Features (₱499/month)</option>
-                        <option value="professional">Professional - Advanced Features (₱999/month)</option>
-                        <option value="enterprise">Enterprise - All Features + Priority Support (₱1,999/month)</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Status</label>
-                    <select class="form-select" id="editStatus" required>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="suspended">Suspended</option>
-                        <option value="cancelled">Cancelled</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
                     <label class="form-label">Admin Notes</label>
                     <textarea class="form-textarea" id="editNotes" placeholder="Add notes about this user..."></textarea>
                 </div>
@@ -599,6 +743,75 @@
                 <div class="modal-actions">
                     <button type="button" class="btn" onclick="closeModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Account Modal -->
+    <div id="createAccountModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Account</h3>
+                <button class="close" onclick="closeCreateAccountModal()">&times;</button>
+            </div>
+            
+            <div class="error-message" id="createAccountError"></div>
+            <div class="success-message" id="createAccountSuccess"></div>
+            
+            <form id="createAccountForm">
+                <div class="form-group">
+                    <label class="form-label">Account Type</label>
+                    <select class="form-select" id="newAccountRole" required>
+                        <option value="branch">Branch - Business Account</option>
+                        <option value="admin">Admin - System Administrator</option>
+                        <option value="superAdmin">Super Admin - Platform Owner</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">First Name</label>
+                    <input type="text" class="form-input" id="newAccountFirstName" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Last Name</label>
+                    <input type="text" class="form-input" id="newAccountLastName" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" class="form-input" id="newAccountEmail" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="newAccountPassword" required minlength="6">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Business Name</label>
+                    <input type="text" class="form-input" id="newAccountBusinessName" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Phone Number (Optional)</label>
+                    <input type="tel" class="form-input" id="newAccountPhone">
+                </div>
+                
+                <div style="background: #e8f5e8; border: 1px solid #4caf50; border-radius: 0.25rem; padding: 0.75rem; margin: 1rem 0; font-size: 0.9rem;">
+                    <strong>✅ Account Creation:</strong>
+                    <ul style="margin: 0.5rem 0 0 1rem;">
+                        <li>Branch accounts get full business management access</li>
+                        <li>Admin accounts can manage other users</li>
+                        <li>Super Admin accounts have complete platform control</li>
+                        <li>Account will be created immediately and user notified</li>
+                    </ul>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn" onclick="closeCreateAccountModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success">Create Account</button>
                 </div>
             </form>
         </div>

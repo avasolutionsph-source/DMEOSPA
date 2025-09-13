@@ -42,7 +42,11 @@
       "Bash(powershell:*)",
       "mcp__ide__getDiagnostics",
       "Bash(npx http-server:*)",
-      "Bash(npm audit:*)"
+      "Bash(npm audit:*)",
+      "Bash(do sed -i '/<a href=\"\"\\/pricing\"\">Pricing<\\/a>/d' \"$file\")",
+      "Bash(unset MONGODB_URI)",
+      "Bash(set MONGODB_URI=)",
+      "Bash(set PORT=)"
     ],
     "deny": [],
     "ask": [],

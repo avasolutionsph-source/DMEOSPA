@@ -14,14 +14,14 @@ const inventoryItemSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  sku: {
-    type: String,
-    sparse: true, // Allow multiple null values
-    trim: true
-  },
   description: {
     type: String,
     trim: true
+  },
+  category: {
+    type: String,
+    trim: true,
+    default: 'misc'
   },
   
   // Inventory tracking
@@ -72,6 +72,12 @@ const inventoryItemSchema = new mongoose.Schema({
   
   // Alerts
   lowStockAlert: {
+    type: Boolean,
+    default: false
+  },
+  
+  // POS availability
+  availableInPOS: {
     type: Boolean,
     default: false
   },

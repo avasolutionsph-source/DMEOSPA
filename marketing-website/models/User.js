@@ -12,7 +12,9 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
+    required: function() {
+      return this.authProvider === 'local';
+    },
     minlength: 6
   },
   firstName: {
@@ -27,7 +29,7 @@ const userSchema = new mongoose.Schema({
   },
   businessName: {
     type: String,
-    required: true,
+    required: false,
     trim: true
   },
   phone: {
@@ -35,30 +37,44 @@ const userSchema = new mongoose.Schema({
     trim: true
   },
   
-  // Subscription info
-  subscriptionPlan: {
+  // OAuth fields
+  googleId: {
     type: String,
-    enum: ['unpaid', 'pro'],
-    default: 'unpaid'
+    sparse: true
   },
-  subscriptionStatus: {
+  facebookId: {
     type: String,
-    enum: ['active', 'inactive', 'cancelled'],
-    default: 'active'
+    sparse: true
   },
-  subscriptionStart: {
-    type: Date,
-    default: Date.now
+  authProvider: {
+    type: String,
+    enum: ['local', 'google', 'facebook'],
+    default: 'local'
   },
-  subscriptionEnd: {
-    type: Date
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  avatar: {
+    type: String
   },
   
-  // Role (for super admin)
+  // Role (for super admin and clients)
   role: {
     type: String,
-    enum: ['customer', 'admin', 'superAdmin'],
-    default: 'customer'
+    enum: ['branch', 'admin', 'superAdmin', 'client'],
+    default: 'client'
+  },
+
+  // Account creation tracking
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false // Not required for existing users
+  },
+  plainPassword: {
+    type: String,
+    required: false // Only for accounts created by admins
   },
   
   // PWA connection
@@ -146,7 +162,6 @@ userSchema.virtual('fullName').get(function() {
 });
 
 // Indexes
-userSchema.index({ subscriptionPlan: 1 });
 userSchema.index({ 'businessMetrics.lastActiveDate': 1 });
 userSchema.index({ createdAt: 1 });
 

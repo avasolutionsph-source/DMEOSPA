@@ -64,30 +64,11 @@ const userSchema = new mongoose.Schema({
     default: false
   },
   
-  // Subscription info
-  subscriptionPlan: {
-    type: String,
-    enum: ['unpaid', 'basic', 'professional', 'enterprise'],
-    default: 'unpaid'
-  },
-  subscriptionStatus: {
-    type: String,
-    enum: ['active', 'inactive', 'cancelled'],
-    default: 'active'
-  },
-  subscriptionStart: {
-    type: Date,
-    default: Date.now
-  },
-  subscriptionEnd: {
-    type: Date
-  },
-  
   // Role (for super admin)
   role: {
     type: String,
-    enum: ['customer', 'admin', 'superAdmin'],
-    default: 'customer'
+    enum: ['branch', 'admin', 'superAdmin'],
+    default: 'branch'
   },
   
   // PWA connection
@@ -175,7 +156,6 @@ userSchema.virtual('fullName').get(function() {
 });
 
 // Indexes
-userSchema.index({ subscriptionPlan: 1 });
 userSchema.index({ 'businessMetrics.lastActiveDate': 1 });
 userSchema.index({ createdAt: 1 });
 

@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Appointment - Ava Solutions Spa</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/assets/style.css" rel="stylesheet">
+    <style>
+        .booking-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 3rem;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            margin: 0 1rem;
+        }
+        
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 0.5rem;
+            border: 2px solid #800020;
+            background: white;
+            color: #800020;
+            transition: all 0.3s;
+        }
+        
+        .step.active .step-circle {
+            background: #800020;
+            color: white;
+        }
+        
+        .step.completed .step-circle {
+            background: #22c55e;
+            border-color: #22c55e;
+            color: white;
+        }
+        
+        .step-content {
+            display: none;
+            margin-top: 2rem;
+        }
+        
+        .step-content.active {
+            display: block;
+        }
+        
+        .branch-card {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .branch-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #800020, #a0002a);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .branch-card:hover {
+            border-color: #800020;
+            box-shadow: 0 8px 25px rgba(128, 0, 32, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .branch-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .branch-card.selected {
+            border-color: #800020;
+            background: linear-gradient(135deg, #fef2f2, #fdf2f8);
+            box-shadow: 0 8px 25px rgba(128, 0, 32, 0.2);
+        }
+        
+        .branch-card.selected::before {
+            transform: scaleX(1);
+        }
+        
+        .branch-card-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .branch-info h3 {
+            margin: 0 0 0.5rem 0;
+            color: #1f2937;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .branch-info p {
+            margin: 0.25rem 0;
+            color: #6b7280;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .branch-status {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+        
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-secondary {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+        
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .service-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .service-card:hover {
+            border-color: #800020;
+            box-shadow: 0 2px 8px rgba(128, 0, 32, 0.1);
+        }
+        
+        .service-card.selected {
+            border-color: #800020;
+            background: #fef2f2;
+        }
+        
+        .therapist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .therapist-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .therapist-card:hover {
+            border-color: #800020;
+            box-shadow: 0 2px 8px rgba(128, 0, 32, 0.1);
+        }
+        
+        .therapist-card.selected {
+            border-color: #800020;
+            background: #fef2f2;
+        }
+        
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+        
+        .time-slot {
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .time-slot:hover {
+            border-color: #800020;
+            background: #fef2f2;
+        }
+        
+        .time-slot.selected {
+            border-color: #800020;
+            background: #800020;
+            color: white;
+        }
+        
+        .time-slot.unavailable {
+            background: #fecaca !important;
+            color: #991b1b !important;
+            border: 1px solid #fca5a5 !important;
+            cursor: not-allowed !important;
+            opacity: 0.7;
+            position: relative;
+        }
+        
+        .time-slot.unavailable::before {
+            content: '✕';
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #991b1b;
+        }
+        
+        .time-slot.unavailable:hover {
+            background: #fecaca !important;
+            color: #991b1b !important;
+            border: 1px solid #fca5a5 !important;
+            transform: none;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .service-location-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .location-option {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .location-option:hover {
+            border-color: #800020;
+            background: #fef2f2;
+        }
+        
+        .location-option.selected {
+            border-color: #800020;
+            background: #fef2f2;
+        }
+        
+        .btn {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #800020;
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: #600015;
+        }
+        
+        .btn-primary:disabled {
+            background: #9ca3af;
+            color: #6b7280;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        
+        .booking-summary {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #800020;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <img src="/assets/logo-daet.png" alt="Daet Massage and Spa" style="height: 40px; width: auto; border-radius: 6px;">
+            </div>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/about">About</a>
+                <a href="/services">Services</a>
+                <a href="/contact">Contact</a>
+                <div class="nav-auth" id="navAuth">
+                    <a href="/register" class="btn-secondary">Register</a>
+                    <a href="/login" class="btn-primary">Login</a>
+                </div>
+            </div>
+            <div class="nav-toggle" id="navToggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content" style="margin-top: 80px;">
+        <div class="booking-container">
+            <h1 style="text-align: center; color: #800020; margin-bottom: 2rem;">
+                <i class="fas fa-calendar-alt"></i> Book Your Appointment
+            </h1>
+            
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step active" data-step="1">
+                    <div class="step-circle">1</div>
+                    <span>Branch</span>
+                </div>
+                <div class="step" data-step="2">
+                    <div class="step-circle">2</div>
+                    <span>Service</span>
+                </div>
+                <div class="step" data-step="3">
+                    <div class="step-circle">3</div>
+                    <span>Therapist</span>
+                </div>
+                <div class="step" data-step="4">
+                    <div class="step-circle">4</div>
+                    <span>Date & Time</span>
+                </div>
+                <div class="step" data-step="5">
+                    <div class="step-circle">5</div>
+                    <span>Details</span>
+                </div>
+                <div class="step" data-step="6">
+                    <div class="step-circle">6</div>
+                    <span>Confirm</span>
+                </div>
+            </div>
+
+            <!-- Step 1: Branch Selection -->
+            <div class="step-content active" id="step-1">
+                <h2>Select Branch Location</h2>
+                <p>Choose the spa branch where you'd like to book your appointment:</p>
+                
+                <div id="branchesLoading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading available branches...</p>
+                </div>
+                
+                <div id="branchesContainer"></div>
+                
+                <div style="text-align: right; margin-top: 2rem;">
+                    <button class="btn btn-primary" onclick="nextStep(2)" id="branchNextBtn" disabled>
+                        Next: Select Service <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Service Selection -->
+            <div class="step-content" id="step-2">
+                <h2>Select Service</h2>
+                <p>Choose from our available services:</p>
+                
+                <div id="servicesLoading" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Loading services...</p>
+                </div>
+                
+                <div id="servicesContainer" class="service-grid"></div>
+                
+                <div style="display: flex; justify-content: space-between; margin-top: 2rem;">
+                    <button class="btn btn-secondary" onclick="prevStep(1)">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <button class="btn btn-primary" onclick="nextStep(3)" id="serviceNextBtn" disabled>
+                        Next: Select Therapist <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Therapist Selection -->
+            <div class="step-content" id="step-3">
+                <h2>Select Therapist</h2>
+                <p>Choose your preferred therapist:</p>
+                
+                <div id="therapistsLoading" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Loading therapists...</p>
+                </div>
+                
+                <div id="therapistsContainer" class="therapist-grid"></div>
+                
+                <div style="display: flex; justify-content: space-between; margin-top: 2rem;">
+                    <button class="btn btn-secondary" onclick="prevStep(2)">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <button class="btn btn-primary" onclick="nextStep(4)" id="therapistNextBtn" disabled>
+                        Next: Select Date & Time <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 4: Date & Time Selection -->
+            <div class="step-content" id="step-4">
+                <h2>Select Date & Time</h2>
+                
+                <div class="form-group">
+                    <label for="appointmentDate">Select Date:</label>
+                    <input type="date" id="appointmentDate" min="" onchange="loadAvailability()">
+                </div>
+                
+                <div id="timeSlotsContainer">
+                    <h3>Available Time Slots:</h3>
+                    <div id="timeSlotsLoading" class="loading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Loading available times...</p>
+                    </div>
+                    <div id="timeSlots" class="time-slots"></div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-top: 2rem;">
+                    <button class="btn btn-secondary" onclick="prevStep(3)">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <button class="btn btn-primary" onclick="nextStep(5)" id="dateTimeNextBtn" disabled>
+                        Next: Service Details <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 5: Service Details -->
+            <div class="step-content" id="step-5">
+                <h2>Service Details</h2>
+                
+                <div class="form-group">
+                    <label>Service Location:</label>
+                    <div class="service-location-options">
+                        <div class="location-option" data-location="in-spa">
+                            <i class="fas fa-building" style="font-size: 2rem; color: #800020; margin-bottom: 0.5rem;"></i>
+                            <h4>In-Spa Service</h4>
+                            <p>Visit our spa location for your treatment</p>
+                        </div>
+                        <div class="location-option" data-location="home-service">
+                            <i class="fas fa-home" style="font-size: 2rem; color: #800020; margin-bottom: 0.5rem;"></i>
+                            <h4>Home Service</h4>
+                            <p>We'll come to your location for the treatment</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Home Address (shown when home service selected) -->
+                <div id="homeAddressSection" style="display: none;">
+                    <h3>Home Service Address</h3>
+                    <div class="form-group">
+                        <label for="homeStreet">Street Address:</label>
+                        <input type="text" id="homeStreet" placeholder="Street address">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="homeCity">City:</label>
+                            <input type="text" id="homeCity" placeholder="City">
+                        </div>
+                        <div class="form-group">
+                            <label for="homeProvince">Province:</label>
+                            <input type="text" id="homeProvince" placeholder="Province">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="homeZipCode">Zip Code:</label>
+                            <input type="text" id="homeZipCode" placeholder="Zip Code">
+                        </div>
+                        <div class="form-group">
+                            <label for="homeLandmarks">Landmarks:</label>
+                            <input type="text" id="homeLandmarks" placeholder="Nearby landmarks">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="clientPhone">Contact Phone:</label>
+                    <input type="tel" id="clientPhone" placeholder="Your phone number" required oninput="updatePhoneNumber()">
+                </div>
+                
+                <div class="form-group">
+                    <label for="specialRequests">Special Requests (Optional):</label>
+                    <textarea id="specialRequests" rows="3" placeholder="Any special requests or preferences..."></textarea>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-top: 2rem;">
+                    <button class="btn btn-secondary" onclick="prevStep(4)">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <button class="btn btn-primary" onclick="validateAndProceedToSummary()" id="detailsNextBtn">
+                        Next: Review & Confirm <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 6: Confirmation -->
+            <div class="step-content" id="step-6">
+                <h2>Review & Confirm</h2>
+                <p>Please review your appointment details:</p>
+                
+                <div class="booking-summary">
+                    <div id="bookingSummary"></div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-top: 2rem;">
+                    <button class="btn btn-secondary" onclick="prevStep(5)">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <button class="btn btn-primary" onclick="confirmBooking()" id="confirmBtn">
+                        <i class="fas fa-check"></i> Confirm Booking
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/assets/main.js"></script>
+    <script>
+        // Booking state
+        let bookingData = {
+            branch: null,
+            service: null,
+            therapist: null,
+            date: null,
+            time: null,
+            location: null,
+            homeAddress: {},
+            phone: '',
+            specialRequests: ''
+        };
+
+        // Initialize booking system
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBranches();
+            setMinDate();
+            initializeLocationSelection();
+            checkAuthentication();
+            loadUserProfileForAutofill();
+        });
+
+        // Check if user is authenticated
+        function checkAuthentication() {
+            const token = localStorage.getItem('userToken');
+            if (!token) {
+                window.location.href = '/login?redirect=book-appointment';
+                return;
+            }
+            
+            // Navigation auth will be handled by main.js
+        }
+
+        // Update phone number in real-time
+        function updatePhoneNumber() {
+            const phoneInput = document.getElementById('clientPhone');
+            if (phoneInput) {
+                bookingData.phone = phoneInput.value;
+                console.log('Phone number updated:', bookingData.phone);
+            }
+        }
+
+        // Validate details before proceeding to summary
+        function validateAndProceedToSummary() {
+            // Update phone data first
+            updatePhoneNumber();
+            
+            // Validate required fields
+            const phoneInput = document.getElementById('clientPhone');
+            const locationSelected = document.querySelector('.location-option.selected');
+            
+            if (!locationSelected) {
+                alert('Please select service location (In-Spa or Home Service)');
+                return;
+            }
+            
+            if (!phoneInput.value.trim()) {
+                alert('Please enter your phone number');
+                phoneInput.focus();
+                return;
+            }
+            
+            // Basic phone validation (at least 10 digits)
+            const phoneRegex = /^[\+]?[0-9]{10,}$/;
+            if (!phoneRegex.test(phoneInput.value.replace(/[\s\-\(\)]/g, ''))) {
+                alert('Please enter a valid phone number (at least 10 digits)');
+                phoneInput.focus();
+                return;
+            }
+            
+            console.log('✅ Details validation passed, phone:', bookingData.phone);
+            nextStep(6);
+        }
+
+        // Load user profile data for auto-fill
+        async function loadUserProfileForAutofill() {
+            try {
+                const token = localStorage.getItem('userToken');
+                if (!token) return;
+
+                const response = await fetch('/api/auth/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    console.log('User profile loaded for auto-fill:', userData);
+                    
+                    // Auto-fill phone number if available
+                    if (userData.phone) {
+                        const phoneInput = document.getElementById('clientPhone');
+                        if (phoneInput) {
+                            phoneInput.value = userData.phone;
+                            bookingData.phone = userData.phone;
+                            console.log('📞 Auto-filled phone number:', userData.phone);
+                        }
+                    }
+
+                    // Store user data for later use in booking
+                    window.currentUser = userData;
+                } else {
+                    console.warn('Could not load user profile for auto-fill');
+                }
+            } catch (error) {
+                console.error('Error loading user profile:', error);
+            }
+        }
+
+
+        // Set minimum date to today
+        function setMinDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('appointmentDate').min = today;
+        }
+
+        // Step navigation
+        function nextStep(stepNumber) {
+            console.log('nextStep called with stepNumber:', stepNumber);
+            
+            try {
+                // Get current active step
+                const currentActiveStep = document.querySelector('.step.active');
+                const currentActiveContent = document.querySelector('.step-content.active');
+                
+                console.log('Current active step:', currentActiveStep);
+                console.log('Current active content:', currentActiveContent);
+                
+                if (currentActiveStep) {
+                    currentActiveStep.classList.remove('active');
+                    currentActiveStep.classList.add('completed');
+                }
+                
+                // Activate new step
+                const newStep = document.querySelector(`.step[data-step="${stepNumber}"]`);
+                const newContent = document.getElementById(`step-${stepNumber}`);
+                
+                console.log('New step element:', newStep);
+                console.log('New content element:', newContent);
+                
+                if (newStep) {
+                    newStep.classList.add('active');
+                } else {
+                    console.error('New step element not found for step:', stepNumber);
+                }
+                
+                if (currentActiveContent) {
+                    currentActiveContent.classList.remove('active');
+                }
+                
+                if (newContent) {
+                    newContent.classList.add('active');
+                } else {
+                    console.error('New content element not found for step:', stepNumber);
+                }
+                
+                // Load data for specific steps
+                if (stepNumber === 2) {
+                    console.log('Loading services for step 2');
+                    loadServices();
+                } else if (stepNumber === 3) {
+                    console.log('Loading therapists for step 3');
+                    loadTherapists();
+                } else if (stepNumber === 6) {
+                    console.log('Generating booking summary for step 6');
+                    generateBookingSummary();
+                }
+                
+            } catch (error) {
+                console.error('Error in nextStep function:', error);
+            }
+        }
+
+        function prevStep(stepNumber) {
+            document.querySelector('.step.active').classList.remove('active');
+            document.querySelector('.step.completed').classList.remove('completed');
+            document.querySelector(`.step[data-step="${stepNumber}"]`).classList.add('active');
+            
+            document.querySelector('.step-content.active').classList.remove('active');
+            document.getElementById(`step-${stepNumber}`).classList.add('active');
+        }
+
+        // Load branches
+        async function loadBranches() {
+            try {
+                const response = await fetch('/api/booking/branches');
+                const result = await response.json();
+                
+                document.getElementById('branchesLoading').style.display = 'none';
+                
+                if (result.success) {
+                    displayBranches(result.branches);
+                } else {
+                    document.getElementById('branchesContainer').innerHTML = 
+                        '<p style="text-align: center; color: #ef4444;">Failed to load branches. Please try again.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading branches:', error);
+                document.getElementById('branchesLoading').style.display = 'none';
+                document.getElementById('branchesContainer').innerHTML = 
+                    '<p style="text-align: center; color: #ef4444;">Failed to load branches. Please try again.</p>';
+            }
+        }
+
+        function displayBranches(branches) {
+            const container = document.getElementById('branchesContainer');
+            container.innerHTML = '';
+            
+            console.log('Displaying branches:', branches);
+            
+            branches.forEach((branch, index) => {
+                const branchCard = document.createElement('div');
+                branchCard.className = 'branch-card';
+                branchCard.style.cursor = 'pointer';
+                
+                // Add click handler with multiple approaches
+                branchCard.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Branch card onclick triggered:', branch.name);
+                    selectBranch(branch, branchCard);
+                };
+                
+                branchCard.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Branch card addEventListener triggered:', branch.name);
+                    selectBranch(branch, branchCard);
+                });
+                
+                branchCard.innerHTML = `
+                    <div class="branch-card-content">
+                        <div class="branch-info">
+                            <h3>${branch.name}</h3>
+                            <p><i class="fas fa-envelope"></i> ${branch.contact.email}</p>
+                            <p><i class="fas fa-phone"></i> ${branch.contact.phone || 'Contact via email'}</p>
+                            <p><i class="fas fa-map-marker-alt"></i> ${branch.address ? `${branch.address.city}, ${branch.address.province}` : 'Daet, Camarines Norte'}</p>
+                        </div>
+                        <div class="branch-status">
+                            <span class="badge ${branch.isActive ? 'badge-success' : 'badge-secondary'}">
+                                ${branch.isActive ? 'Available' : 'Closed'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(branchCard);
+                console.log(`Branch card ${index + 1} added to container`);
+            });
+        }
+
+        function selectBranch(branch, element) {
+            console.log('selectBranch function called');
+            console.log('Branch selected:', branch);
+            console.log('Element:', element);
+            
+            try {
+                // Remove selection from other cards
+                const allCards = document.querySelectorAll('.branch-card');
+                console.log('Found', allCards.length, 'branch cards');
+                allCards.forEach(card => card.classList.remove('selected'));
+                
+                // Select this card
+                element.classList.add('selected');
+                console.log('Added selected class to element');
+                bookingData.branch = branch;
+                console.log('Updated bookingData.branch:', bookingData.branch);
+                
+                // Enable next button
+                const nextBtn = document.getElementById('branchNextBtn');
+                console.log('Next button found:', nextBtn);
+                if (nextBtn) {
+                    nextBtn.disabled = false;
+                    nextBtn.style.opacity = '1';
+                    nextBtn.style.cursor = 'pointer';
+                    console.log('Next button enabled successfully');
+                } else {
+                    console.error('Next button not found with ID: branchNextBtn');
+                }
+            } catch (error) {
+                console.error('Error in selectBranch:', error);
+            }
+        }
+
+        // Load services for selected branch
+        async function loadServices() {
+            if (!bookingData.branch) return;
+            
+            document.getElementById('servicesLoading').style.display = 'block';
+            
+            try {
+                const response = await fetch(`/api/booking/branches/${bookingData.branch.id}/services`);
+                const result = await response.json();
+                
+                document.getElementById('servicesLoading').style.display = 'none';
+                
+                if (result.success) {
+                    displayServices(result.services);
+                } else {
+                    document.getElementById('servicesContainer').innerHTML = 
+                        '<p style="text-align: center; color: #ef4444;">No services available for this branch.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading services:', error);
+                document.getElementById('servicesLoading').style.display = 'none';
+                document.getElementById('servicesContainer').innerHTML = 
+                    '<p style="text-align: center; color: #ef4444;">Failed to load services. Please try again.</p>';
+            }
+        }
+
+        function displayServices(services) {
+            const container = document.getElementById('servicesContainer');
+            container.innerHTML = '';
+            
+            services.forEach(service => {
+                const serviceCard = document.createElement('div');
+                serviceCard.className = 'service-card';
+                serviceCard.onclick = () => selectService(service, serviceCard);
+                
+                serviceCard.innerHTML = `
+                    <h4>${service.name}</h4>
+                    <p style="color: #6b7280; font-size: 0.9rem; margin: 0.5rem 0;">
+                        ${service.description || 'Professional spa service'}
+                    </p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                        <span class="badge badge-primary">${service.category}</span>
+                        <span style="font-weight: bold; color: #800020;">₱${service.price}</span>
+                    </div>
+                    <p style="color: #6b7280; font-size: 0.8rem; margin-top: 0.5rem;">
+                        <i class="fas fa-clock"></i> ${service.duration} minutes
+                    </p>
+                `;
+                
+                container.appendChild(serviceCard);
+            });
+        }
+
+        function selectService(service, element) {
+            // Remove selection from other cards
+            document.querySelectorAll('.service-card').forEach(card => 
+                card.classList.remove('selected'));
+            
+            // Select this card
+            element.classList.add('selected');
+            bookingData.service = service;
+            
+            // Enable next button
+            document.getElementById('serviceNextBtn').disabled = false;
+        }
+
+        // Removed conflicting nextStep override - logic moved to main nextStep function
+
+        // Similar functions for therapists, availability, etc.
+        // ... (continuing with the rest of the booking flow)
+
+        // Initialize service location selection
+        function initializeLocationSelection() {
+            document.querySelectorAll('.location-option').forEach(option => {
+                option.onclick = () => {
+                    document.querySelectorAll('.location-option').forEach(opt => 
+                        opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    
+                    const location = option.dataset.location;
+                    bookingData.location = location;
+                    
+                    const homeAddressSection = document.getElementById('homeAddressSection');
+                    if (location === 'home-service') {
+                        homeAddressSection.style.display = 'block';
+                    } else {
+                        homeAddressSection.style.display = 'none';
+                    }
+                };
+            });
+        }
+
+        // Load therapists for selected branch
+        async function loadTherapists() {
+            if (!bookingData.branch) return;
+            
+            document.getElementById('therapistsLoading').style.display = 'block';
+            
+            try {
+                const response = await fetch(`/api/booking/branches/${bookingData.branch.id}/therapists`);
+                const result = await response.json();
+                
+                document.getElementById('therapistsLoading').style.display = 'none';
+                
+                if (result.success) {
+                    displayTherapists(result.therapists);
+                } else {
+                    document.getElementById('therapistsContainer').innerHTML = 
+                        '<p style="text-align: center; color: #ef4444;">No therapists available for this branch.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading therapists:', error);
+                document.getElementById('therapistsLoading').style.display = 'none';
+                document.getElementById('therapistsContainer').innerHTML = 
+                    '<p style="text-align: center; color: #ef4444;">Failed to load therapists. Please try again.</p>';
+            }
+        }
+
+        function displayTherapists(therapists) {
+            const container = document.getElementById('therapistsContainer');
+            container.innerHTML = '';
+            
+            therapists.forEach(therapist => {
+                const therapistCard = document.createElement('div');
+                therapistCard.className = 'therapist-card';
+                therapistCard.onclick = () => selectTherapist(therapist, therapistCard);
+                
+                therapistCard.innerHTML = `
+                    <div style="margin-bottom: 1rem;">
+                        <i class="fas fa-user-md" style="font-size: 2rem; color: #800020;"></i>
+                    </div>
+                    <h4>${therapist.name}</h4>
+                    <p style="color: #6b7280; font-size: 0.9rem; margin: 0.5rem 0;">
+                        ${therapist.position}
+                    </p>
+                    <p style="color: #6b7280; font-size: 0.8rem;">
+                        ${therapist.experience}
+                    </p>
+                    <div style="margin-top: 0.5rem;">
+                        <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+                            <span style="color: #fbbf24;">★</span>
+                            <span style="margin-left: 0.25rem; font-size: 0.9rem;">${therapist.rating}</span>
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.25rem;">
+                            ${therapist.specialties.map(specialty => 
+                                `<span class="badge badge-secondary" style="font-size: 0.7rem;">${specialty}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(therapistCard);
+            });
+        }
+
+        function selectTherapist(therapist, element) {
+            // Remove selection from other cards
+            document.querySelectorAll('.therapist-card').forEach(card => 
+                card.classList.remove('selected'));
+            
+            // Select this card
+            element.classList.add('selected');
+            bookingData.therapist = therapist;
+            
+            // Enable next button
+            document.getElementById('therapistNextBtn').disabled = false;
+        }
+
+        // Load availability for selected date
+        async function loadAvailability() {
+            const date = document.getElementById('appointmentDate').value;
+            if (!date || !bookingData.therapist) return;
+            
+            document.getElementById('timeSlotsLoading').style.display = 'block';
+            
+            try {
+                const response = await fetch(`/api/booking/availability/${bookingData.branch.id}/${bookingData.therapist.id}/${date}`);
+                const result = await response.json();
+                
+                document.getElementById('timeSlotsLoading').style.display = 'none';
+                
+                if (result.success) {
+                    displayTimeSlots(result.timeSlots || result.availableSlots);
+                } else {
+                    document.getElementById('timeSlots').innerHTML = 
+                        '<p style="text-align: center; color: #ef4444;">Failed to load availability.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading availability:', error);
+                document.getElementById('timeSlotsLoading').style.display = 'none';
+                document.getElementById('timeSlots').innerHTML = 
+                    '<p style="text-align: center; color: #ef4444;">Failed to load availability.</p>';
+            }
+        }
+
+        function displayTimeSlots(slots) {
+            const container = document.getElementById('timeSlots');
+            container.innerHTML = '';
+            
+            if (!slots || slots.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #6b7280;">No time slots available for this date.</p>';
+                return;
+            }
+            
+            // Handle both old format (array of strings) and new format (array of objects)
+            const timeSlots = Array.isArray(slots) && typeof slots[0] === 'string' 
+                ? slots.map(slot => ({ time: slot, available: true }))  // Old format
+                : slots; // New format
+            
+            timeSlots.forEach(slotInfo => {
+                const timeSlot = document.createElement('div');
+                timeSlot.className = 'time-slot';
+                
+                // Add unavailable class and styling for taken slots
+                if (!slotInfo.available) {
+                    timeSlot.className += ' unavailable';
+                    timeSlot.style.backgroundColor = '#fecaca';
+                    timeSlot.style.color = '#991b1b';
+                    timeSlot.style.cursor = 'not-allowed';
+                    timeSlot.style.opacity = '0.7';
+                    timeSlot.style.border = '1px solid #fca5a5';
+                } else {
+                    timeSlot.style.cursor = 'pointer';
+                }
+                
+                timeSlot.textContent = slotInfo.time;
+                
+                // Only allow clicking on available slots
+                if (slotInfo.available) {
+                    timeSlot.onclick = () => selectTimeSlot(slotInfo.time, timeSlot);
+                } else {
+                    timeSlot.onclick = () => {
+                        // Show message for unavailable slots
+                        alert('This time slot is already booked. Please choose another time.');
+                    };
+                }
+                
+                container.appendChild(timeSlot);
+            });
+        }
+
+        function selectTimeSlot(time, element) {
+            // Don't allow selection of unavailable slots
+            if (element.classList.contains('unavailable')) {
+                alert('This time slot is already booked. Please choose another time.');
+                return;
+            }
+            
+            // Remove selection from other slots (only from available ones)
+            document.querySelectorAll('.time-slot').forEach(slot => 
+                slot.classList.remove('selected'));
+            
+            // Select this slot
+            element.classList.add('selected');
+            bookingData.time = time;
+            bookingData.date = document.getElementById('appointmentDate').value;
+            
+            // Enable next button
+            document.getElementById('dateTimeNextBtn').disabled = false;
+            
+            console.log('Selected time slot:', time);
+        }
+
+        // Generate booking summary
+        function generateBookingSummary() {
+            const summary = document.getElementById('bookingSummary');
+            
+            // Collect form data - ensure we get the latest values
+            const phoneInput = document.getElementById('clientPhone');
+            const specialRequestsInput = document.getElementById('specialRequests');
+            
+            if (phoneInput) {
+                bookingData.phone = phoneInput.value;
+                console.log('📋 Collecting phone from input:', bookingData.phone);
+            }
+            
+            if (specialRequestsInput) {
+                bookingData.specialRequests = specialRequestsInput.value;
+            }
+            
+            if (bookingData.location === 'home-service') {
+                bookingData.homeAddress = {
+                    street: document.getElementById('homeStreet').value,
+                    city: document.getElementById('homeCity').value,
+                    province: document.getElementById('homeProvince').value,
+                    zipCode: document.getElementById('homeZipCode').value,
+                    landmarks: document.getElementById('homeLandmarks').value
+                };
+            }
+            
+            const formatDate = (dateStr) => {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+            };
+            
+            summary.innerHTML = `
+                <h3 style="color: #800020; margin-bottom: 1.5rem;">
+                    <i class="fas fa-calendar-check"></i> Booking Summary
+                </h3>
+                
+                <div style="display: grid; gap: 1rem;">
+                    <div style="padding: 1rem; background: white; border-left: 4px solid #800020;">
+                        <h4><i class="fas fa-building"></i> Branch</h4>
+                        <p>${bookingData.branch.name}</p>
+                    </div>
+                    
+                    <div style="padding: 1rem; background: white; border-left: 4px solid #800020;">
+                        <h4><i class="fas fa-spa"></i> Service</h4>
+                        <p>${bookingData.service.name}</p>
+                        <p style="color: #6b7280; font-size: 0.9rem;">
+                            ${bookingData.service.duration} minutes • ₱${bookingData.service.price}
+                        </p>
+                    </div>
+                    
+                    <div style="padding: 1rem; background: white; border-left: 4px solid #800020;">
+                        <h4><i class="fas fa-user-md"></i> Therapist</h4>
+                        <p>${bookingData.therapist.name}</p>
+                        <p style="color: #6b7280; font-size: 0.9rem;">${bookingData.therapist.position}</p>
+                    </div>
+                    
+                    <div style="padding: 1rem; background: white; border-left: 4px solid #800020;">
+                        <h4><i class="fas fa-clock"></i> Date & Time</h4>
+                        <p>${formatDate(bookingData.date)}</p>
+                        <p style="color: #6b7280; font-size: 0.9rem;">${bookingData.time}</p>
+                    </div>
+                    
+                    <div style="padding: 1rem; background: white; border-left: 4px solid #800020;">
+                        <h4><i class="fas fa-map-marker-alt"></i> Location</h4>
+                        <p>${bookingData.location === 'in-spa' ? 'In-Spa Service' : 'Home Service'}</p>
+                        ${bookingData.location === 'home-service' ? `
+                            <p style="color: #6b7280; font-size: 0.9rem;">
+                                ${bookingData.homeAddress.street}, ${bookingData.homeAddress.city}, 
+                                ${bookingData.homeAddress.province} ${bookingData.homeAddress.zipCode}
+                            </p>
+                        ` : ''}
+                    </div>
+                    
+                    <div style="padding: 1rem; background: white; border-left: 4px solid #800020;">
+                        <h4><i class="fas fa-phone"></i> Contact</h4>
+                        <p>${bookingData.phone}</p>
+                    </div>
+                    
+                    ${bookingData.specialRequests ? `
+                        <div style="padding: 1rem; background: white; border-left: 4px solid #800020;">
+                            <h4><i class="fas fa-comments"></i> Special Requests</h4>
+                            <p>${bookingData.specialRequests}</p>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div style="margin-top: 2rem; padding: 1rem; background: #fef2f2; border-radius: 8px; border: 1px solid #fecaca;">
+                    <p style="margin: 0; color: #dc2626; font-weight: 600;">
+                        <i class="fas fa-info-circle"></i> Payment will be processed after the service is completed.
+                    </p>
+                </div>
+            `;
+        }
+
+        // Confirm booking
+        async function confirmBooking() {
+            const confirmBtn = document.getElementById('confirmBtn');
+            const originalText = confirmBtn.innerHTML;
+            
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Booking...';
+            
+            try {
+                const token = localStorage.getItem('userToken');
+                
+                const bookingPayload = {
+                    branchId: bookingData.branch.id,
+                    serviceId: bookingData.service.id,
+                    serviceName: bookingData.service.name,
+                    serviceDuration: bookingData.service.duration,
+                    servicePrice: bookingData.service.price,
+                    serviceCategory: bookingData.service.category,
+                    therapistId: bookingData.therapist.id,
+                    therapistName: bookingData.therapist.name,
+                    appointmentDate: bookingData.date,
+                    startTime: bookingData.time,
+                    serviceLocation: bookingData.location,
+                    homeAddress: bookingData.location === 'home-service' ? bookingData.homeAddress : null,
+                    specialRequests: bookingData.specialRequests,
+                    clientPhone: bookingData.phone
+                };
+                
+                console.log('📤 Booking payload being sent:', bookingPayload);
+                console.log('📤 Current bookingData.phone:', bookingData.phone);
+                
+                const response = await fetch('/api/booking/book', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(bookingPayload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show success message
+                    document.querySelector('.booking-container').innerHTML = `
+                        <div style="text-align: center; padding: 3rem;">
+                            <i class="fas fa-check-circle" style="font-size: 4rem; color: #22c55e; margin-bottom: 1rem;"></i>
+                            <h2 style="color: #22c55e; margin-bottom: 1rem;">Booking Confirmed!</h2>
+                            <p style="font-size: 1.1rem; margin-bottom: 2rem;">
+                                Your appointment has been successfully booked.
+                            </p>
+                            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+                                <h3>Booking Details:</h3>
+                                <p><strong>Service:</strong> ${result.booking.serviceName}</p>
+                                <p><strong>Therapist:</strong> ${result.booking.therapistName}</p>
+                                <p><strong>Date:</strong> ${new Date(result.booking.appointmentDate).toLocaleDateString()}</p>
+                                <p><strong>Time:</strong> ${result.booking.startTime}</p>
+                                <p><strong>Location:</strong> ${result.booking.serviceLocation === 'in-spa' ? 'In-Spa Service' : 'Home Service'}</p>
+                            </div>
+                            <div>
+                                <button class="btn btn-primary" onclick="window.location.href='/'"
+                                    style="margin-right: 1rem;">
+                                    <i class="fas fa-home"></i> Back to Home
+                                </button>
+                                <button class="btn btn-secondary" onclick="window.location.reload()">
+                                    <i class="fas fa-plus"></i> Book Another
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(result.error || 'Failed to create booking');
+                }
+            } catch (error) {
+                console.error('Error creating booking:', error);
+                
+                // Check if it's a time slot conflict error
+                if (error.message.includes('time slot has already been booked') || 
+                    (response && response.status === 409)) {
+                    // Show specific message for double booking and redirect to time selection
+                    alert('⚠️ Sorry! Another client just booked this time slot.\n\nPlease select a different time from the available options.');
+                    
+                    // Go back to date/time selection step and refresh availability
+                    prevStep(4);
+                    loadAvailability();
+                } else {
+                    alert('Failed to create booking: ' + error.message);
+                }
+                
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = originalText;
+            }
+        }
+
+        // Removed second conflicting nextStep override - all logic moved to main nextStep function
+    </script>
+</body>
+</html>

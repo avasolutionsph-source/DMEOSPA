@@ -4,11 +4,8 @@ const router = express.Router();
 
 // GET /api/entitlements
 router.get('/', async (req, res) => {
-  // Return entitlements based on user's subscription
-  const userPlan = req.user?.plan || 'basic';
-  
+  // Return all features enabled since no subscription system
   res.json({
-    plan: userPlan,
     features: {
       pos: true,
       inventory: true,
@@ -20,32 +17,21 @@ router.get('/', async (req, res) => {
       cloudBackup: true,
       dashboard: 'full',
       multiUser: true,
-      support: userPlan === 'pro' ? 'priority' : 'standard'
+      support: 'standard'
     },
     limits: {
-      products: userPlan === 'pro' ? -1 : 100,
-      employees: userPlan === 'pro' ? -1 : 10,
-      transactions: userPlan === 'pro' ? -1 : 1000,
-      storage: userPlan === 'pro' ? '10GB' : '1GB'
-    },
-    expiresAt: null // No expiration for now
+      products: -1, // Unlimited
+      employees: -1, // Unlimited
+      transactions: -1, // Unlimited
+      storage: 'unlimited'
+    }
   });
 });
 
-// PUT /api/entitlements
+// PUT /api/entitlements - No longer needed since no subscription system
 router.put('/', async (req, res) => {
-  // Update user's plan (admin only in production)
-  const { plan } = req.body;
-  
-  if (!['basic', 'pro', 'enterprise'].includes(plan)) {
-    return res.status(400).json({ 
-      error: 'Invalid plan type' 
-    });
-  }
-  
   res.json({ 
-    message: 'Entitlements updated',
-    plan,
+    message: 'All features are already enabled',
     success: true 
   });
 });

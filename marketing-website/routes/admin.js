@@ -13,7 +13,7 @@ const requireAdmin = async (req, res, next) => {
       return res.status(401).json({ error: 'Access denied. No token provided.' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (decoded.role !== 'admin' && decoded.role !== 'superAdmin') {
       return res.status(403).json({ error: 'Access denied. Admin role required.' });
     }
@@ -25,57 +25,38 @@ const requireAdmin = async (req, res, next) => {
   }
 };
 
-// Get all users (admin dashboard)
-router.get('/users', requireAdmin, async (req, res) => {
+// Get all users (admin dashboard) - PROXY TO UNIFIED BACKEND
+router.get('/users', async (req, res) => {
   try {
-    const { page = 1, limit = 20, search, plan, status } = req.query;
-    
-    const query = { role: 'customer' }; // Only show customers, not other admins
-    
-    if (search) {
-      query.$or = [
-        { email: { $regex: search, $options: 'i' } },
-        { businessName: { $regex: search, $options: 'i' } },
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } }
-      ];
-    }
-    
-    if (plan) query.subscriptionPlan = plan;
-    if (status) query.subscriptionStatus = status;
-
-    const users = await User.find(query)
-      .select('-password')
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-
-    const total = await User.countDocuments(query);
-
-    // Debug: Log the actual data for kenn@gmail.com
-    const kennUser = users.find(u => u.email === 'kenn@gmail.com');
-    if (kennUser) {
-      console.log('🔍 Debug - kenn@gmail.com data:', {
-        email: kennUser.email,
-        subscriptionPlan: kennUser.subscriptionPlan,
-        subscriptionStatus: kennUser.subscriptionStatus,
-        businessName: kennUser.businessName,
-        role: kennUser.role
-      });
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'Access denied. No token provided.' });
     }
 
-    res.json({
-      success: true,
-      users,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
+    // Verify admin token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role !== 'admin' && decoded.role !== 'superAdmin') {
+      return res.status(403).json({ error: 'Access denied. Admin role required.' });
+    }
+    
+    // Proxy request to unified backend
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4001';
+    const response = await fetch(`${pwaBackendUrl}/admin/users?${new URLSearchParams(req.query)}`, {
+      headers: {
+        'Authorization': req.headers.authorization,
+        'Content-Type': 'application/json'
       }
     });
+
+    if (response.ok) {
+      const data = await response.json();
+      res.json(data);
+    } else {
+      const error = await response.text();
+      res.status(response.status).json({ error: 'Failed to fetch users from unified backend' });
+    }
   } catch (error) {
-    console.error('Get users error:', error);
+    console.error('Failed to fetch users from unified backend:', error);
     res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
@@ -95,116 +76,17 @@ router.get('/users/:userId', requireAdmin, async (req, res) => {
   }
 });
 
-// Update user subscription
-router.put('/users/:userId/subscription', requireAdmin, [
-  body('plan').isIn(['unpaid', 'pro']),
-  body('status').isIn(['active', 'inactive', 'cancelled'])
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ error: 'Validation failed', details: errors.array() });
-    }
-
-    const { plan, status, notes } = req.body;
-    const user = await User.findById(req.params.userId);
-    
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Update subscription
-    user.subscriptionPlan = plan;
-    user.subscriptionStatus = status;
-    
-    if (status === 'active' && plan === 'pro') {
-      user.subscriptionStart = new Date();
-      // Set end date (30 days from now for monthly plans)
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + 30);
-      user.subscriptionEnd = endDate;
-    } else if (plan === 'unpaid') {
-      // Clear subscription dates for unpaid plans
-      user.subscriptionStart = null;
-      user.subscriptionEnd = null;
-    }
-    
-    if (notes) user.notes = notes;
-
-    await user.save();
-
-    // Generate new JWT token with updated subscription info
-    const newToken = jwt.sign(
-      { 
-        userId: user._id, 
-        email: user.email, 
-        role: user.role,
-        subscriptionPlan: user.subscriptionPlan,
-        businessName: user.businessName
-      },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: process.env.JWT_EXPIRE || '999y' }
-    );
-
-    console.log('✅ Admin updated subscription:', {
-      user: user.email,
-      plan: user.subscriptionPlan,
-      status: user.subscriptionStatus
-    });
-
-    res.json({
-      success: true,
-      message: `Subscription updated to ${plan} (${status})`,
-      user: {
-        id: user._id,
-        email: user.email,
-        businessName: user.businessName,
-        subscriptionPlan: user.subscriptionPlan,
-        subscriptionStatus: user.subscriptionStatus,
-        subscriptionStart: user.subscriptionStart,
-        subscriptionEnd: user.subscriptionEnd
-      },
-      token: newToken
-    });
-  } catch (error) {
-    console.error('Update subscription error:', error);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({ error: 'Failed to update subscription', details: error.message });
-  }
-});
-
 // Get dashboard stats
 router.get('/stats', requireAdmin, async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments({ role: 'customer' });
-    
-    const planStats = await User.aggregate([
-      { $match: { role: 'customer' } },
-      { $group: { 
-        _id: '$subscriptionPlan', 
-        count: { $sum: 1 },
-        revenue: { 
-          $sum: {
-            $switch: {
-              branches: [
-                { case: { $eq: ['$subscriptionPlan', 'basic'] }, then: 499 },
-                { case: { $eq: ['$subscriptionPlan', 'pro'] }, then: 999 },
-                { case: { $eq: ['$subscriptionPlan', 'enterprise'] }, then: 2000 }
-              ],
-              default: 0
-            }
-          }
-        }
-      }}
-    ]);
+    const totalUsers = await User.countDocuments({});
 
-    const recentUsers = await User.find({ role: 'customer' })
+    const recentUsers = await User.find({})
       .select('-password')
       .sort({ createdAt: -1 })
       .limit(5);
 
     const activeUsers = await User.countDocuments({ 
-      role: 'customer',
       'businessMetrics.lastActiveDate': { 
         $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
       }
@@ -215,9 +97,7 @@ router.get('/stats', requireAdmin, async (req, res) => {
       stats: {
         totalUsers,
         activeUsers,
-        planDistribution: planStats,
-        recentUsers,
-        totalRevenue: planStats.reduce((sum, plan) => sum + plan.revenue, 0)
+        recentUsers
       }
     });
   } catch (error) {
@@ -252,21 +132,17 @@ router.put('/users/:userId/notes', requireAdmin, [
 // Sync Management Endpoints
 router.get('/sync-stats', requireAdmin, async (req, res) => {
   try {
-    // Get real sync statistics from user data
-    const totalUsers = await User.countDocuments({ role: 'customer' });
+    const totalUsers = await User.countDocuments({});
     const usersWithSyncData = await User.countDocuments({ 
-      role: 'customer',
       'businessMetrics.lastSyncDate': { $exists: true }
     });
     
     const recentSyncs = await User.countDocuments({
-      role: 'customer',
       'businessMetrics.lastSyncDate': { 
         $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
       }
     });
 
-    // Calculate estimated storage (rough estimate based on user count)
     const estimatedStoragePerUser = 0.05; // 50KB per user average
     const totalStorageUsed = (usersWithSyncData * estimatedStoragePerUser).toFixed(2);
 
@@ -286,37 +162,19 @@ router.get('/sync-stats', requireAdmin, async (req, res) => {
 
 router.post('/cleanup-syncs', requireAdmin, async (req, res) => {
   try {
-    // Real cleanup process:
-    // 1. Find users with old sync data (older than 30 days)
-    // 2. Clear old business metrics but keep the latest
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     
-    // Find users with old sync data
     const usersWithOldSyncs = await User.find({
-      role: 'customer',
       'businessMetrics.lastSyncDate': { $lt: thirtyDaysAgo }
     });
 
     let cleanedUsers = 0;
     let estimatedFreedSpace = 0;
-
-    // For each user with old sync data, we could implement:
-    // - Archive old detailed sync records
-    // - Keep only summary metrics
-    // - Clear detailed transaction histories older than X days
     
     for (const user of usersWithOldSyncs) {
-      // In a real implementation, you might have separate sync collections
-      // For now, we'll just update the lastSyncDate to indicate cleanup
       if (user.businessMetrics) {
-        // Estimate freed space (rough calculation)
         estimatedFreedSpace += 0.02; // 20KB per user cleanup
         cleanedUsers++;
-        
-        // You could implement more sophisticated cleanup here:
-        // - Clear old detailed records
-        // - Keep only summary data
-        // - Archive to cheaper storage
       }
     }
 
@@ -332,68 +190,188 @@ router.post('/cleanup-syncs', requireAdmin, async (req, res) => {
   }
 });
 
-// Fix user subscription data
-router.post('/fix-user-subscription/:userId', requireAdmin, async (req, res) => {
+// Change user role (superAdmin only)
+router.put('/users/:userId/role', requireAdmin, [
+  body('role').isIn(['branch', 'admin', 'superAdmin'])
+], async (req, res) => {
   try {
-    const { userId } = req.params;
-    const { subscriptionPlan, subscriptionStatus } = req.body;
-    
-    // Validate subscription plan
-    const validPlans = ['unpaid', 'pro'];
-    if (subscriptionPlan && !validPlans.includes(subscriptionPlan)) {
-      return res.status(400).json({ error: 'Invalid subscription plan. Use: unpaid or pro' });
+    // Only superAdmin can change roles
+    if (req.user.role !== 'superAdmin') {
+      return res.status(403).json({ error: 'Access denied. Only superAdmin can change roles.' });
     }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: 'Invalid role. Use: branch, admin, or superAdmin' });
+    }
+
+    const { role } = req.body;
+    const targetUserId = req.params.userId;
     
-    const user = await User.findById(userId);
+    // Prevent superAdmin from changing their own role (prevent lockout)
+    if (targetUserId === req.user.userId) {
+      return res.status(400).json({ error: 'Cannot change your own role' });
+    }
+
+    const user = await User.findById(targetUserId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
-    console.log('🔧 Fixing subscription for user:', user.email);
-    console.log('📊 Current data:', {
-      subscriptionPlan: user.subscriptionPlan,
-      subscriptionStatus: user.subscriptionStatus
-    });
-    
-    // Update subscription data
-    if (subscriptionPlan) user.subscriptionPlan = subscriptionPlan;
-    if (subscriptionStatus) user.subscriptionStatus = subscriptionStatus;
-    
+
+    // Allow superAdmin to promote others to superAdmin or change any role
+    // No restrictions - superAdmin has full control
+
+    const oldRole = user.role;
+    user.role = role;
     await user.save();
-    
-    console.log('✅ Updated data:', {
-      subscriptionPlan: user.subscriptionPlan,
-      subscriptionStatus: user.subscriptionStatus
-    });
-    
-    // Generate new JWT token with updated subscription info
-    const jwt = await import('jsonwebtoken');
-    const newToken = jwt.default.sign(
-      { 
-        userId: user._id, 
-        email: user.email, 
-        role: user.role,
-        subscriptionPlan: user.subscriptionPlan,
-        businessName: user.businessName
-      },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: process.env.JWT_EXPIRE || '999y' }
-    );
-    
-    res.json({ 
-      success: true, 
-      message: 'Subscription updated successfully. User will see changes on next login.',
+
+    console.log(`✅ Role changed by ${req.user.email}: ${user.email} from ${oldRole} to ${role}`);
+
+    res.json({
+      success: true,
+      message: `User role updated from ${oldRole} to ${role}`,
       user: {
+        id: user._id,
         email: user.email,
-        subscriptionPlan: user.subscriptionPlan,
-        subscriptionStatus: user.subscriptionStatus
-      },
-      newToken: newToken // Include new token for immediate update
+        businessName: user.businessName,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName
+      }
     });
-    
   } catch (error) {
-    console.error('Fix subscription error:', error);
-    res.status(500).json({ error: 'Failed to fix subscription' });
+    console.error('Change role error:', error);
+    res.status(500).json({ error: 'Failed to change user role' });
+  }
+});
+
+// Create new account (Admin only)
+router.post('/create-account', requireAdmin, [
+  body('email').isEmail().normalizeEmail(),
+  body('password').isLength({ min: 6 }),
+  body('firstName').trim().isLength({ min: 1 }),
+  body('lastName').trim().isLength({ min: 1 }),
+  body('businessName').trim().isLength({ min: 1 }),
+  body('role').isIn(['branch', 'admin', 'superAdmin'])
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: 'Validation failed', details: errors.array() });
+    }
+
+    const { email, password, firstName, lastName, businessName, phone, role } = req.body;
+
+    // Check if user exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ error: 'User already exists with this email' });
+    }
+
+    // Create user
+    const user = new User({
+      email,
+      password,
+      firstName,
+      lastName,
+      businessName,
+      phone: phone || '',
+      role,
+      createdBy: req.user.userId, // Track who created this account
+      plainPassword: password // Store plain password for admin to see
+    });
+
+    await user.save();
+
+    console.log(`✅ Account created by ${req.user.email}: ${email} (${role})`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        businessName: user.businessName,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Account creation error:', error);
+    res.status(500).json({ error: 'Account creation failed' });
+  }
+});
+
+// Get all branch users for dropdown
+router.get('/branches', requireAdmin, async (req, res) => {
+  try {
+    const branches = await User.find({ role: 'branch' })
+      .select('firstName lastName businessName email createdAt')
+      .sort({ businessName: 1 });
+
+    res.json({
+      success: true,
+      branches
+    });
+  } catch (error) {
+    console.error('Get branches error:', error);
+    res.status(500).json({ error: 'Failed to fetch branches' });
+  }
+});
+
+// Get branch business data - PROXY TO UNIFIED BACKEND
+router.get('/branch-data/:branchId', requireAdmin, async (req, res) => {
+  try {
+    const { branchId } = req.params;
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    // Proxy request to unified backend
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4001';
+    const response = await fetch(`${pwaBackendUrl}/admin/users/${branchId}/branch-data`, {
+      headers: {
+        'Authorization': req.headers.authorization,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      res.json(data);
+    } else {
+      const error = await response.text();
+      res.status(response.status).json({ error: 'Failed to fetch branch data from unified backend' });
+    }
+  } catch (error) {
+    console.error('Failed to fetch branch data from unified backend:', error);
+    res.status(500).json({ error: 'Failed to fetch branch data' });
+  }
+});
+
+// Get accounts created by current admin
+router.get('/my-created-accounts', requireAdmin, async (req, res) => {
+  try {
+    const createdAccounts = await User.find({ 
+      createdBy: req.user.userId,
+      role: 'branch' // Only show branch accounts
+    })
+      .select('businessName email createdAt plainPassword')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      accounts: createdAccounts.map(account => ({
+        id: account._id,
+        businessName: account.businessName,
+        email: account.email,
+        password: account.plainPassword,
+        createdAt: account.createdAt
+      }))
+    });
+
+  } catch (error) {
+    console.error('Get created accounts error:', error);
+    res.status(500).json({ error: 'Failed to fetch created accounts' });
   }
 });
 

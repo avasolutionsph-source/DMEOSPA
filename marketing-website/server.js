@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import passport from 'passport';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
@@ -12,8 +13,7 @@ import connectDB from './config/db.js';
 // Import routes
 import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
-import subscriptionRoutes from './routes/subscription.js';
-import syncRoutes from './routes/sync.js';
+import bookingRoutes from './routes/booking.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,7 +42,7 @@ app.use('/api', limiter);
 
 // CORS - Allow all origins for development with comprehensive settings
 app.use(cors({ 
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8080', 'http://127.0.0.1:5500', 'http://localhost:4000'],
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:8080', 'http://localhost:8081', 'http://127.0.0.1:5500', 'http://localhost:4000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-user-id', 'Accept', 'Origin', 'X-Requested-With'],
@@ -54,6 +54,9 @@ app.use(cors({
 // Body parser
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Passport middleware
+app.use(passport.initialize());
 
 // Logging
 if (process.env.NODE_ENV !== 'production') {
@@ -83,7 +86,10 @@ app.get('/api/user/business-name', async (req, res) => {
     }
 
     const jwt = await import('jsonwebtoken');
-    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET environment variable not set');
+    }
+    const decoded = jwt.default.verify(token, process.env.JWT_SECRET);
     
     const User = (await import('./models/User.js')).default;
     const user = await User.findById(decoded.userId);
@@ -106,60 +112,10 @@ app.get('/api/user/business-name', async (req, res) => {
   }
 });
 
-// Get user's current subscription status
-app.get('/api/user/subscription', async (req, res) => {
-  try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-
-    const jwt = await import('jsonwebtoken');
-    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    
-    const User = (await import('./models/User.js')).default;
-    const user = await User.findById(decoded.userId);
-    
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Generate a new token with current subscription info
-    const newToken = jwt.default.sign(
-      { 
-        userId: user._id, 
-        email: user.email, 
-        role: user.role,
-        subscriptionPlan: user.subscriptionPlan,
-        businessName: user.businessName
-      },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: process.env.JWT_EXPIRE || '999y' }
-    );
-
-    console.log('🔄 Subscription check for user:', user.email, 'Plan:', user.subscriptionPlan);
-
-    // Return current subscription info and new token
-    res.json({
-      subscriptionPlan: user.subscriptionPlan,
-      subscriptionStatus: user.subscriptionStatus,
-      businessName: user.businessName || user.email.split('@')[0],
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      token: newToken
-    });
-  } catch (error) {
-    console.error('Error fetching subscription:', error);
-    res.status(500).json({ error: 'Failed to fetch subscription' });
-  }
-});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/subscription', subscriptionRoutes);
-app.use('/api', syncRoutes); // Mount sync routes under /api
+app.use('/api/booking', bookingRoutes);
 
 // Business employees endpoint - PROXY TO PWA BACKEND
 app.get('/api/business/employees', async (req, res) => {
@@ -170,7 +126,7 @@ app.get('/api/business/employees', async (req, res) => {
     }
 
     // Forward request to PWA backend
-    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4001';
     const response = await fetch(`${pwaBackendUrl}/api/business/employees`, {
       method: 'GET',
       headers: {
@@ -202,7 +158,7 @@ app.get('/api/business/inventory', async (req, res) => {
     }
 
     // Forward request to PWA backend
-    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4001';
     const response = await fetch(`${pwaBackendUrl}/api/business/inventory`, {
       method: 'GET',
       headers: {
@@ -234,7 +190,7 @@ app.get('/api/business/stats', async (req, res) => {
     }
 
     // Forward request to PWA backend
-    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4001';
     const response = await fetch(`${pwaBackendUrl}/api/business/stats`, {
       method: 'GET',
       headers: {
@@ -257,6 +213,44 @@ app.get('/api/business/stats', async (req, res) => {
   }
 });
 
+// Real-time sync endpoint - PROXY TO BACKEND SYNC/PULL
+app.get('/api/sync/pull', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    // Forward request to PWA backend sync endpoint
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4001';
+    const response = await fetch(`${pwaBackendUrl}/api/sync/pull`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      return res.status(response.status).json({ 
+        success: false,
+        error: error || 'Failed to fetch from PWA backend' 
+      });
+    }
+
+    const data = await response.json();
+    res.json(data);
+
+  } catch (error) {
+    console.error('Sync pull proxy error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to pull sync data' 
+    });
+  }
+});
+
 // Business sync endpoint - receives data from PWA
 app.post('/api/business/sync', async (req, res) => {
   try {
@@ -266,7 +260,10 @@ app.post('/api/business/sync', async (req, res) => {
     }
 
     const jwt = await import('jsonwebtoken');
-    const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET environment variable not set');
+    }
+    const decoded = jwt.default.verify(token, process.env.JWT_SECRET);
     
     const User = (await import('./models/User.js')).default;
     const user = await User.findById(decoded.userId);
@@ -283,7 +280,7 @@ app.post('/api/business/sync', async (req, res) => {
 
     // For now, we'll simulate receiving data from PWA
     // You would typically call the PWA backend API here to get latest data
-    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4000';
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4001';
     
     try {
       // Fetch latest data from PWA backend for this user
@@ -345,17 +342,8 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-app.get('/pricing', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/pricing.html'));
-});
 
-app.get('/features', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/features.html'));
-});
 
-app.get('/about', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/about.html'));
-});
 
 app.get('/contact', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/contact.html'));
@@ -374,14 +362,15 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/admin.html'));
 });
 
+// Admin Dashboard (for admin role only)
+app.get('/admin-dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/admin-dashboard.html'));
+});
+
 app.get('/admin/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/admin-login.html'));
 });
 
-// PWA Download/Install page
-app.get('/download', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/download.html'));
-});
 
 // Business Dashboard (for business owners)
 app.get('/business-dashboard', (req, res) => {
@@ -393,17 +382,52 @@ app.get('/dashboard', (req, res) => {
   res.redirect('https://ava-solutions-pwa.netlify.app');
 });
 
-// Handle upgrade plan routes
-app.get('/upgrade', (req, res) => {
-  const plan = req.query.plan || 'basic';
-  res.redirect(`/pricing?plan=${plan}&upgrade=true`);
+// About and Services Pages
+app.get('/about', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/about.html'));
 });
 
-// Handle plan-specific upgrade routes
-app.get('/upgrade/:plan', (req, res) => {
-  const plan = req.params.plan;
-  res.redirect(`/pricing?plan=${plan}&upgrade=true`);
+app.get('/services', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/services.html'));
 });
+
+// Legal Pages
+app.get('/privacy-policy', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/privacy-policy.html'));
+});
+
+app.get('/terms', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/terms.html'));
+});
+
+app.get('/cookie-policy', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/cookie-policy.html'));
+});
+
+app.get('/compliance', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/compliance.html'));
+});
+
+// Client booking page
+app.get('/book-appointment', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/book-appointment.html'));
+});
+
+// Client profile page
+app.get('/profile', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/profile.html'));
+});
+
+// Admin bookings management page
+app.get('/admin-bookings', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/admin-bookings.html'));
+});
+
+// Branch bookings management page
+app.get('/branch-bookings', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/branch-bookings.html'));
+});
+
 
 
 
@@ -425,12 +449,10 @@ app.use('*', (req, res) => {
   }
 });
 
-const port = process.env.PORT || 3001;
+const port = process.env.MARKETING_PORT || 3005;
 app.listen(port, () => {
   console.log(`🌐 Ava Solutions Marketing Website running on port ${port}`);
   console.log(`🏠 Homepage: http://localhost:${port}`);
-  console.log(`💰 Pricing: http://localhost:${port}/pricing`);
   console.log(`👑 Super Admin: http://localhost:${port}/admin`);
-  console.log(`📱 PWA Download: http://localhost:${port}/download`);
   console.log(`💾 Environment: ${process.env.NODE_ENV || 'development'}`);
 });

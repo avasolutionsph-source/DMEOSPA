@@ -2,6 +2,7 @@
 // Provides detailed health status including Socket.IO
 
 import express from 'express';
+import mongoose from 'mongoose';
 import { getSocketIOStats } from '../../config/socket.js';
 import logger from '../../utils/logger.js';
 
@@ -91,7 +92,6 @@ socket.on('authenticated', (data) => {
 router.get('/database', async (req, res) => {
     try {
         // Check database connection
-        const mongoose = require('mongoose');
         const dbState = mongoose.connection.readyState;
         
         const states = {

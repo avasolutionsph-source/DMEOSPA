@@ -10,12 +10,11 @@ let connection = null;
  * MongoDB connection options
  */
 const getConnectionOptions = () => ({
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   maxPoolSize: process.env.DB_POOL_SIZE || 10,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
   family: 4 // Use IPv4
+  // Removed deprecated options: useNewUrlParser, useUnifiedTopology
 });
 
 /**
@@ -24,7 +23,7 @@ const getConnectionOptions = () => ({
 const getMongoUri = () => {
   return process.env.MONGODB_URI || 
          process.env.DATABASE_URL || 
-         'mongodb://localhost:27017/ava-solutions';
+         'mongodb://localhost:27017/ava-marketing-website';
 };
 
 /**
@@ -129,7 +128,9 @@ export const getDBConnection = () => {
  */
 export const checkDBHealth = async () => {
   try {
-    if (!mongoose.connection.readyState === 1) {
+    // Connection readyState should be 1 when connected
+    // Use !== to avoid operator precedence bug with !
+    if (mongoose.connection.readyState !== 1) {
       throw new Error('Database not connected');
     }
     

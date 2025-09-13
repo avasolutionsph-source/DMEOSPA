@@ -12,8 +12,8 @@ const giftCertificateSchema = new mongoose.Schema({
   controlNumber: {
     type: String,
     required: true,
-    unique: true,
-    index: true
+    unique: true
+    // Removed index: true - unique already creates index
   },
   
   amount: {
@@ -111,7 +111,7 @@ const giftCertificateSchema = new mongoose.Schema({
 // Indexes
 giftCertificateSchema.index({ userId: 1, createdAt: -1 });
 giftCertificateSchema.index({ userId: 1, status: 1 });
-giftCertificateSchema.index({ controlNumber: 1 });
+// Removed duplicate controlNumber index - field already has unique: true which creates index
 
 // Middleware to check expiry on query
 giftCertificateSchema.pre(['find', 'findOne', 'findOneAndUpdate'], async function() {
@@ -138,8 +138,8 @@ giftCertificateSchema.pre(['find', 'findOne', 'findOneAndUpdate'], async functio
   );
 });
 
-// Method to validate GC for use
-giftCertificateSchema.methods.validate = function() {
+// Method to validate GC for use (renamed to avoid Mongoose conflict)
+giftCertificateSchema.methods.validateForUse = function() {
   if (this.status === 'used') {
     return { valid: false, reason: 'Gift certificate already used' };
   }
