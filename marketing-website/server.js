@@ -126,7 +126,7 @@ app.get('/api/business/employees', async (req, res) => {
     }
 
     // Forward request to PWA backend
-    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4001';
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'https://daetspa-backend.onrender.com';
     const response = await fetch(`${pwaBackendUrl}/api/business/employees`, {
       method: 'GET',
       headers: {
@@ -158,7 +158,7 @@ app.get('/api/business/inventory', async (req, res) => {
     }
 
     // Forward request to PWA backend
-    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4001';
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'https://daetspa-backend.onrender.com';
     const response = await fetch(`${pwaBackendUrl}/api/business/inventory`, {
       method: 'GET',
       headers: {
@@ -190,7 +190,7 @@ app.get('/api/business/stats', async (req, res) => {
     }
 
     // Forward request to PWA backend
-    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4001';
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'https://daetspa-backend.onrender.com';
     const response = await fetch(`${pwaBackendUrl}/api/business/stats`, {
       method: 'GET',
       headers: {
@@ -222,7 +222,7 @@ app.get('/api/sync/pull', async (req, res) => {
     }
 
     // Forward request to PWA backend sync endpoint
-    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4001';
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'https://daetspa-backend.onrender.com';
     const response = await fetch(`${pwaBackendUrl}/api/sync/pull`, {
       method: 'GET',
       headers: {
@@ -280,7 +280,7 @@ app.post('/api/business/sync', async (req, res) => {
 
     // For now, we'll simulate receiving data from PWA
     // You would typically call the PWA backend API here to get latest data
-    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4001';
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'https://daetspa-backend.onrender.com';
     
     try {
       // Fetch latest data from PWA backend for this user

@@ -238,7 +238,7 @@ router.post('/login', [
     console.log(`🔄 User not found locally, checking PWA backend for business user: ${email}`);
     
     try {
-      const backendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4001';
+      const backendUrl = process.env.PWA_BACKEND_URL || 'https://daetspa-backend.onrender.com';
       
       const response = await fetch(`${backendUrl}/api/auth/login`, {
         method: 'POST',

@@ -4559,19 +4559,19 @@ ${booking.specialRequests ? 'Special Requests: ' + booking.specialRequests : ''}
         // Simple PWA Integration Functions
         function openPWAPayrollSystem() {
             // Open PWA in new tab for full payroll management
-            const pwaUrl = 'http://localhost:8082';
+            const pwaUrl = 'https://daetspa-pwa.netlify.app';
             window.open(pwaUrl, '_blank');
         }
 
         function openPWAPayroll(employeeId) {
             // Open PWA with specific employee context
-            const pwaUrl = `http://localhost:8082?module=payroll&employee=${employeeId}`;
+            const pwaUrl = `https://daetspa-pwa.netlify.app?module=payroll&employee=${employeeId}`;
             window.open(pwaUrl, '_blank');
         }
 
         function openPWAEmployeeManagement() {
             // Open PWA employee management
-            const pwaUrl = 'http://localhost:8082?module=employees';
+            const pwaUrl = 'https://daetspa-pwa.netlify.app?module=employees';
             window.open(pwaUrl, '_blank');
         }
 

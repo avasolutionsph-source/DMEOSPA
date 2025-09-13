@@ -40,7 +40,7 @@ router.get('/users', async (req, res) => {
     }
     
     // Proxy request to unified backend
-    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4001';
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'https://daetspa-backend.onrender.com';
     const response = await fetch(`${pwaBackendUrl}/admin/users?${new URLSearchParams(req.query)}`, {
       headers: {
         'Authorization': req.headers.authorization,
@@ -327,7 +327,7 @@ router.get('/branch-data/:branchId', requireAdmin, async (req, res) => {
     const token = req.headers.authorization?.replace('Bearer ', '');
     
     // Proxy request to unified backend
-    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'http://localhost:4001';
+    const pwaBackendUrl = process.env.PWA_BACKEND_URL || 'https://daetspa-backend.onrender.com';
     const response = await fetch(`${pwaBackendUrl}/admin/users/${branchId}/branch-data`, {
       headers: {
         'Authorization': req.headers.authorization,

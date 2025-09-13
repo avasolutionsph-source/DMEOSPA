@@ -77,7 +77,7 @@ router.get('/branches/:branchId/services', async (req, res) => {
     console.log('🔄 Fetching products from public booking API for branch:', branchId);
     let products = [];
     try {
-      const backendUrl = process.env.BACKEND_URL || 'http://localhost:4001';
+      const backendUrl = process.env.PWA_BACKEND_URL || 'https://daetspa-backend.onrender.com';
       const response = await fetch(`${backendUrl}/api/products/public/${branchId}`, {
         headers: {
           'Content-Type': 'application/json'
@@ -146,7 +146,7 @@ router.get('/branches/:branchId/therapists', async (req, res) => {
     console.log('🔄 Fetching employees from public booking API for branch:', branchId);
     let employees = [];
     try {
-      const backendUrl = process.env.BACKEND_URL || 'http://localhost:4001';
+      const backendUrl = process.env.PWA_BACKEND_URL || 'https://daetspa-backend.onrender.com';
       const response = await fetch(`${backendUrl}/api/employees/public/${branchId}`, {
         headers: {
           'Content-Type': 'application/json'
