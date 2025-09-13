@@ -1,0 +1,1016 @@
+/**
+ * HybridAPIClient - Unified API Layer with Offline Support
+ * Handles online/offline detection, caching, and request queuing
+ */
+
+class HybridAPIClient {
+    constructor() {
+        this.baseURL = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
+        this.localBaseURL = 'https://daetspa-backend.onrender.com';
+        this.isOnline = navigator.onLine;
+        this.requestQueue = [];
+        this.cache = new Map(); // In-memory cache for quick access
+        this.cacheTTL = {
+            employees: 5 * 60 * 1000,    // 5 minutes
+            products: 10 * 60 * 1000,    // 10 minutes
+            inventory: 2 * 60 * 1000,    // 2 minutes
+            transactions: 30 * 1000,     // 30 seconds
+            customers: 15 * 60 * 1000,   // 15 minutes
+            settings: 60 * 60 * 1000     // 1 hour
+        };
+        
+        this.init();
+    }
+
+    init() {
+        // Listen for online/offline events
+        window.addEventListener('online', () => {
+            this.isOnline = true;
+            console.log('🌐 Connection restored - processing queued requests');
+            this.updateOfflineIndicator();
+            this.processRequestQueue();
+        });
+
+        window.addEventListener('offline', () => {
+            this.isOnline = false;
+            console.log('📱 Offline mode activated');
+            this.updateOfflineIndicator();
+        });
+
+        // Initialize with current online status
+        this.isOnline = navigator.onLine;
+        this.updateOfflineIndicator();
+        
+        // Listen for token changes (login/logout events)
+        this.setupTokenChangeListener();
+    }
+
+    /**
+     * Main request method - handles online/offline logic
+     */
+    async request(endpoint, options = {}) {
+        const {
+            method = 'GET',
+            data = null,
+            headers = {},
+            cacheKey = null,
+            cacheTTL = null,
+            offlineFirst = false,
+            critical = false
+        } = options;
+
+        const url = this.getFullURL(endpoint);
+        const requestId = this.generateRequestId(endpoint, method, data);
+
+        try {
+            // For critical operations, try online first even in offline-first mode
+            // Double-check navigator.onLine status for accuracy
+            const actuallyOnline = this.isOnline && navigator.onLine;
+            
+            if (actuallyOnline && (!offlineFirst || critical)) {
+                console.log(`🌐 [HybridAPIClient] Attempting online request to ${endpoint}`);
+                return await this.makeOnlineRequest(url, {
+                    method,
+                    data,
+                    headers,
+                    cacheKey,
+                    cacheTTL,
+                    requestId
+                });
+            } else {
+                console.log(`📴 [HybridAPIClient] Device offline (isOnline: ${this.isOnline}, navigator.onLine: ${navigator.onLine}) for ${endpoint}`);
+            }
+
+            // Try offline fallback
+            if (method === 'GET' && cacheKey) {
+                const cachedData = await this.getCachedData(cacheKey);
+                if (cachedData) {
+                    console.log(`📱 Offline: Using cached data for ${cacheKey}`);
+                    return { success: true, data: cachedData, source: 'cache' };
+                }
+            }
+
+            // If no cache and online, try online request
+            if (this.isOnline && navigator.onLine) {
+                return await this.makeOnlineRequest(url, {
+                    method,
+                    data,
+                    headers,
+                    cacheKey,
+                    cacheTTL,
+                    requestId
+                });
+            }
+
+            // Completely offline - queue request if it's a mutation
+            if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+                console.log(`📱 Offline: Queuing ${method} request to ${endpoint}`);
+                this.queueRequest(endpoint, { method, data, headers, cacheKey, requestId });
+                return { success: true, queued: true, requestId };
+            }
+
+            // No cache available and offline
+            throw new Error(`No cached data available for ${endpoint} while offline`);
+
+        } catch (error) {
+            console.error(`❌ Request failed for ${endpoint}:`, error);
+            
+            // Try cache as last resort for GET requests
+            if (method === 'GET' && cacheKey) {
+                const cachedData = await this.getCachedData(cacheKey, true); // Force get old cache
+                if (cachedData) {
+                    console.log(`📱 Error fallback: Using stale cache for ${cacheKey}`);
+                    return { success: true, data: cachedData, source: 'stale_cache' };
+                }
+            }
+
+            // If network failed and we have a mutation request, queue it for offline sync
+            if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+                console.log(`📱 Network error - queuing ${method} request to ${endpoint} for offline sync`);
+                this.queueRequest(endpoint, { method, data, headers, cacheKey, requestId });
+                return { success: false, queued: true, requestId, error: 'Queued for sync when online' };
+            }
+
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Make actual online request
+     */
+    async makeOnlineRequest(url, options) {
+        const { method, data, headers, cacheKey, cacheTTL, requestId } = options;
+
+        const authToken = this.getAuthToken();
+
+        console.log('🌐 [REQUEST] Making online request:', {
+            url,
+            method,
+            authToken: authToken ? authToken.substring(0, 20) + '...' : 'NONE',
+            cacheKey,
+            requestId,
+            actuallyOnline: this.isOnline && navigator.onLine
+        });
+        
+        if (!authToken) {
+            console.error('❌ [REQUEST] Cannot make request - no auth token available');
+            throw new Error('Authentication token required for API requests');
+        }
+
+        const requestOptions = {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+                ...headers
+            }
+        };
+
+        if (data && ['POST', 'PUT', 'PATCH'].includes(method)) {
+            requestOptions.body = JSON.stringify(data);
+        }
+
+        // Add timeout to prevent hanging when offline
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        requestOptions.signal = controller.signal;
+
+        try {
+            console.log('🔄 [REQUEST] About to make fetch request to:', url);
+            console.log('🔄 [REQUEST] Request options:', {
+                method: requestOptions.method,
+                headers: {
+                    ...requestOptions.headers,
+                    'Authorization': requestOptions.headers.Authorization ? 'Bearer [TOKEN]' : 'NONE'
+                },
+                hasBody: !!requestOptions.body
+            });
+            
+            const response = await fetch(url, requestOptions);
+            clearTimeout(timeoutId);
+            
+            console.log('📡 [RESPONSE] Received response:', {
+                url,
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok,
+                headers: Object.fromEntries(response.headers.entries())
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ [RESPONSE] Error response body:', errorText);
+                throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+            }
+
+            const result = await response.json();
+            
+            console.log('📊 [RESPONSE] Parsed result:', {
+                success: result.success,
+                dataType: Array.isArray(result.data) ? `array[${result.data.length}]` : typeof result.data,
+                error: result.error,
+                message: result.message,
+                actualData: result.data ? result.data.slice(0, 2) : null  // Show first 2 items for debugging
+            });
+            
+            // SPECIAL DEBUG: Log business/employees responses in detail
+            if (url.includes('/business/employees')) {
+                console.log('👥 [BUSINESS-EMPLOYEES] Raw backend response:', result);
+                console.log('👥 [BUSINESS-EMPLOYEES] Response structure:', {
+                    hasEmployees: !!result.employees,
+                    employeesCount: result.employees?.length || 0,
+                    hasTotalEmployees: !!result.totalEmployees,
+                    responseKeys: Object.keys(result),
+                    firstEmployee: result.employees?.[0]
+                });
+                
+                // CRITICAL FIX: business/employees doesn't return standard {success, data} format
+                // Convert to standard format here
+                if (result.employees && !result.success) {
+                    console.log('🔧 [BUSINESS-EMPLOYEES] Converting to standard response format');
+                    const standardResponse = {
+                        success: true,
+                        data: result.employees,  // Extract the employees array directly as data
+                        source: 'api'
+                    };
+                    console.log('✅ [BUSINESS-EMPLOYEES] Converted response:', standardResponse);
+                    console.log('✅ [BUSINESS-EMPLOYEES] Extracted employees count:', result.employees?.length);
+                    
+                    // Cache the employees array directly
+                    if (method === 'GET' && cacheKey) {
+                        await this.setCachedData(cacheKey, result.employees, cacheTTL);
+                        console.log('💾 [CACHE] Cached employees array for:', cacheKey);
+                    }
+                    
+                    return standardResponse;  // Return immediately to avoid double processing
+                }
+            }
+            
+            // Cache successful GET responses (skip if already cached above)
+            if (method === 'GET' && result.success && cacheKey && !url.includes('/business/employees')) {
+                await this.setCachedData(cacheKey, result.data, cacheTTL);
+                console.log('💾 [CACHE] Cached result for:', cacheKey);
+            }
+
+            return result;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            
+            if (error.name === 'AbortError') {
+                console.warn(`⏰ Request timeout after 10s for ${url}`);
+                throw new Error('Request timeout - possibly offline');
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Cache management methods
+     */
+    async getCachedData(cacheKey, forceOld = false) {
+        if (!window.db) {
+            console.warn('⚠️ Database not available for caching');
+            return null;
+        }
+
+        try {
+            // Check in-memory cache first
+            const memoryCache = this.cache.get(cacheKey);
+            if (memoryCache && !forceOld) {
+                const age = Date.now() - memoryCache.timestamp;
+                const ttl = this.cacheTTL[cacheKey] || 5 * 60 * 1000; // Default 5 min
+                
+                if (age < ttl) {
+                    return memoryCache.data;
+                }
+            }
+
+            // Check IndexedDB cache
+            const cacheEntry = await window.db.get('cache', cacheKey);
+            if (cacheEntry) {
+                const age = Date.now() - cacheEntry.timestamp;
+                const ttl = this.cacheTTL[cacheKey] || 5 * 60 * 1000;
+                
+                if (age < ttl || forceOld) {
+                    // Update in-memory cache
+                    this.cache.set(cacheKey, {
+                        data: cacheEntry.data,
+                        timestamp: cacheEntry.timestamp
+                    });
+                    return cacheEntry.data;
+                }
+            }
+
+            return null;
+        } catch (error) {
+            console.error('❌ Cache read error:', error);
+            return null;
+        }
+    }
+
+    async setCachedData(cacheKey, data, customTTL = null) {
+        const timestamp = Date.now();
+        
+        try {
+            // Set in-memory cache
+            this.cache.set(cacheKey, { data, timestamp });
+
+            // Set IndexedDB cache
+            if (window.db) {
+                await window.db.update('cache', {
+                    id: cacheKey,
+                    data,
+                    timestamp,
+                    ttl: customTTL || this.cacheTTL[cacheKey] || 5 * 60 * 1000
+                });
+            }
+        } catch (error) {
+            console.error('❌ Cache write error:', error);
+        }
+    }
+    
+    /**
+     * Cache invalidation methods
+     */
+    async clearCache(cacheKey) {
+        try {
+            // Remove from in-memory cache
+            this.cache.delete(cacheKey);
+            
+            // Remove from IndexedDB cache
+            if (window.db) {
+                await window.db.delete('cache', cacheKey);
+            }
+            
+            console.log(`🗑️ [CACHE] Cleared cache for: ${cacheKey}`);
+        } catch (error) {
+            console.error('❌ Cache clear error:', error);
+        }
+    }
+    
+    async invalidateTransactionCache() {
+        console.log('🔄 [CACHE] Invalidating transaction-related caches');
+        await this.clearCache('transactions');
+        await this.clearCache('dashboard_stats');
+        await this.clearCache('employee_stats');
+    }
+
+    /**
+     * Request queue management for offline operations
+     */
+    queueRequest(endpoint, options) {
+        const queueEntry = {
+            id: this.generateRequestId(endpoint, options.method, options.data),
+            endpoint,
+            options,
+            timestamp: Date.now(),
+            retries: 0
+        };
+
+        this.requestQueue.push(queueEntry);
+        console.log(`📥 [HybridAPIClient] Queued request: ${queueEntry.id} for ${options.method} ${endpoint}`);
+        
+        // Persist queue to IndexedDB
+        this.persistRequestQueue();
+        
+        return queueEntry.id; // Return the ID for debugging
+    }
+
+    async processRequestQueue() {
+        if (!this.isOnline || this.requestQueue.length === 0) {
+            return;
+        }
+
+        console.log(`🔄 Processing ${this.requestQueue.length} queued requests`);
+        const processedRequests = [];
+
+        for (const queueEntry of this.requestQueue) {
+            try {
+                const result = await this.request(queueEntry.endpoint, {
+                    ...queueEntry.options,
+                    critical: true // Force online for queued requests
+                });
+
+                if (result.success) {
+                    processedRequests.push(queueEntry);
+                    console.log(`✅ Processed queued request: ${queueEntry.endpoint}`);
+                } else {
+                    queueEntry.retries++;
+                    if (queueEntry.retries >= 3) {
+                        console.error(`❌ Failed to process queued request after 3 retries: ${queueEntry.endpoint}`);
+                        processedRequests.push(queueEntry); // Remove failed requests
+                    }
+                }
+            } catch (error) {
+                queueEntry.retries++;
+                console.error(`❌ Error processing queued request: ${queueEntry.endpoint}`, error);
+                
+                if (queueEntry.retries >= 3) {
+                    processedRequests.push(queueEntry); // Remove failed requests
+                }
+            }
+        }
+
+        // Remove processed requests from queue
+        this.requestQueue = this.requestQueue.filter(
+            req => !processedRequests.find(processed => processed.id === req.id)
+        );
+
+        await this.persistRequestQueue();
+        
+        // If we processed any transaction requests, refresh UI data
+        const processedTransactions = processedRequests.filter(req => 
+            req.endpoint.includes('/transactions')
+        );
+        
+        if (processedTransactions.length > 0) {
+            console.log(`🔄 Processed ${processedTransactions.length} offline transactions, refreshing UI`);
+            
+            // Clean up local offline transactions that were successfully synced
+            for (const txnRequest of processedTransactions) {
+                try {
+                    if (window.db && txnRequest.id) {
+                        // Try to find and mark the local transaction as synced instead of deleting
+                        const localTransaction = await window.db.get('transactions', txnRequest.id);
+                        if (localTransaction && (localTransaction.isOffline || localTransaction.syncStatus === 'pending')) {
+                            // Mark as synced
+                            localTransaction.syncStatus = 'synced';
+                            localTransaction.isOffline = false;
+                            await window.db.update('transactions', localTransaction);
+                            console.log(`✅ Marked local transaction as synced: ${txnRequest.id}`);
+                        }
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Failed to update local transaction sync status:', error);
+                }
+            }
+            
+            // Refresh dashboard and employee data
+            setTimeout(async () => {
+                // Refresh dashboard if loaded
+                if (window.loadDashboard) {
+                    try {
+                        await window.loadDashboard();
+                        console.log('✅ Dashboard refreshed after sync');
+                    } catch (error) {
+                        console.warn('⚠️ Failed to refresh dashboard after sync:', error);
+                    }
+                }
+                
+                // Refresh employee statistics if loaded  
+                if (window.employeeManager) {
+                    try {
+                        await window.employeeManager.displayEmployees();
+                        console.log('✅ Employee statistics refreshed after sync');
+                    } catch (error) {
+                        console.warn('⚠️ Failed to refresh employee statistics after sync:', error);
+                    }
+                }
+            }, 1000); // Small delay to ensure API data is fresh
+        }
+    }
+
+    async persistRequestQueue() {
+        try {
+            if (window.db) {
+                await window.db.update('requestQueue', {
+                    id: 'main',
+                    queue: this.requestQueue,
+                    timestamp: Date.now()
+                });
+            }
+        } catch (error) {
+            console.error('❌ Failed to persist request queue:', error);
+        }
+    }
+
+    async loadRequestQueue() {
+        try {
+            if (window.db) {
+                const queueData = await window.db.get('requestQueue', 'main');
+                if (queueData && queueData.queue) {
+                    this.requestQueue = queueData.queue;
+                    console.log(`📥 Loaded ${this.requestQueue.length} queued requests`);
+                }
+            }
+        } catch (error) {
+            console.error('❌ Failed to load request queue:', error);
+        }
+    }
+
+    /**
+     * Utility methods
+     */
+    getFullURL(endpoint) {
+        // Prefer localhost in development
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            return `${this.localBaseURL}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+        }
+        return `${this.baseURL}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+    }
+
+    getAuthToken() {
+        // PRIORITY ORDER: JWT tokens from login → cached auth tokens → development tokens
+        
+        // 1. Check for JWT tokens from login (highest priority)
+        const jwtToken = localStorage.getItem('jwtToken') || 
+                        sessionStorage.getItem('jwtToken') ||
+                        localStorage.getItem('jwt_token') ||
+                        sessionStorage.getItem('jwt_token');
+        
+        // 2. Check for regular auth tokens 
+        const authToken = localStorage.getItem('authToken') || 
+                         sessionStorage.getItem('authToken') ||
+                         localStorage.getItem('userToken') ||
+                         sessionStorage.getItem('userToken');
+        
+        // 3. Select the best token (JWT has priority)
+        let token = jwtToken || authToken;
+        
+        console.log('🔐 [HYBRID-AUTH] Token priority check:', {
+            jwtToken: !!jwtToken,
+            authToken: !!authToken,
+            selectedToken: token ? token.substring(0, 30) + '...' : 'NONE',
+            tokenType: jwtToken ? 'JWT' : authToken ? 'AUTH' : 'NONE',
+            isDevelopment: token && token.startsWith('dev-token-')
+        });
+        
+        // SECURITY FIX: Removed hardcoded development token generation
+        // This was causing cross-user data contamination by using fixed user ID '68c36e5acb1b1c0fdc0563dd'
+        if (!token && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+            console.log('🚨 [HYBRID-AUTH] No authentication token available - user must login properly');
+            console.log('🔐 [HYBRID-AUTH] Development tokens disabled to prevent cross-user data access');
+        }
+        
+        // 5. Log final token selection
+        console.log('✅ [HYBRID-AUTH] Final token selected:', {
+            hasToken: !!token,
+            tokenType: token ? (token.startsWith('dev-token-') ? 'DEVELOPMENT' : 'PRODUCTION') : 'NONE',
+            tokenLength: token ? token.length : 0,
+            tokenPreview: token ? token.substring(0, 50) + '...' : 'NONE'
+        });
+        
+        return token || '';
+    }
+    
+    /**
+     * Debug method to show all available tokens
+     */
+    debugAllTokens() {
+        console.log('🔍 [TOKEN-DEBUG] All available tokens:', {
+            'localStorage.jwtToken': localStorage.getItem('jwtToken'),
+            'sessionStorage.jwtToken': sessionStorage.getItem('jwtToken'),
+            'localStorage.jwt_token': localStorage.getItem('jwt_token'),
+            'sessionStorage.jwt_token': sessionStorage.getItem('jwt_token'),
+            'localStorage.authToken': localStorage.getItem('authToken'),
+            'sessionStorage.authToken': sessionStorage.getItem('authToken'),
+            'localStorage.userToken': localStorage.getItem('userToken'),
+            'sessionStorage.userToken': sessionStorage.getItem('userToken'),
+        });
+        
+        const finalToken = this.getAuthToken();
+        console.log('🎯 [TOKEN-DEBUG] Final selected token:', {
+            token: finalToken ? finalToken.substring(0, 50) + '...' : 'NONE',
+            fullLength: finalToken ? finalToken.length : 0,
+            isDevelopmentToken: finalToken ? finalToken.startsWith('dev-token-') : false
+        });
+        
+        return finalToken;
+    }
+    
+    /**
+     * Diagnostic method to test employee API directly
+     */
+    async testEmployeesAPI() {
+        console.log('🧪 [DIAGNOSTIC] Testing employees API directly...');
+        
+        const token = this.getAuthToken();
+        console.log('🔐 [DIAGNOSTIC] Using token:', token ? token.substring(0, 30) + '...' : 'NONE');
+        
+        if (!token) {
+            console.error('❌ [DIAGNOSTIC] No token available for test');
+            return { success: false, error: 'No authentication token' };
+        }
+        
+        const url = this.getFullURL('/api/employees');
+        console.log('🌐 [DIAGNOSTIC] Testing URL:', url);
+        
+        try {
+            // Test with a simple fetch call
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    'Cache-Control': 'no-cache'
+                }
+            });
+            
+            console.log('📡 [DIAGNOSTIC] Response received:', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok,
+                headers: Object.fromEntries(response.headers.entries())
+            });
+            
+            const result = await response.json();
+            console.log('📊 [DIAGNOSTIC] Response data:', {
+                success: result.success,
+                dataCount: result.data?.length || 0,
+                error: result.error,
+                sampleData: result.data?.slice(0, 2)
+            });
+            
+            return result;
+        } catch (error) {
+            console.error('❌ [DIAGNOSTIC] Test failed:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    generateRequestId(endpoint, method, data) {
+        // Create a more unique ID for offline operations
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(2, 8);
+        const content = `${method}-${endpoint}-${timestamp}`;
+        
+        // For transactions, use a more descriptive prefix
+        if (endpoint.includes('/transactions')) {
+            return `offline-txn-${timestamp}-${random}`;
+        }
+        
+        // For other requests, use the hash approach but with better uniqueness
+        const hash = btoa(content).replace(/[+/=]/g, '').substring(0, 12);
+        return `offline-${hash}-${random}`;
+    }
+
+    /**
+     * Convenience methods for common operations
+     */
+    async get(endpoint, cacheKey = null, options = {}) {
+        return this.request(endpoint, {
+            method: 'GET',
+            cacheKey,
+            ...options
+        });
+    }
+
+    async post(endpoint, data, options = {}) {
+        return this.request(endpoint, {
+            method: 'POST',
+            data,
+            ...options
+        });
+    }
+
+    async put(endpoint, data, options = {}) {
+        return this.request(endpoint, {
+            method: 'PUT',
+            data,
+            ...options
+        });
+    }
+
+    async delete(endpoint, options = {}) {
+        return this.request(endpoint, {
+            method: 'DELETE',
+            ...options
+        });
+    }
+
+    /**
+     * Data-specific convenience methods
+     */
+    async getEmployees(options = {}) {
+        console.log('👥 [HYBRID-API] getEmployees() called with options:', options);
+        const authToken = this.getAuthToken();
+        console.log('🔐 [HYBRID-API] Current token for employees request:', authToken ? authToken.substring(0, 30) + '...' : 'NONE');
+        console.log('🌐 [HYBRID-API] Online status:', { isOnline: this.isOnline, navigatorOnLine: navigator.onLine });
+        
+        if (!authToken) {
+            console.error('❌ [HYBRID-API] No authentication token available for employees request!');
+            return { success: false, error: 'No authentication token available' };
+        }
+        
+        // CRITICAL FIX: Use the correct employee endpoint that actually works
+        console.log('🔧 [HYBRID-API] Using correct employee endpoint: /api/business/employees');
+        const result = await this.get('/api/business/employees', 'employees', {
+            offlineFirst: false,
+            critical: true, // Force online request
+            ...options
+        });
+        
+        console.log('👥 [HYBRID-API] getEmployees() raw result:', result);
+        console.log('👥 [HYBRID-API] Raw result.data structure:', result.data);
+        
+        // The response format should now be standardized by the HybridAPIClient
+        // Expected format: { success: true, data: [...employees array...] }
+        if (result.success && result.data) {
+            if (Array.isArray(result.data)) {
+                console.log('✅ [HYBRID-API] Employee data in correct array format');
+                console.log('👥 [HYBRID-API] Employee count:', result.data.length);
+                console.log('👥 [HYBRID-API] Sample employee:', result.data[0]);
+                return result;
+            } else {
+                console.log('❓ [HYBRID-API] Unexpected data format - expected array but got:', typeof result.data);
+                console.log('❓ [HYBRID-API] Data content:', result.data);
+            }
+        }
+        
+        console.log('👥 [HYBRID-API] getEmployees() final result:', {
+            success: result.success,
+            dataCount: result.data?.length || 0,
+            source: result.source,
+            error: result.error,
+            queued: result.queued
+        });
+        
+        return result;
+    }
+    
+    // Quick test function - run window.HybridAPIClient.quickTestEmployees() in console
+    async quickTestEmployees() {
+        console.log('🧪 [QUICK-TEST] Testing employees endpoint...');
+        try {
+            const result = await this.getEmployees();
+            console.log('🧪 [QUICK-TEST] Employee test result:', result);
+            if (result.success && result.data && result.data.length > 0) {
+                console.log('✅ [QUICK-TEST] EMPLOYEES FIXED! Found', result.data.length, 'employees');
+                console.log('👥 [QUICK-TEST] Employee names:', result.data.map(e => e.name || e.firstName + ' ' + e.lastName));
+                return { success: true, count: result.data.length, employees: result.data };
+            } else {
+                console.log('❌ [QUICK-TEST] Still failing - no data:', {
+                    success: result.success,
+                    hasData: !!result.data,
+                    dataType: typeof result.data,
+                    dataLength: result.data?.length,
+                    error: result.error
+                });
+                return result;
+            }
+        } catch (error) {
+            console.log('❌ [QUICK-TEST] Test error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+    
+    // Test the raw business/employees endpoint
+    async testRawBusinessEmployees() {
+        console.log('🧪 [RAW-TEST] Testing /api/business/employees directly...');
+        try {
+            const url = this.getFullURL('/api/business/employees');
+            const token = this.getAuthToken();
+            
+            const response = await fetch(url, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            const data = await response.json();
+            console.log('🧪 [RAW-TEST] Raw response:', data);
+            
+            if (data.employees) {
+                console.log('✅ [RAW-TEST] Found employees in response:', data.employees.length);
+                console.log('👥 [RAW-TEST] Sample employee:', data.employees[0]);
+            }
+            
+            return data;
+        } catch (error) {
+            console.log('❌ [RAW-TEST] Error:', error);
+            return { error: error.message };
+        }
+    }
+
+    async getProducts(options = {}) {
+        console.log('🛒 [API] Loading products from backend...');
+        const result = await this.get('/api/products', 'products', {
+            offlineFirst: false,
+            ...options
+        });
+        
+        console.log('🛒 [API] Products result:', {
+            success: result.success,
+            dataCount: result.data?.length || 0,
+            source: result.source,
+            error: result.error
+        });
+        
+        return result;
+    }
+
+    async getTransactions(options = {}) {
+        try {
+            // Get transactions from API/cache
+            const apiResult = await this.get('/api/transactions', 'transactions', {
+                offlineFirst: false,
+                ...options
+            });
+            
+            // Also get locally stored offline transactions
+            let localTransactions = [];
+            if (window.db) {
+                try {
+                    const allLocalTransactions = await window.db.getAll('transactions');
+                    // Filter for offline transactions that haven't synced yet
+                    localTransactions = allLocalTransactions.filter(t => 
+                        (t.isOffline === true || t.syncStatus === 'pending') && t.syncStatus !== 'synced'
+                    );
+                    console.log(`📱 Found ${localTransactions.length} offline transactions in local storage`);
+                } catch (localError) {
+                    console.warn('⚠️ Failed to load local transactions:', localError);
+                }
+            }
+            
+            if (apiResult.success) {
+                // Merge API transactions with local offline transactions
+                const apiTransactions = apiResult.data || [];
+                const mergedTransactions = [...apiTransactions, ...localTransactions];
+                
+                // Remove duplicates (in case an offline transaction was already synced)
+                const uniqueTransactions = mergedTransactions.filter((transaction, index, arr) => {
+                    return arr.findIndex(t => t.id === transaction.id || t._id === transaction._id) === index;
+                });
+                
+                console.log(`💾 Merged ${apiTransactions.length} API + ${localTransactions.length} local = ${uniqueTransactions.length} total transactions`);
+                
+                return {
+                    success: true,
+                    data: uniqueTransactions,
+                    source: localTransactions.length > 0 ? 'api+local' : apiResult.source
+                };
+            } else {
+                // API failed, return just local transactions if any
+                if (localTransactions.length > 0) {
+                    console.log(`📱 API failed, returning ${localTransactions.length} local transactions only`);
+                    return {
+                        success: true,
+                        data: localTransactions,
+                        source: 'local_only'
+                    };
+                }
+                
+                return apiResult;
+            }
+            
+        } catch (error) {
+            console.error('❌ Error in getTransactions:', error);
+            // Fallback to just local transactions
+            if (window.db) {
+                try {
+                    const allLocalTransactions = await window.db.getAll('transactions');
+                    console.log(`🔄 Fallback: returning ${allLocalTransactions.length} local transactions`);
+                    return {
+                        success: true,
+                        data: allLocalTransactions,
+                        source: 'local_fallback'
+                    };
+                } catch (localError) {
+                    console.error('❌ Even local fallback failed:', localError);
+                }
+            }
+            
+            return { success: false, error: error.message };
+        }
+    }
+
+    async getInventory(options = {}) {
+        return this.get('/api/inventory', 'inventory', {
+            offlineFirst: false,
+            ...options
+        });
+    }
+
+    async getCustomers(options = {}) {
+        return this.get('/api/customers', 'customers', {
+            offlineFirst: false,
+            ...options
+        });
+    }
+
+    /**
+     * Update offline indicator in UI
+     */
+    updateOfflineIndicator() {
+        const syncIndicator = document.getElementById('sync-indicator');
+        const syncStatus = document.getElementById('sync-status');
+        
+        if (syncIndicator && syncStatus) {
+            if (this.isOnline) {
+                syncIndicator.className = 'sync-indicator online';
+                syncStatus.textContent = 'Online';
+            } else {
+                syncIndicator.className = 'sync-indicator offline';
+                syncStatus.textContent = 'Offline Mode';
+            }
+        }
+    }
+
+    /**
+     * Setup token change listener for login/logout events
+     */
+    setupTokenChangeListener() {
+        // Listen for login events
+        window.addEventListener('userLogin', (event) => {
+            console.log('🔄 [HYBRID-AUTH] User login detected, refreshing data...');
+            this.notifyTokenChange('login', event.detail);
+        });
+        
+        // Listen for logout events  
+        window.addEventListener('userLogout', () => {
+            console.log('🔄 [HYBRID-AUTH] User logout detected, clearing cache...');
+            this.notifyTokenChange('logout');
+        });
+        
+        // Listen for storage changes (token updates)
+        window.addEventListener('storage', (event) => {
+            if (event.key && (event.key.includes('Token') || event.key.includes('jwt'))) {
+                console.log('🔄 [HYBRID-AUTH] Token storage change detected:', event.key);
+                this.notifyTokenChange('token_update');
+            }
+        });
+    }
+    
+    /**
+     * Notify other modules about token changes
+     */
+    notifyTokenChange(eventType, userData = null) {
+        console.log('📢 [HYBRID-AUTH] Notifying modules of token change:', eventType);
+        
+        // Clear in-memory cache on token change
+        this.cache.clear();
+        
+        // Notify attendance system
+        if (window.attendanceManager && window.attendanceManager.refreshTokens) {
+            window.attendanceManager.refreshTokens();
+        }
+        
+        // Notify employee manager
+        if (window.employeeManager && window.employeeManager.loadEmployees) {
+            setTimeout(() => window.employeeManager.loadEmployees(), 100);
+        }
+        
+        // Notify dashboard
+        if (window.loadDashboard) {
+            setTimeout(() => window.loadDashboard(), 200);
+        }
+        
+        // Dispatch custom event for other modules
+        window.dispatchEvent(new CustomEvent('tokenChanged', {
+            detail: { eventType, userData }
+        }));
+    }
+
+    /**
+     * Initialize database schema for caching
+     */
+    async initializeCacheSchema() {
+        if (!window.db) {
+            console.warn('⚠️ Database not available for cache initialization');
+            return;
+        }
+
+        try {
+            // Ensure cache object store exists
+            const stores = await window.db.getAllStoreNames();
+            if (!stores.includes('cache')) {
+                console.log('🔧 Creating cache object store');
+                // This will be handled by database.js upgrade
+            }
+            
+            if (!stores.includes('requestQueue')) {
+                console.log('🔧 Creating requestQueue object store');
+                // This will be handled by database.js upgrade
+            }
+
+            // Load existing request queue
+            await this.loadRequestQueue();
+            
+            console.log('✅ HybridAPIClient cache initialized');
+        } catch (error) {
+            console.error('❌ Failed to initialize cache schema:', error);
+        }
+    }
+}
+
+// Create singleton instance
+window.HybridAPIClient = new HybridAPIClient();
+
+// Initialize when database is ready
+document.addEventListener('DOMContentLoaded', async () => {
+    // Wait for database to be ready
+    let retries = 0;
+    while (!window.db && retries < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
+    }
+    
+    if (window.db) {
+        await window.HybridAPIClient.initializeCacheSchema();
+    } else {
+        console.warn('⚠️ Database not available after 5 seconds - HybridAPIClient running without caching');
+    }
+});
+
+console.log('🔄 HybridAPIClient loaded');

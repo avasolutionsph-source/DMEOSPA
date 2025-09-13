@@ -1,0 +1,43 @@
+{
+  "version": "1.8.1",
+  "latestVersion": "1.8.1",
+  "updates": [
+    {
+      "version": "1.8.1",
+      "type": "critical",
+      "title": "PWA Refresh Bug Fixes",
+      "description": "Fixed database initialization race conditions and service persistence bugs that caused PWA to fail on normal refresh",
+      "changes": [
+        "Enhanced database initialization with retry logic and timeout protection",
+        "Fixed room service persistence - ended services no longer reappear after refresh",
+        "Added comprehensive database recovery system for initialization failures",
+        "Implemented automatic refresh bug detection and fixing",
+        "Enhanced service worker with version broadcasting and cache-busting",
+        "Added emergency update mechanisms for critical bug fixes"
+      ],
+      "fixes": [
+        "Database failed to open errors on normal refresh",
+        "Services reappearing after being ended",
+        "Race conditions in database initialization",
+        "PWA initialization failures (worked on hard refresh but not normal refresh)",
+        "Missing API endpoints causing 403/404 errors"
+      ],
+      "releaseDate": "2025-01-25",
+      "forceUpdate": true,
+      "emergencyUpdate": true
+    }
+  ],
+  "minimumVersion": "1.8.1",
+  "maintenanceMode": false,
+  "maintenanceMessage": "",
+  "announcements": [
+    {
+      "id": "refresh-fix-2025-01",
+      "type": "success",
+      "title": "Refresh Bugs Fixed",
+      "message": "The PWA refresh issues have been resolved. The app will now work properly on both normal refresh and hard refresh.",
+      "showUntil": "2025-02-25",
+      "priority": "high"
+    }
+  ]
+}
