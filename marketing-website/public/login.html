@@ -162,9 +162,9 @@
         handleOAuthCallback();
         
         // API Configuration - Updated to use deployed backend
-        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+        window.API_BASE_URL = window.API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:4001' 
-            : 'https://daetspa-backend.onrender.com';
+            : 'https://daetspa-backend.onrender.com');
         
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -174,7 +174,7 @@
             const password = formData.get('password');
             
             try {
-                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

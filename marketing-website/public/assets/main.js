@@ -1,9 +1,9 @@
 // Enhanced Main JavaScript for Daet Massage and Spa Website with Modern UX
 
 // API Configuration - Updated to use deployed backend
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+window.API_BASE_URL = window.API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
     ? 'http://localhost:4001' 
-    : 'https://daetspa-backend.onrender.com';
+    : 'https://daetspa-backend.onrender.com');
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize all enhancements

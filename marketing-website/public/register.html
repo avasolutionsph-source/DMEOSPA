@@ -193,9 +193,9 @@
 
     <script>
         // API Configuration - Updated to use deployed backend
-        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+        window.API_BASE_URL = window.API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:4001' 
-            : 'https://daetspa-backend.onrender.com';
+            : 'https://daetspa-backend.onrender.com');
 
         document.getElementById('registerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -218,7 +218,7 @@
             };
             
             try {
-                const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/auth/register`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
