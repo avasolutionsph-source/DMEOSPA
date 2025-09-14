@@ -2307,6 +2307,23 @@
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
+            // Debug authentication status
+            const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken');
+            const userData = localStorage.getItem('userData');
+            console.log('🔍 Auth Debug:', { 
+                hasToken: !!token, 
+                tokenLength: token ? token.length : 0,
+                hasUserData: !!userData,
+                userData: userData ? JSON.parse(userData) : null 
+            });
+            
+            if (!token) {
+                console.error('❌ NO TOKEN FOUND! Redirecting to login...');
+                alert('Please log in first to access the business dashboard');
+                window.location.href = '/login';
+                return;
+            }
+            
             loadUserData();
             loadBusinessStats();
             loadEmployeeData();
@@ -2342,8 +2359,8 @@
                 if (!token) return;
 
                 // Fetch real business stats from API
-                const apiBase = ''; // Direct backend URL
-                const response = await fetch(`${apiBase}/api/business/stats`, {
+                console.log('🔍 Using API_BASE_URL:', window.API_BASE_URL);
+                const response = await fetch(`${window.API_BASE_URL}/api/business/stats`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -2388,6 +2405,17 @@
                         year: `₱${stats.yearSales}`
                     });
                 } else {
+                    const errorText = await response.text();
+                    console.error('❌ Business stats API failed:', response.status, response.statusText, errorText);
+                    
+                    if (response.status === 401) {
+                        console.error('❌ AUTHENTICATION FAILED! Token might be invalid or expired');
+                        alert('Your session has expired. Please log in again.');
+                        localStorage.clear();
+                        window.location.href = '/login';
+                        return;
+                    }
+                    
                     // If no stats available, show zeros
                     document.getElementById('totalSales').textContent = '₱0.00';
                     document.getElementById('totalTransactions').textContent = '0';
@@ -2425,8 +2453,8 @@
                     return;
                 }
 
-                const apiBase = ''; // Direct backend URL
-                const response = await fetch(`${apiBase}/api/business/employees`, {
+                console.log('🔍 Using API_BASE_URL:', window.API_BASE_URL);
+                const response = await fetch(`${window.API_BASE_URL}/api/business/employees`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -2553,8 +2581,8 @@
                     return;
                 }
 
-                const apiBase = ''; // Direct backend URL
-                const response = await fetch(`${apiBase}/api/business/inventory`, {
+                console.log('🔍 Using API_BASE_URL:', window.API_BASE_URL);
+                const response = await fetch(`${window.API_BASE_URL}/api/business/inventory`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -2672,8 +2700,8 @@
                 console.log('🔧 Testing employee sync...');
                 
                 // First, let's see what the current user has in the database
-                const apiBase = ''; // Direct backend URL
-                const response = await fetch(`${apiBase}/api/business/employees`, {
+                console.log('🔍 Using API_BASE_URL:', window.API_BASE_URL);
+                const response = await fetch(`${window.API_BASE_URL}/api/business/employees`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -2730,7 +2758,7 @@ Check console for detailed data.`);
                 };
 
                 // Send directly to the sync endpoint
-                const apiBase = ''; // Direct backend URL
+                console.log('🔍 Using API_BASE_URL:', window.API_BASE_URL);
                 const response = await fetch(`${apiBase}/api/employees/sync`, {
                     method: 'POST',
                     headers: {
@@ -3051,8 +3079,8 @@ The PWA will open now...`;
                 downloadBtn.style.pointerEvents = 'none';
 
                 // Fetch latest stats
-                const apiBase = ''; // Direct backend URL
-                const response = await fetch(`${apiBase}/api/business/stats`, {
+                console.log('🔍 Using API_BASE_URL:', window.API_BASE_URL);
+                const response = await fetch(`${window.API_BASE_URL}/api/business/stats`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
