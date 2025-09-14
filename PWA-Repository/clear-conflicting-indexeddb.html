@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Conflicting IndexedDB Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .success { background: #d1edff; border: 1px solid #74b9ff; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .error { background: #ffe0e0; border: 1px solid #ff7675; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        button { background: #e17055; color: white; border: none; padding: 10px 20px; margin: 10px 5px; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #d63031; }
+        .safe { background: #00b894; }
+        .safe:hover { background: #00a085; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .store-list { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; }
+        .store-item { padding: 8px 12px; border-radius: 3px; font-family: monospace; }
+        .to-clear { background: #ff7675; color: white; }
+        .to-keep { background: #00b894; color: white; }
+    </style>
+</head>
+<body>
+    <h1>🗄️ Clear Conflicting IndexedDB Data</h1>
+    
+    <div class="warning">
+        <h3>⚠️ Important</h3>
+        <p>This will clear <strong>ONLY</strong> IndexedDB stores that have MongoDB equivalents to fix conflicts.</p>
+        <p>Stores without MongoDB backends will be preserved.</p>
+    </div>
+
+    <h3>📋 Store Analysis</h3>
+    <p><strong>Will Clear (Have MongoDB):</strong></p>
+    <div class="store-list">
+        <span class="store-item to-clear">employees</span>
+        <span class="store-item to-clear">products</span>
+        <span class="store-item to-clear">transactions</span>
+        <span class="store-item to-clear">inventory</span>
+    </div>
+    
+    <p><strong>Will Keep (No MongoDB):</strong></p>
+    <div class="store-list">
+        <span class="store-item to-keep">rooms</span>
+        <span class="store-item to-keep">attendance</span>
+        <span class="store-item to-keep">settings</span>
+        <span class="store-item to-keep">cache</span>
+        <span class="store-item to-keep">sync</span>
+        <span class="store-item to-keep">customers</span>
+        <span class="store-item to-keep">payroll</span>
+        <span class="store-item to-keep">giftCertificates</span>
+    </div>
+
+    <button onclick="scanIndexedDB()">🔍 Scan Current IndexedDB Stores</button>
+    <button onclick="clearConflictingStores()" class="safe">🧹 Clear Conflicting Stores Only</button>
+    <button onclick="window.location.reload()">🔄 Refresh Page</button>
+
+    <div id="results"></div>
+
+    <script>
+        // Stores that have MongoDB equivalents (will be cleared)
+        const STORES_WITH_MONGODB = [
+            'employees',
+            'products', 
+            'transactions',
+            'inventory'
+        ];
+
+        // Stores without MongoDB (will be kept)
+        const STORES_TO_KEEP = [
+            'rooms',
+            'attendance', 
+            'settings',
+            'cache',
+            'sync',
+            'customers',
+            'payroll',
+            'giftCertificates',
+            'expenseCategories',
+            'suppliers',
+            'branches'
+        ];
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'warning';
+            results.innerHTML += `<div class="${className}">${message}</div>`;
+            console.log(message);
+        }
+
+        async function scanIndexedDB() {
+            document.getElementById('results').innerHTML = '';
+            log('🔍 Scanning IndexedDB databases...');
+
+            try {
+                // Get all databases
+                const databases = await indexedDB.databases();
+                
+                if (databases.length === 0) {
+                    log('No IndexedDB databases found.', 'success');
+                    return;
+                }
+
+                for (const dbInfo of databases) {
+                    const dbName = dbInfo.name;
+                    log(`📂 Found database: ${dbName}`);
+                    
+                    // Open each database to check object stores
+                    const db = await new Promise((resolve, reject) => {
+                        const request = indexedDB.open(dbName);
+                        request.onsuccess = () => resolve(request.result);
+                        request.onerror = () => reject(request.error);
+                    });
+
+                    const storeNames = Array.from(db.objectStoreNames);
+                    
+                    if (storeNames.length === 0) {
+                        log(`  └─ No object stores in ${dbName}`);
+                    } else {
+                        log(`  └─ Object stores in ${dbName}:`);
+                        
+                        storeNames.forEach(storeName => {
+                            const willClear = STORES_WITH_MONGODB.includes(storeName);
+                            const willKeep = STORES_TO_KEEP.includes(storeName);
+                            const action = willClear ? '🗑️ WILL CLEAR' : willKeep ? '✅ WILL KEEP' : '❓ UNKNOWN';
+                            const reasoning = willClear ? '(has MongoDB)' : willKeep ? '(no MongoDB)' : '(needs review)';
+                            
+                            log(`      • ${storeName} - ${action} ${reasoning}`);
+                        });
+                    }
+                    
+                    db.close();
+                }
+            } catch (error) {
+                log(`❌ Error scanning IndexedDB: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearConflictingStores() {
+            document.getElementById('results').innerHTML = '';
+            log('🧹 Starting selective IndexedDB cleanup...');
+
+            try {
+                const databases = await indexedDB.databases();
+                let clearedCount = 0;
+                let keptCount = 0;
+
+                for (const dbInfo of databases) {
+                    const dbName = dbInfo.name;
+                    
+                    // Open database
+                    const db = await new Promise((resolve, reject) => {
+                        const request = indexedDB.open(dbName);
+                        request.onsuccess = () => resolve(request.result);
+                        request.onerror = () => reject(request.error);
+                    });
+
+                    const storeNames = Array.from(db.objectStoreNames);
+                    
+                    for (const storeName of storeNames) {
+                        if (STORES_WITH_MONGODB.includes(storeName)) {
+                            // Clear this store - it has MongoDB equivalent
+                            try {
+                                const transaction = db.transaction([storeName], 'readwrite');
+                                const store = transaction.objectStore(storeName);
+                                await new Promise((resolve, reject) => {
+                                    const request = store.clear();
+                                    request.onsuccess = () => resolve();
+                                    request.onerror = () => reject(request.error);
+                                });
+                                
+                                log(`🗑️ Cleared store: ${storeName} (has MongoDB backend)`, 'success');
+                                clearedCount++;
+                            } catch (error) {
+                                log(`❌ Failed to clear ${storeName}: ${error.message}`, 'error');
+                            }
+                        } else {
+                            // Keep this store
+                            log(`✅ Kept store: ${storeName} (no MongoDB conflict)`);
+                            keptCount++;
+                        }
+                    }
+                    
+                    db.close();
+                }
+
+                log(`✨ Cleanup complete! Cleared ${clearedCount} conflicting stores, kept ${keptCount} non-conflicting stores.`, 'success');
+                log('🔄 Please refresh the Employee Management page to see the changes.', 'success');
+
+            } catch (error) {
+                log(`❌ Error during cleanup: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-scan on page load
+        window.addEventListener('load', () => {
+            setTimeout(scanIndexedDB, 500);
+        });
+    </script>
+</body>
+</html>

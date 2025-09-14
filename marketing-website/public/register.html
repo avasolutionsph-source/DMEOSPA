@@ -220,7 +220,12 @@
             try {
                 console.log('🚀 Sending client registration data:', userData);
                 
-                const response = await fetch('/api/auth/register', {
+                // Use marketing website backend for client registration
+                const marketingBackend = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:3003'
+                    : 'https://daetspa-marketing-backend.onrender.com'; // Need to deploy this
+                
+                const response = await fetch(`${marketingBackend}/api/auth/register`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
