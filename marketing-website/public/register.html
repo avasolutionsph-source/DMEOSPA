@@ -214,14 +214,13 @@
                 lastName: formData.get('lastName'),
                 email: formData.get('email'),
                 phone: formData.get('phone'),
-                password: password,
-                businessName: `${formData.get('firstName')} ${formData.get('lastName')}'s Spa` // Auto-generate business name
+                password: password
             };
             
             try {
-                console.log('🚀 Sending registration data:', userData);
+                console.log('🚀 Sending client registration data:', userData);
                 
-                const response = await fetch(`${window.API_BASE_URL}/api/auth/register`, {
+                const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -235,18 +234,12 @@
                 console.log('📨 Response data:', data);
                 
                 if (data.success) {
-                    showSuccess('Account created successfully! Redirecting...');
+                    showSuccess('Account created successfully! Redirecting to booking...');
                     localStorage.setItem('userToken', data.token);
                     localStorage.setItem('userData', JSON.stringify(data.user));
                     setTimeout(() => {
-                        // Redirect based on user role
-                        if (data.user.role === 'client') {
-                            window.location.href = '/';
-                        } else if (data.user.role === 'superAdmin' || data.user.role === 'admin') {
-                            window.location.href = '/admin';
-                        } else {
-                            window.location.href = '/business-dashboard';
-                        }
+                        // Redirect client accounts to booking page
+                        window.location.href = '/book-appointment';
                     }, 2000);
                 } else {
                     console.error('❌ Registration failed:', data.error);
