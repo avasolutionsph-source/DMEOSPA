@@ -69,6 +69,20 @@ class EnhancedDashboardManager {
         this.setupTransactionListener();
     }
 
+    // Helper function to safely get data from database stores
+    async safeGetAll(storeName) {
+        try {
+            // Ensure database is initialized
+            if (!window.db || !window.db.db) {
+                await window.ensureDBInit();
+            }
+            return await window.db.getAll(storeName) || [];
+        } catch (error) {
+            console.warn(`⚠️ Store '${storeName}' not available yet:`, error.message);
+            return [];
+        }
+    }
+
     async init() {
         this.performanceMetrics.initStartTime = performance.now();
         console.log('🚀 Initializing Enhanced Dashboard Manager...');
@@ -224,7 +238,7 @@ class EnhancedDashboardManager {
             this.stats.cashPayments = this.stats.todayRevenue - this.stats.cardPayments;
             
             // Gift certificates
-            const giftCerts = await window.db.getAll('giftCertificates') || [];
+            const giftCerts = await this.safeGetAll('giftCertificates');
             const activeGiftCerts = giftCerts.filter(gc => gc.status === 'active');
             this.stats.giftCertRevenue = activeGiftCerts.reduce((sum, gc) => sum + (gc.amount || 0), 0);
             this.stats.giftCertCount = activeGiftCerts.length;
@@ -244,8 +258,9 @@ class EnhancedDashboardManager {
         try {
             console.log('🏢 Loading operations data...');
             
-            // Appointments data
-            const appointments = await window.db.getAll('appointments') || [];
+            // Appointments data - with error handling for missing store
+            const appointments = await this.safeGetAll('appointments');
+            
             const today = new Date().toISOString().split('T')[0];
             const todayAppointments = appointments.filter(a => 
                 new Date(a.date).toISOString().split('T')[0] === today
@@ -257,7 +272,7 @@ class EnhancedDashboardManager {
             this.stats.completedAppointments = todayAppointments.filter(a => a.status === 'completed').length;
             
             // Room utilization
-            const rooms = await window.db.getAll('rooms') || [];
+            const rooms = await this.safeGetAll('rooms');
             this.stats.totalRooms = rooms.length;
             this.stats.occupiedRooms = rooms.filter(r => r.status === 'occupied').length;
             this.stats.roomUtilization = this.stats.totalRooms > 0 
@@ -265,7 +280,7 @@ class EnhancedDashboardManager {
                 : 0;
             
             // Top service analysis
-            const services = await window.db.getAll('products') || [];
+            const services = await this.safeGetAll('products');
             const serviceBookings = {};
             
             todayAppointments.forEach(apt => {
@@ -284,7 +299,7 @@ class EnhancedDashboardManager {
             }
             
             // Customer flow analysis
-            const customers = await window.db.getAll('customers') || [];
+            const customers = await this.safeGetAll('customers');
             const todayCustomers = new Set();
             
             todayAppointments.forEach(apt => {
@@ -324,8 +339,8 @@ class EnhancedDashboardManager {
             console.log('👥 Loading staff and attendance data...');
             
             // Get employees and attendance records
-            const employees = await window.db.getAll('employees') || [];
-            const attendanceRecords = await window.db.getAll('attendance') || [];
+            const employees = await this.safeGetAll('employees');
+            const attendanceRecords = await this.safeGetAll('attendance');
             
             this.stats.totalStaff = employees.length;
             
@@ -394,7 +409,7 @@ class EnhancedDashboardManager {
             
             // Check if we have recent local data (within 30 seconds) - preserve POS changes
             if (window.db) {
-                const localInventory = await window.db.getAll('inventory') || [];
+                const localInventory = await this.safeGetAll('inventory');
                 const recentItems = localInventory.filter(item => {
                     const modifiedAt = new Date(item.modifiedAt || 0);
                     const now = new Date();
@@ -523,7 +538,7 @@ class EnhancedDashboardManager {
 
     async loadRecentAppointments() {
         try {
-            const appointments = await window.db.getAll('appointments') || [];
+            const appointments = await this.safeGetAll('appointments');
             const recentAppointments = appointments
                 .sort((a, b) => new Date(b.date) - new Date(a.date))
                 .slice(0, 10);
@@ -1281,7 +1296,7 @@ class EnhancedDashboardManager {
             console.log('📱 [FALLBACK] Using local IndexedDB data as last resort');
             
             // Get all local transactions
-            const allTransactions = await window.db.getAll('transactions');
+            const allTransactions = await this.safeGetAll('transactions');
             console.log(`📱 Found ${allTransactions.length} local transactions for offline dashboard refresh`);
             
             // Reset stats

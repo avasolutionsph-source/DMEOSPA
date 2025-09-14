@@ -832,6 +832,28 @@ class AttendanceManager {
             attendanceRecord.id = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         }
         
+        // Mark for sync
+        attendanceRecord.syncStatus = 'pending';
+        
+        // Save to IndexedDB for sync manager
+        try {
+            if (window.db) {
+                await window.db.add('attendance', {
+                    ...attendanceRecord,
+                    syncStatus: 'pending'
+                });
+                console.log('✅ Saved to IndexedDB for cross-device sync');
+                
+                // Trigger sync to other devices
+                if (window.syncManager && window.syncManager.triggerSync) {
+                    window.syncManager.triggerSync();
+                    console.log('🔄 Triggered sync to other devices');
+                }
+            }
+        } catch (error) {
+            console.warn('⚠️ Could not save to IndexedDB:', error);
+        }
+        
         // ALWAYS save to localStorage first (primary storage)
         // Check if it already exists (in case of duplicate calls)
         const existingIndex = this.attendanceRecords.findIndex(r => 
@@ -951,6 +973,37 @@ class AttendanceManager {
     
     async updateAttendanceHybrid(updatedRecord, recordId) {
         console.log('🔄 [HYBRID] Updating attendance with hybrid storage...');
+        
+        // Mark for sync
+        updatedRecord.syncStatus = 'pending';
+        
+        // Update in IndexedDB for sync manager
+        try {
+            if (window.db) {
+                const records = await window.db.getAll('attendance');
+                const existingRecord = records.find(r => 
+                    r.employeeId === updatedRecord.employeeId && 
+                    r.date === updatedRecord.date
+                );
+                
+                if (existingRecord) {
+                    await window.db.update('attendance', {
+                        ...existingRecord,
+                        ...updatedRecord,
+                        syncStatus: 'pending'
+                    });
+                    console.log('✅ Updated in IndexedDB for cross-device sync');
+                    
+                    // Trigger sync to other devices
+                    if (window.syncManager && window.syncManager.triggerSync) {
+                        window.syncManager.triggerSync();
+                        console.log('🔄 Triggered sync to other devices');
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn('⚠️ Could not update IndexedDB:', error);
+        }
         
         // ALWAYS update localStorage first (primary storage)
         const index = this.attendanceRecords.findIndex(r => r.id === recordId);

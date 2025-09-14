@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Sync Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button.danger {
+            background: #f44336;
+        }
+        button.danger:hover {
+            background: #da190b;
+        }
+        button.warning {
+            background: #ff9800;
+        }
+        button.warning:hover {
+            background: #e68900;
+        }
+        .log {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        .info { color: #2196F3; }
+        .attendance-list {
+            margin-top: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .attendance-item {
+            background: #f9f9f9;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 4px solid #4CAF50;
+        }
+        .attendance-item.pending {
+            border-left-color: #ff9800;
+        }
+        .attendance-item.synced {
+            border-left-color: #4CAF50;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-badge.pending {
+            background: #fff3e0;
+            color: #ff9800;
+        }
+        .status-badge.synced {
+            background: #e8f5e9;
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔄 Attendance Cross-Device Sync Test</h1>
+    
+    <div class="container">
+        <!-- Left Panel: Local Data -->
+        <div class="panel">
+            <h2>📱 Local Device Data</h2>
+            
+            <h3>Test Actions</h3>
+            <button onclick="createTestAttendance()">Create Test Check-In</button>
+            <button onclick="loadLocalAttendance()">Load Local Data</button>
+            <button onclick="clearLocalData()" class="danger">Clear Local Data</button>
+            
+            <h3>Local Storage</h3>
+            <div id="localStorageList" class="attendance-list"></div>
+            
+            <h3>IndexedDB</h3>
+            <div id="indexedDBList" class="attendance-list"></div>
+            
+            <div id="localLog" class="log"></div>
+        </div>
+        
+        <!-- Right Panel: Server/Sync Status -->
+        <div class="panel">
+            <h2>☁️ Server & Sync Status</h2>
+            
+            <h3>Sync Actions</h3>
+            <button onclick="triggerSync()" class="warning">Trigger Manual Sync</button>
+            <button onclick="checkSyncStatus()">Check Sync Status</button>
+            <button onclick="loadServerData()">Load Server Data</button>
+            
+            <h3>Sync Queue</h3>
+            <div id="syncQueueStatus"></div>
+            
+            <h3>Server Records</h3>
+            <div id="serverList" class="attendance-list"></div>
+            
+            <div id="serverLog" class="log"></div>
+        </div>
+    </div>
+    
+    <!-- Full Width Panel: Sync Monitor -->
+    <div style="margin-top: 20px;">
+        <div class="panel">
+            <h2>📊 Sync Monitor</h2>
+            <div id="syncMonitor"></div>
+            <div id="syncLog" class="log"></div>
+        </div>
+    </div>
+
+    <!-- Load required scripts -->
+    <script src="js/database.js"></script>
+    <script src="js/sync.js"></script>
+    
+    <script>
+        // Logging helper
+        function log(message, type = 'info', targetId = 'localLog') {
+            const logDiv = document.getElementById(targetId);
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = type;
+            entry.innerHTML = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // Initialize
+        async function init() {
+            log('Initializing test environment...', 'info', 'syncLog');
+            
+            // Initialize database
+            if (!window.db) {
+                window.db = new Database();
+            }
+            await window.db.init();
+            log('✅ Database initialized', 'success', 'syncLog');
+            
+            // Initialize sync manager
+            if (!window.syncManager) {
+                window.syncManager = new SyncManager();
+            }
+            await window.syncManager.init();
+            log('✅ Sync Manager initialized', 'success', 'syncLog');
+            
+            // Load initial data
+            await loadLocalAttendance();
+            await checkSyncStatus();
+        }
+
+        // Create test attendance record
+        async function createTestAttendance() {
+            try {
+                const now = new Date();
+                const testRecord = {
+                    employeeId: `emp_${Math.random().toString(36).substr(2, 9)}`,
+                    employeeName: `Test Employee ${Math.floor(Math.random() * 100)}`,
+                    date: now.toISOString().split('T')[0],
+                    checkInTime: now.toISOString(),
+                    checkOutTime: null,
+                    hoursWorked: 0,
+                    status: 'present',
+                    checkInMethod: 'manual',
+                    syncStatus: 'pending'
+                };
+                
+                // Save to IndexedDB
+                await window.db.add('attendance', testRecord);
+                log('✅ Created test attendance record', 'success', 'localLog');
+                log(`Employee: ${testRecord.employeeName}`, 'info', 'localLog');
+                log(`Check-in: ${new Date(testRecord.checkInTime).toLocaleTimeString()}`, 'info', 'localLog');
+                
+                // Save to localStorage
+                const localRecords = JSON.parse(localStorage.getItem('allAttendanceRecords') || '[]');
+                localRecords.push(testRecord);
+                localStorage.setItem('allAttendanceRecords', JSON.stringify(localRecords));
+                
+                // Reload data
+                await loadLocalAttendance();
+                
+                // Trigger sync
+                if (window.syncManager) {
+                    window.syncManager.triggerSync();
+                    log('🔄 Sync triggered', 'info', 'syncLog');
+                }
+                
+            } catch (error) {
+                log('❌ Error creating test record: ' + error.message, 'error', 'localLog');
+            }
+        }
+
+        // Load local attendance data
+        async function loadLocalAttendance() {
+            try {
+                // Load from localStorage
+                const localStorageRecords = JSON.parse(localStorage.getItem('allAttendanceRecords') || '[]');
+                const localStorageDiv = document.getElementById('localStorageList');
+                
+                if (localStorageRecords.length === 0) {
+                    localStorageDiv.innerHTML = '<p style="color: #999;">No records in localStorage</p>';
+                } else {
+                    localStorageDiv.innerHTML = localStorageRecords.map(record => `
+                        <div class="attendance-item ${record.syncStatus || 'pending'}">
+                            <strong>${record.employeeName}</strong> - ${record.date}<br>
+                            Check-in: ${new Date(record.checkInTime).toLocaleTimeString()}<br>
+                            <span class="status-badge ${record.syncStatus || 'pending'}">
+                                ${record.syncStatus || 'pending'}
+                            </span>
+                        </div>
+                    `).join('');
+                }
+                log(`Loaded ${localStorageRecords.length} records from localStorage`, 'info', 'localLog');
+                
+                // Load from IndexedDB
+                const indexedDBRecords = await window.db.getAll('attendance');
+                const indexedDBDiv = document.getElementById('indexedDBList');
+                
+                if (indexedDBRecords.length === 0) {
+                    indexedDBDiv.innerHTML = '<p style="color: #999;">No records in IndexedDB</p>';
+                } else {
+                    indexedDBDiv.innerHTML = indexedDBRecords.map(record => `
+                        <div class="attendance-item ${record.syncStatus || 'pending'}">
+                            <strong>${record.employeeName}</strong> - ${record.date}<br>
+                            Check-in: ${new Date(record.checkInTime).toLocaleTimeString()}<br>
+                            ${record.checkOutTime ? `Check-out: ${new Date(record.checkOutTime).toLocaleTimeString()}<br>` : ''}
+                            <span class="status-badge ${record.syncStatus || 'pending'}">
+                                ${record.syncStatus || 'pending'}
+                            </span>
+                            ${record.serverId ? `<br>Server ID: ${record.serverId}` : ''}
+                        </div>
+                    `).join('');
+                }
+                log(`Loaded ${indexedDBRecords.length} records from IndexedDB`, 'info', 'localLog');
+                
+            } catch (error) {
+                log('❌ Error loading local data: ' + error.message, 'error', 'localLog');
+            }
+        }
+
+        // Clear local data
+        async function clearLocalData() {
+            if (!confirm('Are you sure you want to clear all local attendance data?')) {
+                return;
+            }
+            
+            try {
+                // Clear localStorage
+                localStorage.removeItem('attendanceRecords');
+                localStorage.removeItem('allAttendanceRecords');
+                log('✅ Cleared localStorage', 'success', 'localLog');
+                
+                // Clear IndexedDB
+                await window.db.clearStore('attendance');
+                log('✅ Cleared IndexedDB attendance store', 'success', 'localLog');
+                
+                // Reload
+                await loadLocalAttendance();
+                
+            } catch (error) {
+                log('❌ Error clearing data: ' + error.message, 'error', 'localLog');
+            }
+        }
+
+        // Trigger manual sync
+        async function triggerSync() {
+            try {
+                log('🔄 Triggering manual sync...', 'info', 'serverLog');
+                
+                if (!window.syncManager) {
+                    log('❌ Sync Manager not initialized', 'error', 'serverLog');
+                    return;
+                }
+                
+                // Call the attendance sync specifically
+                await window.syncManager.syncAttendance();
+                log('✅ Attendance sync completed', 'success', 'serverLog');
+                
+                // Reload data
+                await loadLocalAttendance();
+                await loadServerData();
+                
+            } catch (error) {
+                log('❌ Sync error: ' + error.message, 'error', 'serverLog');
+            }
+        }
+
+        // Check sync status
+        async function checkSyncStatus() {
+            try {
+                const statusDiv = document.getElementById('syncQueueStatus');
+                
+                // Check pending records
+                const localRecords = await window.db.getAll('attendance');
+                const pendingRecords = localRecords.filter(r => r.syncStatus === 'pending' || !r.syncStatus);
+                const syncedRecords = localRecords.filter(r => r.syncStatus === 'synced');
+                
+                statusDiv.innerHTML = `
+                    <div style="padding: 10px; background: #f0f0f0; border-radius: 4px;">
+                        <strong>Sync Status:</strong><br>
+                        Total Records: ${localRecords.length}<br>
+                        Synced: <span style="color: #4CAF50;">${syncedRecords.length}</span><br>
+                        Pending: <span style="color: #ff9800;">${pendingRecords.length}</span><br>
+                        Last Sync: ${localStorage.getItem('lastSync') || 'Never'}
+                    </div>
+                `;
+                
+                // Update sync monitor
+                const monitorDiv = document.getElementById('syncMonitor');
+                monitorDiv.innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                        <div style="padding: 15px; background: #e8f5e9; border-radius: 4px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #4CAF50;">${syncedRecords.length}</div>
+                            <div style="color: #666;">Synced</div>
+                        </div>
+                        <div style="padding: 15px; background: #fff3e0; border-radius: 4px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #ff9800;">${pendingRecords.length}</div>
+                            <div style="color: #666;">Pending</div>
+                        </div>
+                        <div style="padding: 15px; background: #e3f2fd; border-radius: 4px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #2196F3;">${localRecords.length}</div>
+                            <div style="color: #666;">Total</div>
+                        </div>
+                    </div>
+                `;
+                
+                log(`Status: ${syncedRecords.length} synced, ${pendingRecords.length} pending`, 'info', 'syncLog');
+                
+            } catch (error) {
+                log('❌ Error checking status: ' + error.message, 'error', 'serverLog');
+            }
+        }
+
+        // Load server data
+        async function loadServerData() {
+            try {
+                log('📥 Loading server data...', 'info', 'serverLog');
+                
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    log('⚠️ No auth token found', 'warning', 'serverLog');
+                    document.getElementById('serverList').innerHTML = '<p style="color: #999;">Not authenticated</p>';
+                    return;
+                }
+                
+                const response = await fetch('https://daetspa-backend.onrender.com/api/attendance?limit=50', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const serverRecords = result.data || [];
+                    
+                    const serverDiv = document.getElementById('serverList');
+                    if (serverRecords.length === 0) {
+                        serverDiv.innerHTML = '<p style="color: #999;">No records on server</p>';
+                    } else {
+                        serverDiv.innerHTML = serverRecords.map(record => `
+                            <div class="attendance-item synced">
+                                <strong>${record.employeeName}</strong> - ${record.date}<br>
+                                Check-in: ${new Date(record.checkInTime || record.checkIn).toLocaleTimeString()}<br>
+                                ${record.checkOutTime || record.checkOut ? 
+                                    `Check-out: ${new Date(record.checkOutTime || record.checkOut).toLocaleTimeString()}<br>` : ''}
+                                Server ID: ${record._id || record.id}
+                            </div>
+                        `).join('');
+                    }
+                    
+                    log(`✅ Loaded ${serverRecords.length} records from server`, 'success', 'serverLog');
+                } else {
+                    log(`❌ Server error: ${response.status}`, 'error', 'serverLog');
+                }
+                
+            } catch (error) {
+                log('❌ Error loading server data: ' + error.message, 'error', 'serverLog');
+            }
+        }
+
+        // Auto-refresh
+        setInterval(async () => {
+            await checkSyncStatus();
+        }, 5000);
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

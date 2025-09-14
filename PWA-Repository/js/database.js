@@ -2,7 +2,7 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 12; // Incremented to add attendance and attendance_media stores
+        this.version = 13; // Incremented to add appointments and operations stores
         this.db = null;
         this.userId = null;
         this.isInitializing = false;
@@ -187,6 +187,25 @@ class Database {
                     transactionsStore.createIndex('date', 'date', { unique: false });
                     transactionsStore.createIndex('employeeId', 'employeeId', { unique: false });
                     transactionsStore.createIndex('syncStatus', 'syncStatus', { unique: false });
+                }
+
+                // Appointments store
+                if (!this.db.objectStoreNames.contains('appointments')) {
+                    const appointmentsStore = this.db.createObjectStore('appointments', { keyPath: 'id', autoIncrement: true });
+                    appointmentsStore.createIndex('date', 'date', { unique: false });
+                    appointmentsStore.createIndex('customerId', 'customerId', { unique: false });
+                    appointmentsStore.createIndex('employeeId', 'employeeId', { unique: false });
+                    appointmentsStore.createIndex('status', 'status', { unique: false });
+                    appointmentsStore.createIndex('syncStatus', 'syncStatus', { unique: false });
+                }
+
+                // Operations store (for business operations data)
+                if (!this.db.objectStoreNames.contains('operations')) {
+                    const operationsStore = this.db.createObjectStore('operations', { keyPath: 'id', autoIncrement: true });
+                    operationsStore.createIndex('type', 'type', { unique: false });
+                    operationsStore.createIndex('date', 'date', { unique: false });
+                    operationsStore.createIndex('status', 'status', { unique: false });
+                    operationsStore.createIndex('syncStatus', 'syncStatus', { unique: false });
                 }
 
                 // Gift Certificates store

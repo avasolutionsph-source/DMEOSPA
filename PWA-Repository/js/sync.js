@@ -440,6 +440,10 @@ class SyncManager {
             await this.syncPayroll();
             await this.yieldControl();
             
+            // Sync attendance data
+            await this.syncAttendance();
+            await this.yieldControl();
+            
             // Removed chatbot sync - AI assistant is local to PWA only
             await this.yieldControl();
             
@@ -1163,6 +1167,160 @@ class SyncManager {
 
     // Removed syncChatbotHistory() - AI assistant remains local to PWA only
     // Chatbot conversations are private and don't need backend sync
+
+    // ============================================================================
+    // ATTENDANCE SYNC - Sync attendance records across devices
+    // ============================================================================
+    
+    async syncAttendance() {
+        try {
+            console.log('📊 Syncing attendance records...');
+            
+            // Get attendance records from IndexedDB
+            const localAttendance = await window.db.getAll('attendance');
+            
+            if (!localAttendance || localAttendance.length === 0) {
+                console.log('📋 No attendance records in IndexedDB to sync');
+                
+                // Try to download from server
+                await this.downloadAttendanceFromServer();
+                return;
+            }
+            
+            // Filter unsynced records
+            const unsyncedRecords = localAttendance.filter(record => 
+                record.syncStatus === 'pending' || !record.syncStatus
+            );
+            
+            if (unsyncedRecords.length > 0) {
+                console.log(`📤 Uploading ${unsyncedRecords.length} unsynced attendance records...`);
+                
+                for (const record of unsyncedRecords) {
+                    try {
+                        // Prepare record for server (remove local-only fields)
+                        const serverRecord = {
+                            employeeId: record.employeeId,
+                            employeeName: record.employeeName,
+                            date: record.date,
+                            checkInTime: record.checkInTime,
+                            checkOutTime: record.checkOutTime,
+                            checkInMethod: record.checkInMethod || 'manual',
+                            checkOutMethod: record.checkOutMethod || 'manual',
+                            hoursWorked: record.hoursWorked,
+                            lateHours: record.lateHours,
+                            earlyDepartureDeductions: record.earlyDepartureDeductions,
+                            status: record.status || 'present'
+                        };
+                        
+                        const response = await fetch(`${this.apiUrl}/api/attendance`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${this.authToken}`
+                            },
+                            body: JSON.stringify(serverRecord)
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            
+                            // Update local record with server ID and mark as synced
+                            record.serverId = result.data.id || result.data._id;
+                            record.syncStatus = 'synced';
+                            await window.db.update('attendance', record);
+                            
+                            console.log(`✅ Synced attendance for ${record.employeeName} on ${record.date}`);
+                        } else {
+                            console.error(`❌ Failed to sync attendance record:`, response.status);
+                        }
+                    } catch (error) {
+                        console.error(`❌ Error syncing attendance record:`, error);
+                    }
+                }
+            }
+            
+            // Download any new records from server
+            await this.downloadAttendanceFromServer();
+            
+        } catch (error) {
+            console.error('❌ Attendance sync failed:', error);
+            if (window.logger) {
+                window.logger.error('Attendance sync failed', { 
+                    category: 'SYNC', 
+                    operation: 'sync_attendance',
+                    error: error
+                });
+            }
+        }
+    }
+    
+    async downloadAttendanceFromServer() {
+        try {
+            console.log('📥 Downloading attendance records from server...');
+            
+            const response = await fetch(`${this.apiUrl}/api/attendance?limit=500`, {
+                headers: {
+                    'Authorization': `Bearer ${this.authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                const serverRecords = result.data || [];
+                
+                if (serverRecords.length > 0) {
+                    console.log(`📥 Downloaded ${serverRecords.length} attendance records from server`);
+                    
+                    // Get local records to check for duplicates
+                    const localRecords = await window.db.getAll('attendance');
+                    const localRecordMap = new Map();
+                    
+                    // Create map of local records by employee+date
+                    localRecords.forEach(record => {
+                        const key = `${record.employeeId}_${record.date}`;
+                        localRecordMap.set(key, record);
+                    });
+                    
+                    // Process server records
+                    for (const serverRecord of serverRecords) {
+                        const key = `${serverRecord.employeeId}_${serverRecord.date}`;
+                        const existingLocal = localRecordMap.get(key);
+                        
+                        if (existingLocal) {
+                            // Update existing record with server data
+                            Object.assign(existingLocal, {
+                                checkInTime: serverRecord.checkInTime || serverRecord.checkIn,
+                                checkOutTime: serverRecord.checkOutTime || serverRecord.checkOut,
+                                hoursWorked: serverRecord.hoursWorked,
+                                lateHours: serverRecord.lateHours,
+                                earlyDepartureDeductions: serverRecord.earlyDepartureDeductions,
+                                status: serverRecord.status,
+                                serverId: serverRecord._id || serverRecord.id,
+                                syncStatus: 'synced'
+                            });
+                            await window.db.update('attendance', existingLocal);
+                        } else {
+                            // Add new record from server
+                            const newRecord = {
+                                ...serverRecord,
+                                checkInTime: serverRecord.checkInTime || serverRecord.checkIn,
+                                checkOutTime: serverRecord.checkOutTime || serverRecord.checkOut,
+                                serverId: serverRecord._id || serverRecord.id,
+                                syncStatus: 'synced'
+                            };
+                            await window.db.add('attendance', newRecord);
+                        }
+                    }
+                    
+                    console.log('✅ Attendance records synchronized with server');
+                }
+            } else {
+                console.error('❌ Failed to download attendance from server:', response.status);
+            }
+        } catch (error) {
+            console.error('❌ Error downloading attendance from server:', error);
+        }
+    }
 
     async processSyncQueue() {
         try {

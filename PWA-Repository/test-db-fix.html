@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button.danger {
+            background: #f44336;
+        }
+        button.danger:hover {
+            background: #da190b;
+        }
+        .log {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .error {
+            color: #f44336;
+        }
+        .warning {
+            color: #ff9800;
+        }
+        .info {
+            color: #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Database Fix Test</h1>
+    
+    <div class="test-section">
+        <h2>Step 1: Clear Browser Data</h2>
+        <p>First, clear your browser's IndexedDB to start fresh:</p>
+        <button onclick="clearDatabase()" class="danger">Clear IndexedDB</button>
+        <button onclick="clearAllData()" class="danger">Clear All Browser Data</button>
+        <div id="clearLog" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 2: Initialize Database</h2>
+        <p>Load the database with the new schema:</p>
+        <button onclick="initDatabase()">Initialize Database</button>
+        <button onclick="checkDatabase()">Check Database Status</button>
+        <div id="initLog" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 3: Test Operations</h2>
+        <p>Test accessing the new stores:</p>
+        <button onclick="testAppointments()">Test Appointments Store</button>
+        <button onclick="testOperations()">Test Operations Store</button>
+        <button onclick="testAllStores()">Test All Stores</button>
+        <div id="testLog" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Step 4: Test Dashboard</h2>
+        <p>Test the dashboard loading:</p>
+        <button onclick="testDashboard()">Test Dashboard Loading</button>
+        <button onclick="window.location.href='index.html'">Go to Main App</button>
+        <div id="dashboardLog" class="log"></div>
+    </div>
+
+    <!-- Load the database script -->
+    <script src="js/database.js"></script>
+    <script src="js/dashboard.js"></script>
+    
+    <script>
+        function log(message, type = 'info', targetId = 'clearLog') {
+            const logDiv = document.getElementById(targetId);
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = type;
+            entry.innerHTML = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function clearDatabase() {
+            try {
+                log('Closing existing database connection...', 'info', 'clearLog');
+                if (window.db && window.db.db) {
+                    window.db.db.close();
+                    window.db.db = null;
+                }
+                
+                log('Deleting AvaSolutionsDB...', 'info', 'clearLog');
+                const deleteReq = indexedDB.deleteDatabase('AvaSolutionsDB');
+                
+                deleteReq.onsuccess = () => {
+                    log('✅ Database deleted successfully', 'success', 'clearLog');
+                    localStorage.removeItem('database_initialized');
+                    localStorage.removeItem('ava_database_fallback');
+                    localStorage.removeItem('ava_database_fallback_name');
+                };
+                
+                deleteReq.onerror = (e) => {
+                    log('❌ Failed to delete database: ' + e.target.error, 'error', 'clearLog');
+                };
+                
+                deleteReq.onblocked = () => {
+                    log('⚠️ Database deletion blocked - close all tabs', 'warning', 'clearLog');
+                };
+                
+            } catch (error) {
+                log('❌ Error: ' + error.message, 'error', 'clearLog');
+            }
+        }
+
+        function clearAllData() {
+            try {
+                // Clear localStorage
+                localStorage.clear();
+                log('✅ LocalStorage cleared', 'success', 'clearLog');
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                log('✅ SessionStorage cleared', 'success', 'clearLog');
+                
+                // Clear IndexedDB
+                clearDatabase();
+                
+            } catch (error) {
+                log('❌ Error: ' + error.message, 'error', 'clearLog');
+            }
+        }
+
+        async function initDatabase() {
+            try {
+                log('Initializing database...', 'info', 'initLog');
+                
+                // Create new database instance
+                window.db = new Database();
+                
+                // Initialize it
+                await window.db.init();
+                
+                log('✅ Database initialized successfully', 'success', 'initLog');
+                log(`Version: ${window.db.version}`, 'info', 'initLog');
+                log(`Stores: ${window.db.db.objectStoreNames.length}`, 'info', 'initLog');
+                
+                // List all stores
+                const stores = Array.from(window.db.db.objectStoreNames);
+                log('Available stores: ' + stores.join(', '), 'info', 'initLog');
+                
+                // Check for new stores
+                if (stores.includes('appointments')) {
+                    log('✅ Appointments store found', 'success', 'initLog');
+                } else {
+                    log('❌ Appointments store missing', 'error', 'initLog');
+                }
+                
+                if (stores.includes('operations')) {
+                    log('✅ Operations store found', 'success', 'initLog');
+                } else {
+                    log('❌ Operations store missing', 'error', 'initLog');
+                }
+                
+            } catch (error) {
+                log('❌ Error initializing database: ' + error.message, 'error', 'initLog');
+            }
+        }
+
+        async function checkDatabase() {
+            try {
+                if (!window.db || !window.db.db) {
+                    log('❌ Database not initialized', 'error', 'initLog');
+                    return;
+                }
+                
+                const info = {
+                    name: window.db.dbName,
+                    version: window.db.version,
+                    stores: Array.from(window.db.db.objectStoreNames),
+                    isOpen: window.db.isOpen
+                };
+                
+                log('Database Info:', 'info', 'initLog');
+                log(`Name: ${info.name}`, 'info', 'initLog');
+                log(`Version: ${info.version}`, 'info', 'initLog');
+                log(`Is Open: ${info.isOpen}`, 'info', 'initLog');
+                log(`Total Stores: ${info.stores.length}`, 'info', 'initLog');
+                
+            } catch (error) {
+                log('❌ Error checking database: ' + error.message, 'error', 'initLog');
+            }
+        }
+
+        async function testAppointments() {
+            try {
+                log('Testing appointments store...', 'info', 'testLog');
+                
+                // Try to add a test appointment
+                const testAppointment = {
+                    date: new Date(),
+                    customerName: 'Test Customer',
+                    serviceName: 'Test Service',
+                    status: 'pending',
+                    time: '10:00 AM'
+                };
+                
+                const id = await window.db.add('appointments', testAppointment);
+                log('✅ Added test appointment with ID: ' + id, 'success', 'testLog');
+                
+                // Try to read appointments
+                const appointments = await window.db.getAll('appointments');
+                log('✅ Retrieved ' + appointments.length + ' appointments', 'success', 'testLog');
+                
+                // Clean up
+                await window.db.delete('appointments', id);
+                log('✅ Cleaned up test appointment', 'success', 'testLog');
+                
+            } catch (error) {
+                log('❌ Error testing appointments: ' + error.message, 'error', 'testLog');
+            }
+        }
+
+        async function testOperations() {
+            try {
+                log('Testing operations store...', 'info', 'testLog');
+                
+                // Try to add a test operation
+                const testOperation = {
+                    type: 'maintenance',
+                    date: new Date(),
+                    status: 'completed',
+                    description: 'Test operation'
+                };
+                
+                const id = await window.db.add('operations', testOperation);
+                log('✅ Added test operation with ID: ' + id, 'success', 'testLog');
+                
+                // Try to read operations
+                const operations = await window.db.getAll('operations');
+                log('✅ Retrieved ' + operations.length + ' operations', 'success', 'testLog');
+                
+                // Clean up
+                await window.db.delete('operations', id);
+                log('✅ Cleaned up test operation', 'success', 'testLog');
+                
+            } catch (error) {
+                log('❌ Error testing operations: ' + error.message, 'error', 'testLog');
+            }
+        }
+
+        async function testAllStores() {
+            try {
+                const stores = Array.from(window.db.db.objectStoreNames);
+                log('Testing all ' + stores.length + ' stores...', 'info', 'testLog');
+                
+                for (const storeName of stores) {
+                    try {
+                        const data = await window.db.getAll(storeName);
+                        log(`✅ ${storeName}: ${data.length} records`, 'success', 'testLog');
+                    } catch (error) {
+                        log(`❌ ${storeName}: ${error.message}`, 'error', 'testLog');
+                    }
+                }
+                
+            } catch (error) {
+                log('❌ Error testing stores: ' + error.message, 'error', 'testLog');
+            }
+        }
+
+        async function testDashboard() {
+            try {
+                log('Testing dashboard initialization...', 'info', 'dashboardLog');
+                
+                // Create dashboard instance
+                const dashboard = new EnhancedDashboardManager();
+                
+                // Test safeGetAll method
+                log('Testing safeGetAll method...', 'info', 'dashboardLog');
+                const appointments = await dashboard.safeGetAll('appointments');
+                log('✅ safeGetAll returned ' + appointments.length + ' appointments', 'success', 'dashboardLog');
+                
+                const operations = await dashboard.safeGetAll('operations');
+                log('✅ safeGetAll returned ' + operations.length + ' operations', 'success', 'dashboardLog');
+                
+                // Test loading operations data
+                log('Testing loadOperationsData...', 'info', 'dashboardLog');
+                await dashboard.loadOperationsData();
+                log('✅ loadOperationsData completed without errors', 'success', 'dashboardLog');
+                
+                // Test loading all data
+                log('Testing loadAllDashboardData...', 'info', 'dashboardLog');
+                await dashboard.loadAllDashboardData();
+                log('✅ loadAllDashboardData completed without errors', 'success', 'dashboardLog');
+                
+                log('✅ All dashboard tests passed!', 'success', 'dashboardLog');
+                
+            } catch (error) {
+                log('❌ Error testing dashboard: ' + error.message, 'error', 'dashboardLog');
+            }
+        }
+    </script>
+</body>
+</html>
