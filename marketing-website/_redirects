@@ -1,6 +1,5 @@
-# The marketing website should be deployed as a Node.js app on Render, not Netlify
-# If deployed on Netlify, it can only serve static files
-# This file is for reference only - the site needs proper Node.js hosting
+# Proxy ALL /api/* requests to the backend on Render
+/api/*  https://daetspa-backend.onrender.com/api/:splat  200
 
-# For local development, the marketing website runs on port 3003
-# For production, deploy the marketing website to Render or similar Node.js hosting
+# Serve all other routes as static files
+# Marketing website is a static site, not a SPA, so no catch-all redirect needed
