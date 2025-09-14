@@ -59,10 +59,19 @@ router.get('/', withErrorHandling(async (req, res) => {
 router.post('/', withErrorHandling(async (req, res) => {
     const userId = req.user._id?.toString() || req.user.id?.toString();
     
+    // Transform PWA format to match MongoDB schema
     const attendanceData = {
         ...req.body,
-        userId: userId
+        userId: userId,
+        // Convert checkInTime string to checkIn Date
+        checkIn: req.body.checkInTime ? new Date(req.body.checkInTime) : new Date(),
+        // Convert checkOutTime string to checkOut Date if provided
+        checkOut: req.body.checkOutTime ? new Date(req.body.checkOutTime) : null
     };
+    
+    // Remove duplicate fields to avoid confusion
+    delete attendanceData.checkInTime;
+    delete attendanceData.checkOutTime;
     
     // Create new attendance record in MongoDB
     const attendance = new Attendance(attendanceData);
@@ -86,10 +95,25 @@ router.put('/:id', withErrorHandling(async (req, res) => {
     const userId = req.user._id?.toString() || req.user.id?.toString();
     const { id } = req.params;
     
+    // Transform PWA format to match MongoDB schema
+    const updateData = { ...req.body };
+    
+    // Convert time fields if provided
+    if (req.body.checkInTime) {
+        updateData.checkIn = new Date(req.body.checkInTime);
+        delete updateData.checkInTime;
+    }
+    if (req.body.checkOutTime) {
+        updateData.checkOut = new Date(req.body.checkOutTime);
+        delete updateData.checkOutTime;
+    }
+    
+    updateData.updatedAt = new Date();
+    
     // Find and update attendance record in MongoDB
     const attendance = await Attendance.findOneAndUpdate(
         { _id: id, userId: userId },
-        { ...req.body, updatedAt: new Date() },
+        updateData,
         { new: true, runValidators: true }
     );
     
