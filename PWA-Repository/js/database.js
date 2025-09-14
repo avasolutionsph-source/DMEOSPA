@@ -2,7 +2,7 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 11; // Incremented for HybridAPIClient cache and request queue stores
+        this.version = 12; // Incremented to add attendance and attendance_media stores
         this.db = null;
         this.userId = null;
         this.isInitializing = false;
@@ -363,6 +363,21 @@ class Database {
                 if (!this.db.objectStoreNames.contains('attendanceRules')) {
                     const rulesStore = this.db.createObjectStore('attendanceRules', { keyPath: 'id', autoIncrement: true });
                     // Will store single configuration object
+                }
+                
+                // Attendance records store
+                if (!this.db.objectStoreNames.contains('attendance')) {
+                    const attendanceStore = this.db.createObjectStore('attendance', { keyPath: 'id', autoIncrement: true });
+                    attendanceStore.createIndex('employeeId', 'employeeId', { unique: false });
+                    attendanceStore.createIndex('date', 'date', { unique: false });
+                    attendanceStore.createIndex('syncStatus', 'syncStatus', { unique: false });
+                }
+                
+                // Attendance media store (for photos/videos)
+                if (!this.db.objectStoreNames.contains('attendance_media')) {
+                    const mediaStore = this.db.createObjectStore('attendance_media', { keyPath: 'id', autoIncrement: true });
+                    mediaStore.createIndex('employeeId', 'employeeId', { unique: false });
+                    mediaStore.createIndex('date', 'date', { unique: false });
                 }
                 
                 // Holiday Calendar
