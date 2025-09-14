@@ -56,6 +56,37 @@ router.use('/health', healthRoutes);
 // Public routes (no authentication required)
 router.use('/auth', authRoutes);
 
+// Booking routes for marketing website
+router.get('/booking/branches', async (req, res) => {
+  try {
+    // Import User model to get branch users
+    const User = (await import('../../models/User.js')).default;
+    
+    // Get all branch users (business accounts that can receive bookings)
+    const branches = await User.find({ 
+      role: 'branch',
+      businessName: { $exists: true }
+    })
+    .select('businessName firstName lastName _id')
+    .lean();
+    
+    res.json({
+      success: true,
+      data: branches.map(branch => ({
+        id: branch._id,
+        name: branch.businessName,
+        owner: `${branch.firstName} ${branch.lastName}`
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching branches:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load branches'
+    });
+  }
+});
+
 // Public products endpoint for marketing website booking system
 router.get('/products/public/:userId', async (req, res) => {
     try {
