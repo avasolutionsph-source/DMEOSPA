@@ -134,8 +134,16 @@ const corsOptions = {
     // Check exact match or pattern match for Netlify/Render domains
     if (allowedOrigins.includes(origin) || 
         /netlify\.app$/.test(origin) || 
-        /onrender\.com$/.test(origin)) {
+        /onrender\.com$/.test(origin) ||
+        origin.includes('daetspa') ||
+        origin.includes('localhost')) {
       logger.info(`CORS: Allowing origin: ${origin}`);
+      return callback(null, true);
+    }
+    
+    // In development, allow all origins
+    if (process.env.NODE_ENV !== 'production') {
+      logger.info(`CORS: Development mode - allowing origin: ${origin}`);
       return callback(null, true);
     }
     

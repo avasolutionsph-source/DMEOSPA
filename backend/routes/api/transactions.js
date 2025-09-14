@@ -160,4 +160,7 @@ router.post('/:id/refund', withErrorHandling(async (req, res) => {
     });
 }));
 
+// Create standard CRUD routes using base handler
+transactionHandler.createRoutes(router);
+
 export default router;
