@@ -5,7 +5,82 @@ import { generateToken, verifyToken } from '../../middleware/auth.js';
 
 const router = express.Router();
 
-// POST /api/auth/register
+// POST /api/auth/register-client (for marketing website client registration)
+router.post('/register-client', async (req, res) => {
+  try {
+    const { email, password, firstName, lastName, phone } = req.body;
+    
+    // Validate required fields (no businessName needed for clients)
+    if (!email || !password || !firstName || !lastName) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide all required fields'
+      });
+    }
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        error: 'User already exists with this email'
+      });
+    }
+    
+    console.log('🚀 Creating CLIENT user with data:', {
+      email,
+      firstName,
+      lastName,
+      phone,
+      role: 'client'
+    });
+    
+    // Create new CLIENT user (password will be hashed by pre-save hook)
+    const user = await User.create({
+      email: email.toLowerCase(),
+      password,
+      firstName,
+      lastName,
+      businessName: `${firstName} ${lastName}`, // Simple business name for clients
+      phone: phone || '',
+      role: 'client' // CLIENT ROLE
+    });
+    
+    console.log('✅ Client user saved with role:', user.role);
+    
+    // Generate JWT token
+    const token = generateToken({
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      businessName: user.businessName,
+      role: user.role
+    });
+    
+    res.json({ 
+      success: true,
+      message: 'Client registration successful',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        businessName: user.businessName,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Client registration error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Client registration failed'
+    });
+  }
+});
+
+// POST /api/auth/register (for business registration)
 router.post('/register', async (req, res) => {
   try {
     const { email, password, firstName, lastName, businessName, phone } = req.body;

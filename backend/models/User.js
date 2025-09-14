@@ -67,7 +67,7 @@ const userSchema = new mongoose.Schema({
   // Role (for super admin)
   role: {
     type: String,
-    enum: ['branch', 'admin', 'superAdmin'],
+    enum: ['branch', 'admin', 'superAdmin', 'client'],
     default: 'branch'
   },
   

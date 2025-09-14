@@ -220,12 +220,12 @@
             try {
                 console.log('🚀 Sending client registration data:', userData);
                 
-                // Use marketing website backend for client registration
-                const marketingBackend = window.location.hostname === 'localhost' 
+                // For deployed version, use PWA backend with client registration flag
+                const backendUrl = window.location.hostname === 'localhost' 
                     ? 'http://localhost:3003'
-                    : 'https://daetspa-marketing-backend.onrender.com'; // Need to deploy this
+                    : 'https://daetspa-backend.onrender.com';
                 
-                const response = await fetch(`${marketingBackend}/api/auth/register`, {
+                const response = await fetch(`${backendUrl}/api/auth/register-client`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
