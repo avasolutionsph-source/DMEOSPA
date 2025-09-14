@@ -65,10 +65,24 @@ router.get('/booking/branches', async (req, res) => {
     // Get all branch users (business accounts that can receive bookings)
     const branches = await User.find({ 
       role: 'branch',
-      businessName: { $exists: true }
+      businessName: { $exists: true, $ne: null, $ne: '' }
     })
     .select('businessName firstName lastName _id')
     .lean();
+    
+    console.log('Found branches:', branches);
+    
+    // If no branches found, return a default demo branch
+    if (!branches || branches.length === 0) {
+      return res.json({
+        success: true,
+        data: [{
+          id: 'demo-branch-1',
+          name: 'Daet Massage and Spa - Main Branch',
+          owner: 'Demo Business'
+        }]
+      });
+    }
     
     res.json({
       success: true,
