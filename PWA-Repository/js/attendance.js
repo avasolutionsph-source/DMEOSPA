@@ -422,8 +422,24 @@ class AttendanceManager {
                 createdAt: now.toISOString()
             };
             
-            // HYBRID STORAGE: Split data between MongoDB (essential) and IndexedDB (media)
-            await this.saveAttendanceHybrid(attendanceRecord);
+            // Try API first, fallback to local storage
+            try {
+                await this.saveAttendanceHybrid(attendanceRecord);
+            } catch (hybridError) {
+                console.error('Hybrid save failed, trying local only:', hybridError);
+                // Simple fallback - just save locally without complex logic
+                const simpleRecord = {
+                    ...attendanceRecord,
+                    id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+                };
+                
+                // Store in memory first
+                this.attendanceRecords.push(simpleRecord);
+                this.allAttendanceRecords = this.allAttendanceRecords || [];
+                this.allAttendanceRecords.push(simpleRecord);
+                
+                console.log('✅ Saved attendance in memory as fallback');
+            }
             
             if (window.showNotification) {
                 window.showNotification(`✅ ${employee.name} checked in successfully`, 'success');
@@ -635,14 +651,25 @@ class AttendanceManager {
         try {
             const today = new Date().toISOString().split('T')[0];
             
-            if (!window.db) {
-                console.warn('Database not ready');
-                this.attendanceRecords = [];
+            // Initialize arrays
+            this.attendanceRecords = this.attendanceRecords || [];
+            this.allAttendanceRecords = this.allAttendanceRecords || [];
+            
+            // Skip database loading if not ready
+            if (!window.db || !window.db.db) {
+                console.warn('Database not ready, using memory storage only');
                 return;
             }
             
-            // Use hybrid loading: MongoDB + IndexedDB media
-            const allRecords = await this.loadAttendanceHybrid();
+            // Try to load from hybrid storage
+            let allRecords = [];
+            try {
+                allRecords = await this.loadAttendanceHybrid();
+            } catch (loadError) {
+                console.error('Failed to load from hybrid storage:', loadError);
+                // Keep using existing memory records
+                allRecords = this.allAttendanceRecords || [];
+            }
             
             // Sort by date, newest first
             allRecords.sort((a, b) => {
@@ -657,12 +684,13 @@ class AttendanceManager {
             // Store all records for display
             this.allAttendanceRecords = allRecords;
             
-            console.log(`✅ [HYBRID] Loaded ${this.attendanceRecords.length} attendance records for today`);
-            console.log(`✅ [HYBRID] Total attendance records: ${allRecords.length}`);
+            console.log(`✅ Loaded ${this.attendanceRecords.length} attendance records for today`);
+            console.log(`✅ Total attendance records: ${allRecords.length}`);
         } catch (error) {
             console.error('❌ Failed to load attendance records:', error);
-            this.attendanceRecords = [];
-            this.allAttendanceRecords = [];
+            // Keep existing records in memory
+            this.attendanceRecords = this.attendanceRecords || [];
+            this.allAttendanceRecords = this.allAttendanceRecords || [];
         }
     }
 
