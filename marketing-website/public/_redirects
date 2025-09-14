@@ -1,9 +1,25 @@
 # Netlify redirects for marketing website
 
+# Proxy all API calls to the backend server
+/api/*  https://daetspa-backend.onrender.com/api/:splat  200
+
 # Main routes
 /            /index.html    200
 /contact     /contact.html  200
 /features    /index.html    200
+/about       /about.html    200
+/services    /services.html 200
+/login       /login.html    200
+/register    /register.html 200
+/admin       /admin.html    200
+/admin-login /admin-login.html 200
+/admin-dashboard /admin-dashboard.html 200
+/business-dashboard /business-dashboard.html 200
+/profile     /profile.html  200
+/terms       /terms.html    200
+/privacy-policy /privacy-policy.html 200
+/cookie-policy  /cookie-policy.html 200
+/compliance  /compliance.html 200
 
 # Fallback for any other routes
 /*           /404.html      404
