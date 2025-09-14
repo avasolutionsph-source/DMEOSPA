@@ -258,13 +258,14 @@ router.post('/login', async (req, res) => {
       });
     }
     
-    // Prevent client role users from accessing PWA backend
-    if (user.role === 'client') {
-      return res.status(403).json({
-        success: false,
-        error: 'Client accounts cannot access PWA backend. Please use the marketing website for bookings.'
-      });
-    }
+    // Allow client role users to login (needed for marketing website deployed on Netlify)
+    // Clients can login but have limited access to endpoints
+    // if (user.role === 'client') {
+    //   return res.status(403).json({
+    //     success: false,
+    //     error: 'Client accounts cannot access PWA backend. Please use the marketing website for bookings.'
+    //   });
+    // }
     
     // Verify password
     const isPasswordValid = await user.comparePassword(password);
