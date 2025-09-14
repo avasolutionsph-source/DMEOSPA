@@ -5,6 +5,19 @@ import Attendance from '../../models/Attendance.js';
 
 const router = express.Router();
 
+// Test endpoint to verify attendance API is accessible
+router.get('/test', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Attendance API is working',
+        user: req.user ? {
+            id: req.user._id || req.user.id,
+            email: req.user.email,
+            role: req.user.role
+        } : null
+    });
+});
+
 // GET /api/attendance - Get all attendance records for the authenticated user
 router.get('/', withErrorHandling(async (req, res) => {
     console.log('🔍 [ATTENDANCE DEBUG] req.user:', req.user);
@@ -57,6 +70,9 @@ router.get('/', withErrorHandling(async (req, res) => {
 
 // POST /api/attendance - Create new attendance record
 router.post('/', withErrorHandling(async (req, res) => {
+    console.log('📥 [ATTENDANCE POST] Request body:', req.body);
+    console.log('👤 [ATTENDANCE POST] User:', req.user);
+    
     const userId = req.user._id?.toString() || req.user.id?.toString();
     
     // Transform PWA format to match MongoDB schema
@@ -66,16 +82,23 @@ router.post('/', withErrorHandling(async (req, res) => {
         // Convert checkInTime string to checkIn Date
         checkIn: req.body.checkInTime ? new Date(req.body.checkInTime) : new Date(),
         // Convert checkOutTime string to checkOut Date if provided
-        checkOut: req.body.checkOutTime ? new Date(req.body.checkOutTime) : null
+        checkOut: req.body.checkOutTime ? new Date(req.body.checkOutTime) : null,
+        // Ensure checkInTime and checkOutTime are also set for compatibility
+        checkInTime: req.body.checkInTime || new Date().toISOString(),
+        checkOutTime: req.body.checkOutTime || null
     };
     
-    // Remove duplicate fields to avoid confusion
-    delete attendanceData.checkInTime;
-    delete attendanceData.checkOutTime;
+    // Don't delete these fields as they might be needed
+    // delete attendanceData.checkInTime;
+    // delete attendanceData.checkOutTime;
+    
+    console.log('💾 [ATTENDANCE POST] Saving data:', attendanceData);
     
     // Create new attendance record in MongoDB
     const attendance = new Attendance(attendanceData);
-    await attendance.save();
+    const savedAttendance = await attendance.save();
+    
+    console.log('✅ [ATTENDANCE POST] Saved successfully:', savedAttendance._id);
     
     logger.info('Attendance record created in MongoDB', {
         category: 'DATABASE',
@@ -85,7 +108,11 @@ router.post('/', withErrorHandling(async (req, res) => {
     
     res.status(201).json({
         success: true,
-        data: attendance,
+        data: {
+            ...savedAttendance.toObject(),
+            id: savedAttendance._id,
+            _id: savedAttendance._id
+        },
         message: 'Attendance record created successfully'
     });
 }));
