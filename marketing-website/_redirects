@@ -1,0 +1,5 @@
+# API proxy for backend
+/api/*  https://daetspa-backend.onrender.com/api/:splat  200
+
+# Handle client-side routing for any unmatched routes
+/*    /index.html   200
