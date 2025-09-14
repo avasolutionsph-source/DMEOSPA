@@ -484,9 +484,11 @@ class AttendanceManager {
         try {
             const today = new Date().toISOString().split('T')[0];
             
-            // Find today's check-in record for this employee
+            // Find today's check-in record for this employee (check both id formats)
             const todayRecords = this.attendanceRecords.filter(record => 
-                record.employeeId === employeeId && record.date === today && !record.checkOutTime
+                (record.employeeId === employeeId || record.employeeId === employeeId) && 
+                record.date === today && 
+                !record.checkOutTime
             );
             
             if (todayRecords.length === 0) {
@@ -498,7 +500,10 @@ class AttendanceManager {
             
             // Use the first (most recent) check-in record
             const checkInRecord = todayRecords[0];
-            const employee = this.employees.find(e => e.id === employeeId);
+            const employee = this.employees.find(e => 
+                e.id === employeeId || e._id === employeeId || 
+                e.id === checkInRecord.employeeId || e._id === checkInRecord.employeeId
+            );
             const now = new Date();
             
             // Get business settings for grace period
@@ -522,8 +527,22 @@ class AttendanceManager {
                 payDeduction: deductionHours * hourlyRate
             };
             
-            // HYBRID STORAGE: Update both MongoDB (essential) and IndexedDB (media)
-            await this.updateAttendanceHybrid(updatedRecord, checkInRecord.id);
+            // Try to update via hybrid storage, fallback to memory
+            try {
+                await this.updateAttendanceHybrid(updatedRecord, checkInRecord.id);
+            } catch (updateError) {
+                console.error('Hybrid update failed, updating in memory:', updateError);
+                // Update in memory arrays
+                const index = this.attendanceRecords.findIndex(r => r.id === checkInRecord.id);
+                if (index !== -1) {
+                    this.attendanceRecords[index] = updatedRecord;
+                }
+                const allIndex = this.allAttendanceRecords.findIndex(r => r.id === checkInRecord.id);
+                if (allIndex !== -1) {
+                    this.allAttendanceRecords[allIndex] = updatedRecord;
+                }
+                console.log('✅ Updated check-out in memory');
+            }
             
             // Log activity
             if (window.activityLogger) {
