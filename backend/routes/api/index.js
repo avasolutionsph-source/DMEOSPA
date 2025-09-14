@@ -76,7 +76,7 @@ router.get('/booking/branches', async (req, res) => {
     if (!branches || branches.length === 0) {
       return res.json({
         success: true,
-        data: [{
+        branches: [{
           id: 'demo-branch-1',
           name: 'Daet Massage and Spa - Main Branch',
           owner: 'Demo Business'
@@ -86,7 +86,7 @@ router.get('/booking/branches', async (req, res) => {
     
     res.json({
       success: true,
-      data: branches.map(branch => ({
+      branches: branches.map(branch => ({
         id: branch._id,
         name: branch.businessName,
         owner: `${branch.firstName} ${branch.lastName}`
