@@ -161,10 +161,8 @@
         // Call on page load
         handleOAuthCallback();
         
-        // API Configuration - Updated to use deployed backend
-        window.API_BASE_URL = window.API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'http://localhost:4001' 
-            : 'https://daetspa-backend.onrender.com');
+        // API Configuration - Use marketing website's own auth endpoint
+        const AUTH_URL = '/api/auth/login'; // Use marketing website's auth endpoint
         
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -174,14 +172,12 @@
             const password = formData.get('password');
             
             try {
-                const response = await fetch(`${window.API_BASE_URL}/api/auth/login`, {
+                const response = await fetch(AUTH_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ email, password }),
-                    mode: 'cors', // Explicitly enable CORS
-                    credentials: 'include' // Include credentials for CORS
+                    body: JSON.stringify({ email, password })
                 });
                 
                 const data = await response.json();

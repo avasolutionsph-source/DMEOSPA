@@ -805,14 +805,30 @@
         // Load branches
         async function loadBranches() {
             try {
+                console.log('Loading branches from API...');
+                console.log('API URL:', `${window.API_BASE_URL}/api/booking/branches`);
+                
                 const response = await fetch(`${window.API_BASE_URL}/api/booking/branches`);
+                
+                if (!response.ok) {
+                    console.error('API response not OK:', response.status, response.statusText);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const result = await response.json();
+                console.log('API response:', result);
                 
                 document.getElementById('branchesLoading').style.display = 'none';
                 
-                if (result.success) {
+                if (result.success && result.branches) {
                     displayBranches(result.branches);
+                } else if (result.success && !result.branches) {
+                    // Success but no branches property
+                    console.warn('Success response but no branches property');
+                    displayBranches([]);
                 } else {
+                    // API returned success: false
+                    console.error('API returned success: false', result.error);
                     document.getElementById('branchesContainer').innerHTML = 
                         '<p style="text-align: center; color: #ef4444;">Failed to load branches. Please try again.</p>';
                 }
@@ -820,7 +836,7 @@
                 console.error('Error loading branches:', error);
                 document.getElementById('branchesLoading').style.display = 'none';
                 document.getElementById('branchesContainer').innerHTML = 
-                    '<p style="text-align: center; color: #ef4444;">Failed to load branches. Please try again.</p>';
+                    '<p style="text-align: center; color: #ef4444;">Failed to load branches. Please check your connection and try again.</p>';
             }
         }
 
@@ -829,6 +845,19 @@
             container.innerHTML = '';
             
             console.log('Displaying branches:', branches);
+            
+            // Check if branches is undefined or not an array
+            if (!branches || !Array.isArray(branches)) {
+                console.error('Error: branches is not defined or not an array:', branches);
+                container.innerHTML = '<p style="text-align: center; color: #ef4444;">No branches available. Please try again later.</p>';
+                return;
+            }
+            
+            // Check if branches array is empty
+            if (branches.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #6b7280;">No branches available at this time.</p>';
+                return;
+            }
             
             branches.forEach((branch, index) => {
                 const branchCard = document.createElement('div');
