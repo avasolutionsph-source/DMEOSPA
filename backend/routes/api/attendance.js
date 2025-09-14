@@ -1,5 +1,5 @@
 import express from 'express';
-import { withErrorHandling } from '../../middleware/unifiedErrorHandler.js';
+import { withErrorHandling } from '../../middleware/errorHandler.js';
 import logger from '../../utils/logger.js';
 import Attendance from '../../models/Attendance.js';
 

@@ -18,9 +18,8 @@ import { fileURLToPath } from 'url';
 // Import unified utilities and middleware
 import { connectDB, getDBConnection } from './config/database.js';
 import logger from './utils/logger.js';
-import { globalErrorHandler } from './middleware/standardErrorHandler.js';
 import { requestLogger } from './middleware/requestLogger.js';
-import { errorHandler } from './middleware/errorHandler.js';
+import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { setupPassport } from './config/passport.js';
 import { authenticateJWT, requireBusinessUser } from './middleware/auth.js';
 import { requireSuperAdmin } from './middleware/superAdmin.js';

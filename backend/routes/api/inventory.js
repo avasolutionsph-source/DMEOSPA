@@ -1,7 +1,7 @@
 import express from 'express';
 import InventoryItem from '../../models/InventoryItem.js';
 import BaseRouteHandler from '../../utils/base-route-handler.js';
-import { withErrorHandling } from '../../middleware/unifiedErrorHandler.js';
+import { withErrorHandling } from '../../middleware/errorHandler.js';
 import logger from '../../utils/logger.js';
 
 const router = express.Router();

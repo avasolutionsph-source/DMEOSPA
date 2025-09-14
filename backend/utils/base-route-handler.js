@@ -3,7 +3,7 @@
  * Provides standardized patterns for common database operations
  */
 
-import { withErrorHandling, createError, validationError } from '../middleware/unifiedErrorHandler.js';
+import { withErrorHandling, createError, validationError } from '../middleware/errorHandler.js';
 import logger from './logger.js';
 
 export class BaseRouteHandler {

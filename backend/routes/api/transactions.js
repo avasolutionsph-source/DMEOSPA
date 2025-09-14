@@ -2,7 +2,7 @@ import express from 'express';
 import Transaction from '../../models/Transaction.js';
 import Employee from '../../models/Employee.js';
 import BaseRouteHandler from '../../utils/base-route-handler.js';
-import { withErrorHandling } from '../../middleware/unifiedErrorHandler.js';
+import { withErrorHandling } from '../../middleware/errorHandler.js';
 import logger from '../../utils/logger.js';
 import employeeStatsManager from '../../utils/employeeStatsManager.js';
 import { processNewTransaction, preventDuplicateProcessing } from '../../middleware/transactionProcessor.js';

@@ -1,7 +1,7 @@
 import express from 'express';
 import Employee from '../../models/Employee.js';
 import BaseRouteHandler from '../../utils/base-route-handler.js';
-import { withErrorHandling } from '../../middleware/unifiedErrorHandler.js';
+import { withErrorHandling } from '../../middleware/errorHandler.js';
 import logger from '../../utils/logger.js';
 
 const router = express.Router();

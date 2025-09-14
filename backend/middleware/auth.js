@@ -1,8 +1,9 @@
 import jwt from 'jsonwebtoken';
+import logger from '../utils/logger.js';
 
 // SECURITY FIX: Remove hardcoded fallback - fail securely if JWT_SECRET not set
 if (!process.env.JWT_SECRET) {
-  console.error('🚨 CRITICAL: JWT_SECRET environment variable not set. Application cannot start securely.');
+  logger.error('CRITICAL: JWT_SECRET environment variable not set. Application cannot start securely.');
   process.exit(1);
 }
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -12,7 +13,7 @@ export const authenticateJWT = (req, res, next) => {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
 
-  console.log('🔐 [AUTH] JWT Authentication Check:', {
+  logger.debug('[AUTH] JWT Authentication Check:', {
     endpoint: req.originalUrl,
     method: req.method,
     hasAuthHeader: !!authHeader,
@@ -24,18 +25,18 @@ export const authenticateJWT = (req, res, next) => {
   // SECURITY FIX: Removed development token bypass - all tokens must be properly signed JWT
   // Development tokens allowed cross-user data contamination by accepting any dev-token-*
   if (token && token.startsWith('dev-token-')) {
-    console.log('🚨 [AUTH] Development token blocked - use proper JWT authentication');
+    logger.warn('[AUTH] Development token blocked - use proper JWT authentication');
     return res.status(401).json({ error: 'Development tokens disabled for security' });
   }
 
   if (!token) {
-    console.log('❌ [AUTH] No token provided - authentication required');
+    logger.debug('[AUTH] No token provided - authentication required');
     return res.status(401).json({ error: 'Authentication required' });
   }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      console.log('❌ [AUTH] Token verification failed:', err.message);
+      logger.debug('[AUTH] Token verification failed:', err.message);
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
     // Normalize the user object to ensure consistency
@@ -44,7 +45,7 @@ export const authenticateJWT = (req, res, next) => {
       id: user.id || user.userId || user._id
     };
     req.userId = req.user.id;
-    console.log('✅ [AUTH] JWT token verified, user:', {
+    logger.debug('[AUTH] JWT token verified, user:', {
       id: req.user.id,
       role: req.user.role,
       email: req.user.email
@@ -107,7 +108,7 @@ export const verifyTokenAsync = (token) => {
 
 // Block client role access to PWA endpoints
 export const requireBusinessUser = (req, res, next) => {
-  console.log('🔒 [BUSINESS-USER-CHECK] Checking user:', {
+  logger.debug('[BUSINESS-USER-CHECK] Checking user:', {
     hasUser: !!req.user,
     userId: req.user?.id,
     role: req.user?.role,
@@ -116,13 +117,13 @@ export const requireBusinessUser = (req, res, next) => {
   });
   
   if (req.user && req.user.role === 'client') {
-    console.log('❌ [BUSINESS-USER-CHECK] Client role blocked from PWA access');
+    logger.info('[BUSINESS-USER-CHECK] Client role blocked from PWA access');
     return res.status(403).json({ 
       error: 'Client accounts cannot access PWA features. Please use the marketing website for bookings.' 
     });
   }
   
-  console.log('✅ [BUSINESS-USER-CHECK] Business user access granted');
+  logger.debug('[BUSINESS-USER-CHECK] Business user access granted');
   next();
 };
 
