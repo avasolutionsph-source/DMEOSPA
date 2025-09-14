@@ -145,7 +145,17 @@ router.post('/register', [
       role: 'client'
     });
 
+    console.log('🚀 Creating client user with data:', {
+      email,
+      firstName,
+      lastName,
+      phone,
+      role: 'client'
+    });
+
     await user.save();
+    
+    console.log('✅ User saved with role:', user.role);
 
     // Generate JWT
     const token = jwt.sign(
