@@ -2,7 +2,9 @@
 
 class AttendanceManager {
     constructor() {
-        this.attendanceRecords = [];
+        // Load attendance records from localStorage if available
+        this.attendanceRecords = this.loadFromLocalStorage('attendanceRecords') || [];
+        this.allAttendanceRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
         this.employees = [];
         this.stream = null;
         this.isRecognitionEnabled = false;
@@ -11,6 +13,49 @@ class AttendanceManager {
         this.recordedChunks = [];
         this.isRecordingVideo = false;
         this.recordedVideoBlob = null;
+    }
+    
+    // LocalStorage helper methods
+    saveToLocalStorage(key, data) {
+        try {
+            localStorage.setItem(`attendance_${key}`, JSON.stringify(data));
+        } catch (error) {
+            console.error('Failed to save to localStorage:', error);
+        }
+    }
+    
+    loadFromLocalStorage(key) {
+        try {
+            const data = localStorage.getItem(`attendance_${key}`);
+            return data ? JSON.parse(data) : null;
+        } catch (error) {
+            console.error('Failed to load from localStorage:', error);
+            return null;
+        }
+    }
+    
+    // Get authentication token
+    getAuthToken() {
+        // Check localStorage for token (consistent with other modules)
+        const token = localStorage.getItem('token');
+        if (token) return token;
+        
+        // Check sessionStorage as fallback
+        const sessionToken = sessionStorage.getItem('token');
+        if (sessionToken) return sessionToken;
+        
+        // Check if user object has token
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                if (user.token) return user.token;
+            } catch (e) {
+                console.error('Failed to parse user object:', e);
+            }
+        }
+        
+        return null;
     }
     
     // Token refresh method - called when login state changes
@@ -33,6 +78,17 @@ class AttendanceManager {
             this.renderAttendanceRecords();
             this.renderAttendanceHistoryTable();
             this.updateAttendanceStats();
+            
+            // Setup online sync listener
+            window.addEventListener('online', async () => {
+                console.log('🌐 Network connection restored, syncing attendance data...');
+                await this.syncLocalStorageToBackend();
+            });
+            
+            // Sync on initialization if online
+            if (navigator.onLine) {
+                setTimeout(() => this.syncLocalStorageToBackend(), 2000);
+            }
             
             // Mark as initialized
             window.attendanceManager.initialized = true;
@@ -433,12 +489,16 @@ class AttendanceManager {
                     id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
                 };
                 
-                // Store in memory first
+                // Store in memory and localStorage
                 this.attendanceRecords.push(simpleRecord);
                 this.allAttendanceRecords = this.allAttendanceRecords || [];
                 this.allAttendanceRecords.push(simpleRecord);
                 
-                console.log('✅ Saved attendance in memory as fallback');
+                // Save to localStorage for persistence
+                this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
+                this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
+                
+                console.log('✅ Saved attendance in memory and localStorage as fallback');
             }
             
             if (window.showNotification) {
@@ -543,7 +603,12 @@ class AttendanceManager {
                 if (allIndex !== -1) {
                     this.allAttendanceRecords[allIndex] = updatedRecord;
                 }
-                console.log('✅ Updated check-out in memory');
+                
+                // Save to localStorage for persistence
+                this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
+                this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
+                
+                console.log('✅ Updated check-out in memory and localStorage');
             }
             
             // Log activity
@@ -631,6 +696,76 @@ class AttendanceManager {
         return Math.max(0, hoursWorked);
     }
     
+    async syncLocalStorageToBackend() {
+        console.log('🔄 Syncing localStorage attendance data to backend...');
+        
+        const token = this.getAuthToken();
+        if (!token) {
+            console.warn('No authentication token, skipping sync');
+            return;
+        }
+        
+        try {
+            const localRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
+            const unsyncedRecords = localRecords.filter(record => 
+                record.id && record.id.startsWith('local_')
+            );
+            
+            if (unsyncedRecords.length === 0) {
+                console.log('✅ No unsynced records to upload');
+                return;
+            }
+            
+            console.log(`📤 Syncing ${unsyncedRecords.length} local records to backend...`);
+            
+            for (const record of unsyncedRecords) {
+                try {
+                    // Remove the local_ prefix for server submission
+                    const serverRecord = { ...record };
+                    delete serverRecord.id;
+                    
+                    const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(serverRecord)
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        const serverId = result.data?.id || result.data?._id;
+                        
+                        // Update the local record with server ID
+                        const index = this.allAttendanceRecords.findIndex(r => r.id === record.id);
+                        if (index !== -1) {
+                            this.allAttendanceRecords[index].id = serverId;
+                        }
+                        
+                        console.log(`✅ Synced record ${record.id} → ${serverId}`);
+                    } else {
+                        console.error(`❌ Failed to sync record ${record.id}:`, response.status);
+                    }
+                } catch (error) {
+                    console.error(`❌ Error syncing record ${record.id}:`, error);
+                }
+            }
+            
+            // Save updated records back to localStorage
+            this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
+            this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
+            
+            console.log('✅ Sync completed');
+            
+            if (window.showNotification) {
+                window.showNotification(`Synced ${unsyncedRecords.length} attendance records`, 'success');
+            }
+        } catch (error) {
+            console.error('❌ Sync failed:', error);
+        }
+    }
+    
     async getBusinessSettings() {
         try {
             if (window.db) {
@@ -674,25 +809,58 @@ class AttendanceManager {
         try {
             const today = new Date().toISOString().split('T')[0];
             
-            // Initialize arrays
-            this.attendanceRecords = this.attendanceRecords || [];
-            this.allAttendanceRecords = this.allAttendanceRecords || [];
+            // First, load from localStorage to preserve data across refreshes
+            const localStorageRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
+            const localStorageTodayRecords = this.loadFromLocalStorage('attendanceRecords') || [];
+            
+            console.log(`📦 Loaded ${localStorageRecords.length} records from localStorage`);
+            
+            // Initialize arrays with localStorage data
+            this.attendanceRecords = localStorageTodayRecords;
+            this.allAttendanceRecords = localStorageRecords;
             
             // Skip database loading if not ready
             if (!window.db || !window.db.db) {
-                console.warn('Database not ready, using memory storage only');
+                console.warn('Database not ready, using localStorage data only');
+                // Filter today's records from localStorage if needed
+                this.attendanceRecords = localStorageRecords.filter(record => record.date === today);
                 return;
             }
             
-            // Try to load from hybrid storage
-            let allRecords = [];
+            // Try to load from hybrid storage and merge with localStorage
+            let hybridRecords = [];
             try {
-                allRecords = await this.loadAttendanceHybrid();
+                hybridRecords = await this.loadAttendanceHybrid();
+                console.log(`📥 Loaded ${hybridRecords.length} records from hybrid storage`);
             } catch (loadError) {
                 console.error('Failed to load from hybrid storage:', loadError);
-                // Keep using existing memory records
-                allRecords = this.allAttendanceRecords || [];
+                // Keep using localStorage records
+                hybridRecords = [];
             }
+            
+            // Merge records: localStorage + hybrid, removing duplicates
+            const recordMap = new Map();
+            
+            // Add localStorage records first (preserved across refreshes)
+            localStorageRecords.forEach(record => {
+                const key = `${record.employeeId}_${record.date}_${record.checkInTime}`;
+                recordMap.set(key, record);
+            });
+            
+            // Add/update with hybrid records (may have server IDs)
+            hybridRecords.forEach(record => {
+                const key = `${record.employeeId}_${record.date}_${record.checkInTime}`;
+                // If record exists in localStorage, merge with server data
+                const existingRecord = recordMap.get(key);
+                if (existingRecord) {
+                    recordMap.set(key, { ...existingRecord, ...record });
+                } else {
+                    recordMap.set(key, record);
+                }
+            });
+            
+            // Convert map back to array
+            const allRecords = Array.from(recordMap.values());
             
             // Sort by date, newest first
             allRecords.sort((a, b) => {
@@ -707,11 +875,15 @@ class AttendanceManager {
             // Store all records for display
             this.allAttendanceRecords = allRecords;
             
+            // Save merged data back to localStorage for persistence
+            this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
+            this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
+            
             console.log(`✅ Loaded ${this.attendanceRecords.length} attendance records for today`);
             console.log(`✅ Total attendance records: ${allRecords.length}`);
         } catch (error) {
             console.error('❌ Failed to load attendance records:', error);
-            // Keep existing records in memory
+            // Keep existing records from localStorage
             this.attendanceRecords = this.attendanceRecords || [];
             this.allAttendanceRecords = this.allAttendanceRecords || [];
         }
@@ -960,6 +1132,41 @@ class AttendanceManager {
         return mergedRecords;
     }
 
+    updateAttendanceStats() {
+        // Update attendance statistics in the UI
+        try {
+            const todayRecords = this.attendanceRecords || [];
+            const totalPresent = todayRecords.length;
+            const lateCount = todayRecords.filter(r => r.isLate).length;
+            const checkedOut = todayRecords.filter(r => r.checkOutTime).length;
+            
+            // Update stats elements if they exist
+            const presentElement = document.getElementById('attendancePresentCount');
+            if (presentElement) {
+                presentElement.textContent = totalPresent;
+            }
+            
+            const lateElement = document.getElementById('attendanceLateCount');
+            if (lateElement) {
+                lateElement.textContent = lateCount;
+            }
+            
+            const checkedOutElement = document.getElementById('attendanceCheckedOutCount');
+            if (checkedOutElement) {
+                checkedOutElement.textContent = checkedOut;
+            }
+            
+            const pendingElement = document.getElementById('attendancePendingCount');
+            if (pendingElement) {
+                pendingElement.textContent = totalPresent - checkedOut;
+            }
+            
+            console.log(`📊 Stats updated: Present=${totalPresent}, Late=${lateCount}, CheckedOut=${checkedOut}`);
+        } catch (error) {
+            console.error('Failed to update attendance stats:', error);
+        }
+    }
+    
     renderAttendanceHistoryTable() {
         // Find the table body in the attendance history section
         const tableContainer = document.querySelector('.attendance-history-table tbody');
