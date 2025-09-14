@@ -79,7 +79,15 @@ router.get('/booking/branches', async (req, res) => {
         branches: [{
           id: 'demo-branch-1',
           name: 'Daet Massage and Spa - Main Branch',
-          owner: 'Demo Business'
+          contact: {
+            email: 'info@daetmassagespa.com',
+            phone: '+63 123 456 7890'
+          },
+          address: {
+            city: 'Daet',
+            province: 'Camarines Norte'
+          },
+          isActive: true
         }]
       });
     }
@@ -89,7 +97,15 @@ router.get('/booking/branches', async (req, res) => {
       branches: branches.map(branch => ({
         id: branch._id,
         name: branch.businessName,
-        owner: `${branch.firstName} ${branch.lastName}`
+        contact: {
+          email: branch.email || 'contact@spa.com',
+          phone: branch.phone || '+63 123 456 7890'
+        },
+        address: {
+          city: 'Spa Location',
+          province: 'Philippines'
+        },
+        isActive: true
       }))
     });
   } catch (error) {
