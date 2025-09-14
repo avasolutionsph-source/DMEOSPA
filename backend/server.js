@@ -110,7 +110,9 @@ const corsOptions = {
       'http://127.0.0.1:5500',
       'http://localhost:4000',
       'https://ava-solutions-marketing.netlify.app',
-      'https://ava-solutions-pwa.netlify.app'
+      'https://ava-solutions-pwa.netlify.app',
+      'https://daet-netlify-app.com',
+      'https://daetipa-marketing.netlify.app'
     ];
     
     // Add environment-specific origins

@@ -5,6 +5,11 @@ let filteredUsers = [];
 let currentPage = 1;
 const usersPerPage = 10;
 
+// API Configuration - Updated to use deployed backend
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? 'http://localhost:4001' 
+    : 'https://daetspa-backend.onrender.com';
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     const token = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
@@ -51,7 +56,7 @@ document.getElementById('adminLoginForm').addEventListener('submit', async funct
     const password = formData.get('password');
     
     try {
-        const response = await fetch('/api/auth/login', {
+        const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -95,7 +100,7 @@ async function loadDashboard() {
         }
         
         // Load stats
-        const statsResponse = await fetch('/api/admin/stats', {
+        const statsResponse = await fetch(`${API_BASE_URL}/api/admin/stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -127,7 +132,7 @@ function updateDashboardStats(stats) {
 async function loadUsers() {
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/admin/users', {
+        const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -403,7 +408,7 @@ async function cleanupOldSyncs() {
 
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/admin/cleanup-syncs', {
+        const response = await fetch(`${API_BASE_URL}/api/admin/cleanup-syncs`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -424,7 +429,7 @@ async function cleanupOldSyncs() {
 async function loadSyncStats() {
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/admin/sync-stats', {
+        const response = await fetch(`${API_BASE_URL}/api/admin/sync-stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -571,7 +576,7 @@ document.getElementById('createAccountForm').addEventListener('submit', async fu
     
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/admin/create-account', {
+        const response = await fetch(`${API_BASE_URL}/api/admin/create-account`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -698,7 +703,7 @@ function renderBranchData(branchData) {
 async function loadBranchList() {
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/admin/users', {
+        const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -784,11 +789,11 @@ async function loadAdminPayrollData() {
         const periodEnd = new Date();
         periodEnd.setMonth(periodEnd.getMonth() + 1, 0); // Last day of current month
 
-        const summaryResponse = await fetch(`/api/payroll/admin/summary?periodStart=${periodStart.toISOString()}&periodEnd=${periodEnd.toISOString()}`, {
+        const summaryResponse = await fetch(`${API_BASE_URL}/api/payroll/admin/summary?periodStart=${periodStart.toISOString()}&periodEnd=${periodEnd.toISOString()}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        const employeesResponse = await fetch('/api/payroll/admin/all-employees', {
+        const employeesResponse = await fetch(`${API_BASE_URL}/api/payroll/admin/all-employees`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -827,12 +832,12 @@ async function loadBranchPayrollData() {
 
     try {
         // Load branch employees
-        const employeesResponse = await fetch('/api/payroll/employees', {
+        const employeesResponse = await fetch(`${API_BASE_URL}/api/payroll/employees`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
         // Load recent payroll records
-        const recordsResponse = await fetch('/api/payroll/records?limit=10', {
+        const recordsResponse = await fetch(`${API_BASE_URL}/api/payroll/records?limit=10`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -936,7 +941,7 @@ async function openBulkPayrollModal() {
     try {
         // Load all branch employees
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/payroll/admin/all-employees', {
+        const response = await fetch(`${API_BASE_URL}/api/payroll/admin/all-employees`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -986,7 +991,7 @@ function populateBulkPayrollModal(data) {
 async function openBranchPayrollCalculator() {
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/payroll/employees', {
+        const response = await fetch(`${API_BASE_URL}/api/payroll/employees`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1041,7 +1046,7 @@ async function calculateEmployeePayroll() {
 
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/payroll/calculate', {
+        const response = await fetch(`${API_BASE_URL}/api/payroll/calculate`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -1131,7 +1136,7 @@ async function processCalculatedPayroll() {
 
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/payroll/process', {
+        const response = await fetch(`${API_BASE_URL}/api/payroll/process`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -1171,7 +1176,7 @@ async function openBranchPayrollSettings() {
 async function loadPayrollHistory() {
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/payroll/records?limit=50', {
+        const response = await fetch(`${API_BASE_URL}/api/payroll/records?limit=50`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1217,7 +1222,7 @@ function renderPayrollHistory(records) {
 async function loadPayrollSettings() {
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch('/api/payroll/settings', {
+        const response = await fetch(`${API_BASE_URL}/api/payroll/settings`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
