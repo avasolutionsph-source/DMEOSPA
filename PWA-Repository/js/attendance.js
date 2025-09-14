@@ -673,10 +673,26 @@ class AttendanceManager {
     async saveAttendanceHybrid(attendanceRecord) {
         console.log('💾 [HYBRID] Saving attendance with hybrid storage...');
         
+        // Ensure database is initialized
+        if (!window.db || !window.db.db) {
+            console.error('❌ Database not initialized, waiting...');
+            if (typeof window.ensureDBInit === 'function') {
+                await window.ensureDBInit();
+            } else {
+                console.error('❌ Cannot save attendance - database not ready');
+                throw new Error('Database not initialized');
+            }
+        }
+        
         const token = this.getAuthToken();
         if (!token) {
             console.error('❌ No authentication token - falling back to IndexedDB only');
-            await window.db.add('attendance', attendanceRecord);
+            try {
+                await window.db.add('attendance', attendanceRecord);
+            } catch (error) {
+                console.error('❌ Failed to save to IndexedDB:', error);
+                throw error;
+            }
             return;
         }
         
@@ -808,6 +824,14 @@ class AttendanceManager {
     async loadAttendanceHybrid() {
         console.log('📥 [HYBRID] Loading attendance from hybrid storage...');
         
+        // Ensure database is initialized
+        if (!window.db || !window.db.db) {
+            console.warn('⚠️ Database not initialized, waiting...');
+            if (typeof window.ensureDBInit === 'function') {
+                await window.ensureDBInit();
+            }
+        }
+        
         const token = this.getAuthToken();
         let mongoRecords = [];
         
@@ -835,10 +859,24 @@ class AttendanceManager {
         }
         
         // 2. Load from IndexedDB cache (fallback or for media)
-        const indexedDBRecords = await window.db.getAll('attendance') || [];
-        const mediaRecords = await window.db.getAll('attendance_media') || [];
-        console.log(`📦 Loaded ${indexedDBRecords.length} records from IndexedDB cache`);
-        console.log(`🎬 Loaded ${mediaRecords.length} media records from IndexedDB`);
+        let indexedDBRecords = [];
+        let mediaRecords = [];
+        
+        try {
+            indexedDBRecords = await window.db.getAll('attendance') || [];
+            console.log(`📦 Loaded ${indexedDBRecords.length} records from IndexedDB cache`);
+        } catch (error) {
+            console.error('❌ Failed to load attendance from IndexedDB:', error);
+            indexedDBRecords = [];
+        }
+        
+        try {
+            mediaRecords = await window.db.getAll('attendance_media') || [];
+            console.log(`🎬 Loaded ${mediaRecords.length} media records from IndexedDB`);
+        } catch (error) {
+            console.error('❌ Failed to load media from IndexedDB:', error);
+            mediaRecords = [];
+        }
         
         // 3. Merge data: Use MongoDB as primary source, enrich with media from IndexedDB
         let mergedRecords = [];
