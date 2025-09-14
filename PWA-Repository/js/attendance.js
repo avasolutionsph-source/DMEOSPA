@@ -482,34 +482,9 @@ class AttendanceManager {
                 createdAt: now.toISOString()
             };
             
-            // Try API first, fallback to local storage
-            try {
-                await this.saveAttendanceHybrid(attendanceRecord);
-            } catch (hybridError) {
-                console.error('Hybrid save failed, trying local only:', hybridError);
-                // Simple fallback - just save locally without complex logic
-                const simpleRecord = {
-                    ...attendanceRecord,
-                    id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-                };
-                
-                // Store in memory and localStorage
-                this.attendanceRecords.push(simpleRecord);
-                this.allAttendanceRecords = this.allAttendanceRecords || [];
-                this.allAttendanceRecords.push(simpleRecord);
-                
-                // Save to localStorage for persistence
-                this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
-                this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
-                
-                console.log('✅ Saved attendance in memory and localStorage as fallback');
-                console.log('📦 Current attendanceRecords:', this.attendanceRecords);
-                console.log('📦 Current allAttendanceRecords:', this.allAttendanceRecords);
-                console.log('📦 Verifying localStorage save:', {
-                    attendanceRecords: this.loadFromLocalStorage('attendanceRecords'),
-                    allAttendanceRecords: this.loadFromLocalStorage('allAttendanceRecords')
-                });
-            }
+            // Save using hybrid storage (localStorage is primary)
+            await this.saveAttendanceHybrid(attendanceRecord);
+            console.log('✅ Attendance recorded successfully');
             
             if (window.showNotification) {
                 window.showNotification(`✅ ${employee.name} checked in successfully`, 'success');
@@ -599,27 +574,9 @@ class AttendanceManager {
                 payDeduction: deductionHours * hourlyRate
             };
             
-            // Try to update via hybrid storage, fallback to memory
-            try {
-                await this.updateAttendanceHybrid(updatedRecord, checkInRecord.id);
-            } catch (updateError) {
-                console.error('Hybrid update failed, updating in memory:', updateError);
-                // Update in memory arrays
-                const index = this.attendanceRecords.findIndex(r => r.id === checkInRecord.id);
-                if (index !== -1) {
-                    this.attendanceRecords[index] = updatedRecord;
-                }
-                const allIndex = this.allAttendanceRecords.findIndex(r => r.id === checkInRecord.id);
-                if (allIndex !== -1) {
-                    this.allAttendanceRecords[allIndex] = updatedRecord;
-                }
-                
-                // Save to localStorage for persistence
-                this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
-                this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
-                
-                console.log('✅ Updated check-out in memory and localStorage');
-            }
+            // Update via hybrid storage (localStorage is primary)
+            await this.updateAttendanceHybrid(updatedRecord, checkInRecord.id);
+            console.log('✅ Check-out recorded successfully');
             
             // Log activity
             if (window.activityLogger) {
@@ -819,60 +776,17 @@ class AttendanceManager {
         try {
             const today = new Date().toISOString().split('T')[0];
             
-            // First, load from localStorage to preserve data across refreshes
-            const localStorageRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
-            const localStorageTodayRecords = this.loadFromLocalStorage('attendanceRecords') || [];
-            
-            console.log(`📦 Loaded ${localStorageRecords.length} records from localStorage`);
-            console.log('📦 localStorage allAttendanceRecords:', localStorageRecords);
-            console.log('📦 localStorage todayRecords:', localStorageTodayRecords);
-            
-            // Initialize arrays with localStorage data
-            this.attendanceRecords = localStorageTodayRecords;
-            this.allAttendanceRecords = localStorageRecords;
-            
-            // Skip database loading if not ready
-            if (!window.db || !window.db.db) {
-                console.warn('Database not ready, using localStorage data only');
-                // Filter today's records from localStorage if needed
-                this.attendanceRecords = localStorageRecords.filter(record => record.date === today);
-                return;
-            }
-            
-            // Try to load from hybrid storage and merge with localStorage
-            let hybridRecords = [];
+            // Load from hybrid storage (which uses localStorage as primary)
+            let allRecords = [];
             try {
-                hybridRecords = await this.loadAttendanceHybrid();
-                console.log(`📥 Loaded ${hybridRecords.length} records from hybrid storage`);
+                allRecords = await this.loadAttendanceHybrid();
+                console.log(`📥 Loaded ${allRecords.length} records from hybrid storage`);
             } catch (loadError) {
                 console.error('Failed to load from hybrid storage:', loadError);
-                // Keep using localStorage records
-                hybridRecords = [];
+                // Fallback to just localStorage
+                allRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
+                console.log(`📦 Fallback: loaded ${allRecords.length} records from localStorage`);
             }
-            
-            // Merge records: localStorage + hybrid, removing duplicates
-            const recordMap = new Map();
-            
-            // Add localStorage records first (preserved across refreshes)
-            localStorageRecords.forEach(record => {
-                const key = `${record.employeeId}_${record.date}_${record.checkInTime}`;
-                recordMap.set(key, record);
-            });
-            
-            // Add/update with hybrid records (may have server IDs)
-            hybridRecords.forEach(record => {
-                const key = `${record.employeeId}_${record.date}_${record.checkInTime}`;
-                // If record exists in localStorage, merge with server data
-                const existingRecord = recordMap.get(key);
-                if (existingRecord) {
-                    recordMap.set(key, { ...existingRecord, ...record });
-                } else {
-                    recordMap.set(key, record);
-                }
-            });
-            
-            // Convert map back to array
-            const allRecords = Array.from(recordMap.values());
             
             // Sort by date, newest first
             allRecords.sort((a, b) => {
@@ -887,17 +801,22 @@ class AttendanceManager {
             // Store all records for display
             this.allAttendanceRecords = allRecords;
             
-            // Save merged data back to localStorage for persistence
+            // Save back to localStorage to ensure persistence
             this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
             this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
             
             console.log(`✅ Loaded ${this.attendanceRecords.length} attendance records for today`);
-            console.log(`✅ Total attendance records: ${allRecords.length}`);
+            console.log(`✅ Total attendance records: ${this.allAttendanceRecords.length}`);
+            console.log('📦 Current state:', {
+                today: this.attendanceRecords,
+                all: this.allAttendanceRecords
+            });
         } catch (error) {
             console.error('❌ Failed to load attendance records:', error);
-            // Keep existing records from localStorage
-            this.attendanceRecords = this.attendanceRecords || [];
-            this.allAttendanceRecords = this.allAttendanceRecords || [];
+            // Try direct localStorage as last resort
+            this.attendanceRecords = this.loadFromLocalStorage('attendanceRecords') || [];
+            this.allAttendanceRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
+            console.log('📦 Last resort: loaded from localStorage directly');
         }
     }
 
@@ -908,26 +827,43 @@ class AttendanceManager {
     async saveAttendanceHybrid(attendanceRecord) {
         console.log('💾 [HYBRID] Saving attendance with hybrid storage...');
         
-        // Ensure database is initialized
-        if (!window.db || !window.db.db) {
-            console.error('❌ Database not initialized, waiting...');
-            if (typeof window.ensureDBInit === 'function') {
-                await window.ensureDBInit();
-            } else {
-                console.error('❌ Cannot save attendance - database not ready');
-                throw new Error('Database not initialized');
+        // Generate ID if not present
+        if (!attendanceRecord.id) {
+            attendanceRecord.id = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        }
+        
+        // ALWAYS save to localStorage first (primary storage)
+        // Check if it already exists (in case of duplicate calls)
+        const existingIndex = this.attendanceRecords.findIndex(r => 
+            r.employeeId === attendanceRecord.employeeId && 
+            r.date === attendanceRecord.date && 
+            r.checkInTime === attendanceRecord.checkInTime
+        );
+        
+        if (existingIndex === -1) {
+            this.attendanceRecords.push(attendanceRecord);
+            this.allAttendanceRecords.push(attendanceRecord);
+        } else {
+            console.log('⚠️ Record already exists, updating instead');
+            this.attendanceRecords[existingIndex] = attendanceRecord;
+            const allIndex = this.allAttendanceRecords.findIndex(r => 
+                r.employeeId === attendanceRecord.employeeId && 
+                r.date === attendanceRecord.date && 
+                r.checkInTime === attendanceRecord.checkInTime
+            );
+            if (allIndex !== -1) {
+                this.allAttendanceRecords[allIndex] = attendanceRecord;
             }
         }
         
+        this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
+        this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
+        console.log('✅ Saved to localStorage (primary storage)');
+        
+        // Try to save to backend if we have a token
         const token = this.getAuthToken();
         if (!token) {
-            console.error('❌ No authentication token - falling back to IndexedDB only');
-            try {
-                await window.db.add('attendance', attendanceRecord);
-            } catch (error) {
-                console.error('❌ Failed to save to IndexedDB:', error);
-                throw error;
-            }
+            console.log('⚠️ No authentication token - saved to localStorage only');
             return;
         }
         
@@ -970,62 +906,77 @@ class AttendanceManager {
             const mongoId = mongoResult.data?.id || mongoResult.data?._id;
             console.log('✅ Essential data saved to MongoDB with ID:', mongoId);
             
-            // 2. MEDIA DATA → IndexedDB (local verification only)
-            const mediaData = {
-                id: mongoId, // Use MongoDB ID as reference
-                capturedImage: attendanceRecord.capturedImage,
-                capturedVideo: attendanceRecord.capturedVideo,
-                // Store minimal reference data for lookup
-                employeeId: attendanceRecord.employeeId,
-                date: attendanceRecord.date,
-                checkInTime: attendanceRecord.checkInTime
-            };
-            
-            if (mediaData.capturedImage || mediaData.capturedVideo) {
-                console.log('📷 Saving media data to IndexedDB...');
-                await window.db.add('attendance_media', mediaData);
-                console.log('✅ Media data saved to IndexedDB');
+            // Update the record ID with server ID
+            const recordIndex = this.attendanceRecords.findIndex(r => r.id === attendanceRecord.id);
+            if (recordIndex !== -1) {
+                this.attendanceRecords[recordIndex].id = mongoId;
+            }
+            const allIndex = this.allAttendanceRecords.findIndex(r => r.id === attendanceRecord.id);
+            if (allIndex !== -1) {
+                this.allAttendanceRecords[allIndex].id = mongoId;
             }
             
-            // 3. Also save essential data to IndexedDB for offline access
-            const offlineData = { ...essentialData, id: mongoId };
-            await window.db.add('attendance', offlineData);
-            console.log('✅ Essential data cached in IndexedDB for offline access');
-            
-            // 4. CRITICAL: Update in-memory arrays and save to localStorage
-            const fullRecord = { ...offlineData, ...mediaData };
-            this.attendanceRecords.push(fullRecord);
-            this.allAttendanceRecords.push(fullRecord);
-            
-            // Save to localStorage immediately
+            // Save updated records back to localStorage
             this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
             this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
-            console.log('✅ Saved to localStorage for persistence across refreshes');
+            console.log('✅ Updated record with server ID in localStorage');
+            
+            // 2. Try to save media to IndexedDB if database is available
+            if (window.db && window.db.db && (attendanceRecord.capturedImage || attendanceRecord.capturedVideo)) {
+                try {
+                    const mediaData = {
+                        id: mongoId,
+                        capturedImage: attendanceRecord.capturedImage,
+                        capturedVideo: attendanceRecord.capturedVideo,
+                        employeeId: attendanceRecord.employeeId,
+                        date: attendanceRecord.date,
+                        checkInTime: attendanceRecord.checkInTime
+                    };
+                    
+                    console.log('📷 Trying to save media data to IndexedDB...');
+                    await window.db.add('attendance_media', mediaData);
+                    console.log('✅ Media data saved to IndexedDB');
+                } catch (dbError) {
+                    console.warn('⚠️ Could not save media to IndexedDB:', dbError.message);
+                    // This is okay - localStorage is our primary storage
+                }
+            }
             
         } catch (error) {
-            console.error('❌ Hybrid save failed, falling back to IndexedDB only:', error);
-            await window.db.add('attendance', attendanceRecord);
-            
-            // Still update memory and localStorage
-            this.attendanceRecords.push(attendanceRecord);
-            this.allAttendanceRecords.push(attendanceRecord);
-            this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
-            this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
+            console.error('⚠️ Could not save to backend:', error.message);
+            // Record is already in localStorage with local_ prefix ID
+            // It will be synced later when connection is restored
         }
     }
     
     async updateAttendanceHybrid(updatedRecord, recordId) {
         console.log('🔄 [HYBRID] Updating attendance with hybrid storage...');
         
+        // ALWAYS update localStorage first (primary storage)
+        const index = this.attendanceRecords.findIndex(r => r.id === recordId);
+        if (index !== -1) {
+            this.attendanceRecords[index] = updatedRecord;
+        }
+        
+        const allIndex = this.allAttendanceRecords.findIndex(r => r.id === recordId);
+        if (allIndex !== -1) {
+            this.allAttendanceRecords[allIndex] = updatedRecord;
+        }
+        
+        // Save to localStorage immediately
+        this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
+        this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
+        console.log('✅ Updated in localStorage (primary storage)');
+        
+        // Try to update backend if we have token
         const token = this.getAuthToken();
         if (!token) {
-            console.error('❌ No authentication token - falling back to IndexedDB only');
-            await window.db.update('attendance', { ...updatedRecord, id: recordId });
+            console.log('⚠️ No authentication token - updated localStorage only');
             return;
         }
         
         try {
-            // 1. ESSENTIAL DATA → MongoDB
+            // Try to update MongoDB
             const essentialData = {
                 employeeId: updatedRecord.employeeId,
                 employeeName: updatedRecord.employeeName,
@@ -1038,124 +989,91 @@ class AttendanceManager {
                 lateMinutes: updatedRecord.lateMinutes,
                 hoursWorked: updatedRecord.hoursWorked,
                 payDeduction: updatedRecord.payDeduction,
+                checkOutDeduction: updatedRecord.checkOutDeduction,
+                earlyDepartureMinutes: updatedRecord.earlyDepartureMinutes,
                 createdAt: updatedRecord.createdAt,
                 modifiedAt: new Date().toISOString()
             };
             
-            console.log('📤 Updating essential attendance data in MongoDB...');
-            const mongoResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance/${recordId}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(essentialData)
-            });
-            
-            if (!mongoResponse.ok) {
-                console.error('❌ Failed to update MongoDB:', mongoResponse.status);
-                await window.db.update('attendance', { ...updatedRecord, id: recordId });
-                return;
+            // Only try to update MongoDB if it's not a local record
+            if (recordId && !recordId.startsWith('local_')) {
+                console.log('📤 Trying to update MongoDB...');
+                const mongoResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance/${recordId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(essentialData)
+                });
+                
+                if (mongoResponse.ok) {
+                    console.log('✅ Updated in MongoDB');
+                } else {
+                    console.warn('⚠️ Could not update MongoDB:', mongoResponse.status);
+                }
+            } else {
+                console.log('⚠️ Local record - will sync to backend later');
             }
-            
-            console.log('✅ Essential data updated in MongoDB');
-            
-            // 2. Update IndexedDB offline cache
-            await window.db.put('attendance', { ...essentialData, id: recordId }, recordId);
-            console.log('✅ Essential data updated in IndexedDB cache');
-            
-            // 3. Media data stays in IndexedDB (no update needed unless media changed)
-            
         } catch (error) {
-            console.error('❌ Hybrid update failed, falling back to IndexedDB only:', error);
-            await window.db.update('attendance', { ...updatedRecord, id: recordId });
+            console.warn('⚠️ Could not update backend:', error.message);
+            // Record is already updated in localStorage
         }
     }
     
     async loadAttendanceHybrid() {
         console.log('📥 [HYBRID] Loading attendance from hybrid storage...');
         
-        // Ensure database is initialized
-        if (!window.db || !window.db.db) {
-            console.warn('⚠️ Database not initialized, waiting...');
-            if (typeof window.ensureDBInit === 'function') {
-                await window.ensureDBInit();
-            }
-        }
+        // First, load from localStorage (our primary storage)
+        const localStorageRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
+        console.log(`📦 Loaded ${localStorageRecords.length} records from localStorage (primary)`);
         
+        // If no token, just return localStorage data
         const token = this.getAuthToken();
+        if (!token) {
+            console.log('⚠️ No token, using localStorage data only');
+            return localStorageRecords;
+        }
+        
+        // Try to load from MongoDB to get any server-side updates
         let mongoRecords = [];
-        
-        // 1. Try to load essential data from MongoDB
-        if (token) {
-            try {
-                console.log('📤 Loading essential data from MongoDB...');
-                const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    mongoRecords = result.data || [];
-                    console.log(`✅ Loaded ${mongoRecords.length} attendance records from MongoDB`);
-                } else {
-                    console.warn('⚠️ Failed to load from MongoDB, using IndexedDB cache');
+        try {
+            console.log('📤 Checking MongoDB for updates...');
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 }
-            } catch (error) {
-                console.error('❌ Error loading from MongoDB:', error);
-            }
-        }
-        
-        // 2. Load from IndexedDB cache (fallback or for media)
-        let indexedDBRecords = [];
-        let mediaRecords = [];
-        
-        try {
-            indexedDBRecords = await window.db.getAll('attendance') || [];
-            console.log(`📦 Loaded ${indexedDBRecords.length} records from IndexedDB cache`);
-        } catch (error) {
-            console.error('❌ Failed to load attendance from IndexedDB:', error);
-            indexedDBRecords = [];
-        }
-        
-        try {
-            mediaRecords = await window.db.getAll('attendance_media') || [];
-            console.log(`🎬 Loaded ${mediaRecords.length} media records from IndexedDB`);
-        } catch (error) {
-            console.error('❌ Failed to load media from IndexedDB:', error);
-            mediaRecords = [];
-        }
-        
-        // 3. Merge data: Use MongoDB as primary source, enrich with media from IndexedDB
-        let mergedRecords = [];
-        
-        if (mongoRecords.length > 0) {
-            // Use MongoDB records as primary source
-            mergedRecords = mongoRecords.map(mongoRecord => {
-                // Find corresponding media record
-                const mediaRecord = mediaRecords.find(media => 
-                    media.id === mongoRecord.id || (
-                        media.employeeId === mongoRecord.employeeId && 
-                        media.date === mongoRecord.date &&
-                        media.checkInTime === mongoRecord.checkInTime
-                    )
-                );
-                
-                return {
-                    ...mongoRecord,
-                    capturedImage: mediaRecord?.capturedImage || null,
-                    capturedVideo: mediaRecord?.capturedVideo || null
-                };
             });
-            console.log('✅ Merged MongoDB data with IndexedDB media');
-        } else {
-            // Fallback to IndexedDB only
-            mergedRecords = indexedDBRecords;
-            console.log('⚠️ Using IndexedDB cache only (no MongoDB connection)');
+            
+            if (response.ok) {
+                const result = await response.json();
+                mongoRecords = result.data || [];
+                console.log(`✅ Loaded ${mongoRecords.length} records from MongoDB`);
+            } else {
+                console.warn('⚠️ Could not load from MongoDB:', response.status);
+            }
+        } catch (error) {
+            console.warn('⚠️ Could not connect to MongoDB:', error.message);
         }
+        
+        // Merge: combine localStorage (has local records) with MongoDB (has synced records)
+        const recordMap = new Map();
+        
+        // Add localStorage records first
+        localStorageRecords.forEach(record => {
+            const key = `${record.employeeId}_${record.date}_${record.checkInTime}`;
+            recordMap.set(key, record);
+        });
+        
+        // Add/update with MongoDB records
+        mongoRecords.forEach(record => {
+            const key = `${record.employeeId}_${record.date}_${record.checkInTime || record.checkIn}`;
+            recordMap.set(key, record);
+        });
+        
+        const mergedRecords = Array.from(recordMap.values());
+        console.log(`✅ Merged to ${mergedRecords.length} total records`);
         
         return mergedRecords;
     }
