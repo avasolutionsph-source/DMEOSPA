@@ -461,6 +461,8 @@ class AttendanceManager {
             // Reload attendance records
             await this.loadAttendanceRecords();
             this.renderAttendanceRecords();
+            this.renderAttendanceHistoryTable();
+            this.updateAttendanceStats();
             
         } catch (error) {
             console.error('Failed to record attendance:', error);
@@ -573,6 +575,8 @@ class AttendanceManager {
             // Reload attendance records
             await this.loadAttendanceRecords();
             this.renderAttendanceRecords();
+            this.renderAttendanceHistoryTable();
+            this.updateAttendanceStats();
             
         } catch (error) {
             console.error('Failed to record check-out:', error);
@@ -956,6 +960,60 @@ class AttendanceManager {
         return mergedRecords;
     }
 
+    renderAttendanceHistoryTable() {
+        // Find the table body in the attendance history section
+        const tableContainer = document.querySelector('.attendance-history-table tbody');
+        if (!tableContainer) {
+            console.warn('Attendance history table not found');
+            return;
+        }
+        
+        // Use all attendance records (not just today's)
+        const records = this.allAttendanceRecords || [];
+        
+        if (records.length === 0) {
+            tableContainer.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 2rem; color: #888;">
+                        No attendance records found. Attendance data will appear here once employees check in.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        // Sort records by date and time (newest first)
+        const sortedRecords = [...records].sort((a, b) => {
+            const dateA = new Date(a.checkInTime || a.createdAt);
+            const dateB = new Date(b.checkInTime || b.createdAt);
+            return dateB - dateA;
+        });
+        
+        // Generate table rows
+        tableContainer.innerHTML = sortedRecords.map((record, index) => {
+            const checkInTime = record.checkInTime ? new Date(record.checkInTime).toLocaleTimeString() : '-';
+            const checkOutTime = record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString() : '-';
+            const hoursWorked = record.hoursWorked ? record.hoursWorked.toFixed(1) : '-';
+            const status = record.checkOutTime ? 'Complete' : 'In Progress';
+            
+            return `
+                <tr>
+                    <td>${record.employeeName || 'Unknown'}</td>
+                    <td>${record.date || new Date(record.checkInTime).toLocaleDateString()}</td>
+                    <td>${checkInTime}</td>
+                    <td>${checkOutTime}</td>
+                    <td>${hoursWorked}</td>
+                    <td><span class="badge ${status === 'Complete' ? 'badge-success' : 'badge-warning'}">${status}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="window.attendanceManager.viewAttendanceRecord(${index})">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+    
     renderAttendanceRecords() {
         const container = document.getElementById('attendanceRecords');
         if (!container) return;
