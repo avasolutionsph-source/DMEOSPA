@@ -316,6 +316,57 @@ router.post('/logout', async (req, res) => {
   });
 });
 
+// GET /api/auth/profile - Get current user profile
+router.get('/profile', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        error: 'No token provided'
+      });
+    }
+    
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+    
+    if (!decoded) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid token'
+      });
+    }
+    
+    // Get fresh user data from database
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        businessName: user.businessName,
+        role: user.role,
+        phone: user.phone
+      }
+    });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(401).json({
+      success: false,
+      error: 'Token verification failed'
+    });
+  }
+});
+
 // POST /api/auth/verify
 router.post('/verify', async (req, res) => {
   try {
