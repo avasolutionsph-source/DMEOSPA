@@ -111,6 +111,8 @@ const corsOptions = {
       'http://localhost:4000',
       'https://ava-solutions-marketing.netlify.app',
       'https://ava-solutions-pwa.netlify.app',
+      'https://daetspa-marketing.netlify.app',
+      'https://daetspa-pwa.netlify.app',
       'https://daet-netlify-app.com',
       'https://daetipa-marketing.netlify.app',
       'https://daetspa-marketing.netlify.app'
