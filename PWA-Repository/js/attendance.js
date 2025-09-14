@@ -5,6 +5,10 @@ class AttendanceManager {
         // Load attendance records from localStorage if available
         this.attendanceRecords = this.loadFromLocalStorage('attendanceRecords') || [];
         this.allAttendanceRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
+        
+        console.log('🚀 [CONSTRUCTOR] Loaded from localStorage:');
+        console.log('  - attendanceRecords:', this.attendanceRecords.length, 'records');
+        console.log('  - allAttendanceRecords:', this.allAttendanceRecords.length, 'records');
         this.employees = [];
         this.stream = null;
         this.isRecognitionEnabled = false;
@@ -499,6 +503,12 @@ class AttendanceManager {
                 this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
                 
                 console.log('✅ Saved attendance in memory and localStorage as fallback');
+                console.log('📦 Current attendanceRecords:', this.attendanceRecords);
+                console.log('📦 Current allAttendanceRecords:', this.allAttendanceRecords);
+                console.log('📦 Verifying localStorage save:', {
+                    attendanceRecords: this.loadFromLocalStorage('attendanceRecords'),
+                    allAttendanceRecords: this.loadFromLocalStorage('allAttendanceRecords')
+                });
             }
             
             if (window.showNotification) {
@@ -814,6 +824,8 @@ class AttendanceManager {
             const localStorageTodayRecords = this.loadFromLocalStorage('attendanceRecords') || [];
             
             console.log(`📦 Loaded ${localStorageRecords.length} records from localStorage`);
+            console.log('📦 localStorage allAttendanceRecords:', localStorageRecords);
+            console.log('📦 localStorage todayRecords:', localStorageTodayRecords);
             
             // Initialize arrays with localStorage data
             this.attendanceRecords = localStorageTodayRecords;
@@ -980,9 +992,25 @@ class AttendanceManager {
             await window.db.add('attendance', offlineData);
             console.log('✅ Essential data cached in IndexedDB for offline access');
             
+            // 4. CRITICAL: Update in-memory arrays and save to localStorage
+            const fullRecord = { ...offlineData, ...mediaData };
+            this.attendanceRecords.push(fullRecord);
+            this.allAttendanceRecords.push(fullRecord);
+            
+            // Save to localStorage immediately
+            this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
+            this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
+            console.log('✅ Saved to localStorage for persistence across refreshes');
+            
         } catch (error) {
             console.error('❌ Hybrid save failed, falling back to IndexedDB only:', error);
             await window.db.add('attendance', attendanceRecord);
+            
+            // Still update memory and localStorage
+            this.attendanceRecords.push(attendanceRecord);
+            this.allAttendanceRecords.push(attendanceRecord);
+            this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
+            this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
         }
     }
     
@@ -1734,6 +1762,92 @@ window.populateAttendanceDropdown = async function() {
     } catch (error) {
         console.error('❌ Failed to populate dropdown:', error);
         return false;
+    }
+};
+
+// Debug function to check localStorage attendance data
+window.checkAttendanceLocalStorage = function() {
+    console.log('🔍 Checking attendance data in localStorage...');
+    
+    const keys = ['attendance_attendanceRecords', 'attendance_allAttendanceRecords'];
+    
+    keys.forEach(key => {
+        const data = localStorage.getItem(key);
+        if (data) {
+            try {
+                const parsed = JSON.parse(data);
+                console.log(`✅ ${key}:`, parsed.length, 'records');
+                console.log(`   Raw data:`, parsed);
+            } catch (e) {
+                console.error(`❌ Failed to parse ${key}:`, e);
+                console.log(`   Raw value:`, data);
+            }
+        } else {
+            console.log(`⚠️ ${key}: Not found in localStorage`);
+        }
+    });
+    
+    // Check all localStorage keys
+    console.log('\n📦 All localStorage keys:');
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.includes('attendance')) {
+            console.log(`  - ${key}: ${localStorage.getItem(key).substring(0, 100)}...`);
+        }
+    }
+    
+    // Check if attendanceManager has data in memory
+    if (window.attendanceManager) {
+        console.log('\n💾 AttendanceManager in-memory data:');
+        console.log('  - attendanceRecords:', window.attendanceManager.attendanceRecords?.length || 0, 'records');
+        console.log('  - allAttendanceRecords:', window.attendanceManager.allAttendanceRecords?.length || 0, 'records');
+    }
+};
+
+// Debug function to manually save test data
+window.testAttendanceSave = function() {
+    console.log('🧪 Testing attendance save to localStorage...');
+    
+    const testRecord = {
+        id: `test_${Date.now()}`,
+        employeeId: 'test123',
+        employeeName: 'Test Employee',
+        employeePosition: 'Tester',
+        date: new Date().toISOString().split('T')[0],
+        checkInTime: new Date().toISOString(),
+        checkOutTime: null,
+        method: 'manual',
+        isLate: false,
+        lateMinutes: 0,
+        createdAt: new Date().toISOString()
+    };
+    
+    // Get existing records
+    let existing = [];
+    try {
+        const stored = localStorage.getItem('attendance_allAttendanceRecords');
+        if (stored) {
+            existing = JSON.parse(stored);
+        }
+    } catch (e) {
+        console.error('Failed to parse existing records:', e);
+    }
+    
+    // Add test record
+    existing.push(testRecord);
+    
+    // Save back
+    try {
+        localStorage.setItem('attendance_allAttendanceRecords', JSON.stringify(existing));
+        console.log('✅ Test record saved to localStorage');
+        console.log('   Total records now:', existing.length);
+        
+        // Verify save
+        const verify = localStorage.getItem('attendance_allAttendanceRecords');
+        const parsed = JSON.parse(verify);
+        console.log('✅ Verification: Found', parsed.length, 'records in localStorage');
+    } catch (e) {
+        console.error('❌ Failed to save test record:', e);
     }
 };
 
