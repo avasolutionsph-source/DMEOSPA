@@ -243,6 +243,11 @@
     </footer>
 
     <script>
+        // API Configuration - Updated to use deployed backend
+        window.API_BASE_URL = window.API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:4001' 
+            : 'https://daetspa-backend.onrender.com');
+
         let currentUser = null;
 
         // Check if user is logged in and is a client
@@ -315,7 +320,7 @@
                 const token = localStorage.getItem('userToken');
                 if (!token) return;
 
-                const response = await fetch('/api/booking/my-bookings', {
+                const response = await fetch(`${window.API_BASE_URL}/api/booking/my-bookings`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -451,7 +456,7 @@
 
             try {
                 const token = localStorage.getItem('userToken');
-                const response = await fetch(`/api/booking/cancel/${bookingId}`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/booking/cancel/${bookingId}`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${token}`,

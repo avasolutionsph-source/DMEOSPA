@@ -618,6 +618,11 @@
     </div>
 
     <script>
+        // API Configuration - Updated to use deployed backend
+        window.API_BASE_URL = window.API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:4001' 
+            : 'https://daetspa-backend.onrender.com');
+
         let currentUser = null;
         let allBookings = [];
 
@@ -680,7 +685,7 @@
                 const tokenData = JSON.parse(atob(token.split('.')[1]));
                 const branchId = tokenData.userId || tokenData.id;
 
-                const response = await fetch(`/api/booking/branch-bookings/${branchId}`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/booking/branch-bookings/${branchId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -800,7 +805,7 @@
 
             try {
                 const token = localStorage.getItem('userToken');
-                const response = await fetch(`/api/booking/${bookingId}/confirm`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/booking/${bookingId}/confirm`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -828,7 +833,7 @@
 
             try {
                 const token = localStorage.getItem('userToken');
-                const response = await fetch(`/api/booking/${bookingId}/cancel`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/booking/${bookingId}/cancel`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -976,7 +981,7 @@
             try {
                 const token = localStorage.getItem('userToken');
                 if (token) {
-                    await fetch('/api/auth/logout', {
+                    await fetch(`${window.API_BASE_URL}/api/auth/logout`, {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });

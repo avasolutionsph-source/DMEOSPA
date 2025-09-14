@@ -985,6 +985,10 @@
     </div>
 
     <script>
+        // API Configuration - Updated to use deployed backend
+        window.API_BASE_URL = window.API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:4001' 
+            : 'https://daetspa-backend.onrender.com');
         let currentUser = null;
         let token = localStorage.getItem('userToken') || localStorage.getItem('token');
 
@@ -1003,7 +1007,7 @@
 
         async function checkAdminAccess() {
             try {
-                const response = await fetch('/api/admin/stats', {
+                const response = await fetch(`${window.API_BASE_URL}/api/admin/stats`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -1063,7 +1067,7 @@
             noAccountsEl.style.display = 'none';
 
             try {
-                const response = await fetch('/api/admin/my-created-accounts', {
+                const response = await fetch(`${window.API_BASE_URL}/api/admin/my-created-accounts`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -1191,7 +1195,7 @@
             const detailsEl = document.getElementById(`details-${accountId}`);
             
             try {
-                const response = await fetch(`/api/admin/branch-data/${accountId}`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/admin/branch-data/${accountId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -1351,7 +1355,7 @@
             submitButton.disabled = true;
 
             try {
-                const response = await fetch('/api/admin/create-account', {
+                const response = await fetch(`${window.API_BASE_URL}/api/admin/create-account`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

@@ -348,6 +348,11 @@
     </div>
 
     <script>
+        // API Configuration - Updated to use deployed backend
+        window.API_BASE_URL = window.API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:4001' 
+            : 'https://daetspa-backend.onrender.com');
+
         let allBookings = [];
         let branches = [];
 
@@ -386,7 +391,7 @@
         async function loadBookingStats() {
             try {
                 const token = localStorage.getItem('userToken');
-                const response = await fetch('/api/admin/booking-stats', {
+                const response = await fetch(`${window.API_BASE_URL}/api/admin/booking-stats`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -496,7 +501,7 @@
         async function loadAllBookings() {
             try {
                 const token = localStorage.getItem('userToken');
-                const response = await fetch('/api/admin/all-bookings', {
+                const response = await fetch(`${window.API_BASE_URL}/api/admin/all-bookings`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -619,7 +624,7 @@
         async function loadBranches() {
             try {
                 const token = localStorage.getItem('userToken');
-                const response = await fetch('/api/booking/branches', {
+                const response = await fetch(`${window.API_BASE_URL}/api/booking/branches`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -760,7 +765,7 @@
 
             try {
                 const token = localStorage.getItem('userToken');
-                const response = await fetch(`/api/admin/bookings/${bookingId}/confirm`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/admin/bookings/${bookingId}/confirm`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -789,7 +794,7 @@
 
             try {
                 const token = localStorage.getItem('userToken');
-                const response = await fetch(`/api/admin/bookings/${bookingId}/cancel`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/admin/bookings/${bookingId}/cancel`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${token}`,

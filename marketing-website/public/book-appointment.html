@@ -697,7 +697,7 @@
                 const token = localStorage.getItem('userToken');
                 if (!token) return;
 
-                const response = await fetch('/api/auth/profile', {
+                const response = await fetch(`${window.API_BASE_URL}/api/auth/profile`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -804,7 +804,7 @@
         // Load branches
         async function loadBranches() {
             try {
-                const response = await fetch('/api/booking/branches');
+                const response = await fetch(`${window.API_BASE_URL}/api/booking/branches`);
                 const result = await response.json();
                 
                 document.getElementById('branchesLoading').style.display = 'none';
@@ -910,7 +910,7 @@
             document.getElementById('servicesLoading').style.display = 'block';
             
             try {
-                const response = await fetch(`/api/booking/branches/${bookingData.branch.id}/services`);
+                const response = await fetch(`${window.API_BASE_URL}/api/booking/branches/${bookingData.branch.id}/services`);
                 const result = await response.json();
                 
                 document.getElementById('servicesLoading').style.display = 'none';
@@ -1002,7 +1002,7 @@
             document.getElementById('therapistsLoading').style.display = 'block';
             
             try {
-                const response = await fetch(`/api/booking/branches/${bookingData.branch.id}/therapists`);
+                const response = await fetch(`${window.API_BASE_URL}/api/booking/branches/${bookingData.branch.id}/therapists`);
                 const result = await response.json();
                 
                 document.getElementById('therapistsLoading').style.display = 'none';
@@ -1079,7 +1079,7 @@
             document.getElementById('timeSlotsLoading').style.display = 'block';
             
             try {
-                const response = await fetch(`/api/booking/availability/${bookingData.branch.id}/${bookingData.therapist.id}/${date}`);
+                const response = await fetch(`${window.API_BASE_URL}/api/booking/availability/${bookingData.branch.id}/${bookingData.therapist.id}/${date}`);
                 const result = await response.json();
                 
                 document.getElementById('timeSlotsLoading').style.display = 'none';
@@ -1297,7 +1297,7 @@
                 console.log('📤 Booking payload being sent:', bookingPayload);
                 console.log('📤 Current bookingData.phone:', bookingData.phone);
                 
-                const response = await fetch('/api/booking/book', {
+                const response = await fetch(`${window.API_BASE_URL}/api/booking/book`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

@@ -2299,6 +2299,10 @@
     </div>
 
     <script>
+        // API Configuration - Updated to use deployed backend
+        window.API_BASE_URL = window.API_BASE_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:4001' 
+            : 'https://daetspa-backend.onrender.com');
         let currentUser = null;
 
         // Initialize dashboard
@@ -2812,7 +2816,7 @@ The PWA will open now...`;
                 console.log('🔄 Starting real data sync...');
                 
                 // Pull latest data from backend
-                const response = await fetch('/api/sync/pull', {
+                const response = await fetch(`${window.API_BASE_URL}/api/sync/pull`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -3066,7 +3070,7 @@ The PWA will open now...`;
                 // Fetch employee data
                 let employees = [];
                 try {
-                    const empResponse = await fetch('/api/business/employees', {
+                    const empResponse = await fetch(`${window.API_BASE_URL}/api/business/employees`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (empResponse.ok) {
@@ -3275,7 +3279,7 @@ The PWA will open now...`;
                 if (!token) return;
 
                 // Get bookings for this specific branch
-                const response = await fetch(`/api/booking/branch-bookings/${currentUser.id}`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/booking/branch-bookings/${currentUser.id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -3426,7 +3430,7 @@ The PWA will open now...`;
 
             try {
                 const token = localStorage.getItem('userToken');
-                const response = await fetch(`/api/booking/${bookingId}/confirm`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/booking/${bookingId}/confirm`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -3454,7 +3458,7 @@ The PWA will open now...`;
 
             try {
                 const token = localStorage.getItem('userToken');
-                const response = await fetch(`/api/booking/${bookingId}/cancel`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/booking/${bookingId}/cancel`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -3521,7 +3525,7 @@ ${booking.specialRequests ? 'Special Requests: ' + booking.specialRequests : ''}
                 const tokenData = JSON.parse(atob(token.split('.')[1]));
                 const branchId = tokenData.userId || tokenData.id;
 
-                const response = await fetch(`/api/booking/branch-bookings/${branchId}`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/booking/branch-bookings/${branchId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -3664,7 +3668,7 @@ ${booking.specialRequests ? 'Special Requests: ' + booking.specialRequests : ''}
             if (!token) return;
 
             try {
-                const response = await fetch('/api/payroll/settings', {
+                const response = await fetch(`${window.API_BASE_URL}/api/payroll/settings`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -3742,7 +3746,7 @@ ${booking.specialRequests ? 'Special Requests: ' + booking.specialRequests : ''}
             };
 
             try {
-                const response = await fetch('/api/payroll/settings', {
+                const response = await fetch(`${window.API_BASE_URL}/api/payroll/settings`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -3771,7 +3775,7 @@ ${booking.specialRequests ? 'Special Requests: ' + booking.specialRequests : ''}
 
             try {
                 // Load employee details
-                const response = await fetch(`/api/payroll/employees/${employeeId}`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/payroll/employees/${employeeId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -3855,7 +3859,7 @@ ${booking.specialRequests ? 'Special Requests: ' + booking.specialRequests : ''}
             };
 
             try {
-                const response = await fetch(`/api/payroll/employees/${employeeId}/salary`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/payroll/employees/${employeeId}/salary`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -3885,7 +3889,7 @@ ${booking.specialRequests ? 'Special Requests: ' + booking.specialRequests : ''}
 
             try {
                 // Load employees for payroll
-                const response = await fetch('/api/payroll/employees', {
+                const response = await fetch(`${window.API_BASE_URL}/api/payroll/employees`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -3942,7 +3946,7 @@ ${booking.specialRequests ? 'Special Requests: ' + booking.specialRequests : ''}
             if (!token) return;
 
             try {
-                const response = await fetch('/api/payroll/calculate', {
+                const response = await fetch(`${window.API_BASE_URL}/api/payroll/calculate`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -4037,7 +4041,7 @@ ${booking.specialRequests ? 'Special Requests: ' + booking.specialRequests : ''}
             if (!token) return;
 
             try {
-                const response = await fetch('/api/payroll/process', {
+                const response = await fetch(`${window.API_BASE_URL}/api/payroll/process`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -4077,7 +4081,7 @@ ${booking.specialRequests ? 'Special Requests: ' + booking.specialRequests : ''}
             if (!token) return;
 
             try {
-                const response = await fetch('/api/payroll/records?limit=20', {
+                const response = await fetch(`${window.API_BASE_URL}/api/payroll/records?limit=20`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -4201,7 +4205,7 @@ ${booking.specialRequests ? 'Special Requests: ' + booking.specialRequests : ''}
 
             try {
                 // Get employee details
-                const employeeResponse = await fetch(`/api/payroll/employees/${employeeId}`, {
+                const employeeResponse = await fetch(`${window.API_BASE_URL}/api/payroll/employees/${employeeId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -4356,7 +4360,7 @@ ${booking.specialRequests ? 'Special Requests: ' + booking.specialRequests : ''}
                     }
                 };
 
-                const response = await fetch(`/api/payroll/employees/${employeeId}/salary`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/payroll/employees/${employeeId}/salary`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -4387,7 +4391,7 @@ ${booking.specialRequests ? 'Special Requests: ' + booking.specialRequests : ''}
 
             try {
                 // Get employee details
-                const employeeResponse = await fetch(`/api/payroll/employees/${employeeId}`, {
+                const employeeResponse = await fetch(`${window.API_BASE_URL}/api/payroll/employees/${employeeId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -4451,7 +4455,7 @@ ${booking.specialRequests ? 'Special Requests: ' + booking.specialRequests : ''}
             }
 
             try {
-                const response = await fetch('/api/payroll/calculate', {
+                const response = await fetch(`${window.API_BASE_URL}/api/payroll/calculate`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
