@@ -214,7 +214,8 @@
                 lastName: formData.get('lastName'),
                 email: formData.get('email'),
                 phone: formData.get('phone'),
-                password: password
+                password: password,
+                businessName: `${formData.get('firstName')} ${formData.get('lastName')}'s Spa` // Auto-generate business name
             };
             
             try {
