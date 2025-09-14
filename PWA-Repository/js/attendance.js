@@ -769,7 +769,7 @@ class AttendanceManager {
         const token = this.getAuthToken();
         if (!token) {
             console.error('❌ No authentication token - falling back to IndexedDB only');
-            await window.db.put('attendance', updatedRecord, recordId);
+            await window.db.update('attendance', { ...updatedRecord, id: recordId });
             return;
         }
         
@@ -803,7 +803,7 @@ class AttendanceManager {
             
             if (!mongoResponse.ok) {
                 console.error('❌ Failed to update MongoDB:', mongoResponse.status);
-                await window.db.put('attendance', updatedRecord, recordId);
+                await window.db.update('attendance', { ...updatedRecord, id: recordId });
                 return;
             }
             
@@ -817,7 +817,7 @@ class AttendanceManager {
             
         } catch (error) {
             console.error('❌ Hybrid update failed, falling back to IndexedDB only:', error);
-            await window.db.put('attendance', updatedRecord, recordId);
+            await window.db.update('attendance', { ...updatedRecord, id: recordId });
         }
     }
     

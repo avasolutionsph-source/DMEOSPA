@@ -614,6 +614,19 @@ class Database {
         });
     }
 
+    // Alias for update to maintain compatibility
+    async put(storeName, data, id) {
+        if (id !== undefined) {
+            data.id = id;
+        }
+        return this.update(storeName, data);
+    }
+
+    // Alias for clearStore to maintain compatibility
+    async clear(storeName) {
+        return this.clearStore(storeName);
+    }
+
     async delete(storeName, id) {
         // Ensure DB is ready
         await ensureDBInit();

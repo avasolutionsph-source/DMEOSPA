@@ -274,7 +274,7 @@ class EmployeeManager {
                     try {
                         // Clear existing employees first
                         console.log('🗑️ [EMPLOYEE-MANAGER] Clearing existing employees...');
-                        await window.db.clear('employees');
+                        await window.db.clearStore('employees');
                         
                         // Add each employee to IndexedDB
                         console.log('📝 [EMPLOYEE-MANAGER] Adding employees to IndexedDB...');
