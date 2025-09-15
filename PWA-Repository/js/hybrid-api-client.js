@@ -833,6 +833,10 @@ class HybridAPIClient {
             let localTransactions = [];
             if (window.db) {
                 try {
+                    // Ensure database is initialized before accessing
+                    if (!window.db.db) {
+                        await window.ensureDBInit();
+                    }
                     const allLocalTransactions = await window.db.getAll('transactions');
                     // Filter for offline transactions that haven't synced yet
                     localTransactions = allLocalTransactions.filter(t => 
