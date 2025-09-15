@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Employee Stats Update</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Employee Stats Update</h1>
+    
+    <div>
+        <h2>Step 1: Login</h2>
+        <button onclick="login()">Login as Test User</button>
+        <div id="loginResult"></div>
+    </div>
+    
+    <div>
+        <h2>Step 2: Get Employees</h2>
+        <button onclick="getEmployees()">Get Employees</button>
+        <div id="employeesList"></div>
+    </div>
+    
+    <div>
+        <h2>Step 3: Create Test Transaction</h2>
+        <button onclick="createTransaction()">Create Transaction with Employee</button>
+        <div id="transactionResult"></div>
+    </div>
+    
+    <div>
+        <h2>Step 4: Check Employee Stats</h2>
+        <button onclick="checkEmployeeStats()">Check Employee Stats</button>
+        <div id="statsResult"></div>
+    </div>
+
+    <script>
+        let authToken = null;
+        let selectedEmployee = null;
+        const API_URL = 'http://localhost:4001';
+        
+        async function login() {
+            const resultDiv = document.getElementById('loginResult');
+            try {
+                resultDiv.innerHTML = '<p class="info">Logging in...</p>';
+                
+                // Use the user credentials
+                const response = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'pak@gmail.com',
+                        password: '123123'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    authToken = result.token;  // Token is directly in result, not result.data
+                    resultDiv.innerHTML = `<p class="success">✓ Logged in successfully! Token: ${authToken.substring(0, 20)}...</p>`;
+                } else {
+                    throw new Error(result.error?.message || result.message || 'Login failed');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">✗ Login failed: ${error.message}</p>`;
+            }
+        }
+        
+        async function getEmployees() {
+            const resultDiv = document.getElementById('employeesList');
+            
+            if (!authToken) {
+                resultDiv.innerHTML = '<p class="error">Please login first!</p>';
+                return;
+            }
+            
+            try {
+                resultDiv.innerHTML = '<p class="info">Loading employees...</p>';
+                
+                const response = await fetch(`${API_URL}/api/employees`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.data.length > 0) {
+                    selectedEmployee = result.data[0];
+                    
+                    let html = '<h3>Employees:</h3>';
+                    result.data.forEach(emp => {
+                        html += `<div style="border: 1px solid #ddd; padding: 10px; margin: 5px;">
+                            <strong>${emp.firstName} ${emp.lastName}</strong> (${emp.position})<br>
+                            ID: ${emp._id}<br>
+                            Total Sales: ₱${emp.totalSales || 0}<br>
+                            Total Commission: ₱${emp.totalCommission || 0}<br>
+                            Total Transactions: ${emp.totalTransactions || 0}
+                        </div>`;
+                    });
+                    
+                    resultDiv.innerHTML = html;
+                    
+                    if (selectedEmployee) {
+                        resultDiv.innerHTML += `<p class="success">✓ Selected employee: ${selectedEmployee.firstName} ${selectedEmployee.lastName} (ID: ${selectedEmployee._id})</p>`;
+                    }
+                } else {
+                    resultDiv.innerHTML = '<p class="error">No employees found. Please add employees first.</p>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">✗ Failed to load employees: ${error.message}</p>`;
+            }
+        }
+        
+        async function createTransaction() {
+            const resultDiv = document.getElementById('transactionResult');
+            
+            if (!authToken) {
+                resultDiv.innerHTML = '<p class="error">Please login first!</p>';
+                return;
+            }
+            
+            if (!selectedEmployee) {
+                resultDiv.innerHTML = '<p class="error">Please get employees first!</p>';
+                return;
+            }
+            
+            try {
+                resultDiv.innerHTML = '<p class="info">Creating transaction...</p>';
+                
+                const transactionData = {
+                    items: [{
+                        productId: 'test-service-001',
+                        name: 'Test Service',
+                        category: 'Service',
+                        price: 500,
+                        quantity: 1,
+                        subtotal: 500
+                    }],
+                    subtotal: 500,
+                    tax: 0,
+                    discount: 0,
+                    gcAmount: 0,
+                    total: 500,
+                    paymentMethod: 'cash',
+                    paymentStatus: 'completed',
+                    employeeId: selectedEmployee._id,
+                    employeeName: `${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
+                    employee: {
+                        id: selectedEmployee._id,
+                        name: `${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
+                        position: selectedEmployee.position
+                    },
+                    status: 'completed',
+                    localId: Date.now().toString()
+                };
+                
+                console.log('Sending transaction data:', transactionData);
+                
+                const response = await fetch(`${API_URL}/api/transactions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(transactionData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `<p class="success">✓ Transaction created successfully!</p>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>`;
+                } else {
+                    throw new Error(result.error?.message || 'Transaction creation failed');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">✗ Failed to create transaction: ${error.message}</p>`;
+            }
+        }
+        
+        async function checkEmployeeStats() {
+            const resultDiv = document.getElementById('statsResult');
+            
+            if (!authToken || !selectedEmployee) {
+                resultDiv.innerHTML = '<p class="error">Please complete previous steps first!</p>';
+                return;
+            }
+            
+            try {
+                resultDiv.innerHTML = '<p class="info">Checking employee stats...</p>';
+                
+                const response = await fetch(`${API_URL}/api/employees/${selectedEmployee._id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const emp = result.data;
+                    resultDiv.innerHTML = `<h3>Updated Employee Stats:</h3>
+                        <div style="border: 2px solid green; padding: 10px;">
+                            <strong>${emp.firstName} ${emp.lastName}</strong><br>
+                            Total Sales: ₱${emp.totalSales || 0}<br>
+                            Total Commission: ₱${emp.totalCommission || 0}<br>
+                            Total Transactions: ${emp.totalTransactions || 0}<br>
+                            <br>
+                            <strong>${emp.totalTransactions > 0 ? '✓ Stats Updated Successfully!' : '✗ Stats Not Updated'}</strong>
+                        </div>`;
+                } else {
+                    throw new Error(result.error?.message || 'Failed to get employee stats');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">✗ Failed to check stats: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
