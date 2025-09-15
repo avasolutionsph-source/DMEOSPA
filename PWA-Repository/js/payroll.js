@@ -866,7 +866,7 @@ class PayrollManager {
             }
             
             // Call MongoDB attendance API
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/attendance`, {
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'

@@ -3568,15 +3568,12 @@
     
     <!-- Error Recovery and Safety Systems -->
     <script src="js/error-recovery.js"></script>
+    <script src="js/error-boundaries.js"></script>
     <script src="js/backup-system.js"></script>
     <script src="js/backup-manager.js"></script>
     <script src="js/feature-flags.js"></script>
     
-    <!-- Legacy Logger Support (for compatibility) -->
-    <!-- Missing files - commented out
-    <!-- <script src="js/logger.js"></script> Missing file -->
-    <!-- <script src="js/logger-utils.js"></script> Missing file -->
-    -->
+    <!-- Legacy Logger Support removed (files don't exist) -->
     
     <!-- Unified State Management System -->
     <script src="js/state-manager.js"></script>
@@ -3589,7 +3586,7 @@
     <!-- API Configuration & Real-time Sync -->
     <script src="js/api-config.js"></script>
     <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
-    <!-- <script src="js/state-sync.js"></script> Missing file -->
+    <!-- State sync not implemented yet -->
     
     <!-- Core Application Scripts (Load Immediately) -->
     <script src="js/utilities.js"></script>
@@ -3599,6 +3596,7 @@
     <script src="js/sync.js"></script>
     <script src="js/full-data-sync.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/notification-fallback.js"></script>
     <script src="js/dashboard.js?v=20250912-security"></script>
     
     <!-- Essential Feature Scripts (Load on startup for UI functionality) -->
@@ -3733,8 +3731,7 @@
         }, 3000);
     </script>
     
-    <!-- Logger Initialization and Console Replacement -->
-    <!-- <script src="js/logger-init.js"></script> Missing file -->
+    <!-- Logger initialization removed (file doesn't exist) -->
     <script>
         // Custom Dropdown Handler
         function handleDropdownChange(selectElement, customInputId) {

@@ -1440,133 +1440,17 @@ window.forceRefreshDashboard = async function() {
     }
 };
 
-// Debug function to test transaction event system
-window.debugTransactionEvent = function() {
-    console.log('🔧 [DEBUG] Testing transaction event system');
-    
-    const testTransaction = {
-        id: 'test-' + Date.now(),
-        total: 100,
-        employee: { name: 'Test Employee', id: 'test-emp' },
-        items: [{ name: 'Test Service', price: 100, quantity: 1 }],
-        createdAt: new Date().toISOString(),
-        isOffline: false
-    };
-    
-    console.log('🚀 [DEBUG] Firing test transaction event:', testTransaction);
-    
-    const event = new CustomEvent('transactionCompleted', {
-        detail: { transaction: testTransaction }
-    });
-    window.dispatchEvent(event);
-    
-    console.log('✅ [DEBUG] Test transaction event fired');
-};
+// Debug functions removed for production
 
-// Debug function to check dashboard state
-window.debugDashboardState = function() {
-    console.log('🔍 [DEBUG] Dashboard State Check:');
-    console.log('- enhancedDashboardManager exists:', !!window.enhancedDashboardManager);
-    console.log('- isInitialized:', window.enhancedDashboardManager?.isInitialized);
-    console.log('- todayRevenue in memory:', window.enhancedDashboardManager?.stats?.todayRevenue);
-    console.log('- dashboard element exists:', !!document.getElementById('dashboard'));
-    console.log('- dashboard visible:', document.getElementById('dashboard')?.style.display !== 'none');
-    
-    // Check actual DOM element values
-    console.log('🔍 [DEBUG] DOM Element Values:');
-    const revenueElement = document.getElementById('todayRevenue');
-    console.log('- todayRevenue DOM element exists:', !!revenueElement);
-    console.log('- todayRevenue DOM value:', revenueElement?.textContent);
-    
-    const weeklyElement = document.getElementById('weeklyRevenue');
-    console.log('- weeklyRevenue DOM element exists:', !!weeklyElement);
-    console.log('- weeklyRevenue DOM value:', weeklyElement?.textContent);
-    
-    // List all elements with "revenue" in their ID
-    const revenueElements = Array.from(document.querySelectorAll('[id*="evenue"]'));
-    console.log('🔍 [DEBUG] All revenue elements found:');
-    revenueElements.forEach(el => {
-        console.log(`  - ${el.id}: "${el.textContent}"`);
-    });
-};
 
-// Debug function to manually update dashboard and see what happens
-window.debugManualUpdate = function() {
-    console.log('🔧 [DEBUG] Manual dashboard update test');
-    
-    if (!window.enhancedDashboardManager?.isInitialized) {
-        console.error('❌ Dashboard not initialized');
-        return;
-    }
-    
-    // Add 100 to current revenue and update
-    window.enhancedDashboardManager.stats.todayRevenue += 100;
-    console.log('💰 [DEBUG] Added ₱100 to todayRevenue, new value:', window.enhancedDashboardManager.stats.todayRevenue);
-    
-    // Force UI update
-    window.enhancedDashboardManager.updateAllStatsDisplay();
-    console.log('🎨 [DEBUG] Called updateAllStatsDisplay()');
-};
 
-// Debug function to inspect the actual dashboard HTML structure
-window.debugDashboardHTML = function() {
-    console.log('🔍 [DEBUG] Inspecting Dashboard HTML Structure');
-    
-    // Find all elements that might contain revenue/stats data
-    const candidates = document.querySelectorAll('*');
-    const relevantElements = [];
-    
-    candidates.forEach(el => {
-        const text = el.textContent.trim();
-        const id = el.id;
-        
-        // Look for elements with currency symbols, numbers, or relevant text
-        if ((text.includes('₱') || text.includes('$') || text.match(/\d+\.\d{2}/)) && 
-            (text.includes('396') || text.includes('132') || id.toLowerCase().includes('revenue') || id.toLowerCase().includes('today'))) {
-            relevantElements.push({
-                id: id || 'NO_ID',
-                tagName: el.tagName,
-                className: el.className,
-                text: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
-                parent: el.parentElement?.tagName + (el.parentElement?.className ? '.' + el.parentElement.className : '')
-            });
-        }
-    });
-    
-    console.log('📊 [DEBUG] Elements that might contain revenue data:');
-    relevantElements.forEach((el, i) => {
-        console.log(`${i + 1}. ${el.tagName}#${el.id}.${el.className} - "${el.text}" (parent: ${el.parent})`);
-    });
-    
-    return relevantElements;
-};
 
-// Force dashboard initialization (call this from console if needed)
-window.forceInitializeDashboard = async function() {
-    console.log('🔧 [DEBUG] Force initializing dashboard...');
-    
-    if (!window.enhancedDashboardManager) {
-        console.error('❌ enhancedDashboardManager not found!');
-        return;
-    }
-    
-    console.log('🚀 [DEBUG] Calling dashboard init...');
-    try {
-        await window.enhancedDashboardManager.init();
-        console.log('✅ [DEBUG] Dashboard initialized successfully');
-        console.log('📊 [DEBUG] isInitialized:', window.enhancedDashboardManager.isInitialized);
-        console.log('💰 [DEBUG] todayRevenue:', window.enhancedDashboardManager.stats.todayRevenue);
-    } catch (error) {
-        console.error('❌ [DEBUG] Dashboard initialization failed:', error);
-    }
-};
 
 // Global transaction listener (works even if dashboard isn't loaded yet)
 window.addEventListener('transactionCompleted', (event) => {
-    console.log('🌐 [GLOBAL] ✅ TRANSACTION EVENT RECEIVED!');
     const transaction = event.detail.transaction;
     
-    console.log('📋 [GLOBAL] Event Details:', {
+    // Transaction event received - details: {
         transactionId: transaction?.id,
         total: transaction?.total,
         employee: transaction?.employee?.name || transaction?.employee?.id || 'No Employee',
