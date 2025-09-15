@@ -17,10 +17,10 @@
     --text-medium: #666;              /* Medium text */
     --text-light: #999;               /* Light text */
     --border-color: #e5e5e5;          /* Border color */
-    --success-color: var(--primary-color);   /* Success maroon */
-    --warning-color: var(--text-dark);       /* Warning black */
-    --error-color: var(--primary-color);     /* Error maroon */
-    --info-color: var(--text-dark);          /* Info black */
+    --success-color: #059669;                /* Success green */
+    --warning-color: #f59e0b;                /* Warning amber */
+    --error-color: #dc2626;                  /* Error red */
+    --info-color: #3b82f6;                   /* Info blue */
     
     /* Enhanced Professional Palette - Maroon Theme Only */
     --purple-600: var(--primary-color);     /* Rich maroon for premium features */
@@ -41,23 +41,23 @@
     --rose-300: var(--accent-color);    /* Pale rose */
     --rose-100: var(--secondary-color); /* Ultra light gray */
     
-         /* Enhanced Semantic Colors - Maroon Theme Only */
-     --danger-color: var(--primary-color);
-     --danger-dark: var(--primary-dark);
-     --danger-light: var(--accent-color);
-     --danger-ultra-light: var(--secondary-color);
-     --warning-color: var(--text-dark);
-     --warning-dark: var(--text-dark);
-     --warning-light: var(--secondary-color);
-     --warning-ultra-light: var(--secondary-color);
-     --success-color: var(--primary-color);
-     --success-dark: var(--primary-dark);
-     --success-light: var(--accent-color);
-     --success-ultra-light: var(--secondary-color);
-     --info-color: var(--text-dark);
-     --info-dark: var(--text-dark);
-     --info-light: var(--secondary-color);
-     --info-ultra-light: var(--secondary-color);
+         /* Enhanced Semantic Colors - Proper functional colors */
+     --danger-color: #dc2626;
+     --danger-dark: #991b1b;
+     --danger-light: #fecaca;
+     --danger-ultra-light: #fef2f2;
+     --warning-color: #f59e0b;
+     --warning-dark: #d97706;
+     --warning-light: #fed7aa;
+     --warning-ultra-light: #fff7ed;
+     --success-color: #059669;
+     --success-dark: #047857;
+     --success-light: #a7f3d0;
+     --success-ultra-light: #ecfdf5;
+     --info-color: #3b82f6;
+     --info-dark: #2563eb;
+     --info-light: #bfdbfe;
+     --info-ultra-light: #eff6ff;
      
      /* Sophisticated Accent Colors - Maroon Theme */
      --indigo: var(--primary-color);
@@ -805,6 +805,7 @@ body {
   background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
   color: white;
   box-shadow: 0 2px 8px rgba(128, 0, 32, 0.25);
+  border: none;
 }
 
 .btn-primary:hover {
@@ -819,22 +820,41 @@ body {
 }
 
 .btn-secondary:hover {
-  background: var(--secondary-color);
+  background: #e5e5e5;
+  transform: translateY(-1px);
 }
 
 .btn-success {
   background: var(--success-color);
   color: white;
+  border: none;
+}
+
+.btn-success:hover {
+  background: var(--success-dark);
+  transform: translateY(-1px);
 }
 
 .btn-warning {
   background: var(--warning-color);
   color: white;
+  border: none;
+}
+
+.btn-warning:hover {
+  background: var(--warning-dark);
+  transform: translateY(-1px);
 }
 
 .btn-danger {
   background: var(--error-color);
   color: white;
+  border: none;
+}
+
+.btn-danger:hover {
+  background: var(--danger-dark);
+  transform: translateY(-1px);
 }
 
 .btn::after {
@@ -865,114 +885,7 @@ body {
     transition: var(--transition-press);
 }
 
-/* Premium Primary Button - Enhanced Accent Orange */
-.btn-primary {
-    background: var(--accent-color);
-    color: var(--white);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-    border: none;
-    position: relative;
-}
-
-.btn-primary::before {
-    background: linear-gradient(
-        45deg, 
-        transparent 30%, 
-        rgba(255, 255, 255, 0.15) 50%, 
-        transparent 70%
-    );
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
-    background: var(--accent-dark);
-}
-
-.btn-primary:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
-}
-
-/* Premium Secondary Button - Sophisticated Glassmorphism */
-.btn-secondary {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(24px) saturate(180%);
-    color: var(--primary-color);
-    border: 1px solid rgba(30, 58, 138, 0.25);
-    box-shadow: var(--shadow-luxury), 
-                0 4px 16px rgba(30, 58, 138, 0.1);
-}
-
-.btn-secondary::before {
-    background: linear-gradient(
-        45deg, 
-        transparent 30%, 
-        rgba(30, 58, 138, 0.1) 50%, 
-        transparent 70%
-    );
-}
-
-.btn-secondary:hover {
-    background: rgba(255, 255, 255, 1);
-    border-color: var(--primary-color);
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: var(--shadow-primary), 
-                0 8px 32px rgba(30, 58, 138, 0.2),
-                0 0 0 1px rgba(30, 58, 138, 0.1);
-    color: var(--primary-600);
-}
-
-/* Premium Success Button - Enhanced Cyan */
-.btn-success {
-    background: var(--success-color);
-    color: var(--white);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-    border: none;
-}
-
-.btn-success::before {
-    background: linear-gradient(
-        45deg, 
-        transparent 30%, 
-        rgba(255, 255, 255, 0.15) 50%, 
-        transparent 70%
-    );
-}
-
-.btn-success:hover {
-    transform: translateY(-2px);
-    background: var(--success-dark);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
-}
-
-/* Danger Button */
-.btn-danger {
-    background: var(--danger-color);
-    color: var(--white);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-    border: none;
-}
-
-.btn-danger:hover {
-    background: var(--danger-dark);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
-}
-
-/* Warning Button */
-.btn-warning {
-    background: var(--warning-color);
-    color: var(--white);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-    border: none;
-}
-
-.btn-warning:hover {
-    background: var(--warning-dark);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
-}
+/* All button styles are defined above - removed duplicates */
 
 /* Professional Info Button */
 .btn-info {

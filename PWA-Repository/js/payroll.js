@@ -1116,7 +1116,7 @@ class PayrollManager {
             const employee = this.employees.find(e => e.id == select.value);
             if (employee) {
                 display.innerHTML = `
-                    <span style="background: #3b82f6; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.875rem;">
+                    <span style="background: var(--primary-color, #800020); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.875rem;">
                         ${employee.name}
                     </span>
                 `;
