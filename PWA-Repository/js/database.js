@@ -681,6 +681,9 @@ class Database {
     }
 
     async clearStore(storeName) {
+        // Ensure DB is ready
+        await ensureDBInit();
+        
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([storeName], 'readwrite');
             const store = transaction.objectStore(storeName);
