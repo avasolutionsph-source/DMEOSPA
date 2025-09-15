@@ -945,13 +945,13 @@
             document.getElementById('servicesLoading').style.display = 'block';
             
             try {
-                const response = await fetch(`${window.API_BASE_URL}/api/booking/branches/${bookingData.branch.id}/services`);
+                const response = await fetch(`${window.API_BASE_URL}/api/products/public/${bookingData.branch.id}`);
                 const result = await response.json();
                 
                 document.getElementById('servicesLoading').style.display = 'none';
                 
-                if (result.success) {
-                    displayServices(result.services);
+                if (result.success && result.data && result.data.length > 0) {
+                    displayServices(result.data);
                 } else {
                     document.getElementById('servicesContainer').innerHTML = 
                         '<p style="text-align: center; color: #ef4444;">No services available for this branch.</p>';
@@ -1037,13 +1037,13 @@
             document.getElementById('therapistsLoading').style.display = 'block';
             
             try {
-                const response = await fetch(`${window.API_BASE_URL}/api/booking/branches/${bookingData.branch.id}/therapists`);
+                const response = await fetch(`${window.API_BASE_URL}/api/employees/public/${bookingData.branch.id}`);
                 const result = await response.json();
                 
                 document.getElementById('therapistsLoading').style.display = 'none';
                 
-                if (result.success) {
-                    displayTherapists(result.therapists);
+                if (result.success && result.data && result.data.length > 0) {
+                    displayTherapists(result.data);
                 } else {
                     document.getElementById('therapistsContainer').innerHTML = 
                         '<p style="text-align: center; color: #ef4444;">No therapists available for this branch.</p>';
