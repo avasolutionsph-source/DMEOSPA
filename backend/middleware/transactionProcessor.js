@@ -15,23 +15,60 @@ export const processNewTransaction = async (req, res, next) => {
     const originalJson = res.json;
     
     res.json = function(data) {
+        // Log request details for debugging
+        logger.info('[TRANSACTION-PROCESSOR] Response intercepted:', {
+            method: req.method,
+            path: req.path,
+            routePath: req.route?.path,
+            url: req.url,
+            hasData: !!data,
+            dataSuccess: data?.success,
+            hasDataData: !!data?.data,
+            hasBody: !!req.body,
+            bodyEmployeeId: req.body?.employeeId,
+            bodyEmployee: req.body?.employee
+        });
+
         // Only process on successful transaction creation
-        if (data && data.success !== false && req.method === 'POST' && req.route?.path === '/') {
+        // Check for POST to /api/transactions endpoint
+        const isTransactionCreate = req.method === 'POST' && 
+                                   (req.route?.path === '/' || req.path === '/' || req.originalUrl.endsWith('/transactions'));
+        
+        if (data && data.success !== false && isTransactionCreate) {
+            logger.info('[TRANSACTION-PROCESSOR] Processing new transaction for employee stats');
+            
             // Process employee stats update asynchronously to not block response
             setImmediate(async () => {
                 try {
                     if (data.data || req.body) {
                         const transactionData = data.data || req.body;
-                        await employeeStatsManager.updateEmployeeStats(
+                        
+                        logger.info('[TRANSACTION-PROCESSOR] Transaction data for stats update:', {
+                            hasEmployeeId: !!transactionData.employeeId,
+                            employeeId: transactionData.employeeId,
+                            hasEmployee: !!transactionData.employee,
+                            employeeObject: transactionData.employee,
+                            total: transactionData.total
+                        });
+
+                        const result = await employeeStatsManager.updateEmployeeStats(
                             transactionData,
                             req.user._id,
                             { preventDuplicates: true, batchUpdate: false }
                         );
+                        
+                        if (result) {
+                            logger.info('[TRANSACTION-PROCESSOR] Employee stats updated successfully:', result);
+                        } else {
+                            logger.warn('[TRANSACTION-PROCESSOR] No employee stats update performed');
+                        }
                     }
                 } catch (error) {
-                    logger.error('Error processing transaction for employee stats:', error);
+                    logger.error('[TRANSACTION-PROCESSOR] Error processing transaction for employee stats:', error);
                 }
             });
+        } else {
+            logger.info('[TRANSACTION-PROCESSOR] Skipping employee stats update - conditions not met');
         }
         
         // Call original json method

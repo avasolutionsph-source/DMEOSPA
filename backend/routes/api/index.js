@@ -67,7 +67,7 @@ router.get('/booking/branches', async (req, res) => {
       role: 'branch',
       businessName: { $exists: true, $ne: null, $ne: '' }
     })
-    .select('businessName firstName lastName _id')
+    .select('businessName firstName lastName email phone _id')  // Added email and phone fields
     .lean();
     
     console.log('Found branches:', branches);

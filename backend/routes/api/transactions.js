@@ -38,6 +38,80 @@ const updateEmployeeStats = async (transactionData, userId) => {
     }
 };
 
+// Custom create handler that updates employee stats
+const createTransactionWithStats = async (req, res) => {
+    try {
+        const data = req.body;
+        
+        // Add user ID
+        if (req.user) {
+            data.userId = req.user.id || req.user._id;
+        }
+        
+        // Create the transaction
+        const transaction = new Transaction(data);
+        await transaction.save();
+        
+        logger.info('[TRANSACTION-CREATE] Transaction created:', {
+            transactionId: transaction._id,
+            hasEmployee: !!data.employee,
+            employeeId: data.employee?.id || data.employeeId,
+            total: data.total
+        });
+        
+        // Update employee stats if employee is assigned
+        console.log('[DEBUG] Checking for employee assignment:', {
+            hasEmployee: !!data.employee,
+            employeeId: data.employee?.id || data.employeeId,
+            employeeObject: data.employee
+        });
+        
+        if (data.employee?.id || data.employeeId) {
+            console.log('[DEBUG] Attempting to update employee stats...');
+            try {
+                const userId = req.user._id || req.user.id;
+                console.log('[DEBUG] User ID for stats update:', userId);
+                
+                const statsResult = await employeeStatsManager.updateEmployeeStats(
+                    {
+                        ...data,
+                        id: transaction._id,
+                        _id: transaction._id
+                    },
+                    userId,
+                    { preventDuplicates: false, batchUpdate: false }
+                );
+                
+                console.log('[DEBUG] Stats update result:', statsResult);
+                
+                logger.info('[TRANSACTION-CREATE] Employee stats update result:', {
+                    success: !!statsResult,
+                    employeeUpdated: statsResult?.employee?.name,
+                    statsAdded: statsResult?.statsUpdate
+                });
+            } catch (statsError) {
+                console.error('[DEBUG] Stats update error:', statsError);
+                logger.error('[TRANSACTION-CREATE] Failed to update employee stats:', statsError);
+                // Don't fail the transaction creation if stats update fails
+            }
+        } else {
+            console.log('[DEBUG] No employee assigned, skipping stats update');
+        }
+        
+        res.status(201).json({
+            success: true,
+            data: transaction,
+            message: 'Transaction created successfully'
+        });
+    } catch (error) {
+        logger.error('[TRANSACTION-CREATE] Error creating transaction:', error);
+        res.status(500).json({
+            success: false,
+            error: { message: error.message || 'Failed to create transaction' }
+        });
+    }
+};
+
 // Create base route handler for transactions
 const transactionHandler = new BaseRouteHandler(Transaction, {
     populate: [], 
@@ -52,8 +126,18 @@ const transactionHandler = new BaseRouteHandler(Transaction, {
 router.use(preventDuplicateProcessing);
 router.use(processNewTransaction);
 
-// Standard CRUD routes using base handler
-transactionHandler.createRoutes(router);
+// Use custom create handler for transactions
+router.post('/', withErrorHandling(createTransactionWithStats));
+
+// Create other CRUD routes using base handler (excluding POST /)
+router.get('/', transactionHandler.getAll());
+router.get('/:id', transactionHandler.getById());
+router.put('/:id', transactionHandler.update());
+router.patch('/:id', transactionHandler.partialUpdate());
+router.delete('/:id', transactionHandler.delete());
+router.post('/bulk', transactionHandler.bulkCreate());
+router.put('/bulk', transactionHandler.bulkUpdate());
+router.delete('/bulk', transactionHandler.bulkDelete());
 
 // POST route to update employee stats after transaction
 router.post('/update-employee-stats', withErrorHandling(async (req, res) => {
@@ -159,8 +243,5 @@ router.post('/:id/refund', withErrorHandling(async (req, res) => {
         message: 'Transaction refunded successfully'
     });
 }));
-
-// Create standard CRUD routes using base handler
-transactionHandler.createRoutes(router);
 
 export default router;

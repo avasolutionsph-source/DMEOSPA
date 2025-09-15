@@ -20,10 +20,33 @@ class EmployeeStatsManager {
      */
     async findEmployee(employeeId, userId) {
         if (!employeeId || !userId) {
+            logger.warn('[EMPLOYEE-STATS-MANAGER] Missing employeeId or userId in findEmployee', {
+                employeeId,
+                userId
+            });
             return null;
         }
 
         try {
+            logger.info('[EMPLOYEE-STATS-MANAGER] Searching for employee:', {
+                employeeId,
+                employeeIdType: typeof employeeId,
+                userId,
+                userIdType: typeof userId,
+                userIdString: userId.toString()
+            });
+
+            // First, let's check what employees exist for this user
+            const allEmployees = await Employee.find({ userId: userId.toString() }).select('_id localId firstName lastName');
+            logger.info('[EMPLOYEE-STATS-MANAGER] All employees for user:', {
+                count: allEmployees.length,
+                employees: allEmployees.map(e => ({
+                    _id: e._id.toString(),
+                    localId: e.localId,
+                    name: `${e.firstName} ${e.lastName}`
+                }))
+            });
+
             // Try multiple matching strategies for backward compatibility
             const employee = await Employee.findOne({
                 $and: [
@@ -37,6 +60,23 @@ class EmployeeStatsManager {
                     }
                 ]
             });
+
+            if (employee) {
+                logger.info('[EMPLOYEE-STATS-MANAGER] Employee found:', {
+                    _id: employee._id.toString(),
+                    localId: employee.localId,
+                    name: `${employee.firstName} ${employee.lastName}`
+                });
+            } else {
+                logger.warn('[EMPLOYEE-STATS-MANAGER] Employee not found with query:', {
+                    userId: userId.toString(),
+                    searchedFor: {
+                        localId: employeeId.toString(),
+                        _idString: employeeId.toString(),
+                        _idRaw: employeeId
+                    }
+                });
+            }
 
             return employee;
         } catch (error) {
@@ -58,20 +98,40 @@ class EmployeeStatsManager {
     async updateEmployeeStats(transactionData, userId, options = {}) {
         const { preventDuplicates = true, batchUpdate = false } = options;
 
+        logger.info('[EMPLOYEE-STATS-MANAGER] Starting updateEmployeeStats:', {
+            hasTransactionData: !!transactionData,
+            transactionId: transactionData?.id || transactionData?.localId,
+            userId,
+            transactionEmployeeId: transactionData?.employeeId,
+            transactionEmployee: transactionData?.employee,
+            options
+        });
+
         try {
             // Prevent duplicate processing of same transaction
             const transactionKey = `${userId}-${transactionData.id || transactionData.localId}`;
             if (preventDuplicates && this.processedTransactions.has(transactionKey)) {
-                logger.info('Transaction already processed for employee stats', { transactionKey });
+                logger.info('[EMPLOYEE-STATS-MANAGER] Transaction already processed for employee stats', { transactionKey });
                 return null;
             }
 
             // Extract employee ID from various possible fields
             const employeeId = this.extractEmployeeId(transactionData);
+            logger.info('[EMPLOYEE-STATS-MANAGER] Extracted employee ID:', {
+                employeeId,
+                extractedFrom: {
+                    'employee.id': transactionData.employee?.id,
+                    'employeeId': transactionData.employeeId,
+                    'employee.employeeId': transactionData.employee?.employeeId
+                }
+            });
+
             if (!employeeId) {
-                logger.warn('No employee ID found in transaction', { 
+                logger.warn('[EMPLOYEE-STATS-MANAGER] No employee ID found in transaction', { 
                     transactionId: transactionData.id,
-                    employeeData: transactionData.employee 
+                    employeeData: transactionData.employee,
+                    employeeId: transactionData.employeeId,
+                    fullTransactionData: JSON.stringify(transactionData, null, 2)
                 });
                 return null;
             }
@@ -79,10 +139,15 @@ class EmployeeStatsManager {
             // Find the employee
             const employee = await this.findEmployee(employeeId, userId);
             if (!employee) {
-                logger.warn('Employee not found for stats update', { 
+                logger.warn('[EMPLOYEE-STATS-MANAGER] Employee not found for stats update', { 
                     employeeId, 
                     userId,
-                    transactionId: transactionData.id 
+                    transactionId: transactionData.id,
+                    searchedFor: {
+                        userId: userId.toString(),
+                        localId: employeeId.toString(),
+                        _id: employeeId.toString()
+                    }
                 });
                 return null;
             }

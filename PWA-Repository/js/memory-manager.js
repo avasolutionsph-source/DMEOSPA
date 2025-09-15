@@ -94,11 +94,15 @@ class MemoryManager {
             const used = Math.round(memory.usedJSHeapSize / 1024 / 1024);
             const limit = Math.round(memory.jsHeapSizeLimit / 1024 / 1024);
             
-            // Only log if memory usage is concerning (>50%) or critical (>80%)
+            // Only log if memory usage is concerning (>70%) or critical (>90%)
+            // Increased threshold to prevent aggressive data deletion
             const usagePercent = used / limit;
-            if (usagePercent > 0.8) {
-                console.warn(`⚠️ High memory usage: ${used}MB (${Math.round(usagePercent * 100)}%) - running cleanup`);
+            if (usagePercent > 0.90) {  // Changed from 0.8 to 0.90 - only cleanup at 90%
+                console.warn(`⚠️ Critical memory usage: ${used}MB (${Math.round(usagePercent * 100)}%) - running emergency cleanup`);
                 this.emergencyCleanup();
+            } else if (usagePercent > 0.70) {  // Changed from 0.5 to 0.70
+                console.warn(`⚠️ High memory usage: ${used}MB (${Math.round(usagePercent * 100)}%) - consider closing other tabs`);
+                // Don't delete data, just warn the user
             } else if (usagePercent > 0.5) {
                 console.log(`💾 Memory: ${used}MB (${Math.round(usagePercent * 100)}%)`);
             }
@@ -151,7 +155,22 @@ class MemoryManager {
         }
 
         // Clear localStorage except essential items
-        const essentialKeys = ['userToken', 'userData', 'settings'];
+        // CRITICAL: Include attendance records to prevent data loss
+        const essentialKeys = [
+            'userToken', 
+            'userData', 
+            'settings',
+            'attendance_attendanceRecords',      // Today's attendance records
+            'attendance_allAttendanceRecords',   // Historical attendance records  
+            'attendance_lastSyncDate',           // Sync tracking
+            'attendance_pendingSync',            // Pending sync data
+            'employees',                         // Employee list needed for attendance
+            'rooms',                              // Room assignments
+            'giftCertificates',                  // Gift certificates
+            'customers',                         // Customer data
+            'inventory',                         // Inventory items
+            'transactions'                       // Transaction history
+        ];
         const keysToRemove = [];
         
         for (let i = 0; i < localStorage.length; i++) {
