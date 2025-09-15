@@ -5,7 +5,7 @@ const bookingSchema = new mongoose.Schema({
   clientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false // Make optional for guest bookings
   },
   clientName: {
     type: String,
@@ -75,7 +75,7 @@ const bookingSchema = new mongoose.Schema({
   },
   endTime: {
     type: String, // Calculated from startTime + duration
-    required: true
+    required: false // Will be calculated automatically
   },
   
   // Service location

@@ -1361,11 +1361,12 @@
                 }
                 
                 const bookingPayload = {
-                    branchId: bookingData.branch.id,
-                    branchName: bookingData.branch.name,
+                    clientId: userData._id || userData.id || null, // Add clientId
                     clientName: `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'Customer',
                     clientEmail: userData.email || 'customer@email.com',
                     clientPhone: bookingData.phone,
+                    branchId: bookingData.branch.id,
+                    branchName: bookingData.branch.name,
                     serviceId: bookingData.service._id || bookingData.service.id,
                     serviceName: bookingData.service.name,
                     serviceDuration: bookingData.service.duration || 60,
@@ -1375,6 +1376,7 @@
                     therapistName: therapistName,
                     appointmentDate: bookingData.date,
                     startTime: convertTo24Hour(bookingData.time),
+                    endTime: '', // Will be calculated by backend
                     serviceLocation: bookingData.location || 'in-spa',
                     homeAddress: bookingData.location === 'home-service' ? bookingData.homeAddress : null,
                     specialRequests: bookingData.specialRequests
