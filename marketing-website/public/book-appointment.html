@@ -1077,26 +1077,37 @@
                 therapistCard.className = 'therapist-card';
                 therapistCard.onclick = () => selectTherapist(therapist, therapistCard);
                 
+                // Use actual employee data structure
+                const therapistName = `${therapist.firstName || ''} ${therapist.lastName || ''}`.trim() || 'Therapist';
+                const position = therapist.position || 'Therapist';
+                
+                // Calculate experience from hire date if available
+                let experience = 'Experienced Professional';
+                if (therapist.hireDate) {
+                    const hireDate = new Date(therapist.hireDate);
+                    const now = new Date();
+                    const years = Math.floor((now - hireDate) / (365.25 * 24 * 60 * 60 * 1000));
+                    experience = years > 0 ? `${years} year${years > 1 ? 's' : ''} experience` : 'Recently joined';
+                }
+                
                 therapistCard.innerHTML = `
                     <div style="margin-bottom: 1rem;">
                         <i class="fas fa-user-md" style="font-size: 2rem; color: #800020;"></i>
                     </div>
-                    <h4>${therapist.name}</h4>
+                    <h4>${therapistName}</h4>
                     <p style="color: #6b7280; font-size: 0.9rem; margin: 0.5rem 0;">
-                        ${therapist.position}
+                        ${position}
                     </p>
                     <p style="color: #6b7280; font-size: 0.8rem;">
-                        ${therapist.experience}
+                        ${experience}
                     </p>
                     <div style="margin-top: 0.5rem;">
                         <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
-                            <span style="color: #fbbf24;">★</span>
-                            <span style="margin-left: 0.25rem; font-size: 0.9rem;">${therapist.rating}</span>
+                            <span style="color: #fbbf24;">★★★★★</span>
                         </div>
                         <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.25rem;">
-                            ${therapist.specialties.map(specialty => 
-                                `<span class="badge badge-secondary" style="font-size: 0.7rem;">${specialty}</span>`
-                            ).join('')}
+                            <span class="badge badge-secondary" style="font-size: 0.7rem;">Professional</span>
+                            ${therapist.isActive !== false ? '<span class="badge badge-success" style="font-size: 0.7rem;">Available</span>' : ''}
                         </div>
                     </div>
                 `;
