@@ -1077,6 +1077,16 @@
                 <div class="page-header">
                     <h1>Customer Management</h1>
                     <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="window.customerManager.exportCustomersToCSV()">
+                            <i class="fas fa-file-csv"></i> Export CSV
+                        </button>
+                        <button class="btn btn-secondary" onclick="window.customerManager.exportCustomersToJSON()">
+                            <i class="fas fa-download"></i> Backup JSON
+                        </button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('customerImportFile').click()">
+                            <i class="fas fa-upload"></i> Import
+                        </button>
+                        <input type="file" id="customerImportFile" accept=".json,.csv" style="display:none" onchange="window.customerManager.importCustomersFromFile(this.files[0])">
                         <button class="btn btn-primary" id="addCustomerBtn">
                             <i class="fas fa-user-plus"></i> Add Customer
                         </button>
@@ -1891,6 +1901,43 @@
                         <button class="btn btn-primary" id="saveSettingsBtn" style="margin-left: 1rem;">
                             <i class="fas fa-save"></i> Save Settings
                         </button>
+                    </div>
+                    <div class="settings-section">
+                        <h3>🛡️ Automatic Backup System</h3>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                            Your data (including customers) is automatically backed up daily. Keep up to 30 days of backups.
+                        </p>
+                        <div id="backupStatus" style="background: #f8f9fa; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span><strong>Backup Status:</strong></span>
+                                <span id="backupStatusText" style="color: #28a745;">✅ Enabled</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span><strong>Last Backup:</strong></span>
+                                <span id="lastBackupTime">Never</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span><strong>Total Backups:</strong></span>
+                                <span id="totalBackupsCount">0</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-success" onclick="window.backupManager.createManualBackup()">
+                                <i class="fas fa-shield-alt"></i> Backup Now
+                            </button>
+                            <button class="btn btn-info" onclick="window.backupManager.showBackupList()">
+                                <i class="fas fa-list"></i> View Backups
+                            </button>
+                            <button class="btn btn-secondary" onclick="window.backupManager.exportLatestBackup()">
+                                <i class="fas fa-download"></i> Export Latest
+                            </button>
+                            <button class="btn btn-warning" onclick="window.backupManager.toggleAutoBackup()">
+                                <i class="fas fa-power-off"></i> <span id="toggleBackupText">Disable Auto</span>
+                            </button>
+                        </div>
+                        <p style="color: #666; font-size: 0.85rem; margin-top: 1rem;">
+                            <i class="fas fa-info-circle"></i> <strong>What's backed up:</strong> ALL business data including Customers, Transactions, Inventory, Employees, Attendance, Payroll, Expenses, Appointments, Gift Certificates, Settings, and more
+                        </p>
                     </div>
                     <div class="settings-section">
                         <h3>Activity Logs</h3>
@@ -3522,6 +3569,7 @@
     <!-- Error Recovery and Safety Systems -->
     <script src="js/error-recovery.js"></script>
     <script src="js/backup-system.js"></script>
+    <script src="js/backup-manager.js"></script>
     <script src="js/feature-flags.js"></script>
     
     <!-- Legacy Logger Support (for compatibility) -->

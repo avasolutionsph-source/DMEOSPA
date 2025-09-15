@@ -615,9 +615,24 @@ class CustomerManager {
             return;
         }
 
+        // CHECK FOR DUPLICATE PHONE NUMBER
+        if (this.isDuplicatePhone(phone)) {
+            const existingCustomer = this.customers.find(c => c.phone === phone);
+            const confirmAdd = confirm(
+                `A customer with phone ${phone} already exists:\n` +
+                `${existingCustomer.firstName} ${existingCustomer.lastName}\n\n` +
+                `Do you still want to add this customer?`
+            );
+            
+            if (!confirmAdd) {
+                return;
+            }
+        }
+
         try {
+            // Better ID generation to avoid collisions
             const customer = {
-                id: Date.now(),
+                id: Date.now() + Math.random(),
                 firstName,
                 lastName,
                 phone,
@@ -680,8 +695,17 @@ class CustomerManager {
                 throw new Error('Phone number must be in format 09XXXXXXXXX');
             }
 
+            // CHECK FOR DUPLICATE IN CHECKOUT TOO
+            if (this.isDuplicatePhone(phone)) {
+                const existingCustomer = this.customers.find(c => c.phone === phone);
+                throw new Error(
+                    `Customer with phone ${phone} already exists: ${existingCustomer.firstName} ${existingCustomer.lastName}. ` +
+                    `Please select them from the dropdown instead.`
+                );
+            }
+
             const customer = {
-                id: Date.now(),
+                id: Date.now() + Math.random(), // Better ID generation
                 firstName,
                 lastName,
                 phone,
@@ -982,6 +1006,269 @@ class CustomerManager {
     closeCustomerHistoryModal() {
         const modal = document.getElementById('customerHistoryModal');
         if (modal) modal.remove();
+    }
+
+    // EXPORT/IMPORT FUNCTIONALITY FOR DATA PROTECTION
+    async exportCustomersToCSV() {
+        try {
+            const customers = this.customers;
+            if (customers.length === 0) {
+                showError('No customers to export');
+                return;
+            }
+
+            // CSV Headers
+            const headers = ['First Name', 'Last Name', 'Phone', 'Email', 'Address', 'Notes', 'Date Added', 'Last Visit', 'Total Visits', 'Total Spent', 'Favorite Service'];
+            
+            // Convert customers to CSV rows
+            const rows = customers.map(customer => [
+                customer.firstName || '',
+                customer.lastName || '',
+                customer.phone || '',
+                customer.email || '',
+                customer.address || '',
+                customer.notes || '',
+                customer.dateAdded ? new Date(customer.dateAdded).toLocaleDateString() : '',
+                customer.lastVisit ? new Date(customer.lastVisit).toLocaleDateString() : '',
+                customer.totalVisits || 0,
+                customer.totalSpent || 0,
+                customer.favoriteService || ''
+            ]);
+
+            // Create CSV content
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.map(cell => {
+                    // Escape quotes and wrap in quotes if contains comma
+                    const escaped = String(cell).replace(/"/g, '""');
+                    return escaped.includes(',') ? `"${escaped}"` : escaped;
+                }).join(','))
+            ].join('\n');
+
+            // Download CSV file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const date = new Date().toISOString().split('T')[0];
+            
+            link.href = url;
+            link.download = `customers-${date}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showSuccess(`Exported ${customers.length} customers to CSV`);
+            console.log(`✅ Exported ${customers.length} customers to CSV`);
+            
+        } catch (error) {
+            console.error('Export failed:', error);
+            showError('Failed to export customers');
+        }
+    }
+
+    async exportCustomersToJSON() {
+        try {
+            const customers = this.customers;
+            if (customers.length === 0) {
+                showError('No customers to export');
+                return;
+            }
+
+            const exportData = {
+                exportDate: new Date().toISOString(),
+                version: '1.0',
+                businessName: localStorage.getItem('businessName') || 'Unknown',
+                totalCustomers: customers.length,
+                customers: customers
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const date = new Date().toISOString().split('T')[0];
+            
+            link.href = url;
+            link.download = `customers-backup-${date}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showSuccess(`Exported ${customers.length} customers to JSON backup`);
+            console.log(`✅ Exported ${customers.length} customers to JSON`);
+            
+        } catch (error) {
+            console.error('Export failed:', error);
+            showError('Failed to export customers');
+        }
+    }
+
+    async importCustomersFromFile(file) {
+        try {
+            const text = await file.text();
+            let importedCustomers = [];
+
+            // Detect file type
+            if (file.type === 'application/json' || file.name.endsWith('.json')) {
+                const data = JSON.parse(text);
+                importedCustomers = data.customers || data;
+            } else if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+                importedCustomers = this.parseCSV(text);
+            } else {
+                throw new Error('Unsupported file type. Please use JSON or CSV.');
+            }
+
+            if (!Array.isArray(importedCustomers)) {
+                throw new Error('Invalid file format');
+            }
+
+            // Check for duplicates and import
+            let imported = 0;
+            let skipped = 0;
+            let updated = 0;
+
+            for (const importCustomer of importedCustomers) {
+                // Validate required fields
+                if (!importCustomer.firstName || !importCustomer.lastName || !importCustomer.phone) {
+                    skipped++;
+                    continue;
+                }
+
+                // Check for duplicate by phone number
+                const existing = this.customers.find(c => c.phone === importCustomer.phone);
+                
+                if (existing) {
+                    // Update existing customer if needed
+                    const shouldUpdate = confirm(`Customer ${importCustomer.firstName} ${importCustomer.lastName} with phone ${importCustomer.phone} already exists. Update their information?`);
+                    
+                    if (shouldUpdate) {
+                        // Merge data, keeping existing ID
+                        const updatedCustomer = {
+                            ...existing,
+                            ...importCustomer,
+                            id: existing.id, // Keep original ID
+                            dateAdded: existing.dateAdded // Keep original date
+                        };
+                        
+                        await window.db.update('customers', updatedCustomer);
+                        const index = this.customers.findIndex(c => c.id === existing.id);
+                        this.customers[index] = updatedCustomer;
+                        updated++;
+                    } else {
+                        skipped++;
+                    }
+                } else {
+                    // Add new customer
+                    const newCustomer = {
+                        ...importCustomer,
+                        id: Date.now() + Math.random(), // Better ID generation
+                        dateAdded: importCustomer.dateAdded || new Date().toISOString()
+                    };
+                    
+                    await window.db.add('customers', newCustomer);
+                    this.customers.push(newCustomer);
+                    imported++;
+                }
+            }
+
+            // Refresh display
+            this.filteredCustomers = [...this.customers];
+            this.displayCustomers();
+            this.updateCustomerStats();
+            
+            // Update dropdown if initialized
+            if (this.isDropdownInitialized) {
+                this.renderCustomerOptions();
+            }
+
+            const message = `Import complete: ${imported} new, ${updated} updated, ${skipped} skipped`;
+            showSuccess(message);
+            console.log(`✅ ${message}`);
+            
+        } catch (error) {
+            console.error('Import failed:', error);
+            showError(`Import failed: ${error.message}`);
+        }
+    }
+
+    parseCSV(csvText) {
+        const lines = csvText.split('\n').filter(line => line.trim());
+        if (lines.length < 2) return [];
+
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const customers = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            const values = this.parseCSVLine(lines[i]);
+            const customer = {};
+
+            // Map CSV columns to customer properties
+            const columnMap = {
+                'first name': 'firstName',
+                'last name': 'lastName',
+                'phone': 'phone',
+                'email': 'email',
+                'address': 'address',
+                'notes': 'notes',
+                'date added': 'dateAdded',
+                'last visit': 'lastVisit',
+                'total visits': 'totalVisits',
+                'total spent': 'totalSpent',
+                'favorite service': 'favoriteService'
+            };
+
+            headers.forEach((header, index) => {
+                const prop = columnMap[header] || header;
+                let value = values[index] || '';
+                
+                // Convert numeric values
+                if (['totalVisits', 'totalSpent'].includes(prop)) {
+                    value = parseFloat(value) || 0;
+                }
+                
+                customer[prop] = value;
+            });
+
+            customers.push(customer);
+        }
+
+        return customers;
+    }
+
+    parseCSVLine(line) {
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            const nextChar = line[i + 1];
+
+            if (char === '"') {
+                if (inQuotes && nextChar === '"') {
+                    current += '"';
+                    i++; // Skip next quote
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                values.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        
+        values.push(current.trim());
+        return values;
+    }
+
+    // Check for duplicate phone number
+    isDuplicatePhone(phone, excludeId = null) {
+        return this.customers.some(customer => 
+            customer.phone === phone && customer.id !== excludeId
+        );
     }
 }
 

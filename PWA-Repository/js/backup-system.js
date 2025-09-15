@@ -309,6 +309,7 @@ class BackupSystem {
             'inventory', 
             'employees', 
             'transactions', 
+            'customers',         // CRITICAL: Added customers to backup
             'rooms', 
             'giftCertificates',  // camelCase, not snake_case
             'settings',
@@ -316,7 +317,23 @@ class BackupSystem {
             'config',
             'promoDiscounts',
             'activeServices',
-            'syncQueue'
+            'syncQueue',
+            // ADDED: Missing critical data stores for complete backup
+            'appointments',      // Customer appointments
+            'operations',        // Business operations
+            'serviceHistory',    // Service history records
+            'expenses',          // Expense tracking
+            'attendance',        // Employee attendance records
+            'attendance_media',  // Attendance photos/media
+            'activities',        // Activity logs
+            'payroll',          // Payroll records
+            'employeeRequests',  // Employee requests/leave
+            'auditLog',         // Audit trail
+            'attendanceRules',   // Attendance configuration
+            'holidays',         // Holiday calendar
+            'cache',            // Cached data (optional but included)
+            'requestQueue',     // API request queue
+            'migrations'        // Database migrations
         ];
 
         for (const storeName of storesToBackup) {
