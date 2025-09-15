@@ -152,11 +152,10 @@ class EnhancedDashboardManager {
             // SECURITY: Only make API call if we have a valid user token
             if (!token) {
                 console.log('⚠️ [SECURITY] No valid user token found, skipping backend API call');
-                throw new Error('No authentication token');
-            }
-            
-            try {
-                const backendStatsResponse = await fetch(window.API_CONFIG.buildUrl('/api/business/stats'), {
+                // Continue to fallback code instead of throwing error
+            } else {
+                try {
+                    const backendStatsResponse = await fetch(window.API_CONFIG.buildUrl('/api/business/stats'), {
                     headers: { 
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -179,8 +178,9 @@ class EnhancedDashboardManager {
                     console.log('✅ [DASHBOARD] Revenue data updated from backend API - no local calculation needed');
                     return; // Skip local calculations
                 }
-            } catch (backendError) {
-                console.log('⚠️ [DASHBOARD] Backend business stats unavailable, falling back to local calculation');
+                } catch (backendError) {
+                    console.log('⚠️ [DASHBOARD] Backend business stats unavailable, falling back to local calculation');
+                }
             }
             
             // FALLBACK: Get all transactions from MongoDB API instead of IndexedDB
