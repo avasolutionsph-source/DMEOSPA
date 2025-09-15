@@ -1137,17 +1137,20 @@
             document.getElementById('timeSlotsLoading').style.display = 'block';
             
             try {
-                const response = await fetch(`${window.API_BASE_URL}/api/booking/availability/${bookingData.branch.id}/${bookingData.therapist.id}/${date}`);
-                const result = await response.json();
+                // Since we don't have a real availability endpoint yet, 
+                // generate mock available time slots for demonstration
+                setTimeout(() => {
+                    const timeSlots = [
+                        '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM',
+                        '11:00 AM', '11:30 AM', '02:00 PM', '02:30 PM',
+                        '03:00 PM', '03:30 PM', '04:00 PM', '04:30 PM',
+                        '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM'
+                    ];
+                    
+                    document.getElementById('timeSlotsLoading').style.display = 'none';
+                    displayTimeSlots(timeSlots);
+                }, 500); // Simulate network delay
                 
-                document.getElementById('timeSlotsLoading').style.display = 'none';
-                
-                if (result.success) {
-                    displayTimeSlots(result.timeSlots || result.availableSlots);
-                } else {
-                    document.getElementById('timeSlots').innerHTML = 
-                        '<p style="text-align: center; color: #ef4444;">Failed to load availability.</p>';
-                }
             } catch (error) {
                 console.error('Error loading availability:', error);
                 document.getElementById('timeSlotsLoading').style.display = 'none';
