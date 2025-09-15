@@ -1056,9 +1056,15 @@
                 }
             } catch (error) {
                 console.error('Error loading therapists:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    branchId: bookingData.branch?.id,
+                    branchName: bookingData.branch?.name,
+                    url: `${window.API_BASE_URL}/api/employees/public/${bookingData.branch?.id}`
+                });
                 document.getElementById('therapistsLoading').style.display = 'none';
                 document.getElementById('therapistsContainer').innerHTML = 
-                    '<p style="text-align: center; color: #ef4444;">Failed to load therapists. Please try again.</p>';
+                    '<p style="text-align: center; color: #ef4444;">Failed to load therapists. Please check console for details.</p>';
             }
         }
 
