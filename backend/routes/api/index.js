@@ -18,6 +18,7 @@ import entitlementsRoutes from './entitlements.js';
 import chatbotRoutes from './chatbot.js';
 import syncSimpleRoutes from './sync-simple.js';
 import dataValidationRoutes from './dataValidation.js';
+import bookingsRoutes from './bookings.js';
 import { authenticateJWT, optionalAuth, requireBusinessUser } from '../../middleware/auth.js';
 import { apiRequestLogger } from '../../middleware/requestLogger.js';
 import logger from '../../utils/logger.js';
@@ -235,6 +236,9 @@ router.get('/bookings/:branchId', authenticateJWT, async (req, res) => {
 
 // User routes (requires authentication)
 router.use('/user', userRoutes);
+
+// Booking routes (mostly public for customers)
+router.use('/bookings', bookingsRoutes);
 
 // Chatbot routes (optional auth)
 router.use('/chatbot', chatbotRoutes);

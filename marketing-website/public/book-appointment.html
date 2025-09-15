@@ -1341,41 +1341,50 @@
                 // Fix therapist name
                 const therapistName = `${bookingData.therapist.firstName || ''} ${bookingData.therapist.lastName || ''}`.trim() || 'Therapist';
                 
+                // Get user data from localStorage
+                const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+                
+                // Convert time from 12-hour to 24-hour format
+                function convertTo24Hour(time12) {
+                    const [time, modifier] = time12.split(' ');
+                    let [hours, minutes] = time.split(':');
+                    hours = parseInt(hours);
+                    
+                    if (modifier === 'PM' && hours !== 12) {
+                        hours += 12;
+                    }
+                    if (modifier === 'AM' && hours === 12) {
+                        hours = 0;
+                    }
+                    
+                    return `${hours.toString().padStart(2, '0')}:${minutes}`;
+                }
+                
                 const bookingPayload = {
                     branchId: bookingData.branch.id,
+                    branchName: bookingData.branch.name,
+                    clientName: `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'Customer',
+                    clientEmail: userData.email || 'customer@email.com',
+                    clientPhone: bookingData.phone,
                     serviceId: bookingData.service._id || bookingData.service.id,
                     serviceName: bookingData.service.name,
-                    serviceDuration: bookingData.service.duration,
-                    servicePrice: bookingData.service.price,
-                    serviceCategory: bookingData.service.category,
+                    serviceDuration: bookingData.service.duration || 60,
+                    servicePrice: bookingData.service.price || 0,
+                    serviceCategory: bookingData.service.category || 'Service',
                     therapistId: bookingData.therapist._id || bookingData.therapist.id,
                     therapistName: therapistName,
                     appointmentDate: bookingData.date,
-                    startTime: bookingData.time,
-                    serviceLocation: bookingData.location,
+                    startTime: convertTo24Hour(bookingData.time),
+                    serviceLocation: bookingData.location || 'in-spa',
                     homeAddress: bookingData.location === 'home-service' ? bookingData.homeAddress : null,
-                    specialRequests: bookingData.specialRequests,
-                    clientPhone: bookingData.phone
+                    specialRequests: bookingData.specialRequests
                 };
                 
                 console.log('📤 Booking payload being sent:', bookingPayload);
                 console.log('📤 Current bookingData.phone:', bookingData.phone);
                 
-                // For now, simulate successful booking since the endpoint doesn't exist yet
-                setTimeout(() => {
-                    confirmBtn.disabled = false;
-                    confirmBtn.innerHTML = originalText;
-                    
-                    // Show success message
-                    alert('✅ Booking created successfully!\n\nYour appointment has been confirmed. You will receive a confirmation email shortly.');
-                    
-                    // Redirect to profile or home
-                    window.location.href = '/my-profile';
-                }, 1500);
-                
-                return; // Skip the actual API call for now
-                
-                const response = await fetch(`${window.API_BASE_URL}/api/booking/book`, {
+                // Call the real API
+                const response = await fetch(`${window.API_BASE_URL}/api/bookings/create`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
