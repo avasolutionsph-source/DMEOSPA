@@ -62,15 +62,18 @@ router.get('/booking/branches', async (req, res) => {
     // Import User model to get branch users
     const User = (await import('../../models/User.js')).default;
     
-    // Get all branch users (business accounts that can receive bookings)
+    // Get ALL branch users (business accounts that can receive bookings)
+    // Remove businessName requirement to show all branches
     const branches = await User.find({ 
-      role: 'branch',
-      businessName: { $exists: true, $ne: null, $ne: '' }
+      role: 'branch'
     })
     .select('businessName firstName lastName email phone _id')  // Added email and phone fields
     .lean();
     
-    console.log('Found branches:', branches);
+    console.log(`Found ${branches.length} branch accounts:`, branches.map(b => ({
+      name: b.businessName || `${b.firstName} ${b.lastName}`,
+      email: b.email
+    })));
     
     // If no branches found, return a default demo branch
     if (!branches || branches.length === 0) {
@@ -96,7 +99,8 @@ router.get('/booking/branches', async (req, res) => {
       success: true,
       branches: branches.map(branch => ({
         id: branch._id,
-        name: branch.businessName,
+        // Use businessName if available, otherwise use firstName + lastName
+        name: branch.businessName || `${branch.firstName || ''} ${branch.lastName || ''}`.trim() || 'Unnamed Branch',
         contact: {
           email: branch.email || 'contact@spa.com',
           phone: branch.phone || '+63 123 456 7890'
