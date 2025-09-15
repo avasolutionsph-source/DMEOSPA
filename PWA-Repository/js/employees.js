@@ -442,7 +442,7 @@ class EmployeeManager {
             const token = this.getAuthToken();
             if (!token) {
                 console.error('❌ No authentication token for viewing employee');
-                showSuccess('Authentication required - please log in', 'error');
+                showError('Authentication required - please log in');
                 return;
             }
 
@@ -451,14 +451,14 @@ class EmployeeManager {
             
             if (!empResult.success) {
                 console.error('❌ Failed to fetch employee details:', empResult.error);
-                showSuccess('Failed to load employee details', 'error');
+                showError('Failed to load employee details');
                 return;
             }
 
             const employee = empResult.data;
             if (!employee) {
                 console.error('❌ Employee not found');
-                showSuccess('Employee not found', 'error');
+                showError('Employee not found');
                 return;
             }
 
@@ -722,7 +722,7 @@ class EmployeeManager {
             } else {
                 console.error('Failed to view employee:', error);
             }
-            showSuccess('Failed to load employee details', 'error');
+            showError('Failed to load employee details');
         }
     }
 
@@ -732,7 +732,7 @@ class EmployeeManager {
             const token = this.getAuthToken();
             if (!token) {
                 console.error('❌ No authentication token for editing employee');
-                showSuccess('Authentication required - please log in', 'error');
+                showError('Authentication required - please log in');
                 return;
             }
 
@@ -746,7 +746,7 @@ class EmployeeManager {
 
             if (!response.ok) {
                 console.error('❌ Failed to fetch employee for editing:', response.status);
-                showSuccess('Failed to load employee for editing', 'error');
+                showError('Failed to load employee for editing');
                 return;
             }
 
@@ -754,7 +754,7 @@ class EmployeeManager {
             const employee = result.data;
             if (!employee) {
                 console.error('❌ Employee not found for editing');
-                showSuccess('Employee not found', 'error');
+                showError('Employee not found');
                 return;
             }
 
@@ -814,7 +814,7 @@ class EmployeeManager {
         const token = this.getAuthToken();
         if (!token) {
             console.error('❌ No authentication token found for deleting employee');
-            showSuccess('Authentication required - please log in', 'error');
+            showError('Authentication required - please log in');
             return;
         }
 
@@ -829,11 +829,11 @@ class EmployeeManager {
             
             if (response.ok) {
                 console.log('✅ Employee deleted from MongoDB');
-                showSuccess('Employee deleted successfully', 'success');
+                showSuccess('Employee deleted successfully');
                 await this.loadEmployees();
             } else {
                 console.error('❌ Failed to delete employee:', response.status);
-                showSuccess('Failed to delete employee', 'error');
+                showError('Failed to delete employee');
             }
         } catch (error) {
             console.error('❌ Failed to delete employee from MongoDB:', error);
@@ -844,7 +844,7 @@ class EmployeeManager {
                     error: error
                 });
             }
-            showSuccess('Failed to delete employee', 'error');
+            showError('Failed to delete employee');
         }
     }
 
@@ -924,7 +924,7 @@ class EmployeeManager {
                 saveBtn.classList.remove('loading');
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = originalText;
-                showSuccess('Authentication required - please log in', 'error');
+                showError('Authentication required - please log in');
                 return;
             }
 
@@ -950,14 +950,14 @@ class EmployeeManager {
                     saveBtn.disabled = false;
                     saveBtn.innerHTML = originalText;
                     closeModal('employeeModal');
-                    showSuccess('Employee updated successfully', 'success');
+                    showSuccess('Employee updated successfully');
                 } else {
                     console.error('❌ Failed to update employee:', response.status);
                     hideLoading();
                     saveBtn.classList.remove('loading');
                     saveBtn.disabled = false;
                     saveBtn.innerHTML = originalText;
-                    showSuccess('Failed to update employee', 'error');
+                    showError('Failed to update employee');
                     return;
                 }
             } else {
@@ -981,14 +981,14 @@ class EmployeeManager {
                     saveBtn.disabled = false;
                     saveBtn.innerHTML = originalText;
                     closeModal('employeeModal');
-                    showSuccess('Employee added successfully', 'success');
+                    showSuccess('Employee added successfully');
                 } else {
                     console.error('❌ Failed to add employee:', response.status);
                     hideLoading();
                     saveBtn.classList.remove('loading');
                     saveBtn.disabled = false;
                     saveBtn.innerHTML = originalText;
-                    showSuccess('Failed to add employee', 'error');
+                    showError('Failed to add employee');
                     return;
                 }
             }
@@ -1013,7 +1013,7 @@ class EmployeeManager {
             saveBtn.classList.remove('loading');
             saveBtn.disabled = false;
             saveBtn.innerHTML = originalText;
-            showSuccess('Failed to save employee', 'error');
+            showError('Failed to save employee');
         } finally {
             // Always reset the saving flag
             this.isSaving = false;
@@ -1030,7 +1030,7 @@ class EmployeeManager {
         const token = this.getAuthToken();
         if (!token) {
             console.error('❌ No authentication token for commission report');
-            showSuccess('Authentication required - please log in', 'error');
+            showError('Authentication required - please log in');
             return;
         }
 
@@ -1047,7 +1047,7 @@ class EmployeeManager {
 
             if (!response.ok) {
                 console.error('❌ Failed to fetch transactions for report');
-                showSuccess('Failed to load transaction data for report', 'error');
+                showError('Failed to load transaction data for report');
                 return;
             }
 
@@ -1088,7 +1088,7 @@ class EmployeeManager {
             }
         } catch (error) {
             console.error('❌ Failed to generate commission report:', error);
-            showSuccess('Failed to generate commission report', 'error');
+            showError('Failed to generate commission report');
             return;
         }
 
