@@ -244,6 +244,7 @@ class EnhancedDashboardManager {
             this.stats.giftCertCount = activeGiftCerts.length;
             
             console.log('✅ Financial performance data loaded');
+            this.updateAllStatsDisplay(); // Update UI with calculated stats
             
         } catch (error) {
             console.error('❌ Error loading financial performance:', error);
