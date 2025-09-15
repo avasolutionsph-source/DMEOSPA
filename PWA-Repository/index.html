@@ -3316,6 +3316,7 @@
                     
                     // Store in localStorage
                     localStorage.setItem('userToken', token);
+                    localStorage.setItem('authToken', token); // Also store as authToken for dashboard compatibility
                     localStorage.setItem('userData', JSON.stringify(userData));
                     localStorage.setItem('isLoggedIn', 'true');
                     
