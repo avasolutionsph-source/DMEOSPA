@@ -510,7 +510,7 @@ class HybridAPIClient {
     }
 
     getAuthToken() {
-        // PRIORITY ORDER: JWT tokens from login → cached auth tokens → development tokens
+        // ENHANCED: PRIORITY ORDER: JWT tokens from login → cached auth tokens → TokenManager fallback → development tokens
         
         // 1. Check for JWT tokens from login (highest priority)
         const jwtToken = localStorage.getItem('jwtToken') || 
@@ -527,19 +527,40 @@ class HybridAPIClient {
         // 3. Select the best token (JWT has priority)
         let token = jwtToken || authToken;
         
+        // ENHANCED: 4. Fallback to TokenManager (NEW - safe fallback)
+        if (!token && window.tokenManager) {
+            token = window.tokenManager.getAuthToken();
+            if (token) {
+                console.log('🔄 [HYBRID-AUTH] Using token from TokenManager fallback');
+            }
+        }
+        
         console.log('🔐 [HYBRID-AUTH] Token priority check:', {
             jwtToken: !!jwtToken,
             authToken: !!authToken,
+            tokenManagerFallback: !!(window.tokenManager && !jwtToken && !authToken && token),
             selectedToken: token ? token.substring(0, 30) + '...' : 'NONE',
-            tokenType: jwtToken ? 'JWT' : authToken ? 'AUTH' : 'NONE',
+            tokenType: jwtToken ? 'JWT' : authToken ? 'AUTH' : token ? 'TOKENMANAGER' : 'NONE',
             isDevelopment: token && token.startsWith('dev-token-')
         });
         
-        // SECURITY FIX: Removed hardcoded development token generation
-        // This was causing cross-user data contamination by using fixed user ID '68c36e5acb1b1c0fdc0563dd'
-        if (!token && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-            console.log('🚨 [HYBRID-AUTH] No authentication token available - user must login properly');
-            console.log('🔐 [HYBRID-AUTH] Development tokens disabled to prevent cross-user data access');
+        // ENHANCED: Better error messaging and guidance
+        if (!token) {
+            const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            
+            if (isDevelopment) {
+                console.log('🚨 [HYBRID-AUTH] No authentication token available in development');
+                console.log('💡 [HYBRID-AUTH] Options to fix this:');
+                console.log('   1. Login through marketing site: http://localhost:3003/login');
+                console.log('   2. Set development token: setDevelopmentToken("your-user-id")');
+                console.log('   3. Debug tokens: debugTokens()');
+            } else {
+                console.log('🚨 [HYBRID-AUTH] No authentication token available');
+                console.log('💡 [HYBRID-AUTH] Please login through the marketing website first');
+            }
+            
+            // Show user-friendly error if possible
+            this.showAuthError();
         }
         
         // 5. Log final token selection
@@ -960,6 +981,114 @@ class HybridAPIClient {
         window.dispatchEvent(new CustomEvent('tokenChanged', {
             detail: { eventType, userData }
         }));
+    }
+
+    /**
+     * ENHANCED: Show user-friendly authentication error (NEW METHOD)
+     */
+    showAuthError() {
+        // Only show error once per session to avoid spam
+        if (this.authErrorShown) return;
+        this.authErrorShown = true;
+        
+        try {
+            // Try to find an appropriate place to show the error
+            const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            
+            // Check if we have a notification system available
+            if (window.showNotification) {
+                const message = isDevelopment 
+                    ? 'No authentication token found. Please login or use setDevelopmentToken().'
+                    : 'Please login through the marketing website to access this feature.';
+                window.showNotification(message, 'warning');
+                return;
+            }
+            
+            // Fallback: Try to show in a banner or header area
+            const possibleContainers = [
+                document.getElementById('main-header'),
+                document.getElementById('header'),
+                document.querySelector('.header'),
+                document.querySelector('.container'),
+                document.body
+            ];
+            
+            for (const container of possibleContainers) {
+                if (container) {
+                    const authBanner = this.createAuthBanner(isDevelopment);
+                    container.insertBefore(authBanner, container.firstChild);
+                    break;
+                }
+            }
+        } catch (error) {
+            console.warn('⚠️ [HYBRID-AUTH] Could not show user-friendly auth error:', error);
+        }
+    }
+    
+    /**
+     * ENHANCED: Create authentication error banner (NEW METHOD)
+     */
+    createAuthBanner(isDevelopment) {
+        const banner = document.createElement('div');
+        banner.id = 'auth-error-banner';
+        banner.style.cssText = `
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 12px;
+            margin: 10px;
+            border-radius: 4px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 1000;
+            position: relative;
+        `;
+        
+        const content = document.createElement('div');
+        if (isDevelopment) {
+            content.innerHTML = `
+                <strong>⚠️ Authentication Required</strong><br>
+                No authentication token found. Please:
+                <ul style="margin: 5px 0 0 20px; padding: 0;">
+                    <li>Login at <a href="http://localhost:3003/login" target="_blank">Marketing Site</a></li>
+                    <li>Or use <code>setDevelopmentToken("user-id")</code> in console</li>
+                </ul>
+            `;
+        } else {
+            content.innerHTML = `
+                <strong>⚠️ Authentication Required</strong><br>
+                Please login through the marketing website to access PWA features.
+            `;
+        }
+        
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '×';
+        closeBtn.style.cssText = `
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #856404;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 10px;
+        `;
+        closeBtn.onclick = () => banner.remove();
+        
+        banner.appendChild(content);
+        banner.appendChild(closeBtn);
+        
+        // Auto-remove after 30 seconds
+        setTimeout(() => {
+            if (banner.parentNode) {
+                banner.remove();
+            }
+        }, 30000);
+        
+        return banner;
     }
 
     /**

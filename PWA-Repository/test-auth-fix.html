@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+        .success { border-color: #4CAF50; background: #e8f5e9; }
+        .error { border-color: #f44336; background: #ffebee; }
+        .warning { border-color: #ff9800; background: #fff3e0; }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1976D2; }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .console-output {
+            background: #000;
+            color: #00ff00;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Authentication Fix Test</h1>
+        <p>Testing the enhanced TokenManager and HybridAPIClient authentication fixes.</p>
+        
+        <div class="test-section" id="tokenManagerTest">
+            <h3>1. TokenManager Test</h3>
+            <button onclick="testTokenManager()">Test TokenManager</button>
+            <div id="tokenManagerResult"></div>
+        </div>
+        
+        <div class="test-section" id="hybridApiTest">
+            <h3>2. HybridAPIClient Token Retrieval Test</h3>
+            <button onclick="testHybridAPIClient()">Test HybridAPIClient</button>
+            <div id="hybridApiResult"></div>
+        </div>
+        
+        <div class="test-section" id="devTokenTest">
+            <h3>3. Development Token Test</h3>
+            <button onclick="testDevelopmentToken()">Set Development Token</button>
+            <button onclick="clearAllTokens()">Clear All Tokens</button>
+            <div id="devTokenResult"></div>
+        </div>
+        
+        <div class="test-section" id="employeeTest">
+            <h3>4. Employee API Test (Should work with fixes)</h3>
+            <button onclick="testEmployeeAPI()">Test Employee API</button>
+            <div id="employeeResult"></div>
+        </div>
+        
+        <div class="test-section" id="consoleSection">
+            <h3>5. Console Output</h3>
+            <button onclick="clearConsoleOutput()">Clear Console</button>
+            <div id="consoleOutput" class="console-output"></div>
+        </div>
+    </div>
+
+    <!-- Load our enhanced authentication modules -->
+    <script src="js/database.js"></script>
+    <script src="js/token-manager.js"></script>
+    <script src="js/api-config.js"></script>
+    <script src="js/hybrid-api-client.js"></script>
+    
+    <script>
+        // Capture console output for display
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const originalConsoleWarn = console.warn;
+        
+        function addToConsole(message, type = 'log') {
+            const consoleOutput = document.getElementById('consoleOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff6b6b' : type === 'warn' ? '#ffa726' : '#00ff00';
+            consoleOutput.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalConsoleWarn.apply(console, args);
+            addToConsole(args.join(' '), 'warn');
+        };
+        
+        function clearConsoleOutput() {
+            document.getElementById('consoleOutput').innerHTML = '';
+        }
+        
+        // Test functions
+        function testTokenManager() {
+            const result = document.getElementById('tokenManagerResult');
+            result.innerHTML = '<p>Testing TokenManager...</p>';
+            
+            try {
+                if (!window.tokenManager) {
+                    result.innerHTML = '<p class="error">❌ TokenManager not available</p>';
+                    return;
+                }
+                
+                const authState = window.tokenManager.getAuthState();
+                console.log('🔍 TokenManager Auth State:', authState);
+                
+                result.innerHTML = `
+                    <div class="${authState.hasToken ? 'success' : 'warning'}">
+                        <h4>TokenManager Status:</h4>
+                        <pre>${JSON.stringify(authState, null, 2)}</pre>
+                        <p><strong>Result:</strong> ${authState.hasToken ? '✅ Token found' : '⚠️ No token found'}</p>
+                    </div>
+                `;
+                
+                // Test debug functions
+                if (window.debugTokens) {
+                    console.log('🔧 Running debugTokens()...');
+                    window.debugTokens();
+                }
+                
+            } catch (error) {
+                console.error('❌ TokenManager test error:', error);
+                result.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        function testHybridAPIClient() {
+            const result = document.getElementById('hybridApiResult');
+            result.innerHTML = '<p>Testing HybridAPIClient...</p>';
+            
+            try {
+                if (!window.HybridAPIClient) {
+                    result.innerHTML = '<p class="error">❌ HybridAPIClient not available</p>';
+                    return;
+                }
+                
+                const token = window.HybridAPIClient.getAuthToken();
+                console.log('🔍 HybridAPIClient Token:', token ? token.substring(0, 30) + '...' : 'NONE');
+                
+                // Test debug function
+                if (window.HybridAPIClient.debugAllTokens) {
+                    console.log('🔧 Running HybridAPIClient.debugAllTokens()...');
+                    window.HybridAPIClient.debugAllTokens();
+                }
+                
+                result.innerHTML = `
+                    <div class="${token ? 'success' : 'warning'}">
+                        <h4>HybridAPIClient Token Status:</h4>
+                        <p><strong>Has Token:</strong> ${!!token}</p>
+                        <p><strong>Token Length:</strong> ${token ? token.length : 0}</p>
+                        <p><strong>Token Preview:</strong> ${token ? token.substring(0, 30) + '...' : 'NONE'}</p>
+                        <p><strong>Result:</strong> ${token ? '✅ Token retrieved' : '⚠️ No token found'}</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('❌ HybridAPIClient test error:', error);
+                result.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        function testDevelopmentToken() {
+            const result = document.getElementById('devTokenResult');
+            result.innerHTML = '<p>Setting development token...</p>';
+            
+            try {
+                if (!window.setDevelopmentToken) {
+                    result.innerHTML = '<p class="error">❌ setDevelopmentToken function not available</p>';
+                    return;
+                }
+                
+                const userId = 'test-user-' + Date.now();
+                console.log('🔧 Setting development token for user:', userId);
+                const success = window.setDevelopmentToken(userId);
+                
+                if (success) {
+                    const authState = window.tokenManager.getAuthState();
+                    result.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Development Token Set</h4>
+                            <p><strong>User ID:</strong> ${userId}</p>
+                            <p><strong>Token Found:</strong> ${authState.hasToken}</p>
+                            <p><strong>User Data:</strong> ${authState.hasUserData}</p>
+                            <p><strong>Authenticated:</strong> ${authState.isAuthenticated}</p>
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = '<p class="error">❌ Failed to set development token</p>';
+                }
+                
+            } catch (error) {
+                console.error('❌ Development token test error:', error);
+                result.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        function clearAllTokens() {
+            const result = document.getElementById('devTokenResult');
+            result.innerHTML = '<p>Clearing all tokens...</p>';
+            
+            try {
+                if (window.tokenManager) {
+                    window.tokenManager.clearAuth();
+                    console.log('🧹 All tokens cleared via TokenManager');
+                } else {
+                    // Manual cleanup
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    console.log('🧹 All storage cleared manually');
+                }
+                
+                result.innerHTML = '<div class="success">✅ All tokens cleared</div>';
+                
+            } catch (error) {
+                console.error('❌ Clear tokens error:', error);
+                result.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testEmployeeAPI() {
+            const result = document.getElementById('employeeResult');
+            result.innerHTML = '<p>Testing Employee API...</p>';
+            
+            try {
+                if (!window.HybridAPIClient) {
+                    result.innerHTML = '<p class="error">❌ HybridAPIClient not available</p>';
+                    return;
+                }
+                
+                console.log('🧪 Testing employee API with current authentication...');
+                const employeeResult = await window.HybridAPIClient.getEmployees();
+                
+                console.log('📊 Employee API Result:', employeeResult);
+                
+                result.innerHTML = `
+                    <div class="${employeeResult.success ? 'success' : 'error'}">
+                        <h4>Employee API Test Result:</h4>
+                        <p><strong>Success:</strong> ${employeeResult.success}</p>
+                        <p><strong>Data Count:</strong> ${employeeResult.data?.length || 0}</p>
+                        <p><strong>Source:</strong> ${employeeResult.source || 'unknown'}</p>
+                        <p><strong>Error:</strong> ${employeeResult.error || 'none'}</p>
+                        <p><strong>Queued:</strong> ${employeeResult.queued || false}</p>
+                        ${employeeResult.success && employeeResult.data?.length > 0 ? 
+                            `<p><strong>Sample Employee:</strong> ${JSON.stringify(employeeResult.data[0], null, 2)}</p>` : ''}
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Employee API test error:', error);
+                result.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Auto-run initial tests
+        window.addEventListener('load', () => {
+            console.log('🚀 Authentication Fix Test Page Loaded');
+            console.log('📍 Available functions: testTokenManager(), testHybridAPIClient(), testDevelopmentToken()');
+            
+            // Give modules time to load
+            setTimeout(() => {
+                console.log('🔍 Running automatic tests...');
+                testTokenManager();
+                testHybridAPIClient();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

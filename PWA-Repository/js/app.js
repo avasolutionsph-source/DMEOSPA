@@ -843,9 +843,18 @@ class App {
         return this.businessConfig?.modules?.[moduleName] || false;
     }
 
-    // Check if user is already logged in
+    // Check if user is already logged in (ENHANCED: Better token discovery)
     checkIfUserLoggedIn() {
-        // Check for valid authentication token
+        // ENHANCED: Try TokenManager first for better token discovery
+        if (window.tokenManager) {
+            const tokenManagerAuth = window.tokenManager.isAuthenticated();
+            if (tokenManagerAuth) {
+                console.log('✅ [APP] Authentication found via TokenManager');
+                return true;
+            }
+        }
+        
+        // Fallback to existing logic for backward compatibility
         const userToken = localStorage.getItem('userToken') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
         const userData = localStorage.getItem('userData') || localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
         
@@ -855,7 +864,8 @@ class App {
         console.log('Authentication check:', {
             hasToken: !!userToken,
             hasUserData: !!userData,
-            isValid: hasValidLoginData
+            isValid: hasValidLoginData,
+            tokenManagerAvailable: !!window.tokenManager
         });
         
         // Additional validation: check if user data is valid JSON
@@ -877,18 +887,26 @@ class App {
         return hasValidLoginData;
     }
 
-    // Clear authentication data
+    // Clear authentication data (ENHANCED: Use TokenManager for better cleanup)
     clearAuthData() {
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userData');
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('isLoggedIn');
-        sessionStorage.removeItem('userToken');
-        sessionStorage.removeItem('authToken');
-        sessionStorage.removeItem('userData');
-        sessionStorage.removeItem('currentUser');
-        sessionStorage.removeItem('isLoggedIn');
+        // ENHANCED: Use TokenManager if available for comprehensive cleanup
+        if (window.tokenManager) {
+            window.tokenManager.clearAuth();
+            console.log('✅ [APP] Authentication data cleared via TokenManager');
+        } else {
+            // Fallback to manual cleanup for backward compatibility
+            localStorage.removeItem('userToken');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userData');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('userToken');
+            sessionStorage.removeItem('authToken');
+            sessionStorage.removeItem('userData');
+            sessionStorage.removeItem('currentUser');
+            sessionStorage.removeItem('isLoggedIn');
+            console.log('Authentication data cleared manually');
+        }
     }
 
 
