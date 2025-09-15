@@ -1037,8 +1037,14 @@
             document.getElementById('therapistsLoading').style.display = 'block';
             
             try {
-                const response = await fetch(`${window.API_BASE_URL}/api/employees/public/${bookingData.branch.id}`);
+                console.log('Loading therapists for branch:', bookingData.branch);
+                console.log('Branch ID being used:', bookingData.branch.id);
+                const url = `${window.API_BASE_URL}/api/employees/public/${bookingData.branch.id}`;
+                console.log('Fetching from URL:', url);
+                
+                const response = await fetch(url);
                 const result = await response.json();
+                console.log('Therapists API response:', result);
                 
                 document.getElementById('therapistsLoading').style.display = 'none';
                 
