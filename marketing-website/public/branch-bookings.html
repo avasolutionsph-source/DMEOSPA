@@ -685,7 +685,7 @@
                 const tokenData = JSON.parse(atob(token.split('.')[1]));
                 const branchId = tokenData.userId || tokenData.id;
 
-                const response = await fetch(`${window.API_BASE_URL}/api/booking/branch-bookings/${branchId}`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/bookings/branch/${branchId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -701,7 +701,7 @@
                 }
 
                 const data = await response.json();
-                allBookings = data.bookings || [];
+                allBookings = data.data || [];
                 
                 displayBookings(allBookings);
                 updateStats(allBookings);
@@ -805,12 +805,13 @@
 
             try {
                 const token = localStorage.getItem('userToken');
-                const response = await fetch(`${window.API_BASE_URL}/api/booking/${bookingId}/confirm`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/bookings/${bookingId}/status`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify({ status: 'confirmed' })
                 });
 
                 if (response.ok) {
@@ -833,15 +834,15 @@
 
             try {
                 const token = localStorage.getItem('userToken');
-                const response = await fetch(`${window.API_BASE_URL}/api/booking/${bookingId}/cancel`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/bookings/${bookingId}/status`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        reason: reason,
-                        cancelledBy: 'branch'
+                        status: 'cancelled',
+                        cancellationReason: reason
                     })
                 });
 
