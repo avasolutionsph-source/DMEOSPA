@@ -210,7 +210,7 @@ class HybridAPIClient {
                 dataType: Array.isArray(result.data) ? `array[${result.data.length}]` : typeof result.data,
                 error: result.error,
                 message: result.message,
-                actualData: result.data ? result.data.slice(0, 2) : null  // Show first 2 items for debugging
+                actualData: result.data ? (Array.isArray(result.data) ? result.data.slice(0, 2) : result.data) : null  // Show first 2 items for debugging
             });
             
             // SPECIAL DEBUG: Log business/employees responses in detail
