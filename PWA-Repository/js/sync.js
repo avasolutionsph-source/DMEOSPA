@@ -385,6 +385,88 @@ class SyncManager {
         }
     }
     
+    async downloadInventoryFromServer() {
+        try {
+            console.log('📦 Downloading inventory from MongoDB...');
+            
+            const response = await this.fetchWithTimeout(`${this.apiUrl}/api/inventory`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.getAuthToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const serverInventory = result.data || [];
+                
+                console.log(`📥 Downloaded ${serverInventory.length} inventory items from MongoDB`);
+                
+                // Get existing local inventory to preserve pending changes
+                const localInventory = await window.db.getAll('inventory');
+                const localInventoryMap = new Map();
+                
+                // Create map of local inventory for quick lookup
+                for (const item of localInventory) {
+                    const key = item._id || item.id;
+                    localInventoryMap.set(key, item);
+                }
+                
+                // Process server inventory
+                for (const serverItem of serverInventory) {
+                    const itemId = serverItem._id || serverItem.id;
+                    const localItem = localInventoryMap.get(itemId);
+                    
+                    // IMPORTANT: Preserve local changes that haven't been synced
+                    if (localItem && localItem.syncStatus === 'pending') {
+                        console.log(`⚠️ Preserving local changes for ${localItem.name} (has pending stock updates)`);
+                        // Keep the local version with pending changes
+                        continue;
+                    }
+                    
+                    // Update or add the item from server
+                    serverItem.syncStatus = 'synced';
+                    
+                    if (localItem) {
+                        // Update existing item (preserving local ID if different)
+                        await window.db.update('inventory', {
+                            ...serverItem,
+                            id: localItem.id // Preserve local ID
+                        });
+                    } else {
+                        // Add new item from server
+                        await window.db.add('inventory', serverItem);
+                    }
+                }
+                
+                // Remove items that no longer exist on server (unless they have pending changes)
+                for (const [itemId, localItem] of localInventoryMap) {
+                    const existsOnServer = serverInventory.some(s => 
+                        (s._id === itemId) || (s.id === itemId)
+                    );
+                    
+                    if (!existsOnServer && localItem.syncStatus !== 'pending') {
+                        console.log(`🗑️ Removing inventory item ${localItem.name} (no longer exists on server)`);
+                        await window.db.delete('inventory', localItem.id);
+                    }
+                }
+                
+                console.log(`✅ Inventory download complete - preserved pending local changes`);
+                
+                // Refresh UI if on inventory page
+                if (window.location.hash === '#inventory' && window.inventoryManager) {
+                    await window.inventoryManager.displayInventory();
+                }
+                
+            } else {
+                console.error('❌ Failed to download inventory:', response.status);
+            }
+        } catch (error) {
+            console.error('❌ Download inventory error:', error);
+        }
+    }
+    
     // Event-driven sync - call this when data changes
     triggerSync() {
         const now = Date.now();
