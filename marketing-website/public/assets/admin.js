@@ -314,7 +314,7 @@ document.getElementById('editUserForm').addEventListener('submit', async functio
     
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`/api/admin/users/${userId}/notes`, {
+        const response = await fetch(`${window.API_BASE_URL}/api/admin/users/${userId}/notes`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -495,7 +495,7 @@ document.getElementById('changeRoleForm').addEventListener('submit', async funct
     
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`/api/admin/users/${userId}/role`, {
+        const response = await fetch(`${window.API_BASE_URL}/api/admin/users/${userId}/role`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -624,7 +624,7 @@ window.loadBranchData = async function() {
     
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`/api/admin/branch-data/${branchId}`, {
+        const response = await fetch(`${window.API_BASE_URL}/api/admin/branch-data/${branchId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -1307,7 +1307,7 @@ function refreshBranchPayrollActivity() {
 async function viewPayrollRecord(recordId) {
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`/api/payroll/records/${recordId}`, {
+        const response = await fetch(`${window.API_BASE_URL}/api/payroll/records/${recordId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1327,7 +1327,7 @@ async function markPayrollPaid(recordId) {
 
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`/api/payroll/records/${recordId}/status`, {
+        const response = await fetch(`${window.API_BASE_URL}/api/payroll/records/${recordId}/status`, {
             method: 'PATCH',
             headers: {
                 'Authorization': `Bearer ${token}`,
