@@ -2261,7 +2261,7 @@ class POSSystem {
 
                         // Update employee record in IndexedDB
                         try {
-                            await window.db.update('employees', employeeId, employee);
+                            await window.db.update('employees', employee);
                             console.log('✅ [POS] Employee stats saved to IndexedDB');
                         } catch (statsError) {
                             console.error('❌ [POS] Failed to update employee stats in IndexedDB:', statsError);

@@ -834,7 +834,7 @@ class SyncManager {
                     try {
                         employee.syncStatus = 'synced';
                         employee.lastSyncDate = new Date().toISOString();
-                        await window.db.update('employees', employee.id, employee);
+                        await window.db.update('employees', employee);
                     } catch (updateError) {
                         console.error(`❌ [EMPLOYEE-SYNC] Failed to update sync status for ${employee.name}:`, updateError);
                     }
@@ -849,7 +849,7 @@ class SyncManager {
                 for (const employee of employeesToSync) {
                     try {
                         employee.syncStatus = 'error';
-                        await window.db.update('employees', employee.id, employee);
+                        await window.db.update('employees', employee);
                     } catch (updateError) {
                         console.error(`❌ [EMPLOYEE-SYNC] Failed to update error status for ${employee.name}:`, updateError);
                     }
@@ -1726,7 +1726,7 @@ class SyncManager {
                         employee.localId = localId;
                     }
                     
-                    await window.db.update('employees', employee.id, employee);
+                    await window.db.update('employees', employee);
                     console.log(`✅ [EMPLOYEE-ID-MAPPING] Updated employee ${name} with backend ID: ${newId}`);
                 } else {
                     console.warn(`⚠️ [EMPLOYEE-ID-MAPPING] Could not find employee to update: ${name} (${oldId})`);
@@ -1777,7 +1777,7 @@ class SyncManager {
                 }
                 
                 if (needsUpdate) {
-                    await window.db.update('transactions', transaction.id, transaction);
+                    await window.db.update('transactions', transaction);
                     updatedTransactions++;
                 }
             }
