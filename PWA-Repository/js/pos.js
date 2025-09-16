@@ -1780,7 +1780,9 @@ class POSSystem {
         const isInvalidSelection = !selectedEmployeeId || 
                                   selectedEmployeeId === '' || 
                                   selectedEmployeeId === 'undefined' || 
-                                  selectedEmployeeId === 'null';
+                                  selectedEmployeeId === 'null' ||
+                                  selectedEmployeeId === undefined ||
+                                  selectedEmployeeId === null;
         
         if (hasServiceItems && isInvalidSelection) {
             console.error('❌ EMPLOYEE VALIDATION FAILED:', {
@@ -1953,7 +1955,7 @@ class POSSystem {
                 tax: 0,
                 total: Math.max(0, total),
                 paymentMethod: paymentMethod,
-                employeeId: selectedEmployeeId || null,
+                employeeId: (selectedEmployeeId && selectedEmployeeId !== 'null' && selectedEmployeeId !== 'undefined') ? selectedEmployeeId : null,
                 customerId: customerData ? customerData.id : null,
                 customerInfo: customerData ? {
                     name: `${customerData.firstName} ${customerData.lastName}`,
@@ -1988,7 +1990,7 @@ class POSSystem {
                 
                 // Audit metadata
                 auditLog: {
-                    createdBy: selectedEmployeeId || 'system',
+                    createdBy: (selectedEmployeeId && selectedEmployeeId !== 'null' && selectedEmployeeId !== 'undefined') ? selectedEmployeeId : 'system',
                     createdAt: new Date().toISOString(),
                     terminal: 'POS-1',
                     ipAddress: 'local',
@@ -2035,10 +2037,10 @@ class POSSystem {
                     total: transaction.total,
                     paymentMethod: transaction.paymentMethod,
                     paymentStatus: 'completed',
-                    employeeId: selectedEmployeeId || null,
-                    employeeName: employeeName || null,
+                    employeeId: (selectedEmployeeId && selectedEmployeeId !== 'null' && selectedEmployeeId !== 'undefined') ? selectedEmployeeId : null,
+                    employeeName: (employeeName && employeeName !== 'Unknown') ? employeeName : null,
                     // Add employee object for proper employee stats tracking - use flexible employee data
-                    employee: selectedEmployeeId ? {
+                    employee: (selectedEmployeeId && selectedEmployeeId !== 'null' && selectedEmployeeId !== 'undefined') ? {
                         id: selectedEmployeeId,
                         name: employeeName,
                         position: employeePosition
