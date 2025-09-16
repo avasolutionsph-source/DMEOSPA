@@ -338,8 +338,34 @@ class ProductsManager {
                     closeModal('productModal');
                     showSuccess('Service updated successfully');
                 } else {
-                    console.error('❌ [PRODUCTS] Failed to update product:', response.statusText);
-                    showError('Failed to update service');
+                    // Get detailed error message for user
+                    let errorDetails = '';
+                    try {
+                        const errorData = await response.json();
+                        errorDetails = errorData.message || errorData.error || '';
+                        console.error('❌ [PRODUCTS] Failed to update product:', {
+                            status: response.status,
+                            statusText: response.statusText,
+                            error: errorData
+                        });
+                    } catch (e) {
+                        // If can't parse JSON, use status text
+                        errorDetails = response.statusText;
+                        console.error('❌ [PRODUCTS] Failed to update product:', response.statusText);
+                    }
+                    
+                    // Show specific user-friendly message based on status
+                    if (response.status === 401) {
+                        showError('Please login again to update services');
+                    } else if (response.status === 400) {
+                        showError(`Cannot update service: ${errorDetails}`);
+                    } else if (response.status === 404) {
+                        showError('Service not found. It may have been deleted.');
+                    } else if (response.status === 500) {
+                        showError('Server error. Please try again later.');
+                    } else {
+                        showError(`Failed to update service: ${errorDetails}`);
+                    }
                     return;
                 }
             } else {
@@ -377,8 +403,32 @@ class ProductsManager {
                     closeModal('productModal');
                     showSuccess('Service added successfully');
                 } else {
-                    console.error('❌ [PRODUCTS] Failed to add product:', response.statusText);
-                    showError('Failed to add service');
+                    // Get detailed error message for user
+                    let errorDetails = '';
+                    try {
+                        const errorData = await response.json();
+                        errorDetails = errorData.message || errorData.error || '';
+                        console.error('❌ [PRODUCTS] Failed to add product:', {
+                            status: response.status,
+                            statusText: response.statusText,
+                            error: errorData
+                        });
+                    } catch (e) {
+                        // If can't parse JSON, use status text
+                        errorDetails = response.statusText;
+                        console.error('❌ [PRODUCTS] Failed to add product:', response.statusText);
+                    }
+                    
+                    // Show specific user-friendly message based on status
+                    if (response.status === 401) {
+                        showError('Please login again to add services');
+                    } else if (response.status === 400) {
+                        showError(`Cannot add service: ${errorDetails}`);
+                    } else if (response.status === 500) {
+                        showError('Server error. Please try again later.');
+                    } else {
+                        showError(`Failed to add service: ${errorDetails}`);
+                    }
                     return;
                 }
             }
