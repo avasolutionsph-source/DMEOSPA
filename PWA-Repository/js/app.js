@@ -108,6 +108,14 @@ class App {
         // Check URL parameters for auth modal display
         this.handleURLParameters();
         
+        // Add small delay after login to ensure auth token is properly saved before loading dashboard
+        // This prevents "No auth token found" errors during initial load
+        const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+        if (!authToken) {
+            console.log('⏳ Waiting for authentication to complete before loading dashboard...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        
         // Initialize page
         await this.showPage('dashboard');
         

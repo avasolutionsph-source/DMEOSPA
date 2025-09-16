@@ -141,7 +141,36 @@ class HybridAPIClient {
     async makeOnlineRequest(url, options) {
         const { method, data, headers, cacheKey, cacheTTL, requestId } = options;
 
-        const authToken = this.getAuthToken();
+        let authToken = this.getAuthToken();
+        
+        // If no token found, wait up to 5 seconds for it to appear (fixes race condition after login)
+        if (!authToken) {
+            console.log('⏳ [REQUEST] No auth token yet, waiting for authentication to complete...');
+            let attempts = 0;
+            const maxAttempts = 10; // 10 attempts * 500ms = 5 seconds max wait
+            
+            while (!authToken && attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                authToken = this.getAuthToken();
+                attempts++;
+                
+                if (authToken) {
+                    console.log('✅ [REQUEST] Auth token found after waiting', (attempts * 500) + 'ms');
+                }
+            }
+            
+            if (!authToken) {
+                // Only log this error once per session to avoid spam
+                if (!this._authErrorLogged) {
+                    console.error('❌ [REQUEST] Cannot make request - no auth token available after 5 second wait');
+                    this._authErrorLogged = true;
+                    
+                    // Reset the flag after 30 seconds to allow re-logging if issue persists
+                    setTimeout(() => { this._authErrorLogged = false; }, 30000);
+                }
+                throw new Error('Authentication token required for API requests');
+            }
+        }
 
         console.log('🌐 [REQUEST] Making online request:', {
             url,
@@ -151,11 +180,6 @@ class HybridAPIClient {
             requestId,
             actuallyOnline: this.isOnline && navigator.onLine
         });
-        
-        if (!authToken) {
-            console.error('❌ [REQUEST] Cannot make request - no auth token available');
-            throw new Error('Authentication token required for API requests');
-        }
 
         const requestOptions = {
             method,
