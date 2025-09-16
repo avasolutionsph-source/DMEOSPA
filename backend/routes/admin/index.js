@@ -141,7 +141,7 @@ router.put('/users/:userId', async (req, res) => {
     const User = (await import('../../models/User.js')).default;
     
     const { userId } = req.params;
-    const { subscriptionPlan, subscriptionStatus, fullName, businessName } = req.body;
+    const { subscriptionPlan, subscriptionStatus, fullName, businessName, role } = req.body;
     
     // Validate the user ID
     if (!userId) {
@@ -158,6 +158,28 @@ router.put('/users/:userId', async (req, res) => {
     if (fullName) updateData.firstName = fullName.split(' ')[0] || fullName;
     if (fullName) updateData.lastName = fullName.split(' ').slice(1).join(' ') || '';
     if (businessName) updateData.businessName = businessName;
+    
+    // Handle role update with validation
+    if (role) {
+      // Validate role value
+      const validRoles = ['branch', 'admin', 'superAdmin'];
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid role. Must be one of: branch, admin, superAdmin'
+        });
+      }
+      
+      // Prevent self-demotion for super admins
+      if (req.user && req.user.id === userId && req.user.role === 'superAdmin' && role !== 'superAdmin') {
+        return res.status(403).json({
+          success: false,
+          error: 'Cannot change your own role from superAdmin (prevents lockout)'
+        });
+      }
+      
+      updateData.role = role;
+    }
     
     // Update the user
     const updatedUser = await User.findByIdAndUpdate(
@@ -186,6 +208,78 @@ router.put('/users/:userId', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to update user'
+    });
+  }
+});
+
+// Super Admin Role Update - CHANGE USER ROLE (PROTECTED)
+router.put('/users/:userId/role', async (req, res) => {
+  try {
+    // Import User model
+    const User = (await import('../../models/User.js')).default;
+    
+    const { userId } = req.params;
+    const { role } = req.body;
+    
+    // Validate the user ID
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User ID is required'
+      });
+    }
+    
+    // Validate role
+    if (!role) {
+      return res.status(400).json({
+        success: false,
+        error: 'New role is required'
+      });
+    }
+    
+    const validRoles = ['branch', 'admin', 'superAdmin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid role. Must be one of: branch, admin, superAdmin'
+      });
+    }
+    
+    // Prevent self-demotion for super admins
+    if (req.user && req.user.id === userId && req.user.role === 'superAdmin' && role !== 'superAdmin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Cannot change your own role from superAdmin (prevents lockout)'
+      });
+    }
+    
+    // Update the user's role
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: { role: role } },
+      { new: true, select: '-password' }
+    );
+    
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+    
+    console.log(`Admin changed role for user ${userId} from ${updatedUser.role} to ${role}`);
+    
+    res.json({
+      success: true,
+      user: updatedUser,
+      message: `User role successfully changed to ${role}`
+    });
+    
+  } catch (error) {
+    console.error('Admin role update error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update user role'
     });
   }
 });
