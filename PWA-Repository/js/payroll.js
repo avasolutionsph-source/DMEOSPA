@@ -212,8 +212,22 @@ class PayrollManager {
                 const employees = result.data || [];
                 console.log(`✅ [PAYROLL] Loaded ${employees.length} employees from MongoDB`);
                 
-                // Process employees with salary configurations and name conversion
-                this.employees = employees.map(emp => ({
+                // DEDUPLICATION FIX: Remove duplicate employees by name
+                // Keep the employee with highest sales or better data
+                const uniqueEmployees = new Map();
+                employees.forEach(emp => {
+                    const key = emp.name || `${emp.firstName} ${emp.lastName}`.trim() || 'Unknown';
+                    const existing = uniqueEmployees.get(key);
+                    // Keep the one with higher sales or the first one if no sales data
+                    if (!existing || (emp.totalSales || 0) > (existing.totalSales || 0)) {
+                        uniqueEmployees.set(key, emp);
+                    }
+                });
+                const deduplicatedEmployees = Array.from(uniqueEmployees.values());
+                console.log(`✅ [PAYROLL] Deduplicated to ${deduplicatedEmployees.length} unique employees (from ${employees.length})`);
+                
+                // Process deduplicated employees with salary configurations and name conversion
+                this.employees = deduplicatedEmployees.map(emp => ({
                     ...emp,
                     // Convert MongoDB _id to id for PWA compatibility
                     id: emp._id || emp.id,

@@ -180,8 +180,21 @@ class AttendanceManager {
             }
             
             // Load employees exactly like POS does
-            this.employees = await window.db.getAll('employees');
-            console.log('✅ Loaded', this.employees.length, 'employees from database');
+            const rawEmployees = await window.db.getAll('employees');
+            console.log('✅ Loaded', rawEmployees.length, 'employees from database');
+            
+            // DEDUPLICATION FIX: Remove duplicate employees by name
+            const uniqueEmployees = new Map();
+            rawEmployees.forEach(emp => {
+                const key = emp.name || 'Unknown';
+                const existing = uniqueEmployees.get(key);
+                // Keep the first occurrence (or the one with valid ID)
+                if (!existing || (emp.id && !existing.id)) {
+                    uniqueEmployees.set(key, emp);
+                }
+            });
+            this.employees = Array.from(uniqueEmployees.values());
+            console.log(`✅ Deduplicated ${rawEmployees.length} to ${this.employees.length} unique employees`);
             
             // Populate the dropdown exactly like POS
             const select = document.getElementById('attendanceEmployeeSelect');
@@ -302,8 +315,20 @@ class AttendanceManager {
             
             // EXACT SAME METHOD AS EMPLOYEE MANAGEMENT
             if (window.db) {
-                this.employees = await window.db.getAll('employees');
-                console.log('✅ [ATTENDANCE] Loaded employees:', this.employees.length);
+                const rawEmployees = await window.db.getAll('employees');
+                console.log('✅ [ATTENDANCE] Loaded employees:', rawEmployees.length);
+                
+                // DEDUPLICATION FIX: Apply same deduplication as above
+                const uniqueEmployees = new Map();
+                rawEmployees.forEach(emp => {
+                    const key = emp.name || 'Unknown';
+                    const existing = uniqueEmployees.get(key);
+                    if (!existing || (emp.id && !existing.id)) {
+                        uniqueEmployees.set(key, emp);
+                    }
+                });
+                this.employees = Array.from(uniqueEmployees.values());
+                console.log(`✅ [ATTENDANCE] Deduplicated ${rawEmployees.length} to ${this.employees.length} unique employees`);
                 console.log('📊 [ATTENDANCE] Full employee data:', JSON.stringify(this.employees, null, 2));
                 
                 if (this.employees.length > 0) {
