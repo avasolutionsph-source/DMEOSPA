@@ -780,6 +780,21 @@ class Database {
         this.userId = userId;
     }
 
+    // Get all store names from the database
+    async getAllStoreNames() {
+        await ensureDBInit();
+        if (!this.db) {
+            console.warn('Database not initialized, returning empty array');
+            return [];
+        }
+        
+        const storeNames = [];
+        for (let i = 0; i < this.db.objectStoreNames.length; i++) {
+            storeNames.push(this.db.objectStoreNames[i]);
+        }
+        return storeNames;
+    }
+
     // Export data for backup
     async exportData() {
         const data = {

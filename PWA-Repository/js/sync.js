@@ -837,7 +837,8 @@ class SyncManager {
                     notes: correctedTransaction.notes,
                     status: correctedTransaction.status || 'completed',
                     source: 'PWA'
-            }));
+                };
+            });
 
             const response = await this.sendToServer(
                 window.API_CONFIG ? window.API_CONFIG.ENDPOINTS.SYNC.TRANSACTIONS : '/api/sync/transactions', 

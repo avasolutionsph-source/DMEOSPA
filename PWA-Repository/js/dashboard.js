@@ -1451,7 +1451,8 @@ window.forceRefreshDashboard = async function() {
 window.addEventListener('transactionCompleted', (event) => {
     const transaction = event.detail.transaction;
     
-    // Transaction event received - details: {
+    // Log transaction event received with details
+    console.log('Transaction event received - details:', {
         transactionId: transaction?.id,
         total: transaction?.total,
         employee: transaction?.employee?.name || transaction?.employee?.id || 'No Employee',
