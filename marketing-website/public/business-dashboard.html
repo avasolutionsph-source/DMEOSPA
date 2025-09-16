@@ -2486,7 +2486,33 @@
                 return;
             }
 
-            employeesGrid.innerHTML = employees.map(employee => {
+            // SAFE DEDUPLICATION FIX - Only affects display, no data is deleted or modified
+            // Keep the employee with highest sales when duplicates are found by name
+            const uniqueEmployees = new Map();
+            employees.forEach(emp => {
+                const key = emp.name || 'Unknown';
+                const existing = uniqueEmployees.get(key);
+                
+                // Keep employee with higher sales for better data display
+                if (!existing || (emp.totalSales || 0) > (existing.totalSales || 0)) {
+                    uniqueEmployees.set(key, emp);
+                }
+            });
+            // Convert back to array for display (original employees array remains intact)
+            const deduplicatedEmployees = Array.from(uniqueEmployees.values());
+            
+            // Log deduplication for debugging (can be removed later)
+            if (employees.length !== deduplicatedEmployees.length) {
+                console.log(`Deduplicated employees: ${employees.length} -> ${deduplicatedEmployees.length}`);
+            }
+
+            // Update employee count to reflect deduplicated number
+            const countElement = document.getElementById('employeeCount');
+            if (countElement) {
+                countElement.textContent = deduplicatedEmployees.length;
+            }
+            
+            employeesGrid.innerHTML = deduplicatedEmployees.map(employee => {
                 const initials = employee.name ? employee.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'N/A';
                 const hiredDate = employee.hiredDate ? new Date(employee.hiredDate).toLocaleDateString() : 'N/A';
                 const employeeId = employee._id || employee.id;
