@@ -341,7 +341,20 @@ class EmployeeManager {
         const grid = document.getElementById('employeesGrid');
         if (!grid) return;
 
-        const employeesToShow = this.filteredEmployees || this.employees;
+        let employeesToShow = this.filteredEmployees || this.employees;
+
+        // Deduplicate employees by name (keep the one with highest sales)
+        const uniqueEmployees = new Map();
+        employeesToShow.forEach(emp => {
+            const key = emp.name || `${emp.firstName} ${emp.lastName}`.trim();
+            const existing = uniqueEmployees.get(key);
+            
+            // Keep the employee with higher sales (or the first one if no sales)
+            if (!existing || (emp.totalSales || 0) > (existing.totalSales || 0)) {
+                uniqueEmployees.set(key, emp);
+            }
+        });
+        employeesToShow = Array.from(uniqueEmployees.values());
 
         if (employeesToShow.length === 0) {
             const message = this.searchTerm 
