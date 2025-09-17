@@ -273,6 +273,13 @@ class POSSystem {
     }
 
     async loadEmployees(selectId = 'employeeSelect', setSelected = false) {
+        // NUCLEAR FIX: Check for duplicate select elements
+        const allSelects = document.querySelectorAll(`#${selectId}`);
+        if (allSelects.length > 1) {
+            console.error(`❌ CRITICAL: Multiple elements with ID '${selectId}' found! Count: ${allSelects.length}`);
+            console.error('This will cause duplication! Elements:', allSelects);
+        }
+        
         // Prevent concurrent execution for the same select element
         if (!window.loadEmployeesLocks) {
             window.loadEmployeesLocks = {};
@@ -455,12 +462,33 @@ class POSSystem {
                     console.log('⚠️ [POS] Room manager or getActiveServices not available');
                 }
                 
-                console.log(`🔵 [POS] Starting to add ${employees.length} employees to dropdown`);
-                let addedCount = 0;
+                // NUCLEAR FIX: Track what we're actually adding to prevent duplicates
+                const employeesToAdd = new Map();
+                const duplicateCheck = new Set();
                 
+                console.log(`🔵 [POS] Starting to process ${employees.length} employees`);
+                
+                // First, collect unique employees
                 employees.forEach((emp, index) => {
+                    const empId = String(emp.id || emp._id || `temp_${index}`);
+                    const empKey = `${empId}_${emp.name}_${emp.position}`;
+                    
+                    if (!duplicateCheck.has(empKey)) {
+                        duplicateCheck.add(empKey);
+                        employeesToAdd.set(empKey, emp);
+                        console.log(`✅ [POS] Employee #${index + 1}: ${emp.name} will be added`);
+                    } else {
+                        console.warn(`⚠️ [POS] DUPLICATE DETECTED #${index + 1}: ${emp.name} - SKIPPING`);
+                    }
+                });
+                
+                console.log(`📊 [POS] Unique employees to add: ${employeesToAdd.size} out of ${employees.length}`);
+                
+                // Now add only unique employees
+                let addedCount = 0;
+                employeesToAdd.forEach((emp, key) => {
                     addedCount++;
-                    console.log(`➕ [POS] Adding employee #${index + 1}/${employees.length}: ${emp.name}`);
+                    console.log(`➕ [POS] Adding unique employee #${addedCount}/${employeesToAdd.size}: ${emp.name}`);
                     
                     const option = document.createElement('option');
                     option.value = emp.id || emp._id;
@@ -582,10 +610,31 @@ class POSSystem {
                 console.log('🔍 [POS] Final options after adding all employees:', {
                     selectId: selectId,
                     finalOptionsCount: select.options.length,
-                    expectedCount: employees.length + 1, // +1 for "Select Employee" option
-                    match: select.options.length === (employees.length + 1),
+                    expectedCount: employeesToAdd.size + 1, // +1 for "Select Employee" option
+                    match: select.options.length === (employeesToAdd.size + 1),
                     finalOptions: Array.from(select.options).map(opt => opt.textContent)
                 });
+                
+                // NUCLEAR VERIFICATION: Check if we have duplicates in the final dropdown
+                const finalOptions = Array.from(select.options).map(opt => opt.textContent);
+                const uniqueFinalOptions = [...new Set(finalOptions)];
+                if (finalOptions.length !== uniqueFinalOptions.length) {
+                    console.error('❌❌❌ CRITICAL: Final dropdown HAS DUPLICATES!');
+                    console.error('Total options:', finalOptions.length);
+                    console.error('Unique options:', uniqueFinalOptions.length);
+                    console.error('Duplicated entries:', finalOptions.length - uniqueFinalOptions.length);
+                    
+                    // Find which ones are duplicated
+                    const counts = {};
+                    finalOptions.forEach(text => {
+                        counts[text] = (counts[text] || 0) + 1;
+                    });
+                    Object.entries(counts).forEach(([text, count]) => {
+                        if (count > 1) {
+                            console.error(`   "${text}" appears ${count} times`);
+                        }
+                    });
+                }
                 
                 // Note: Employee selection now handled only in checkout modal
             }
