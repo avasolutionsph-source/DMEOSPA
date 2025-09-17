@@ -273,6 +273,19 @@ class POSSystem {
     }
 
     async loadEmployees(selectId = 'employeeSelect', setSelected = false) {
+        // Add call tracking
+        if (!window.loadEmployeesCallCount) {
+            window.loadEmployeesCallCount = 0;
+        }
+        window.loadEmployeesCallCount++;
+        
+        console.log(`🔴 [POS] loadEmployees CALLED #${window.loadEmployeesCallCount}`, {
+            selectId: selectId,
+            setSelected: setSelected,
+            timestamp: new Date().toISOString(),
+            callStack: new Error().stack
+        });
+        
         try {
             console.log('👥 [POS] Loading employees from MongoDB API...');
             
@@ -423,7 +436,13 @@ class POSSystem {
                     console.log('⚠️ [POS] Room manager or getActiveServices not available');
                 }
                 
-                employees.forEach(emp => {
+                console.log(`🔵 [POS] Starting to add ${employees.length} employees to dropdown`);
+                let addedCount = 0;
+                
+                employees.forEach((emp, index) => {
+                    addedCount++;
+                    console.log(`➕ [POS] Adding employee #${index + 1}/${employees.length}: ${emp.name}`);
+                    
                     const option = document.createElement('option');
                     option.value = emp.id || emp._id;
                     

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Employee Duplicates</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .duplicate {
+            background-color: #fff3cd;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 4px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Employee Duplicate Checker</h1>
+        <button onclick="checkEmployees()">Check for Duplicate Employees</button>
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        async function checkEmployees() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = 'Checking employees...';
+            
+            try {
+                // Get auth token
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    resultsDiv.innerHTML = 'No auth token found. Please login first.';
+                    return;
+                }
+                
+                // Fetch employees
+                const response = await fetch('http://localhost:4001/api/business/employees', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const employees = data.employees || [];
+                
+                // Check for duplicates
+                const nameCount = {};
+                const idCount = {};
+                const duplicates = [];
+                
+                employees.forEach(emp => {
+                    // Count by name
+                    if (!nameCount[emp.name]) {
+                        nameCount[emp.name] = [];
+                    }
+                    nameCount[emp.name].push(emp);
+                    
+                    // Count by ID
+                    const empId = emp.id || emp._id;
+                    if (empId) {
+                        if (!idCount[empId]) {
+                            idCount[empId] = [];
+                        }
+                        idCount[empId].push(emp);
+                    }
+                });
+                
+                // Find duplicates by name
+                let output = `Total Employees: ${employees.length}\n\n`;
+                
+                output += "=== DUPLICATE NAMES ===\n";
+                let hasDuplicateNames = false;
+                for (const name in nameCount) {
+                    if (nameCount[name].length > 1) {
+                        hasDuplicateNames = true;
+                        output += `\nName: "${name}" appears ${nameCount[name].length} times:\n`;
+                        nameCount[name].forEach(emp => {
+                            output += `  - ID: ${emp.id || emp._id}, Position: ${emp.position}\n`;
+                        });
+                    }
+                }
+                if (!hasDuplicateNames) {
+                    output += "No duplicate names found.\n";
+                }
+                
+                output += "\n=== DUPLICATE IDS ===\n";
+                let hasDuplicateIds = false;
+                for (const id in idCount) {
+                    if (idCount[id].length > 1) {
+                        hasDuplicateIds = true;
+                        output += `\nID: "${id}" appears ${idCount[id].length} times:\n`;
+                        idCount[id].forEach(emp => {
+                            output += `  - Name: ${emp.name}, Position: ${emp.position}\n`;
+                        });
+                    }
+                }
+                if (!hasDuplicateIds) {
+                    output += "No duplicate IDs found.\n";
+                }
+                
+                output += "\n=== ALL EMPLOYEES ===\n";
+                employees.forEach((emp, index) => {
+                    output += `${index + 1}. ${emp.name} (${emp.position}) - ID: ${emp.id || emp._id}\n`;
+                });
+                
+                resultsDiv.innerHTML = output;
+                
+                // Also log to console
+                console.log('Employee Duplicate Check Results:', {
+                    totalEmployees: employees.length,
+                    hasDuplicateNames,
+                    hasDuplicateIds,
+                    nameCount,
+                    idCount,
+                    rawEmployees: employees
+                });
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `Error: ${error.message}\n\nMake sure:\n1. You are logged in\n2. The backend is running on port 4001`;
+                console.error('Error checking employees:', error);
+            }
+        }
+    </script>
+</body>
+</html>
