@@ -507,16 +507,16 @@ class POSSystem {
                     const activeServices = window.roomManager && window.roomManager.getActiveServices ? 
                         window.roomManager.getActiveServices() : [];
                     
-                    // Debug active services for this iteration
-                    console.log('🔍 [POS] Active services for matching:', activeServices.map(s => ({
-                        serviceName: s.serviceName,
-                        employeeName: s.employeeName,
-                        employeeId: s.employeeId,
-                        employeeIdType: typeof s.employeeId,
-                        roomName: s.roomName,
-                        status: s.status,
-                        fullService: s // Show the complete service object
-                    })));
+                    // Debug active services for this iteration (commented to reduce console spam)
+                    // console.log('🔍 [POS] Active services for matching:', activeServices.map(s => ({
+                    //     serviceName: s.serviceName,
+                    //     employeeName: s.employeeName,
+                    //     employeeId: s.employeeId,
+                    //     employeeIdType: typeof s.employeeId,
+                    //     roomName: s.roomName,
+                    //     status: s.status,
+                    //     fullService: s // Show the complete service object
+                    // })));
                     
                     const isAssigned = activeServices.some(service => {
                         // Only proceed if this is an active service
@@ -529,12 +529,12 @@ class POSSystem {
                                                     String(service.employeeId) === String(emp.id) ||
                                                     String(service.employeeId) === String(emp._id);
                             
-                            console.log('🔍 [POS] ID-based matching:', {
-                                employeeName: empName,
-                                serviceEmployeeId: service.employeeId,
-                                empIdStr: empIdStr,
-                                match: serviceEmpIdMatch
-                            });
+                            // console.log('🔍 [POS] ID-based matching:', {
+                            //     employeeName: empName,
+                            //     serviceEmployeeId: service.employeeId,
+                            //     empIdStr: empIdStr,
+                            //     match: serviceEmpIdMatch
+                            // });
                             
                             return serviceEmpIdMatch;
                         }
@@ -543,11 +543,11 @@ class POSSystem {
                         if (service.employeeName) {
                             const serviceEmpNameMatch = service.employeeName === empName;
                             
-                            console.log('🔍 [POS] Name-based matching:', {
-                                employeeName: empName,
-                                serviceEmployeeName: service.employeeName,
-                                exactMatch: serviceEmpNameMatch
-                            });
+                            // console.log('🔍 [POS] Name-based matching:', {
+                            //     employeeName: empName,
+                            //     serviceEmployeeName: service.employeeName,
+                            //     exactMatch: serviceEmpNameMatch
+                            // });
                             
                             if (serviceEmpNameMatch) {
                                 console.log('🎯 [POS] Employee MATCHED by name:', {
@@ -645,40 +645,17 @@ class POSSystem {
                 // Remove the populating flag
                 select.removeAttribute('data-populating');
                 
-                // ULTIMATE FIX: Create a mutation observer to prevent any external modifications
+                // SAFE CLEANUP: Remove any non-OPTION elements that might have been added
                 if (selectId === 'checkoutEmployeeSelect') {
-                    if (window.employeeSelectObserver) {
-                        window.employeeSelectObserver.disconnect();
-                    }
-                    
-                    // Store the correct options
-                    window.correctEmployeeOptions = Array.from(select.options).map(opt => ({
-                        value: opt.value,
-                        text: opt.textContent,
-                        style: opt.style.cssText
-                    }));
-                    
-                    window.employeeSelectObserver = new MutationObserver((mutations) => {
-                        const currentOptions = Array.from(select.options);
-                        if (currentOptions.length !== window.correctEmployeeOptions.length) {
-                            console.warn('🛡️ [POS] Blocked external modification of employee dropdown!');
-                            // Restore correct options
-                            select.innerHTML = '';
-                            window.correctEmployeeOptions.forEach(optData => {
-                                const opt = document.createElement('option');
-                                opt.value = optData.value;
-                                opt.textContent = optData.text;
-                                if (optData.style) opt.style.cssText = optData.style;
-                                select.appendChild(opt);
-                            });
+                    const allChildren = Array.from(select.childNodes);
+                    allChildren.forEach(child => {
+                        // Remove anything that's not an OPTION element
+                        if (child.nodeType === Node.TEXT_NODE || 
+                            (child.nodeType === Node.ELEMENT_NODE && child.tagName !== 'OPTION')) {
+                            select.removeChild(child);
                         }
                     });
-                    
-                    window.employeeSelectObserver.observe(select, {
-                        childList: true,
-                        subtree: true,
-                        characterData: true
-                    });
+                    console.log('✅ [POS] Cleaned up dropdown - removed non-option elements');
                 }
                 
                 // Note: Employee selection now handled only in checkout modal

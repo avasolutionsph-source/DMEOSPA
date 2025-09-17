@@ -1062,6 +1062,11 @@ class EnhancedDashboardManager {
     
     // Silent update for optional elements
     updateElementSafe(id, value) {
+        // SPECIFIC FIX: Never touch the checkout employee select
+        if (id === 'checkoutEmployeeSelect') {
+            return;
+        }
+        
         const element = document.getElementById(id);
         if (element) {
             // CRITICAL FIX: Never update SELECT elements - they have options, not text content
