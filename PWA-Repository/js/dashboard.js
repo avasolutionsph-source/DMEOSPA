@@ -1443,72 +1443,7 @@ window.forceRefreshDashboard = async function() {
 
 
 
-// Global transaction listener (works even if dashboard isn't loaded yet)
-window.addEventListener('transactionCompleted', (event) => {
-    const transaction = event.detail.transaction;
-    
-    // Log transaction event received with details
-    console.log('Transaction event received - details:', {
-        transactionId: transaction?.id,
-        total: transaction?.total,
-        employee: transaction?.employee?.name || transaction?.employee?.id || 'No Employee',
-        createdAt: transaction?.createdAt,
-        isOffline: transaction?.isOffline
-    });
-    
-    console.log('🔍 [GLOBAL] Dashboard Manager State:', {
-        exists: !!window.enhancedDashboardManager,
-        initialized: window.enhancedDashboardManager?.isInitialized || false
-    });
-    
-    // Try to update dashboard if it exists and is initialized
-    if (window.enhancedDashboardManager && window.enhancedDashboardManager.isInitialized) {
-        console.log('📊 [GLOBAL] ✅ UPDATING DASHBOARD WITH TRANSACTION');
-        window.enhancedDashboardManager.updateStatsWithNewTransaction(transaction);
-    } else {
-        console.log('⏳ [GLOBAL] ❌ Dashboard not initialized, will be included on next load');
-        console.log('🔧 [GLOBAL] Attempting to initialize dashboard now...');
-        
-        // Try to initialize dashboard if not already done
-        if (window.enhancedDashboardManager && !window.enhancedDashboardManager.isInitialized) {
-            window.enhancedDashboardManager.init().then(() => {
-                console.log('✅ [GLOBAL] Dashboard initialized, now updating with transaction');
-                window.enhancedDashboardManager.updateStatsWithNewTransaction(transaction);
-            }).catch(error => {
-                console.error('❌ [GLOBAL] Failed to initialize dashboard:', error);
-            });
-        }
-    }
-    
-    // Also refresh dashboard if we're currently on the dashboard page
-    const dashboardElement = document.getElementById('dashboard');
-    if (dashboardElement && dashboardElement.style.display !== 'none') {
-        console.log('🔄 [GLOBAL] Refreshing dashboard data after transaction');
-        
-        // Try immediate update first
-        if (window.enhancedDashboardManager && window.enhancedDashboardManager.isInitialized) {
-            window.enhancedDashboardManager.updateStatsWithNewTransaction(transaction);
-        }
-        
-        // Then do a full refresh with delay to ensure API has processed
-        setTimeout(async () => {
-            console.log('⚠️ [GLOBAL] ABOUT TO RELOAD DASHBOARD - this might overwrite our updates!');
-            const beforeReload = document.getElementById('todayRevenue')?.textContent;
-            console.log('📊 [GLOBAL] todayRevenue BEFORE reload:', beforeReload);
-            
-            if (window.loadDashboard) {
-                await window.loadDashboard();
-                console.log('🔄 [GLOBAL] Dashboard fully refreshed after transaction');
-                
-                const afterReload = document.getElementById('todayRevenue')?.textContent;
-                console.log('📊 [GLOBAL] todayRevenue AFTER reload:', afterReload);
-                
-                if (beforeReload !== afterReload) {
-                    console.error('🚨 [GLOBAL] FOUND THE ISSUE! Dashboard reload overwrote our updates!');
-                }
-            }
-        }, 1500); // Increased delay to ensure backend processing
-    }
-});
+// REMOVED: Duplicate global transaction listener that was causing data duplication
+// The class already has a proper listener in setupTransactionListener() method
 
 console.log('✅ Enhanced Dashboard Manager loaded successfully');
