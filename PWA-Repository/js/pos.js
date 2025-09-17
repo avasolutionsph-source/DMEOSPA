@@ -317,6 +317,33 @@ class POSSystem {
                     ...emp,
                     name: emp.firstName ? `${emp.firstName} ${emp.lastName}`.trim() : emp.name
                 }));
+                
+                // Remove duplicates based on employee ID
+                const uniqueEmployees = [];
+                const seenIds = new Set();
+                for (const emp of employees) {
+                    const empId = emp.id || emp._id;
+                    if (empId && !seenIds.has(String(empId))) {
+                        seenIds.add(String(empId));
+                        uniqueEmployees.push(emp);
+                    } else if (!empId) {
+                        // If no ID, check by name to avoid duplicate names
+                        const isDuplicate = uniqueEmployees.some(e => e.name === emp.name && e.position === emp.position);
+                        if (!isDuplicate) {
+                            uniqueEmployees.push(emp);
+                        }
+                    }
+                }
+                
+                if (employees.length !== uniqueEmployees.length) {
+                    console.warn('🔧 [POS] Removed duplicate employees:', {
+                        original: employees.length,
+                        unique: uniqueEmployees.length,
+                        removed: employees.length - uniqueEmployees.length
+                    });
+                }
+                
+                employees = uniqueEmployees;
             } else {
                 console.error('❌ [POS] Failed to load employees:', result.error);
                 employees = [];
