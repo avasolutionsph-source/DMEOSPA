@@ -3,10 +3,40 @@
 
 import express from 'express';
 import mongoose from 'mongoose';
-import { getSocketIOStats } from '../../config/socket.js';
 import logger from '../../utils/logger.js';
 
 const router = express.Router();
+
+// Local Socket.IO stats function (moved from config/socket.js)
+function getSocketIOStats(io) {
+    if (!io) return null;
+    
+    const sockets = io.sockets.sockets;
+    const rooms = io.sockets.adapter.rooms;
+    
+    let authenticatedCount = 0;
+    let unauthenticatedCount = 0;
+    const userRooms = new Set();
+    
+    sockets.forEach((socket) => {
+        if (socket.authenticated) {
+            authenticatedCount++;
+            if (socket.userId) {
+                userRooms.add(`user:${socket.userId}`);
+            }
+        } else {
+            unauthenticatedCount++;
+        }
+    });
+    
+    return {
+        totalConnections: sockets.size,
+        authenticatedConnections: authenticatedCount,
+        unauthenticatedConnections: unauthenticatedCount,
+        uniqueUsers: userRooms.size,
+        totalRooms: rooms.size
+    };
+}
 
 // Main health check endpoint
 router.get('/', (req, res) => {
