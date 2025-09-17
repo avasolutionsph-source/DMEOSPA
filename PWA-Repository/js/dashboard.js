@@ -1069,6 +1069,17 @@ class EnhancedDashboardManager {
                 console.warn(`⚠️ [DASHBOARD] Skipping update of SELECT element '${id}' - SELECT elements should not have textContent set`);
                 return;
             }
+            // ADDITIONAL FIX: Skip elements that are being populated
+            if (element.hasAttribute('data-populating')) {
+                console.warn(`⚠️ [DASHBOARD] Skipping update of '${id}' - element is being populated`);
+                return;
+            }
+            // SAFETY CHECK: Don't update elements in modals
+            const inModal = element.closest('.modal');
+            if (inModal) {
+                console.warn(`⚠️ [DASHBOARD] Skipping update of '${id}' - element is in a modal`);
+                return;
+            }
             console.log(`🎯 [DASHBOARD] Updated optional element '${id}' to '${value}'`);
             element.textContent = value;
         }

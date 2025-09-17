@@ -400,14 +400,20 @@ class POSSystem {
                     currentOptions: Array.from(select.options).map(opt => opt.textContent)
                 });
                 
-                // CRITICAL FIX: Clear and reset the dropdown completely
-                while (select.firstChild) {
-                    select.removeChild(select.firstChild);
-                }
+                // NUCLEAR FIX: Store original state and restore only unique options
+                const existingOptions = Array.from(select.options);
+                
+                // Clear EVERYTHING
+                select.innerHTML = '';
+                
+                // Add default option
                 const defaultOption = document.createElement('option');
                 defaultOption.value = '';
                 defaultOption.textContent = 'Select Employee';
                 select.appendChild(defaultOption);
+                
+                // Mark this select as being populated to prevent interference
+                select.setAttribute('data-populating', 'true');
                 
                 // Debug: Check after clearing
                 console.log('🔍 [POS] Options after clearing:', {
@@ -633,6 +639,45 @@ class POSSystem {
                         if (count > 1) {
                             console.error(`   "${text}" appears ${count} times`);
                         }
+                    });
+                }
+                
+                // Remove the populating flag
+                select.removeAttribute('data-populating');
+                
+                // ULTIMATE FIX: Create a mutation observer to prevent any external modifications
+                if (selectId === 'checkoutEmployeeSelect') {
+                    if (window.employeeSelectObserver) {
+                        window.employeeSelectObserver.disconnect();
+                    }
+                    
+                    // Store the correct options
+                    window.correctEmployeeOptions = Array.from(select.options).map(opt => ({
+                        value: opt.value,
+                        text: opt.textContent,
+                        style: opt.style.cssText
+                    }));
+                    
+                    window.employeeSelectObserver = new MutationObserver((mutations) => {
+                        const currentOptions = Array.from(select.options);
+                        if (currentOptions.length !== window.correctEmployeeOptions.length) {
+                            console.warn('🛡️ [POS] Blocked external modification of employee dropdown!');
+                            // Restore correct options
+                            select.innerHTML = '';
+                            window.correctEmployeeOptions.forEach(optData => {
+                                const opt = document.createElement('option');
+                                opt.value = optData.value;
+                                opt.textContent = optData.text;
+                                if (optData.style) opt.style.cssText = optData.style;
+                                select.appendChild(opt);
+                            });
+                        }
+                    });
+                    
+                    window.employeeSelectObserver.observe(select, {
+                        childList: true,
+                        subtree: true,
+                        characterData: true
                     });
                 }
                 
