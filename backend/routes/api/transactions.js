@@ -59,44 +59,8 @@ const createTransactionWithStats = async (req, res) => {
             total: data.total
         });
         
-        // Update employee stats if employee is assigned
-        console.log('[DEBUG] Checking for employee assignment:', {
-            hasEmployee: !!data.employee,
-            employeeId: data.employee?.id || data.employeeId,
-            employeeObject: data.employee
-        });
-        
-        if (data.employee?.id || data.employeeId) {
-            console.log('[DEBUG] Attempting to update employee stats...');
-            try {
-                const userId = req.user._id || req.user.id;
-                console.log('[DEBUG] User ID for stats update:', userId);
-                
-                const statsResult = await employeeStatsManager.updateEmployeeStats(
-                    {
-                        ...data,
-                        id: transaction._id,
-                        _id: transaction._id
-                    },
-                    userId,
-                    { preventDuplicates: false, batchUpdate: false }
-                );
-                
-                console.log('[DEBUG] Stats update result:', statsResult);
-                
-                logger.info('[TRANSACTION-CREATE] Employee stats update result:', {
-                    success: !!statsResult,
-                    employeeUpdated: statsResult?.employee?.name,
-                    statsAdded: statsResult?.statsUpdate
-                });
-            } catch (statsError) {
-                console.error('[DEBUG] Stats update error:', statsError);
-                logger.error('[TRANSACTION-CREATE] Failed to update employee stats:', statsError);
-                // Don't fail the transaction creation if stats update fails
-            }
-        } else {
-            console.log('[DEBUG] No employee assigned, skipping stats update');
-        }
+        // Employee stats update is handled by processNewTransaction middleware
+        // No need to update stats here - middleware will handle it
         
         res.status(201).json({
             success: true,

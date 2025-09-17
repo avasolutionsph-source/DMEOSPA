@@ -16,7 +16,6 @@ import attendanceRoutes from './attendance.js';
 import settingsRoutes from './settings.js';
 import entitlementsRoutes from './entitlements.js';
 import chatbotRoutes from './chatbot.js';
-import syncSimpleRoutes from './sync-simple.js';
 import dataValidationRoutes from './dataValidation.js';
 import bookingsRoutes from './bookings.js';
 import { authenticateJWT, optionalAuth, requireBusinessUser } from '../../middleware/auth.js';
@@ -231,8 +230,7 @@ router.use('/bookings', bookingsRoutes);
 // Chatbot routes (optional auth)
 router.use('/chatbot', chatbotRoutes);
 
-// Sync routes - ENABLED: Required for employee performance data sync
-router.use('/sync', authenticateJWT, requireBusinessUser, syncSimpleRoutes);
+// Sync routes are mounted directly in server.js at /api/sync
 
 // Business and data management routes (with authentication and business user requirement)
 router.use('/products', authenticateJWT, requireBusinessUser, productsRoutes);
