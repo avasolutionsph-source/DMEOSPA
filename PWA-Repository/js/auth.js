@@ -29,27 +29,49 @@ class AuthSystem {
     }
 
     async init() {
-        // Load saved authentication state
-        await this.loadAuthState();
-        
-        // Check if user is already logged in
-        if (this.authToken && this.currentUser) {
-            // PERFORMANCE FIX: Assume user is logged in immediately, validate in background
-            this.isLoggedIn = true;
-            
-            // Validate session in background without blocking PWA startup
-            setTimeout(() => {
-                this.validateSession().catch(() => {
-                    // Keep user logged in even if validation fails  
-                    console.log('Background session validation failed, keeping user logged in');
-                });
-            }, 1000); // Delay validation to allow PWA to start quickly
+        // Update initialization state
+        if (window.initState) {
+            window.initState.auth = 'initializing';
         }
         
-        this.setupEventListeners();
+        const startTime = Date.now();
         
-        // Update UI to show correct auth state
-        this.updateAuthUI();
+        try {
+            // Load saved authentication state
+            await this.loadAuthState();
+            
+            // Check if user is already logged in
+            if (this.authToken && this.currentUser) {
+                // PERFORMANCE FIX: Assume user is logged in immediately, validate in background
+                this.isLoggedIn = true;
+                
+                // Validate session in background without blocking PWA startup
+                setTimeout(() => {
+                    this.validateSession().catch(() => {
+                        // Keep user logged in even if validation fails  
+                        console.log('Background session validation failed, keeping user logged in');
+                    });
+                }, 1000); // Delay validation to allow PWA to start quickly
+            }
+            
+            this.setupEventListeners();
+            
+            // Update UI to show correct auth state
+            this.updateAuthUI();
+            
+            // Update initialization state
+            if (window.initState) {
+                window.initState.auth = 'ready';
+                window.initState.authInitTime = Date.now() - startTime;
+                console.log(`✅ Auth system initialized in ${window.initState.authInitTime}ms`);
+            }
+        } catch (error) {
+            if (window.initState) {
+                window.initState.auth = 'failed';
+            }
+            console.error('Auth initialization failed:', error);
+            throw error;
+        }
     }
 
     setupEventListeners() {

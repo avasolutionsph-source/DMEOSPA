@@ -1345,8 +1345,49 @@ window.refreshCurrentPage = async function() {
 
 // Authentication check removed - now handled after PWA loads completely
 
+// Performance tracking helper
+window.performanceMetrics = {
+    marks: {},
+    measures: {},
+    
+    mark(name) {
+        this.marks[name] = performance.now();
+        if (performance.mark) {
+            performance.mark(name);
+        }
+    },
+    
+    measure(name, startMark, endMark) {
+        if (this.marks[startMark] && this.marks[endMark]) {
+            this.measures[name] = this.marks[endMark] - this.marks[startMark];
+            console.log(`⏱️ ${name}: ${this.measures[name].toFixed(2)}ms`);
+        }
+        if (performance.measure && performance.mark) {
+            try {
+                performance.measure(name, startMark, endMark);
+            } catch (e) {
+                // Ignore if marks don't exist
+            }
+        }
+    },
+    
+    getReport() {
+        const report = {
+            totalInitTime: this.measures['Total App Initialization'] || 0,
+            systemInitTimes: window.initState || {},
+            measures: this.measures,
+            timestamp: new Date().toISOString()
+        };
+        
+        console.table(this.measures);
+        return report;
+    }
+};
+
 // Global initialization function for component-loader
 window.initializeApp = async function() {
+    window.performanceMetrics.mark('app-init-start');
+    
     try {
         // Check if window.app exists but is not a real App instance (created by StateManager)
         if (window.app && !(window.app instanceof App)) {
@@ -1367,14 +1408,27 @@ window.initializeApp = async function() {
         // Now check if it needs initialization
         if (!window.app.initialized) {
             console.log('⏳ Starting app initialization...');
+            window.performanceMetrics.mark('core-init-start');
             await window.app.init();
+            window.performanceMetrics.mark('core-init-end');
+            window.performanceMetrics.measure('Core App Init', 'core-init-start', 'core-init-end');
+            
             window.app.initialized = true; // Mark as initialized
+            
+            // Mark end of app initialization
+            window.performanceMetrics.mark('app-init-end');
+            window.performanceMetrics.measure('Total App Initialization', 'app-init-start', 'app-init-end');
+            
             console.log('✅ App initialization completed');
             console.log('🔍 App methods after init:', {
                 setupNavigation: !!window.app.setupNavigation,
                 showPage: !!window.app.showPage,
                 init: !!window.app.init
             });
+            
+            // Log performance summary
+            console.log('📊 Initialization Performance Report:');
+            window.performanceMetrics.getReport();
         } else {
             console.log('✅ App already initialized');
         }
@@ -1481,9 +1535,39 @@ window.setupNavigation = function() {
 
 // Initialize app when DOM is ready (authentication will be checked after load)
 document.addEventListener('DOMContentLoaded', async () => {
-    // Give the database and other systems more time to initialize
+    // Smart delay - wait minimum time but check if systems are ready
     console.log('⏳ Waiting for systems to be ready before app initialization...');
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+    
+    const startWait = Date.now();
+    const minWait = 500; // Minimum wait time (empirically determined for stability)
+    const maxWait = 1000; // Maximum wait time (original delay)
+    
+    // Wait minimum time first
+    await new Promise(resolve => setTimeout(resolve, minWait));
+    
+    // Check if critical systems are ready
+    const checkReady = () => {
+        if (window.initState) {
+            const dbReady = window.initState.database === 'ready' || window.isDatabaseReady?.();
+            const authReady = window.initState.auth === 'ready' || window.authSystem?.currentUser !== undefined;
+            const stateReady = window.initState.stateManager === 'ready' || window.StateManager?.initialized;
+            
+            if (dbReady && authReady && stateReady) {
+                console.log(`✨ Systems ready after ${Date.now() - startWait}ms (saved ${maxWait - (Date.now() - startWait)}ms)`);
+                return true;
+            }
+        }
+        return false;
+    };
+    
+    // If not ready after minimum wait, wait the remaining time
+    if (!checkReady()) {
+        const remainingWait = maxWait - (Date.now() - startWait);
+        if (remainingWait > 0) {
+            console.log(`⏳ Systems not ready yet, waiting additional ${remainingWait}ms...`);
+            await new Promise(resolve => setTimeout(resolve, remainingWait));
+        }
+    }
     
     await window.initializeApp();
 });

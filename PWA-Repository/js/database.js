@@ -1148,7 +1148,76 @@ window.dbUtils = {
     }
 };
 
+// Safe Database Helper Functions - Non-Breaking Additions
+window.waitForDatabase = async function(timeout = 5000) {
+    const start = Date.now();
+    while (!window.db?.db) {
+        if (Date.now() - start > timeout) {
+            throw new Error('Database initialization timeout after ' + timeout + 'ms');
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return window.db;
+};
+
+// Check if database is ready without waiting
+window.isDatabaseReady = function() {
+    return !!(window.db?.db && window.db.isOpen);
+};
+
+// Safe database operation wrapper with context
+window.safeDbOperation = async function(operation, context = 'unknown') {
+    try {
+        // Wait for database if not ready
+        if (!window.isDatabaseReady()) {
+            console.log(`⏳ Waiting for database in ${context}...`);
+            await window.waitForDatabase();
+        }
+        
+        // Execute the operation
+        return await operation();
+    } catch (error) {
+        console.error(`Database error in ${context}:`, error);
+        
+        // Log to error recovery system if available
+        if (window.errorRecovery?.logError) {
+            window.errorRecovery.logError('DATABASE_ERROR', error, { context });
+        }
+        
+        // Re-throw to maintain existing error handling
+        throw error;
+    }
+};
+
+// Initialize state tracking
+if (!window.initState) {
+    window.initState = {
+        database: 'pending',
+        auth: 'pending', 
+        stateManager: 'pending',
+        sync: 'pending',
+        startTime: Date.now()
+    };
+}
+
+// Update database init state when ready
+const originalInit = db.init.bind(db);
+db.init = async function() {
+    window.initState.database = 'initializing';
+    try {
+        const result = await originalInit();
+        window.initState.database = 'ready';
+        window.initState.databaseInitTime = Date.now() - window.initState.startTime;
+        console.log(`✅ Database initialized in ${window.initState.databaseInitTime}ms`);
+        return result;
+    } catch (error) {
+        window.initState.database = 'failed';
+        throw error;
+    }
+};
+
 console.log('🛠️ Database utilities available at window.dbUtils');
 console.log('Use dbUtils.forceRecreate() to force database recreation');
 console.log('Use dbUtils.ensureCustomers() to ensure customers table exists');
 console.log('Use dbUtils.info() to get database information');
+console.log('✨ New: waitForDatabase(), isDatabaseReady(), safeDbOperation() helpers available');

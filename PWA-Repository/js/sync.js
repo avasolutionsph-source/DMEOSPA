@@ -37,6 +37,13 @@ class SyncManager {
     }
 
     async init() {
+        // Update initialization state
+        if (window.initState) {
+            window.initState.sync = 'initializing';
+        }
+        
+        const startTime = Date.now();
+        
         // Delayed initialization to prevent blocking
         setTimeout(async () => {
             try {
@@ -63,9 +70,38 @@ class SyncManager {
                 // Update UI status
                 this.updateConnectionStatus();
 
-                // Initial sync only, then switch to event-driven
+                // Smart initial sync delay - wait for systems but not too long
                 if (this.isOnline && this.apiUrl) {
-                    setTimeout(() => this.performInitialSync(), 5000);
+                    const performSmartSync = async () => {
+                        const startWait = Date.now();
+                        const minWait = 2000; // Minimum wait for other systems to stabilize
+                        const maxWait = 5000; // Original conservative delay
+                        
+                        // Wait minimum time first
+                        await new Promise(resolve => setTimeout(resolve, minWait));
+                        
+                        // Check if systems are ready
+                        if (window.initState) {
+                            const dbReady = window.initState.database === 'ready';
+                            const authReady = window.initState.auth === 'ready';
+                            
+                            if (dbReady && authReady) {
+                                console.log(`✨ Starting initial sync after ${Date.now() - startWait}ms (saved ${maxWait - (Date.now() - startWait)}ms)`);
+                                this.performInitialSync();
+                                return;
+                            }
+                        }
+                        
+                        // Wait remaining time if systems not ready
+                        const remainingWait = maxWait - (Date.now() - startWait);
+                        if (remainingWait > 0) {
+                            await new Promise(resolve => setTimeout(resolve, remainingWait));
+                        }
+                        
+                        this.performInitialSync();
+                    };
+                    
+                    performSmartSync();
                 }
 
                 // Listen for service worker messages
@@ -76,7 +112,17 @@ class SyncManager {
                         }
                     });
                 }
+                
+                // Update initialization state
+                if (window.initState) {
+                    window.initState.sync = 'ready';
+                    window.initState.syncInitTime = Date.now() - startTime;
+                    console.log(`✅ Sync manager initialized in ${window.initState.syncInitTime}ms`);
+                }
             } catch (error) {
+                if (window.initState) {
+                    window.initState.sync = 'failed';
+                }
                 logWarn('Sync manager initialization deferred', { 
                     category: 'SYNC', 
                     operation: 'init',

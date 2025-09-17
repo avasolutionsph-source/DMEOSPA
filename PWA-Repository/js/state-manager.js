@@ -87,6 +87,13 @@ class StateManager {
     }
     
     async init() {
+        // Update initialization state
+        if (window.initState) {
+            window.initState.stateManager = 'initializing';
+        }
+        
+        const startTime = Date.now();
+        
         try {
             // Initialize state structure
             this.initializeState();
@@ -106,12 +113,20 @@ class StateManager {
             // Mark as initialized
             this.initialized = true;
             
+            // Update initialization state
+            if (window.initState) {
+                window.initState.stateManager = 'ready';
+                window.initState.stateManagerInitTime = Date.now() - startTime;
+                console.log(`✅ State Manager initialized in ${window.initState.stateManagerInitTime}ms`);
+            }
+            
             // Log initialization
             if (window.logger) {
                 window.logger.info('State Manager initialized', {
                     category: 'STATE',
                     operation: 'init',
-                    modules: Object.keys(this.modules)
+                    modules: Object.keys(this.modules),
+                    initTime: window.initState?.stateManagerInitTime
                 });
             } else {
                 console.log('State Manager initialized');
@@ -121,6 +136,9 @@ class StateManager {
             this.notifyGlobalChange('system', 'initialized');
             
         } catch (error) {
+            if (window.initState) {
+                window.initState.stateManager = 'failed';
+            }
             this.handleError('Initialization failed', error);
         }
     }
