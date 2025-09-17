@@ -1064,6 +1064,11 @@ class EnhancedDashboardManager {
     updateElementSafe(id, value) {
         const element = document.getElementById(id);
         if (element) {
+            // CRITICAL FIX: Never update SELECT elements - they have options, not text content
+            if (element.tagName === 'SELECT') {
+                console.warn(`⚠️ [DASHBOARD] Skipping update of SELECT element '${id}' - SELECT elements should not have textContent set`);
+                return;
+            }
             console.log(`🎯 [DASHBOARD] Updated optional element '${id}' to '${value}'`);
             element.textContent = value;
         }
