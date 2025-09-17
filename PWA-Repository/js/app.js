@@ -411,8 +411,23 @@ class App {
             case 'payroll':
                 if (window.payrollManager) {
                     // Initialize asynchronously without blocking
-                    setTimeout(() => {
-                        window.payrollManager.init().catch(e => console.warn('Payroll init failed:', e));
+                    setTimeout(async () => {
+                        try {
+                            await window.payrollManager.init();
+                            console.log('✅ Payroll initialized successfully');
+                        } catch (e) {
+                            console.error('❌ Payroll init failed:', e);
+                            console.error('Full error details:', {
+                                message: e.message,
+                                stack: e.stack
+                            });
+                            
+                            // Show error to user with details
+                            if (window.showError) {
+                                const errorMessage = `Payroll initialization failed:\n${e.message}\n\nPlease check the browser console for more details.`;
+                                window.showError(errorMessage);
+                            }
+                        }
                     }, 100);
                 }
                 break;

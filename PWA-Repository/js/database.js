@@ -594,18 +594,36 @@ class Database {
         // Ensure DB is ready
         await ensureDBInit();
         
+        // CRITICAL: Check if db actually exists after init
+        if (!this.db) {
+            console.error(`[DATABASE] getAll failed: Database not initialized for store '${storeName}'`);
+            console.error('[DATABASE] Current state:', {
+                dbExists: !!this.db,
+                dbName: this.dbName,
+                isOpen: this.isOpen,
+                windowDb: !!window.db
+            });
+            throw new Error(`Database not initialized when trying to access store '${storeName}'`);
+        }
+        
         return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([storeName], 'readonly');
-            const store = transaction.objectStore(storeName);
-            const request = store.getAll();
+            try {
+                const transaction = this.db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = store.getAll();
 
-            request.onsuccess = () => {
-                resolve(request.result);
-            };
+                request.onsuccess = () => {
+                    resolve(request.result);
+                };
 
-            request.onerror = () => {
-                reject('Error getting all data');
-            };
+                request.onerror = () => {
+                    console.error(`[DATABASE] getAll error for store '${storeName}':`, request.error);
+                    reject(`Error getting all data from ${storeName}: ${request.error?.message || 'Unknown error'}`);
+                };
+            } catch (error) {
+                console.error(`[DATABASE] getAll exception for store '${storeName}':`, error);
+                reject(`Failed to access store '${storeName}': ${error.message}`);
+            }
         });
     }
 

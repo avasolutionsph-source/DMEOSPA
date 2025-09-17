@@ -51,7 +51,14 @@
                 // Try to show user-friendly error
                 if (window.showError) {
                     const userMessage = getUserFriendlyMessage(error);
-                    window.showError(userMessage);
+                    // TEMPORARY: Show actual error for debugging
+                    const debugMessage = `${userMessage}\n\nDebug Info:\nFunction: ${functionName}\nError: ${error.message}`;
+                    window.showError(debugMessage);
+                    console.error('🔴 Full Error Details:', {
+                        function: functionName,
+                        error: error.message,
+                        stack: error.stack
+                    });
                 }
                 
                 // Log error details for debugging
@@ -220,6 +227,27 @@
     window.clearErrorHistory = function() {
         localStorage.removeItem('errorHistory');
         console.log('Error history cleared');
+    };
+    
+    // Get last error for debugging
+    window.getLastError = function() {
+        try {
+            const history = JSON.parse(localStorage.getItem('errorHistory') || '[]');
+            const lastError = history[0];
+            if (lastError) {
+                console.log('🔴 Last Error:', lastError);
+                console.log('Function:', lastError.function);
+                console.log('Message:', lastError.error.message);
+                console.log('Stack:', lastError.error.stack);
+                return lastError;
+            } else {
+                console.log('No errors in history');
+                return null;
+            }
+        } catch (e) {
+            console.error('Could not get last error:', e);
+            return null;
+        }
     };
     
     // Initialize protection after critical systems are loaded

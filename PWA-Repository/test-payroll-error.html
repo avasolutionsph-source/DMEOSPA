@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Payroll Error</title>
+</head>
+<body>
+    <h1>Payroll Error Test</h1>
+    <div id="status">Loading...</div>
+    <pre id="output" style="background: #f0f0f0; padding: 10px; overflow-x: auto;"></pre>
+    
+    <!-- Core dependencies -->
+    <script src="js/database.js"></script>
+    <script src="js/utilities.js"></script>
+    <script src="js/notification-fallback.js"></script>
+    <script src="js/error-boundaries.js"></script>
+    <script src="js/payroll.js"></script>
+    
+    <script>
+        const output = document.getElementById('output');
+        const status = document.getElementById('status');
+        
+        function log(msg, data) {
+            const timestamp = new Date().toLocaleTimeString();
+            const line = `[${timestamp}] ${msg}`;
+            if (data) {
+                output.textContent += line + '\n' + JSON.stringify(data, null, 2) + '\n';
+            } else {
+                output.textContent += line + '\n';
+            }
+            console.log(msg, data);
+        }
+        
+        async function testPayroll() {
+            log('Starting payroll test...');
+            
+            // Wait for database
+            log('Waiting for database...');
+            let attempts = 0;
+            while (!window.db && attempts < 20) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!window.db) {
+                log('ERROR: Database not available after 2 seconds');
+                status.textContent = 'Failed: Database not available';
+                return;
+            }
+            
+            log('Database available:', {
+                dbExists: !!window.db,
+                dbObject: !!window.db?.db,
+                isOpen: window.db?.isOpen
+            });
+            
+            // Wait for database to be fully ready
+            if (window.waitForDatabase) {
+                log('Using waitForDatabase...');
+                try {
+                    await window.waitForDatabase();
+                    log('Database ready!');
+                } catch (error) {
+                    log('ERROR: waitForDatabase failed:', error.message);
+                }
+            }
+            
+            // Check database state
+            log('Database state:', {
+                dbExists: !!window.db,
+                dbObject: !!window.db?.db,
+                isOpen: window.db?.isOpen,
+                isDatabaseReady: window.isDatabaseReady ? window.isDatabaseReady() : 'function not available'
+            });
+            
+            // Test database operations
+            log('Testing database operations...');
+            try {
+                const stores = await window.db.getAllStoreNames();
+                log('Available stores:', stores);
+                
+                // Test getAll on attendanceRules
+                log('Testing getAll on attendanceRules...');
+                const rules = await window.db.getAll('attendanceRules');
+                log('AttendanceRules result:', { count: rules.length, data: rules });
+                
+            } catch (error) {
+                log('ERROR in database test:', {
+                    message: error.message,
+                    stack: error.stack
+                });
+            }
+            
+            // Initialize payroll
+            log('Initializing PayrollManager...');
+            const payrollManager = new PayrollManager();
+            
+            try {
+                await payrollManager.init();
+                log('SUCCESS: Payroll initialized!');
+                status.textContent = 'Success: Payroll initialized';
+            } catch (error) {
+                log('ERROR initializing payroll:', {
+                    message: error.message,
+                    stack: error.stack
+                });
+                status.textContent = 'Failed: ' + error.message;
+                
+                // Check error history
+                if (window.getLastError) {
+                    const lastError = window.getLastError();
+                    log('Last error from error boundary:', lastError);
+                }
+            }
+        }
+        
+        // Start test when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(testPayroll, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -66,22 +66,69 @@ class PayrollManager {
                 }
             }
             
+            // TEST: Check database state before proceeding
+            console.log('🔍 [PAYROLL] Database state check:', {
+                windowDb: !!window.db,
+                dbObject: !!window.db?.db,
+                isOpen: window.db?.isOpen,
+                isDatabaseReady: window.isDatabaseReady ? window.isDatabaseReady() : 'function not available'
+            });
+            
+            // TEST: Try a simple database operation first
+            console.log('🔍 [PAYROLL] Testing database with simple operation...');
+            try {
+                const testStores = await window.db.getAllStoreNames();
+                console.log('✅ [PAYROLL] Database stores available:', testStores);
+            } catch (testError) {
+                console.error('❌ [PAYROLL] Database test failed:', testError);
+                throw new Error(`Database not functional: ${testError.message}`);
+            }
+            
+            console.log('📋 [PAYROLL] Step 1: Loading attendance rules...');
             await this.loadAttendanceRules();
+            console.log('✅ [PAYROLL] Attendance rules loaded');
+            
+            console.log('📋 [PAYROLL] Step 2: Loading employees...');
             await this.loadEmployees();
+            console.log('✅ [PAYROLL] Employees loaded:', this.employees.length);
+            
+            console.log('📋 [PAYROLL] Step 3: Loading holidays...');
             await this.loadHolidays();
+            console.log('✅ [PAYROLL] Holidays loaded:', this.holidays.length);
+            
+            console.log('📋 [PAYROLL] Step 4: Loading payroll records...');
             await this.loadPayrollRecords();
+            console.log('✅ [PAYROLL] Payroll records loaded:', this.payrollRecords.length);
+            
+            console.log('📋 [PAYROLL] Step 5: Loading requests...');
             await this.loadRequests();
+            console.log('✅ [PAYROLL] Requests loaded:', this.requests.length);
             
-            
+            console.log('📋 [PAYROLL] Step 6: Setting up event listeners...');
             this.setupEventListeners();
+            console.log('✅ [PAYROLL] Event listeners setup complete');
+            
+            console.log('📋 [PAYROLL] Step 7: Updating dashboard stats...');
             this.updateDashboardStats();
+            console.log('✅ [PAYROLL] Dashboard stats updated');
             
             // Display initial data
+            console.log('📋 [PAYROLL] Step 8: Displaying payroll records...');
             this.displayPayrollRecords();
+            console.log('✅ [PAYROLL] Payroll records displayed');
+            
+            console.log('📋 [PAYROLL] Step 9: Displaying payroll table...');
             this.displayPayrollRecordsTable();
+            console.log('✅ [PAYROLL] Payroll table displayed');
+            
             // Attendance records are managed in the dedicated Attendance page
+            console.log('📋 [PAYROLL] Step 10: Displaying holidays list...');
             this.displayHolidaysList();
+            console.log('✅ [PAYROLL] Holidays list displayed');
+            
+            console.log('📋 [PAYROLL] Step 11: Displaying pending requests...');
             this.displayPendingRequests();
+            console.log('✅ [PAYROLL] Pending requests displayed');
             
             console.log('✅ Payroll System initialized with', this.employees.length, 'employees');
         } catch (error) {
@@ -96,6 +143,7 @@ class PayrollManager {
                 console.warn('Database not ready for loading attendance rules');
                 return;
             }
+            console.log('🔍 [PAYROLL] Loading attendance rules from store...');
             const rules = await window.db.getAll('attendanceRules');
             if (rules && rules.length > 0) {
                 this.attendanceRules = rules[0];
