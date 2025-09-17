@@ -234,13 +234,16 @@ class POSSystem {
         // Checkout button
         const checkoutBtn = document.getElementById('checkoutBtn');
         if (checkoutBtn) {
-            checkoutBtn.addEventListener('click', () => {
+            // Add debounce to prevent rapid clicks (using existing utility)
+            const debouncedCheckout = window.debounce(() => {
                 if (this.cart.length > 0) {
                     this.showCheckout();
                 } else {
                     showWarning('Cart is empty');
                 }
-            });
+            }, 300);
+            
+            checkoutBtn.addEventListener('click', debouncedCheckout);
         }
 
         // Confirm checkout button
@@ -278,13 +281,6 @@ class POSSystem {
         if (allSelects.length > 1) {
             console.error(`❌ CRITICAL: Multiple elements with ID '${selectId}' found! Count: ${allSelects.length}`);
             console.error('This will cause duplication! Elements:', allSelects);
-        }
-        
-        // Check if dropdown is already populated
-        const select = document.getElementById(selectId);
-        if (select && select.getAttribute('data-populated') === 'true') {
-            console.log(`✅ [POS] ${selectId} already populated, skipping loadEmployees`);
-            return;
         }
         
         // Atomic lock check and set
@@ -401,6 +397,13 @@ class POSSystem {
             });
             
             if (select) {
+                // Check if already populated BEFORE clearing
+                if (select.getAttribute('data-populated') === 'true') {
+                    console.log(`✅ [POS] ${selectId} already populated, skipping`);
+                    delete window.loadEmployeesLocks[selectId];
+                    return;
+                }
+                
                 // Debug: Check current options before clearing
                 console.log('🔍 [POS] Current options before clearing:', {
                     selectId: selectId,
@@ -1360,9 +1363,7 @@ class POSSystem {
             console.error('Failed to load employees for checkout:', error);
             showWarning('Could not load employee list. Please refresh and try again.');
         } finally {
-            // Reset the flag here after employee loading is complete
-            this.isShowingCheckout = false;
-            console.log('✅ [POS] isShowingCheckout flag reset after employee loading');
+            // Flag will be reset after modal operations complete
         }
         
         // Update employee selection UI based on cart contents
@@ -1489,6 +1490,12 @@ class POSSystem {
                 showError('Failed to open checkout. Please try again.');
             }
         }, 100);
+        
+        // Reset flag after all modal operations complete
+        setTimeout(() => {
+            this.isShowingCheckout = false;
+            console.log('✅ [POS] isShowingCheckout flag reset after modal operations');
+        }, 500);
     }
 
     // Reset all discounts
