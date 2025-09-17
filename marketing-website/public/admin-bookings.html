@@ -391,7 +391,7 @@
         async function loadBookingStats() {
             try {
                 const token = localStorage.getItem('userToken');
-                const response = await fetch(`${window.API_BASE_URL}/api/admin/booking-stats`, {
+                const response = await fetch(`${window.API_BASE_URL}/admin/booking-stats`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -501,7 +501,7 @@
         async function loadAllBookings() {
             try {
                 const token = localStorage.getItem('userToken');
-                const response = await fetch(`${window.API_BASE_URL}/api/admin/all-bookings`, {
+                const response = await fetch(`${window.API_BASE_URL}/admin/all-bookings`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -765,7 +765,7 @@
 
             try {
                 const token = localStorage.getItem('userToken');
-                const response = await fetch(`${window.API_BASE_URL}/api/admin/bookings/${bookingId}/confirm`, {
+                const response = await fetch(`${window.API_BASE_URL}/admin/bookings/${bookingId}/confirm`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -794,7 +794,7 @@
 
             try {
                 const token = localStorage.getItem('userToken');
-                const response = await fetch(`${window.API_BASE_URL}/api/admin/bookings/${bookingId}/cancel`, {
+                const response = await fetch(`${window.API_BASE_URL}/admin/bookings/${bookingId}/cancel`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${token}`,

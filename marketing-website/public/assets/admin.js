@@ -100,7 +100,7 @@ async function loadDashboard() {
         }
         
         // Load stats
-        const statsResponse = await fetch(`${window.API_BASE_URL}/api/admin/stats`, {
+        const statsResponse = await fetch(`${window.API_BASE_URL}/admin/stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -132,7 +132,7 @@ function updateDashboardStats(stats) {
 async function loadUsers() {
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`${window.API_BASE_URL}/api/admin/users`, {
+        const response = await fetch(`${window.API_BASE_URL}/admin/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -314,7 +314,7 @@ document.getElementById('editUserForm').addEventListener('submit', async functio
     
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`${window.API_BASE_URL}/api/admin/users/${userId}/notes`, {
+        const response = await fetch(`${window.API_BASE_URL}/admin/users/${userId}/notes`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -408,7 +408,7 @@ async function cleanupOldSyncs() {
 
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`${window.API_BASE_URL}/api/admin/cleanup-syncs`, {
+        const response = await fetch(`${window.API_BASE_URL}/admin/cleanup-syncs`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -429,7 +429,7 @@ async function cleanupOldSyncs() {
 async function loadSyncStats() {
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`${window.API_BASE_URL}/api/admin/sync-stats`, {
+        const response = await fetch(`${window.API_BASE_URL}/admin/sync-stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -495,7 +495,7 @@ document.getElementById('changeRoleForm').addEventListener('submit', async funct
     
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`${window.API_BASE_URL}/api/admin/users/${userId}/role`, {
+        const response = await fetch(`${window.API_BASE_URL}/admin/users/${userId}/role`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -576,7 +576,7 @@ document.getElementById('createAccountForm').addEventListener('submit', async fu
     
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`${window.API_BASE_URL}/api/admin/create-account`, {
+        const response = await fetch(`${window.API_BASE_URL}/admin/create-account`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -624,7 +624,7 @@ window.loadBranchData = async function() {
     
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`${window.API_BASE_URL}/api/admin/branch-data/${branchId}`, {
+        const response = await fetch(`${window.API_BASE_URL}/admin/branch-data/${branchId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -703,7 +703,7 @@ function renderBranchData(branchData) {
 async function loadBranchList() {
     try {
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`${window.API_BASE_URL}/api/admin/users`, {
+        const response = await fetch(`${window.API_BASE_URL}/admin/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
