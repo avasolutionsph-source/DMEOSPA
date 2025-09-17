@@ -273,6 +273,18 @@ class POSSystem {
     }
 
     async loadEmployees(selectId = 'employeeSelect', setSelected = false) {
+        // Prevent concurrent execution for the same select element
+        if (!window.loadEmployeesLocks) {
+            window.loadEmployeesLocks = {};
+        }
+        
+        if (window.loadEmployeesLocks[selectId]) {
+            console.warn(`⚠️ [POS] loadEmployees already running for ${selectId}, skipping...`);
+            return;
+        }
+        
+        window.loadEmployeesLocks[selectId] = true;
+        
         // Add call tracking
         if (!window.loadEmployeesCallCount) {
             window.loadEmployeesCallCount = 0;
@@ -381,7 +393,14 @@ class POSSystem {
                     currentOptions: Array.from(select.options).map(opt => opt.textContent)
                 });
                 
-                select.innerHTML = '<option value="">Select Employee</option>';
+                // CRITICAL FIX: Clear and reset the dropdown completely
+                while (select.firstChild) {
+                    select.removeChild(select.firstChild);
+                }
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Select Employee';
+                select.appendChild(defaultOption);
                 
                 // Debug: Check after clearing
                 console.log('🔍 [POS] Options after clearing:', {
@@ -572,6 +591,10 @@ class POSSystem {
             }
         } catch (error) {
             this.logError('Failed to load employees', 'load_employees', error);
+        } finally {
+            // Release the lock
+            delete window.loadEmployeesLocks[selectId];
+            console.log(`🟢 [POS] loadEmployees completed for ${selectId}, lock released`);
         }
     }
 
