@@ -76,7 +76,7 @@ class POSSystem {
     }
 
     async init() {
-        await this.loadEmployees();
+        // Skip loading employees here - they're loaded when checkout is shown
         await this.loadProducts();
         this.setupEventListeners();
         this.updateCartDisplay();
@@ -657,6 +657,21 @@ class POSSystem {
                     });
                     console.log('✅ [POS] Cleaned up dropdown - removed non-option elements');
                 }
+                
+                // Final deduplication check - remove any duplicate options by value
+                const optionValues = new Set();
+                const options = Array.from(select.options);
+                options.forEach(option => {
+                    if (option.value && option.value !== '') {
+                        if (optionValues.has(option.value)) {
+                            console.warn(`🔄 [POS] Removing duplicate option: ${option.text} (${option.value})`);
+                            option.remove();
+                        } else {
+                            optionValues.add(option.value);
+                        }
+                    }
+                });
+                console.log(`✅ [POS] Final deduplication complete - ${select.options.length - 1} unique employees`);
                 
                 // Note: Employee selection now handled only in checkout modal
             }
@@ -1282,8 +1297,16 @@ class POSSystem {
     async showCheckout() {
         console.log('🛒 showCheckout called with cart:', this.cart);
         
+        // Prevent rapid/duplicate calls
+        if (this.isShowingCheckout) {
+            console.warn('⚠️ [POS] Checkout already showing, preventing duplicate call');
+            return;
+        }
+        this.isShowingCheckout = true;
+        
         if (!this.cart || this.cart.length === 0) {
             showWarning('Cart is empty');
+            this.isShowingCheckout = false;
             return;
         }
         
@@ -1441,6 +1464,9 @@ class POSSystem {
                 showError('Failed to open checkout. Please try again.');
             }
         }, 100);
+        
+        // Reset the flag to allow future checkout calls
+        this.isShowingCheckout = false;
     }
 
     // Reset all discounts
@@ -2764,13 +2790,4 @@ window.loadPOS = async function() {
     await posSystem.init();
 };
 
-// FORCE LOAD POS FOR DEBUGGING - Remove after testing
-console.log('🔧 DEBUG: Force loading POS system...');
-setTimeout(() => {
-    console.log('🔧 DEBUG: Calling loadPOS() directly...');
-    if (window.loadPOS) {
-        window.loadPOS().catch(e => {
-            console.error('🔧 DEBUG: Direct POS load failed:', e);
-        });
-    }
-}, 2000); // Wait 2 seconds then force load
+// Debug code removed - was causing duplicate loads
