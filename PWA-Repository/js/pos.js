@@ -280,17 +280,25 @@ class POSSystem {
             console.error('This will cause duplication! Elements:', allSelects);
         }
         
-        // Prevent concurrent execution for the same select element
+        // Check if dropdown is already populated
+        const select = document.getElementById(selectId);
+        if (select && select.getAttribute('data-populated') === 'true') {
+            console.log(`✅ [POS] ${selectId} already populated, skipping loadEmployees`);
+            return;
+        }
+        
+        // Atomic lock check and set
         if (!window.loadEmployeesLocks) {
             window.loadEmployeesLocks = {};
         }
         
+        // Atomic operation to prevent race conditions
+        const lockKey = `lock_${selectId}_${Date.now()}`;
         if (window.loadEmployeesLocks[selectId]) {
             console.warn(`⚠️ [POS] loadEmployees already running for ${selectId}, skipping...`);
             return;
         }
-        
-        window.loadEmployeesLocks[selectId] = true;
+        window.loadEmployeesLocks[selectId] = lockKey;
         
         // Add call tracking
         if (!window.loadEmployeesCallCount) {
@@ -403,8 +411,9 @@ class POSSystem {
                 // NUCLEAR FIX: Store original state and restore only unique options
                 const existingOptions = Array.from(select.options);
                 
-                // Clear EVERYTHING
+                // Clear EVERYTHING and reset flags
                 select.innerHTML = '';
+                select.removeAttribute('data-populated');
                 
                 // Add default option
                 const defaultOption = document.createElement('option');
@@ -489,6 +498,14 @@ class POSSystem {
                 });
                 
                 console.log(`📊 [POS] Unique employees to add: ${employeesToAdd.size} out of ${employees.length}`);
+                
+                // Extra safety check - if dropdown already has employees, abort
+                if (select.options.length > 1) {
+                    console.warn(`⚠️ [POS] Dropdown already has ${select.options.length - 1} employees, aborting add operation`);
+                    select.removeAttribute('data-populating');
+                    select.setAttribute('data-populated', 'true');
+                    return;
+                }
                 
                 // Now add only unique employees
                 let addedCount = 0;
@@ -672,6 +689,10 @@ class POSSystem {
                     }
                 });
                 console.log(`✅ [POS] Final deduplication complete - ${select.options.length - 1} unique employees`);
+                
+                // Mark dropdown as successfully populated
+                select.setAttribute('data-populated', 'true');
+                console.log(`✅ [POS] ${selectId} marked as populated`);
                 
                 // Note: Employee selection now handled only in checkout modal
             }
@@ -1338,6 +1359,10 @@ class POSSystem {
         } catch (error) {
             console.error('Failed to load employees for checkout:', error);
             showWarning('Could not load employee list. Please refresh and try again.');
+        } finally {
+            // Reset the flag here after employee loading is complete
+            this.isShowingCheckout = false;
+            console.log('✅ [POS] isShowingCheckout flag reset after employee loading');
         }
         
         // Update employee selection UI based on cart contents
@@ -1464,9 +1489,6 @@ class POSSystem {
                 showError('Failed to open checkout. Please try again.');
             }
         }, 100);
-        
-        // Reset the flag to allow future checkout calls
-        this.isShowingCheckout = false;
     }
 
     // Reset all discounts
