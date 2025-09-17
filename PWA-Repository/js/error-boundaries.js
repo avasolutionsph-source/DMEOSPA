@@ -46,10 +46,16 @@
                 const result = await fn.apply(context, args);
                 return result;
             } catch (error) {
+                // Skip undefined or null errors - these are not real errors
+                if (!error || (error && !error.message && !error.stack && !error.name)) {
+                    console.warn(`Skipping undefined error in ${functionName}`);
+                    return getSafeDefaultValue(functionName);
+                }
+                
                 console.error(`Error in ${functionName}:`, error);
                 
-                // Try to show user-friendly error
-                if (window.showError) {
+                // Only show error popup for real errors
+                if (window.showError && error && error.message) {
                     const userMessage = getUserFriendlyMessage(error);
                     // TEMPORARY: Show actual error for debugging
                     const debugMessage = `${userMessage}\n\nDebug Info:\nFunction: ${functionName}\nError: ${error.message}`;
@@ -156,6 +162,10 @@
     
     // Protect critical global functions
     function protectCriticalFunctions() {
+        // TEMPORARILY DISABLED: Database operation wrapping causes false "undefined" errors
+        // The error boundary was incorrectly catching non-errors and showing "undefined"
+        // Database methods already have their own error handling
+        /*
         // Protect database operations
         if (window.db) {
             ['add', 'update', 'delete', 'getAll', 'get'].forEach(method => {
@@ -166,6 +176,7 @@
                 }
             });
         }
+        */
         
         // Protect sync operations
         if (window.syncManager) {
