@@ -913,8 +913,8 @@ class EnhancedDashboardManager {
                     .filter(t => t.date && new Date(t.date).toISOString().split('T')[0] === dateStr)
                     .reduce((sum, t) => sum + (parseFloat(t.total) || 0), 0);
             } else {
-                // Use sample data for demonstration when no real data exists
-                dayRevenue = this.getSampleRevenueForDay(i, days);
+                // No data available, set to 0
+                dayRevenue = 0;
             }
             
             values.push(dayRevenue);
@@ -924,31 +924,6 @@ class EnhancedDashboardManager {
         return { labels, values };
     }
     
-    getSampleRevenueForDay(dayIndex, totalDays) {
-        // Generate realistic sample revenue data for demo purposes
-        const baseRevenue = 1500; // Base daily revenue
-        const variation = 0.4; // 40% variation
-        
-        // Create a pattern with peak on Tuesday (index 2 from Sunday)
-        const dayOfWeek = (new Date().getDay() - (totalDays - 1 - dayIndex) + 7) % 7;
-        let multiplier = 1;
-        
-        switch (dayOfWeek) {
-            case 0: multiplier = 0.4; break; // Sunday - low
-            case 1: multiplier = 0.8; break; // Monday - medium
-            case 2: multiplier = 1.2; break; // Tuesday - high (peak)
-            case 3: multiplier = 1.0; break; // Wednesday - normal
-            case 4: multiplier = 0.9; break; // Thursday - medium
-            case 5: multiplier = 1.1; break; // Friday - high
-            case 6: multiplier = 0.6; break; // Saturday - medium-low
-        }
-        
-        // Add some random variation
-        const randomVariation = (Math.random() - 0.5) * variation;
-        const finalMultiplier = multiplier + randomVariation;
-        
-        return Math.round(baseRevenue * Math.max(0.1, finalMultiplier));
-    }
 
     // ========================================
     // EVENT LISTENERS & INTERACTIONS
