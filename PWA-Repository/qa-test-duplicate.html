@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA Test - Employee Duplicate Bug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .test-btn {
+            background: #007bff;
+            color: white;
+        }
+        .test-btn:hover {
+            background: #0056b3;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            min-height: 200px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .pass {
+            color: green;
+            font-weight: bold;
+        }
+        .fail {
+            color: red;
+            font-weight: bold;
+        }
+        .warning {
+            color: orange;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔬 QA Test: Employee Duplicate Bug Verification</h1>
+        
+        <h2>Test Scenario</h2>
+        <p>Rapidly click checkout button 20+ times to verify no duplicate employee loading</p>
+        
+        <div>
+            <button class="test-btn" onclick="runTest()">Run Automated Test (20 rapid clicks)</button>
+            <button class="test-btn" onclick="checkResults()">Check Employee Dropdown</button>
+            <button class="test-btn" onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <h2>Test Results</h2>
+        <div id="results" class="results">Ready to test...</div>
+        
+        <h2>Live Monitoring</h2>
+        <div id="monitoring" class="results">Monitoring console...</div>
+    </div>
+
+    <script>
+        let testResults = [];
+        let apiCallCount = 0;
+        let loadEmployeesCallCount = 0;
+        let checkoutClickCount = 0;
+        let populatedMessages = 0;
+        
+        // Override console.log to capture messages
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const message = args.join(' ');
+            
+            // Track specific events
+            if (message.includes('loadEmployees CALLED')) {
+                loadEmployeesCallCount++;
+            }
+            if (message.includes('already populated')) {
+                populatedMessages++;
+            }
+            if (message.includes('[POS] Checkout already showing')) {
+                // Track prevented duplicate calls
+            }
+            
+            updateMonitoring(message);
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            const message = args.join(' ');
+            if (message.includes('Checkout already showing')) {
+                updateMonitoring('⚠️ ' + message);
+            }
+        };
+        
+        function updateMonitoring(message) {
+            const monitor = document.getElementById('monitoring');
+            const timestamp = new Date().toISOString().slice(11, 23);
+            monitor.textContent = `[${timestamp}] ${message}\n` + monitor.textContent;
+            
+            // Keep only last 10 messages
+            const lines = monitor.textContent.split('\n');
+            if (lines.length > 10) {
+                monitor.textContent = lines.slice(0, 10).join('\n');
+            }
+        }
+        
+        async function runTest() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.textContent = 'Starting test...\n';
+            
+            // Reset counters
+            checkoutClickCount = 0;
+            loadEmployeesCallCount = window.loadEmployeesCallCount || 0;
+            const startingLoadCount = loadEmployeesCallCount;
+            populatedMessages = 0;
+            
+            // Find checkout button
+            const checkoutBtn = document.getElementById('checkoutBtn');
+            if (!checkoutBtn) {
+                resultsDiv.textContent += '❌ FAIL: Checkout button not found\n';
+                return;
+            }
+            
+            resultsDiv.textContent += '✅ Checkout button found\n';
+            resultsDiv.textContent += '🔄 Simulating 20 rapid clicks...\n';
+            
+            // Simulate 20 rapid clicks
+            for (let i = 0; i < 20; i++) {
+                checkoutBtn.click();
+                checkoutClickCount++;
+                await new Promise(resolve => setTimeout(resolve, 10)); // 10ms between clicks
+            }
+            
+            // Wait for operations to complete
+            resultsDiv.textContent += '⏳ Waiting for operations to complete...\n';
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Check results
+            const finalLoadCount = window.loadEmployeesCallCount || 0;
+            const actualLoadCalls = finalLoadCount - startingLoadCount;
+            
+            resultsDiv.textContent += '\n📊 TEST RESULTS:\n';
+            resultsDiv.textContent += `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            resultsDiv.textContent += `Checkout clicks simulated: ${checkoutClickCount}\n`;
+            resultsDiv.textContent += `LoadEmployees calls: ${actualLoadCalls}\n`;
+            resultsDiv.textContent += `"Already populated" messages: ${populatedMessages}\n`;
+            resultsDiv.textContent += `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+            
+            // Verdict
+            if (actualLoadCalls <= 1) {
+                resultsDiv.innerHTML += '<span class="pass">✅ PASS: Employee loading called only once (or not at all if already loaded)</span>\n';
+            } else {
+                resultsDiv.innerHTML += `<span class="fail">❌ FAIL: Employee loading called ${actualLoadCalls} times (expected 1 or 0)</span>\n`;
+            }
+            
+            if (populatedMessages > 0) {
+                resultsDiv.innerHTML += '<span class="pass">✅ PASS: Guard check working ("already populated" detected)</span>\n';
+            }
+        }
+        
+        function checkResults() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.textContent = 'Checking employee dropdown...\n';
+            
+            const select = document.getElementById('checkoutEmployeeSelect');
+            if (!select) {
+                resultsDiv.textContent += '❌ Employee dropdown not found\n';
+                return;
+            }
+            
+            // Check for duplicates
+            const employees = Array.from(select.options).slice(1); // Skip "Select Employee"
+            const employeeNames = employees.map(opt => opt.textContent);
+            const uniqueNames = [...new Set(employeeNames)];
+            
+            resultsDiv.textContent += `\n📋 EMPLOYEE DROPDOWN STATUS:\n`;
+            resultsDiv.textContent += `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            resultsDiv.textContent += `Total options: ${employees.length}\n`;
+            resultsDiv.textContent += `Unique employees: ${uniqueNames.length}\n`;
+            resultsDiv.textContent += `data-populated attribute: ${select.getAttribute('data-populated')}\n`;
+            resultsDiv.textContent += `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+            
+            if (employees.length === uniqueNames.length) {
+                resultsDiv.innerHTML += '<span class="pass">✅ PASS: No duplicate employees found</span>\n';
+            } else {
+                resultsDiv.innerHTML += `<span class="fail">❌ FAIL: Found ${employees.length - uniqueNames.length} duplicate employees</span>\n`;
+                
+                // Show duplicates
+                const counts = {};
+                employeeNames.forEach(name => {
+                    counts[name] = (counts[name] || 0) + 1;
+                });
+                
+                resultsDiv.textContent += '\nDuplicate entries:\n';
+                Object.entries(counts).forEach(([name, count]) => {
+                    if (count > 1) {
+                        resultsDiv.textContent += `  - "${name}" appears ${count} times\n`;
+                    }
+                });
+            }
+            
+            // List all employees
+            resultsDiv.textContent += '\nAll employees in dropdown:\n';
+            employees.forEach((opt, i) => {
+                resultsDiv.textContent += `  ${i + 1}. ${opt.textContent}\n`;
+            });
+        }
+        
+        function clearResults() {
+            document.getElementById('results').textContent = 'Results cleared. Ready to test...';
+            document.getElementById('monitoring').textContent = 'Monitoring console...';
+        }
+        
+        // Auto-check on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.textContent = '🔍 Initial System Check:\n';
+                
+                // Check if POS is loaded
+                if (window.posManager) {
+                    resultsDiv.textContent += '✅ POS Manager loaded\n';
+                } else {
+                    resultsDiv.textContent += '⚠️ POS Manager not loaded\n';
+                }
+                
+                // Check if debounce utility exists
+                if (window.debounce) {
+                    resultsDiv.textContent += '✅ Debounce utility available\n';
+                } else {
+                    resultsDiv.textContent += '❌ Debounce utility not found\n';
+                }
+                
+                // Check checkout button
+                const checkoutBtn = document.getElementById('checkoutBtn');
+                if (checkoutBtn) {
+                    resultsDiv.textContent += '✅ Checkout button exists\n';
+                    
+                    // Check if it has event listeners
+                    const listeners = getEventListeners ? getEventListeners(checkoutBtn) : null;
+                    if (listeners) {
+                        resultsDiv.textContent += `   Event listeners: ${Object.keys(listeners).join(', ')}\n`;
+                    }
+                } else {
+                    resultsDiv.textContent += '⚠️ Checkout button not found (may not be on POS page)\n';
+                }
+                
+                resultsDiv.textContent += '\nReady for testing!\n';
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

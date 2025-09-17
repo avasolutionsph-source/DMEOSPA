@@ -76,7 +76,6 @@ class POSSystem {
     }
 
     async init() {
-        // Skip loading employees here - they're loaded when checkout is shown
         await this.loadProducts();
         this.setupEventListeners();
         this.updateCartDisplay();
@@ -188,7 +187,6 @@ class POSSystem {
         // Employee selection removed from main POS interface
         // Employee selection now only handled in checkout modal
 
-        // Product search
         const searchInput = document.getElementById('productSearch');
         if (searchInput) {
             // Use window.debounce if available, otherwise use a simple timeout
@@ -205,7 +203,6 @@ class POSSystem {
             }, 300));
         }
 
-        // Category filters
         document.querySelectorAll('.category-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
@@ -215,7 +212,6 @@ class POSSystem {
             });
         });
 
-        // Clear cart button
         const clearCartBtn = document.getElementById('clearCart');
         if (clearCartBtn) {
             clearCartBtn.addEventListener('click', () => {
@@ -231,10 +227,9 @@ class POSSystem {
             });
         }
 
-        // Checkout button
         const checkoutBtn = document.getElementById('checkoutBtn');
         if (checkoutBtn) {
-            // Add debounce to prevent rapid clicks (using existing utility)
+            // Prevent rapid clicks
             const debouncedCheckout = window.debounce(() => {
                 if (this.cart.length > 0) {
                     this.showCheckout();
@@ -246,7 +241,6 @@ class POSSystem {
             checkoutBtn.addEventListener('click', debouncedCheckout);
         }
 
-        // Confirm checkout button
         const confirmCheckoutBtn = document.getElementById('confirmCheckoutBtn');
         if (confirmCheckoutBtn) {
             confirmCheckoutBtn.addEventListener('click', () => {
@@ -276,19 +270,16 @@ class POSSystem {
     }
 
     async loadEmployees(selectId = 'employeeSelect', setSelected = false) {
-        // NUCLEAR FIX: Check for duplicate select elements
         const allSelects = document.querySelectorAll(`#${selectId}`);
         if (allSelects.length > 1) {
             console.error(`❌ CRITICAL: Multiple elements with ID '${selectId}' found! Count: ${allSelects.length}`);
             console.error('This will cause duplication! Elements:', allSelects);
         }
         
-        // Atomic lock check and set
         if (!window.loadEmployeesLocks) {
             window.loadEmployeesLocks = {};
         }
         
-        // Atomic operation to prevent race conditions
         const lockKey = `lock_${selectId}_${Date.now()}`;
         if (window.loadEmployeesLocks[selectId]) {
             console.warn(`⚠️ [POS] loadEmployees already running for ${selectId}, skipping...`);
@@ -404,21 +395,17 @@ class POSSystem {
                     return;
                 }
                 
-                // Debug: Check current options before clearing
                 console.log('🔍 [POS] Current options before clearing:', {
                     selectId: selectId,
                     currentOptionsCount: select.options.length,
                     currentOptions: Array.from(select.options).map(opt => opt.textContent)
                 });
                 
-                // NUCLEAR FIX: Store original state and restore only unique options
                 const existingOptions = Array.from(select.options);
                 
-                // Clear EVERYTHING and reset flags
                 select.innerHTML = '';
                 select.removeAttribute('data-populated');
                 
-                // Add default option
                 const defaultOption = document.createElement('option');
                 defaultOption.value = '';
                 defaultOption.textContent = 'Select Employee';
@@ -427,7 +414,6 @@ class POSSystem {
                 // Mark this select as being populated to prevent interference
                 select.setAttribute('data-populating', 'true');
                 
-                // Debug: Check after clearing
                 console.log('🔍 [POS] Options after clearing:', {
                     selectId: selectId,
                     optionsCount: select.options.length,
@@ -455,7 +441,6 @@ class POSSystem {
                     }
                 }
                 
-                // Now check for active services
                 if (window.roomManager && window.roomManager.getActiveServices) {
                     const activeServices = window.roomManager.getActiveServices();
                     console.log('🔧 [POS] Active services found:', activeServices);
@@ -480,13 +465,11 @@ class POSSystem {
                     console.log('⚠️ [POS] Room manager or getActiveServices not available');
                 }
                 
-                // NUCLEAR FIX: Track what we're actually adding to prevent duplicates
                 const employeesToAdd = new Map();
                 const duplicateCheck = new Set();
                 
                 console.log(`🔵 [POS] Starting to process ${employees.length} employees`);
                 
-                // First, collect unique employees
                 employees.forEach((emp, index) => {
                     const empId = String(emp.id || emp._id || `temp_${index}`);
                     const empKey = `${empId}_${emp.name}_${emp.position}`;
@@ -510,7 +493,6 @@ class POSSystem {
                     return;
                 }
                 
-                // Now add only unique employees
                 let addedCount = 0;
                 employeesToAdd.forEach((emp, key) => {
                     addedCount++;
@@ -632,7 +614,6 @@ class POSSystem {
                     select.appendChild(option);
                 });
                 
-                // Debug: Final options count
                 console.log('🔍 [POS] Final options after adding all employees:', {
                     selectId: selectId,
                     finalOptionsCount: select.options.length,
@@ -641,7 +622,6 @@ class POSSystem {
                     finalOptions: Array.from(select.options).map(opt => opt.textContent)
                 });
                 
-                // NUCLEAR VERIFICATION: Check if we have duplicates in the final dropdown
                 const finalOptions = Array.from(select.options).map(opt => opt.textContent);
                 const uniqueFinalOptions = [...new Set(finalOptions)];
                 if (finalOptions.length !== uniqueFinalOptions.length) {
@@ -650,8 +630,7 @@ class POSSystem {
                     console.error('Unique options:', uniqueFinalOptions.length);
                     console.error('Duplicated entries:', finalOptions.length - uniqueFinalOptions.length);
                     
-                    // Find which ones are duplicated
-                    const counts = {};
+                        const counts = {};
                     finalOptions.forEach(text => {
                         counts[text] = (counts[text] || 0) + 1;
                     });
@@ -702,7 +681,6 @@ class POSSystem {
         } catch (error) {
             this.logError('Failed to load employees', 'load_employees', error);
         } finally {
-            // Release the lock
             delete window.loadEmployeesLocks[selectId];
             console.log(`🟢 [POS] loadEmployees completed for ${selectId}, lock released`);
         }
