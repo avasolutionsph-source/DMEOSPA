@@ -1255,25 +1255,6 @@ class POSSystem {
             const modal = document.getElementById('checkoutModal');
             if (modal && modal.classList.contains('active')) {
                 
-                // Re-check if checkoutEmployeeSelect exists after modal is fully opened
-                const checkoutEmployeeSelectAfterModal = document.getElementById('checkoutEmployeeSelect');
-                console.log('🔧 Checkout Employee Select After Modal Open:', {
-                    exists: !!checkoutEmployeeSelectAfterModal,
-                    element: checkoutEmployeeSelectAfterModal
-                });
-                
-                // Re-load employees if the element exists now
-                if (checkoutEmployeeSelectAfterModal) {
-                    console.log('🔄 Re-loading employees for checkout dropdown after modal opened...');
-                    try {
-                        await this.loadEmployees('checkoutEmployeeSelect', true);
-                        
-                        // Employee selection only available in checkout modal now
-                    } catch (error) {
-                        console.error('Failed to re-load employees after modal open:', error);
-                    }
-                }
-                
                 // Initialize customer dropdown
                 if (window.customerManager) {
                     await window.customerManager.initializeSearchableCustomerDropdown();
