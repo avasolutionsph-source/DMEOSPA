@@ -298,6 +298,20 @@ class POSSystem {
                 const rawEmployees = result.data || [];
                 console.log(`✅ [POS] Loaded ${rawEmployees.length} employees from ${result.source || 'API'}`);
                 
+                // Debug: Check for duplicates in raw data
+                const employeeNames = rawEmployees.map(emp => 
+                    emp.firstName ? `${emp.firstName} ${emp.lastName}`.trim() : emp.name
+                );
+                const uniqueNames = [...new Set(employeeNames)];
+                if (employeeNames.length !== uniqueNames.length) {
+                    console.warn('⚠️ [POS] Duplicate employees detected in API response!', {
+                        totalCount: employeeNames.length,
+                        uniqueCount: uniqueNames.length,
+                        duplicates: employeeNames.filter((name, index) => employeeNames.indexOf(name) !== index),
+                        allNames: employeeNames
+                    });
+                }
+                
                 // Convert firstName/lastName back to name for PWA compatibility
                 employees = rawEmployees.map(emp => ({
                     ...emp,
@@ -320,7 +334,21 @@ class POSSystem {
             });
             
             if (select) {
+                // Debug: Check current options before clearing
+                console.log('🔍 [POS] Current options before clearing:', {
+                    selectId: selectId,
+                    currentOptionsCount: select.options.length,
+                    currentOptions: Array.from(select.options).map(opt => opt.textContent)
+                });
+                
                 select.innerHTML = '<option value="">Select Employee</option>';
+                
+                // Debug: Check after clearing
+                console.log('🔍 [POS] Options after clearing:', {
+                    selectId: selectId,
+                    optionsCount: select.options.length,
+                    shouldBe1: select.options.length === 1
+                });
                 
                 // Check which employees are currently assigned to active services
                 // Ensure room manager is initialized before checking assignments
@@ -483,6 +511,15 @@ class POSSystem {
                     
                     option.textContent = employeeText;
                     select.appendChild(option);
+                });
+                
+                // Debug: Final options count
+                console.log('🔍 [POS] Final options after adding all employees:', {
+                    selectId: selectId,
+                    finalOptionsCount: select.options.length,
+                    expectedCount: employees.length + 1, // +1 for "Select Employee" option
+                    match: select.options.length === (employees.length + 1),
+                    finalOptions: Array.from(select.options).map(opt => opt.textContent)
                 });
                 
                 // Note: Employee selection now handled only in checkout modal
