@@ -48,6 +48,24 @@ class PayrollManager {
     async init() {
         console.log('🚀 Initializing Payroll System...');
         try {
+            // Wait for database to be ready before proceeding
+            if (!window.isDatabaseReady || !window.isDatabaseReady()) {
+                console.log('⏳ Waiting for database before initializing payroll...');
+                if (window.waitForDatabase) {
+                    await window.waitForDatabase();
+                } else {
+                    // Fallback: wait for database the old way
+                    let attempts = 0;
+                    while (!window.db?.db && attempts < 50) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        attempts++;
+                    }
+                    if (!window.db?.db) {
+                        throw new Error('Database not available after 5 seconds');
+                    }
+                }
+            }
+            
             await this.loadAttendanceRules();
             await this.loadEmployees();
             await this.loadHolidays();
@@ -68,11 +86,16 @@ class PayrollManager {
             console.log('✅ Payroll System initialized with', this.employees.length, 'employees');
         } catch (error) {
             console.error('❌ Failed to initialize payroll:', error);
+            // Don't throw - just log the error to prevent breaking the page
         }
     }
 
     async loadAttendanceRules() {
         try {
+            if (!window.db) {
+                console.warn('Database not ready for loading attendance rules');
+                return;
+            }
             const rules = await window.db.getAll('attendanceRules');
             if (rules && rules.length > 0) {
                 this.attendanceRules = rules[0];
@@ -92,7 +115,9 @@ class PayrollManager {
                     nightDifferentialRate: 0.1, // 10%
                 };
                 // Save default rules
-                await window.db.add('attendanceRules', this.attendanceRules);
+                if (window.db) {
+                    await window.db.add('attendanceRules', this.attendanceRules);
+                }
             }
             
             // Load payroll settings
@@ -104,6 +129,10 @@ class PayrollManager {
 
     async loadPayrollSettings() {
         try {
+            if (!window.db) {
+                console.warn('Database not ready for loading payroll settings');
+                return;
+            }
             const settings = await window.db.getAll('payrollSettings');
             if (settings && settings.length > 0) {
                 this.payrollSettings = settings[0];
@@ -126,7 +155,9 @@ class PayrollManager {
                     maxDailyLateDeduction: 4 // hours
                 };
                 // Save default settings
-                await window.db.add('payrollSettings', this.payrollSettings);
+                if (window.db) {
+                    await window.db.add('payrollSettings', this.payrollSettings);
+                }
             }
             
             // Update UI with loaded settings
@@ -265,6 +296,11 @@ class PayrollManager {
 
     async loadHolidays() {
         try {
+            if (!window.db) {
+                console.warn('Database not ready for loading holidays');
+                this.holidays = [];
+                return;
+            }
             const currentYear = new Date().getFullYear();
             this.holidays = await window.db.getByIndex('holidays', 'year', currentYear);
             
@@ -284,7 +320,9 @@ class PayrollManager {
                 ];
                 
                 for (const holiday of defaultHolidays) {
-                    await window.db.add('holidays', { ...holiday, year: currentYear });
+                    if (window.db) {
+                        await window.db.add('holidays', { ...holiday, year: currentYear });
+                    }
                 }
                 this.holidays = defaultHolidays;
             }
@@ -296,6 +334,11 @@ class PayrollManager {
 
     async loadPayrollRecords() {
         try {
+            if (!window.db) {
+                console.warn('Database not ready for loading payroll records');
+                this.payrollRecords = [];
+                return;
+            }
             this.payrollRecords = await window.db.getAll('payroll');
         } catch (error) {
             console.error('Failed to load payroll records:', error);
@@ -339,6 +382,11 @@ class PayrollManager {
 
     async loadRequests() {
         try {
+            if (!window.db) {
+                console.warn('Database not ready for loading requests');
+                this.requests = [];
+                return;
+            }
             this.requests = await window.db.getAll('employeeRequests');
             
             // Add sample requests for pok@gmail.com account ONLY if no requests exist
@@ -704,6 +752,10 @@ class PayrollManager {
 
     async calculateTipsCommissions(employeeId, periodStart, periodEnd) {
         // Get transactions for the period and calculate commissions
+        if (!window.db) {
+            console.warn('Database not available for calculating tips/commissions');
+            return 0;
+        }
         const transactions = await window.db.getAll('transactions');
         const employeeTransactions = transactions.filter(t => 
             t.employeeId === employeeId &&
