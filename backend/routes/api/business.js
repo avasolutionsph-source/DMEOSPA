@@ -129,27 +129,67 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-// GET /api/business/employees - Get employee data
+// GET /api/business/employees - Get employee data with calculated statistics
 router.get('/employees', async (req, res) => {
   try {
     const Employee = (await import('../../models/Employee.js')).default;
+    const Transaction = (await import('../../models/Transaction.js')).default;
     const userId = req.userId || req.user?.userId || req.user?.id;
     
+    // Get all employees for this user
     const employees = await Employee.find({ userId });
     
-    res.json({
-      employees: employees.map(emp => ({
+    // Get all transactions for this user to calculate stats
+    const transactions = await Transaction.find({ userId });
+    
+    // Calculate statistics for each employee
+    const employeesWithStats = employees.map(emp => {
+      // Find all transactions for this employee
+      const employeeTransactions = transactions.filter(t => {
+        if (!t.employee) return false;
+        
+        // Check if transaction is linked to this employee
+        // Handle both string and ObjectId comparisons
+        const empId = emp._id.toString();
+        const transEmpId = t.employee.id ? t.employee.id.toString() : '';
+        
+        return transEmpId === empId || 
+               t.employee.name === emp.fullName || 
+               t.employee.name === `${emp.firstName} ${emp.lastName}`;
+      });
+      
+      // Calculate total sales and commission
+      const totalSales = employeeTransactions.reduce((sum, t) => sum + (t.total || 0), 0);
+      const commissionRate = emp.commissionRate || emp.commission || 0;
+      const totalCommission = totalSales * (commissionRate / 100);
+      const transactionCount = employeeTransactions.length;
+      
+      return {
         id: emp._id,
         name: emp.fullName || `${emp.firstName} ${emp.lastName}`,
         position: emp.position,
         email: emp.email,
         phone: emp.phone,
         hiredDate: emp.hireDate || emp.hiredDate,
-        totalSales: emp.totalSales || 0,
-        commission: emp.commissionRate || emp.commission || 0,
-        totalCommission: emp.totalCommission || 0,
-        transactions: emp.totalTransactions || 0
-      })),
+        totalSales: totalSales,
+        commission: commissionRate,
+        totalCommission: totalCommission,
+        totalTransactions: transactionCount, // Use calculated count, not static field
+        transactions: transactionCount // Duplicate for compatibility
+      };
+    });
+    
+    // Log calculated stats for debugging
+    console.log('📊 [BUSINESS-EMPLOYEES] Calculated stats for employees:', 
+      employeesWithStats.map(e => ({
+        name: e.name,
+        totalSales: e.totalSales,
+        transactions: e.transactions
+      }))
+    );
+    
+    res.json({
+      employees: employeesWithStats,
       totalEmployees: employees.length,
       lastSyncDate: new Date()
     });
