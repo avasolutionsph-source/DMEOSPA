@@ -1904,18 +1904,23 @@ class POSSystem {
     async processCheckout() {
         // Prevent duplicate checkouts
         if (this.isProcessingCheckout) {
+            console.log('⚠️ Checkout already in progress, ignoring duplicate request');
             return;
         }
 
         // Validate database is available
         if (!window.db) {
             showError('Database not available. Please refresh the page and try again.');
+            setButtonLoading('confirmCheckoutBtn', false);
+            this.isProcessingCheckout = false;
             return;
         }
 
         // Validate cart has items
         if (!this.cart || this.cart.length === 0) {
             showError('Cart is empty. Please add items before checkout.');
+            setButtonLoading('confirmCheckoutBtn', false);
+            this.isProcessingCheckout = false;
             return;
         }
         
@@ -1924,6 +1929,8 @@ class POSSystem {
             await this.validateInventoryStock();
         } catch (stockError) {
             showError(stockError.message);
+            setButtonLoading('confirmCheckoutBtn', false);
+            this.isProcessingCheckout = false;
             return;
         }
         

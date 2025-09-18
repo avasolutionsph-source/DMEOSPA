@@ -22,16 +22,42 @@ class CustomerManager {
         this.updateCustomerStats();
     }
 
+    async waitForDatabaseReady() {
+        const maxWaitTime = 5000; // 5 seconds max wait
+        const checkInterval = 50; // Check every 50ms
+        const startTime = Date.now();
+        
+        return new Promise((resolve) => {
+            const checkDatabase = () => {
+                if (!window.db || !window.db.isInitializing) {
+                    resolve();
+                    return;
+                }
+                
+                if (Date.now() - startTime > maxWaitTime) {
+                    console.warn('Database initialization timeout');
+                    resolve();
+                    return;
+                }
+                
+                // Use requestAnimationFrame for better performance
+                requestAnimationFrame(() => {
+                    setTimeout(checkDatabase, checkInterval);
+                });
+            };
+            
+            checkDatabase();
+        });
+    }
+
     async ensureCustomersTable() {
         console.log('🔍 Checking if customers table exists...');
         
-        // Prevent infinite loops by checking if we're already initializing
+        // Non-blocking wait for database initialization
         if (window.db && window.db.isInitializing) {
-            console.log('⏳ Database is already initializing, waiting...');
-            // Wait for initialization to complete
-            while (window.db.isInitializing) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
+            console.log('⏳ Database is initializing, waiting...');
+            // Use promise-based waiting instead of blocking while loop
+            await this.waitForDatabaseReady();
         }
         
         // Simple check - try to access customers table
@@ -180,7 +206,25 @@ class CustomerManager {
             return;
         }
 
-        customersGrid.innerHTML = customersToShow.map(customer => this.createCustomerCard(customer)).join('');
+        // Use DocumentFragment for better performance with large customer lists
+        const fragment = document.createDocumentFragment();
+        const tempDiv = document.createElement('div');
+        
+        // Process customers in batches for better performance
+        const batchSize = 20;
+        for (let i = 0; i < customersToShow.length; i += batchSize) {
+            const batch = customersToShow.slice(i, i + batchSize);
+            tempDiv.innerHTML = batch.map(customer => this.createCustomerCard(customer)).join('');
+            
+            // Move all children to fragment
+            while (tempDiv.firstChild) {
+                fragment.appendChild(tempDiv.firstChild);
+            }
+        }
+        
+        // Clear grid and append fragment in one operation
+        customersGrid.innerHTML = '';
+        customersGrid.appendChild(fragment);
     }
 
     createCustomerCard(customer) {
@@ -278,8 +322,13 @@ class CustomerManager {
             searchInput.removeEventListener('keydown', this.keydownHandler);
         }
 
+        // Create debounced filter handler for better performance
+        const debouncedFilter = typeof debounce !== 'undefined' 
+            ? debounce((value) => this.filterCustomers(value), 300)
+            : (value) => this.filterCustomers(value);
+        
         // Create bound handlers
-        this.filterCustomersHandler = (e) => this.filterCustomers(e.target.value);
+        this.filterCustomersHandler = (e) => debouncedFilter(e.target.value);
         this.showDropdownHandler = () => this.showCustomerDropdown();
         this.keydownHandler = (e) => this.handleCustomerSearchKeydown(e);
         this.clickOutsideHandler = (e) => {
@@ -340,14 +389,20 @@ class CustomerManager {
         const dropdown = document.getElementById('checkoutCustomerDropdown');
         if (!dropdown) return;
 
-        // Clear existing options
-        dropdown.innerHTML = '';
+        // Remove existing click handler to prevent memory leaks
+        if (this.dropdownClickHandler) {
+            dropdown.removeEventListener('click', this.dropdownClickHandler);
+        }
+
+        // Use DocumentFragment for better performance
+        const fragment = document.createDocumentFragment();
 
         // Add filtered customers
         filteredCustomers.forEach(customer => {
             const option = document.createElement('div');
             option.className = 'customer-option';
             option.dataset.value = customer.id;
+            option.dataset.customerId = customer.id;
             
             const visitCount = this.getCustomerVisitCount(customer.id);
             
@@ -357,8 +412,7 @@ class CustomerManager {
                 ${visitCount > 0 ? `<span class="customer-visits">(${visitCount} visits)</span>` : ''}
             `;
             
-            option.addEventListener('click', () => this.selectCustomer(customer));
-            dropdown.appendChild(option);
+            fragment.appendChild(option);
         });
 
         // If there's a search term and no matches, show "Add as new customer" option
@@ -366,9 +420,9 @@ class CustomerManager {
             const addSearchedOption = document.createElement('div');
             addSearchedOption.className = 'customer-option add-new';
             addSearchedOption.dataset.value = 'new-from-search';
+            addSearchedOption.dataset.searchTerm = searchTerm;
             addSearchedOption.innerHTML = `<i class="fas fa-plus-circle"></i> Add "${searchTerm}" as new customer`;
-            addSearchedOption.addEventListener('click', () => this.addNewCustomerFromSearch(searchTerm));
-            dropdown.appendChild(addSearchedOption);
+            fragment.appendChild(addSearchedOption);
         }
 
         // Always add "Add New Customer" option at the end
@@ -376,8 +430,34 @@ class CustomerManager {
         addNewOption.className = 'customer-option add-new';
         addNewOption.dataset.value = 'new';
         addNewOption.innerHTML = '<i class="fas fa-plus-circle"></i> Add New Customer';
-        addNewOption.addEventListener('click', () => this.selectNewCustomer());
-        dropdown.appendChild(addNewOption);
+        fragment.appendChild(addNewOption);
+
+        // Clear and append all at once
+        dropdown.innerHTML = '';
+        dropdown.appendChild(fragment);
+
+        // Use event delegation for better performance
+        this.dropdownClickHandler = (e) => {
+            const option = e.target.closest('.customer-option');
+            if (!option) return;
+
+            const value = option.dataset.value;
+            const customerId = option.dataset.customerId;
+            const searchTerm = option.dataset.searchTerm;
+
+            if (value === 'new') {
+                this.selectNewCustomer();
+            } else if (value === 'new-from-search' && searchTerm) {
+                this.addNewCustomerFromSearch(searchTerm);
+            } else if (customerId) {
+                const customer = this.customers.find(c => c.id === customerId);
+                if (customer) {
+                    this.selectCustomer(customer);
+                }
+            }
+        };
+
+        dropdown.addEventListener('click', this.dropdownClickHandler);
     }
 
     getCustomerVisitCount(customerId) {
@@ -825,61 +905,63 @@ class CustomerManager {
         try {
             const transactions = await this.getTransactionsWithCache();
             
-            // Process customers in chunks to prevent UI blocking
-            for (let i = 0; i < this.customers.length; i++) {
-                const customer = this.customers[i];
+            // Process customers in smaller batches with better yielding
+            const batchSize = 10;
+            for (let i = 0; i < this.customers.length; i += batchSize) {
+                // Process a batch of customers
+                const batch = this.customers.slice(i, Math.min(i + batchSize, this.customers.length));
                 
-                // Yield control every 5 customers to keep UI responsive
-                if (i > 0 && i % 5 === 0) {
-                    await new Promise(resolve => setTimeout(resolve, 10));
-                }
-                const customerTransactions = transactions.filter(t => 
-                    t.customerId === customer.id || 
-                    (t.customerInfo && (t.customerInfo.phone === customer.phone))
-                );
-                
-                customer.totalVisits = customerTransactions.length;
-                customer.totalSpent = customerTransactions.reduce((sum, t) => sum + (t.total || 0), 0);
-                
-                // Calculate favorite service - count all items regardless of type
-                const serviceCount = {};
-                let totalItems = 0;
-                
-                customerTransactions.forEach(transaction => {
-                    if (transaction.items && Array.isArray(transaction.items)) {
-                        transaction.items.forEach(item => {
-                            if (item && item.name && item.name.trim()) {
-                                // Count all items, not just services - in a spa, products are also services
-                                const itemName = item.name.trim();
-                                const quantity = parseInt(item.quantity) || 1;
-                                serviceCount[itemName] = (serviceCount[itemName] || 0) + quantity;
-                                totalItems += quantity;
-                            }
-                        });
+                batch.forEach(customer => {
+                    const customerTransactions = transactions.filter(t => 
+                        t.customerId === customer.id || 
+                        (t.customerInfo && (t.customerInfo.phone === customer.phone))
+                    );
+                    
+                    customer.totalVisits = customerTransactions.length;
+                    customer.totalSpent = customerTransactions.reduce((sum, t) => sum + (t.total || 0), 0);
+                    
+                    // Calculate favorite service - count all items regardless of type
+                    const serviceCount = {};
+                    let totalItems = 0;
+                    
+                    customerTransactions.forEach(transaction => {
+                        if (transaction.items && Array.isArray(transaction.items)) {
+                            transaction.items.forEach(item => {
+                                if (item && item.name && item.name.trim()) {
+                                    // Count all items, not just services - in a spa, products are also services
+                                    const itemName = item.name.trim();
+                                    const quantity = parseInt(item.quantity) || 1;
+                                    serviceCount[itemName] = (serviceCount[itemName] || 0) + quantity;
+                                    totalItems += quantity;
+                                }
+                            });
+                        }
+                    });
+                    
+                    if (Object.keys(serviceCount).length > 0) {
+                        // Find the service with the highest count
+                        customer.favoriteService = Object.keys(serviceCount).reduce((a, b) => 
+                            serviceCount[a] > serviceCount[b] ? a : b
+                        );
+                    } else {
+                        customer.favoriteService = 'No services yet';
+                    }
+                    
+                    // Update last visit - use 'date' field from transactions
+                    if (customerTransactions.length > 0) {
+                        const lastTransaction = customerTransactions.sort((a, b) => 
+                            new Date(b.date) - new Date(a.date)
+                        )[0];
+                        customer.lastVisit = lastTransaction.date;
                     }
                 });
                 
-                if (Object.keys(serviceCount).length > 0) {
-                    // Find the service with the highest count
-                    customer.favoriteService = Object.keys(serviceCount).reduce((a, b) => 
-                        serviceCount[a] > serviceCount[b] ? a : b
-                    );
-                } else {
-                    customer.favoriteService = 'No services yet';
-                }
-                
-                // Debug info removed for performance
-                // Uncomment for debugging: 
-                // console.log(`Customer ${customer.firstName} ${customer.lastName}:`, {
-                //     transactions: customerTransactions.length, services: serviceCount
-                // });
-                
-                // Update last visit - use 'date' field from transactions
-                if (customerTransactions.length > 0) {
-                    const lastTransaction = customerTransactions.sort((a, b) => 
-                        new Date(b.date) - new Date(a.date)
-                    )[0];
-                    customer.lastVisit = lastTransaction.date;
+                // Yield control back to the browser after each batch
+                // Using requestAnimationFrame for smoother UI updates
+                if (i + batchSize < this.customers.length) {
+                    await new Promise(resolve => {
+                        requestAnimationFrame(() => resolve());
+                    });
                 }
             }
         } catch (error) {
