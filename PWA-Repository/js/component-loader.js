@@ -243,6 +243,16 @@ window.reloadComponent = async (componentName, targetSelector) => {
  */
 window.loadPage = async (pageName) => {
     console.log(`🧭 Loading page: ${pageName} (embedded HTML mode)`);
+    
+    // Clean up dashboard when navigating away from it
+    const currentActivePage = document.querySelector('.page.active');
+    if (currentActivePage && currentActivePage.id === 'dashboard' && pageName !== 'dashboard') {
+        if (window.unloadDashboard && typeof window.unloadDashboard === 'function') {
+            console.log('🧹 Cleaning up dashboard before navigation...');
+            window.unloadDashboard();
+        }
+    }
+    
     // Hide all pages
     document.querySelectorAll('.page').forEach(page => {
         page.classList.remove('active');

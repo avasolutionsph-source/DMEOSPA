@@ -98,6 +98,7 @@ class EnhancedDashboardManager {
             this.setupEventListeners();
             this.initializeCharts();
             this.setupActivityTabs();
+            this.setupPageVisibilityHandler();
             this.setupRefreshTimer();
             
             this.isInitialized = true;
@@ -183,15 +184,23 @@ class EnhancedDashboardManager {
                 }
             }
             
-            // FALLBACK: Get all transactions from MongoDB API instead of IndexedDB
+            // FALLBACK: Get recent transactions from MongoDB API instead of IndexedDB
             let allTransactions = [];
             try {
                 // Use HybridAPIClient for offline support
                 const result = await window.HybridAPIClient.getTransactions();
                 
                 if (result.success) {
-                    allTransactions = result.data || [];
-                    console.log(`✅ [DASHBOARD] Loaded ${allTransactions.length} transactions from ${result.source || 'API'}`);
+                    // MEMORY OPTIMIZATION: Only keep last 30 days of transactions
+                    const thirtyDaysAgo = new Date();
+                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                    
+                    allTransactions = (result.data || []).filter(t => {
+                        const transactionDate = new Date(t.createdAt || t.date);
+                        return transactionDate >= thirtyDaysAgo;
+                    });
+                    
+                    console.log(`✅ [DASHBOARD] Loaded ${allTransactions.length} recent transactions (last 30 days) from ${result.source || 'API'}`);
                 } else {
                     console.error('❌ [DASHBOARD] Failed to load transactions:', result.error);
                     allTransactions = [];
@@ -988,10 +997,25 @@ class EnhancedDashboardManager {
     }
 
     setupRefreshTimer() {
-        // Auto-refresh every minute
+        // Clear any existing interval to prevent duplicates
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
+            this.updateInterval = null;
+        }
+        
+        // Auto-refresh every 4 minutes
         this.updateInterval = setInterval(() => {
-            this.loadAllDashboardData();
+            // Only refresh if dashboard is visible
+            if (document.visibilityState === 'visible' && this.isPageActive()) {
+                this.loadAllDashboardData();
+            }
         }, this.updateFrequency);
+    }
+    
+    isPageActive() {
+        // Check if dashboard page is actually active
+        const dashboardPage = document.getElementById('dashboard');
+        return dashboardPage && dashboardPage.classList.contains('active');
     }
 
     async updateChartPeriod(period) {
@@ -1153,23 +1177,111 @@ class EnhancedDashboardManager {
     }
 
     destroy() {
+        console.log('🧹 Cleaning up dashboard resources...');
+        
+        // Clear interval
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
+            this.updateInterval = null;
         }
+        
+        // Destroy chart
         if (this.revenueChart) {
             this.revenueChart.destroy();
+            this.revenueChart = null;
         }
+        
+        // Clear large data arrays to free memory
+        this.stats = {
+            todayRevenue: 0,
+            weeklyRevenue: 0,
+            monthlyRevenue: 0,
+            todayTransactions: 0,
+            avgTransaction: 0,
+            totalProducts: 0,
+            lowStock: 0,
+            totalStaff: 0,
+            onDuty: 0,
+            totalInventory: 0,
+            inventoryValue: 0,
+            criticalStock: 0,
+            outOfStock: 0,
+            cardPayments: 0,
+            cashPayments: 0,
+            giftCertRevenue: 0,
+            giftCertCount: 0,
+            totalAppointments: 0,
+            pendingAppointments: 0,
+            confirmedAppointments: 0
+        };
+        
+        // Remove event listeners
+        this.removeEventListeners();
+        
+        // Clear references
+        this.isInitialized = false;
+        
+        // Suggest garbage collection
+        if (window.gc) {
+            window.gc();
+        }
+        
+        console.log('✅ Dashboard cleanup complete');
+    }
+    
+    removeEventListeners() {
+        // Remove page visibility listener
+        if (this.visibilityHandler) {
+            document.removeEventListener('visibilitychange', this.visibilityHandler);
+            this.visibilityHandler = null;
+        }
+        
+        // Remove transaction listener
+        if (this.transactionHandler) {
+            window.removeEventListener('transactionCompleted', this.transactionHandler);
+            this.transactionHandler = null;
+        }
+    }
+    
+    setupPageVisibilityHandler() {
+        // Handle page visibility changes
+        this.visibilityHandler = () => {
+            if (document.visibilityState === 'hidden') {
+                // Pause updates when page is hidden
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                    this.updateInterval = null;
+                    console.log('⏸️ Dashboard updates paused (page hidden)');
+                }
+            } else if (document.visibilityState === 'visible' && this.isPageActive()) {
+                // Resume updates when page is visible
+                if (!this.updateInterval && this.isInitialized) {
+                    this.setupRefreshTimer();
+                    console.log('▶️ Dashboard updates resumed (page visible)');
+                }
+            }
+        };
+        
+        document.addEventListener('visibilitychange', this.visibilityHandler);
     }
 
     // Event listener for real-time transaction updates
     setupTransactionListener() {
-        window.addEventListener('transactionCompleted', (event) => {
+        // Remove any existing listener to prevent duplicates
+        if (this.transactionHandler) {
+            window.removeEventListener('transactionCompleted', this.transactionHandler);
+        }
+        
+        // Create new handler
+        this.transactionHandler = (event) => {
             console.log('🔔 Dashboard received transaction completed event');
             const transaction = event.detail.transaction;
             
             // Immediately update stats without API calls (works offline)
             this.updateStatsWithNewTransaction(transaction);
-        });
+        };
+        
+        window.addEventListener('transactionCompleted', this.transactionHandler);
     }
 
     // Immediate local stats update for new transactions (offline-capable)
@@ -1292,9 +1404,17 @@ class EnhancedDashboardManager {
             
             console.log('📱 [FALLBACK] Using local IndexedDB data as last resort');
             
-            // Get all local transactions
-            const allTransactions = await this.safeGetAll('transactions');
-            console.log(`📱 Found ${allTransactions.length} local transactions for offline dashboard refresh`);
+            // Get recent local transactions (last 30 days only for memory efficiency)
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            
+            const allLocalTransactions = await this.safeGetAll('transactions');
+            const allTransactions = allLocalTransactions.filter(t => {
+                const transactionDate = new Date(t.createdAt || t.date);
+                return transactionDate >= thirtyDaysAgo;
+            });
+            
+            console.log(`📱 Found ${allTransactions.length} recent local transactions (last 30 days) for offline dashboard refresh`);
             
             // Reset stats
             this.stats.todayRevenue = 0;
@@ -1418,6 +1538,14 @@ window.loadDashboard = async function() {
         await enhancedDashboardManager.refreshDashboard();
     } else {
         console.error('❌ [DASHBOARD] enhancedDashboardManager not found!');
+    }
+};
+
+// Clean up when navigating away from dashboard
+window.unloadDashboard = function() {
+    console.log('🧹 Unloading dashboard...');
+    if (enhancedDashboardManager && enhancedDashboardManager.isInitialized) {
+        enhancedDashboardManager.destroy();
     }
 };
 
