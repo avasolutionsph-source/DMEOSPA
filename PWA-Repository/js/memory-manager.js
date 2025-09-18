@@ -94,10 +94,12 @@ class MemoryManager {
             const used = Math.round(memory.usedJSHeapSize / 1024 / 1024);
             const limit = Math.round(memory.jsHeapSizeLimit / 1024 / 1024);
             
-            // Only log if memory usage is concerning (>70%) or critical (>90%)
-            // Increased threshold to prevent aggressive data deletion
+            // Adaptive threshold based on performance mode
+            const performanceMode = window.performanceSettings?.settings?.enabled;
+            const threshold = performanceMode ? 0.70 : 0.90; // 70% for performance mode, 90% normal
+            
             const usagePercent = used / limit;
-            if (usagePercent > 0.90) {  // Changed from 0.8 to 0.90 - only cleanup at 90%
+            if (usagePercent > threshold) {
                 console.warn(`⚠️ Critical memory usage: ${used}MB (${Math.round(usagePercent * 100)}%) - running emergency cleanup`);
                 this.emergencyCleanup();
             } else if (usagePercent > 0.70) {  // Changed from 0.5 to 0.70

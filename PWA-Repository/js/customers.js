@@ -12,6 +12,15 @@ class CustomerManager {
         this.isInitializing = false;
         this.isDropdownInitialized = false;
         this.customersLoaded = false;
+        
+        // Virtual scrolling and pagination
+        this.pageSize = 20; // Items per page
+        this.currentPage = 1;
+        this.totalPages = 1;
+        this.displayMode = 'pagination'; // 'pagination' or 'virtual'
+        this.virtualScrollContainer = null;
+        this.renderedItems = new Set();
+        this.scrollObserver = null;
     }
 
     async init() {
@@ -203,28 +212,119 @@ class CustomerManager {
                     </div>
                 `;
             }
+            this.hidePaginationControls();
             return;
         }
 
-        // Use DocumentFragment for better performance with large customer lists
+        // Calculate pagination
+        this.totalPages = Math.ceil(customersToShow.length / this.pageSize);
+        this.currentPage = Math.min(this.currentPage, this.totalPages);
+        
+        // Get customers for current page
+        const startIndex = (this.currentPage - 1) * this.pageSize;
+        const endIndex = startIndex + this.pageSize;
+        const pageCustomers = customersToShow.slice(startIndex, endIndex);
+
+        // Use DocumentFragment for better performance
         const fragment = document.createDocumentFragment();
         const tempDiv = document.createElement('div');
         
-        // Process customers in batches for better performance
-        const batchSize = 20;
-        for (let i = 0; i < customersToShow.length; i += batchSize) {
-            const batch = customersToShow.slice(i, i + batchSize);
-            tempDiv.innerHTML = batch.map(customer => this.createCustomerCard(customer)).join('');
-            
-            // Move all children to fragment
-            while (tempDiv.firstChild) {
-                fragment.appendChild(tempDiv.firstChild);
-            }
+        tempDiv.innerHTML = pageCustomers.map(customer => this.createCustomerCard(customer)).join('');
+        
+        // Move all children to fragment
+        while (tempDiv.firstChild) {
+            fragment.appendChild(tempDiv.firstChild);
         }
         
         // Clear grid and append fragment in one operation
         customersGrid.innerHTML = '';
         customersGrid.appendChild(fragment);
+        
+        // Update pagination controls
+        this.updatePaginationControls(customersToShow.length);
+    }
+    
+    updatePaginationControls(totalItems) {
+        let paginationContainer = document.getElementById('customersPagination');
+        
+        // Create pagination container if it doesn't exist
+        if (!paginationContainer) {
+            const customersSection = document.querySelector('.customers-section') || 
+                                   document.getElementById('customersGrid')?.parentElement;
+            if (!customersSection) return;
+            
+            paginationContainer = document.createElement('div');
+            paginationContainer.id = 'customersPagination';
+            paginationContainer.className = 'pagination-controls';
+            paginationContainer.style.cssText = `
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 10px;
+                margin-top: 20px;
+                padding: 10px;
+            `;
+            customersSection.appendChild(paginationContainer);
+        }
+        
+        // Show pagination only if more than one page
+        if (this.totalPages <= 1) {
+            paginationContainer.style.display = 'none';
+            return;
+        }
+        
+        paginationContainer.style.display = 'flex';
+        paginationContainer.innerHTML = `
+            <button class="btn btn-sm" onclick="window.customerManager.goToPage(1)" 
+                    ${this.currentPage === 1 ? 'disabled' : ''}>
+                <i class="fas fa-angle-double-left"></i>
+            </button>
+            <button class="btn btn-sm" onclick="window.customerManager.previousPage()" 
+                    ${this.currentPage === 1 ? 'disabled' : ''}>
+                <i class="fas fa-angle-left"></i>
+            </button>
+            <span style="margin: 0 10px;">
+                Page ${this.currentPage} of ${this.totalPages} 
+                (${totalItems} customers)
+            </span>
+            <button class="btn btn-sm" onclick="window.customerManager.nextPage()" 
+                    ${this.currentPage === this.totalPages ? 'disabled' : ''}>
+                <i class="fas fa-angle-right"></i>
+            </button>
+            <button class="btn btn-sm" onclick="window.customerManager.goToPage(${this.totalPages})" 
+                    ${this.currentPage === this.totalPages ? 'disabled' : ''}>
+                <i class="fas fa-angle-double-right"></i>
+            </button>
+        `;
+    }
+    
+    hidePaginationControls() {
+        const paginationContainer = document.getElementById('customersPagination');
+        if (paginationContainer) {
+            paginationContainer.style.display = 'none';
+        }
+    }
+    
+    // Pagination methods
+    nextPage() {
+        if (this.currentPage < this.totalPages) {
+            this.currentPage++;
+            this.displayCustomers();
+        }
+    }
+    
+    previousPage() {
+        if (this.currentPage > 1) {
+            this.currentPage--;
+            this.displayCustomers();
+        }
+    }
+    
+    goToPage(page) {
+        if (page >= 1 && page <= this.totalPages) {
+            this.currentPage = page;
+            this.displayCustomers();
+        }
     }
 
     createCustomerCard(customer) {

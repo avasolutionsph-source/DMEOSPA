@@ -36,6 +36,14 @@ class SettingsManager {
         this.addLoggingSection();
         this.displaySyncStatus();
         this.updateLastSyncDisplay();
+        
+        // Initialize performance settings UI for old/slow devices
+        if (window.performanceSettings) {
+            const container = document.getElementById('performanceSettingsContainer');
+            if (container) {
+                container.innerHTML = window.performanceSettings.createToggleUI();
+            }
+        }
     }
 
     setupEventListeners() {

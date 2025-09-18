@@ -5,6 +5,11 @@ class ProductsManager {
     constructor() {
         this.products = [];
         this.editingProduct = null;
+        
+        // Pagination for performance on old devices
+        this.pageSize = 20;
+        this.currentPage = 1;
+        this.totalPages = 1;
     }
 
     async init() {
@@ -118,10 +123,20 @@ class ProductsManager {
                     </td>
                 </tr>
             `;
+            this.hidePaginationControls();
             return;
         }
 
-        tbody.innerHTML = this.products.map(product => `
+        // Calculate pagination
+        this.totalPages = Math.ceil(this.products.length / this.pageSize);
+        this.currentPage = Math.min(this.currentPage, this.totalPages);
+        
+        // Get products for current page
+        const startIndex = (this.currentPage - 1) * this.pageSize;
+        const endIndex = startIndex + this.pageSize;
+        const pageProducts = this.products.slice(startIndex, endIndex);
+
+        tbody.innerHTML = pageProducts.map(product => `
             <tr>
                 <td>
                     <strong>${product.name}</strong>
@@ -159,6 +174,91 @@ class ProductsManager {
                 </td>
             </tr>
         `).join('');
+        
+        // Update pagination controls
+        this.updatePaginationControls();
+    }
+    
+    updatePaginationControls() {
+        let paginationContainer = document.getElementById('productsPagination');
+        
+        // Create pagination container if it doesn't exist
+        if (!paginationContainer) {
+            const productsTable = document.getElementById('productsTableBody')?.closest('table');
+            if (!productsTable) return;
+            
+            paginationContainer = document.createElement('div');
+            paginationContainer.id = 'productsPagination';
+            paginationContainer.className = 'pagination-controls';
+            paginationContainer.style.cssText = `
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 10px;
+                margin-top: 20px;
+                padding: 10px;
+            `;
+            productsTable.parentElement.appendChild(paginationContainer);
+        }
+        
+        // Show pagination only if more than one page
+        if (this.totalPages <= 1) {
+            paginationContainer.style.display = 'none';
+            return;
+        }
+        
+        paginationContainer.style.display = 'flex';
+        paginationContainer.innerHTML = `
+            <button class="btn btn-sm" onclick="productsManager.goToPage(1)" 
+                    ${this.currentPage === 1 ? 'disabled' : ''}>
+                <i class="fas fa-angle-double-left"></i>
+            </button>
+            <button class="btn btn-sm" onclick="productsManager.previousPage()" 
+                    ${this.currentPage === 1 ? 'disabled' : ''}>
+                <i class="fas fa-angle-left"></i>
+            </button>
+            <span style="margin: 0 10px;">
+                Page ${this.currentPage} of ${this.totalPages} 
+                (${this.products.length} items)
+            </span>
+            <button class="btn btn-sm" onclick="productsManager.nextPage()" 
+                    ${this.currentPage === this.totalPages ? 'disabled' : ''}>
+                <i class="fas fa-angle-right"></i>
+            </button>
+            <button class="btn btn-sm" onclick="productsManager.goToPage(${this.totalPages})" 
+                    ${this.currentPage === this.totalPages ? 'disabled' : ''}>
+                <i class="fas fa-angle-double-right"></i>
+            </button>
+        `;
+    }
+    
+    hidePaginationControls() {
+        const paginationContainer = document.getElementById('productsPagination');
+        if (paginationContainer) {
+            paginationContainer.style.display = 'none';
+        }
+    }
+    
+    // Pagination methods
+    nextPage() {
+        if (this.currentPage < this.totalPages) {
+            this.currentPage++;
+            this.displayProducts();
+        }
+    }
+    
+    previousPage() {
+        if (this.currentPage > 1) {
+            this.currentPage--;
+            this.displayProducts();
+        }
+    }
+    
+    goToPage(page) {
+        if (page >= 1 && page <= this.totalPages) {
+            this.currentPage = page;
+            this.displayProducts();
+        }
     }
 
     async editProduct(id) {
