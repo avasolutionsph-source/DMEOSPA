@@ -445,8 +445,8 @@ class CustomerManager {
         // Hide dropdown when clicking outside
         document.addEventListener('click', this.clickOutsideHandler);
 
-        // Load initial customer list
-        this.renderCustomerOptions();
+        // Initially show only "Add New Customer" option
+        this.renderCustomerOptions([], '');
         
         // Mark dropdown as initialized to prevent re-initialization
         this.isDropdownInitialized = true;
@@ -460,10 +460,10 @@ class CustomerManager {
         
         const trimmedSearch = searchTerm.trim();
         
-        // If empty search, show all customers
+        // If empty search, show only "Add New Customer" option
         if (!trimmedSearch) {
-            console.log('📝 Empty search, showing all customers');
-            this.renderCustomerOptions(this.customers, '');
+            console.log('📝 Empty search, showing only Add New Customer option');
+            this.renderCustomerOptions([], '');
             this.showCustomerDropdown();
             return;
         }
@@ -485,7 +485,7 @@ class CustomerManager {
         this.showCustomerDropdown();
     }
 
-    renderCustomerOptions(filteredCustomers = this.customers, searchTerm = '') {
+    renderCustomerOptions(filteredCustomers = [], searchTerm = '') {
         const dropdown = document.getElementById('checkoutCustomerDropdown');
         if (!dropdown) return;
 
@@ -497,40 +497,51 @@ class CustomerManager {
         // Use DocumentFragment for better performance
         const fragment = document.createDocumentFragment();
 
-        // Add filtered customers
-        filteredCustomers.forEach(customer => {
-            const option = document.createElement('div');
-            option.className = 'customer-option';
-            option.dataset.value = customer.id;
-            option.dataset.customerId = customer.id;
-            
-            const visitCount = this.getCustomerVisitCount(customer.id);
-            
-            option.innerHTML = `
-                <span class="customer-name">${customer.firstName} ${customer.lastName}</span>
-                <span class="customer-phone">${customer.phone}</span>
-                ${visitCount > 0 ? `<span class="customer-visits">(${visitCount} visits)</span>` : ''}
-            `;
-            
-            fragment.appendChild(option);
-        });
-
-        // If there's a search term and no matches, show "Add as new customer" option
-        if (searchTerm && filteredCustomers.length === 0) {
-            const addSearchedOption = document.createElement('div');
-            addSearchedOption.className = 'customer-option add-new';
-            addSearchedOption.dataset.value = 'new-from-search';
-            addSearchedOption.dataset.searchTerm = searchTerm;
-            addSearchedOption.innerHTML = `<i class="fas fa-plus-circle"></i> Add "${searchTerm}" as new customer`;
-            fragment.appendChild(addSearchedOption);
-        }
-
-        // Always add "Add New Customer" option at the end
+        // Always add "Add New Customer" option first
         const addNewOption = document.createElement('div');
         addNewOption.className = 'customer-option add-new';
-        addNewOption.dataset.value = 'new';
-        addNewOption.innerHTML = '<i class="fas fa-plus-circle"></i> Add New Customer';
+        addNewOption.dataset.value = searchTerm && filteredCustomers.length === 0 ? 'new-from-search' : 'new';
+        addNewOption.dataset.searchTerm = searchTerm;
+        
+        if (!searchTerm) {
+            // No search term - show plain "Add New Customer"
+            addNewOption.innerHTML = '<i class="fas fa-plus-circle"></i> Add New Customer';
+        } else if (filteredCustomers.length === 0) {
+            // Search term with no matches - show "Add [term] as new customer"
+            addNewOption.innerHTML = `<i class="fas fa-plus-circle"></i> Add "${searchTerm}" as new customer`;
+        } else {
+            // Search term with matches - show plain "Add New Customer"
+            addNewOption.innerHTML = '<i class="fas fa-plus-circle"></i> Add New Customer';
+        }
+        
         fragment.appendChild(addNewOption);
+
+        // Only show existing customers if there's a search term and matches
+        if (searchTerm && filteredCustomers.length > 0) {
+            // Add a separator
+            const separator = document.createElement('div');
+            separator.style.borderTop = '1px solid #e5e7eb';
+            separator.style.margin = '0';
+            fragment.appendChild(separator);
+            
+            // Add filtered customers
+            filteredCustomers.forEach(customer => {
+                const option = document.createElement('div');
+                option.className = 'customer-option';
+                option.dataset.value = customer.id;
+                option.dataset.customerId = customer.id;
+                
+                const visitCount = this.getCustomerVisitCount(customer.id);
+                
+                option.innerHTML = `
+                    <span class="customer-name">${customer.firstName} ${customer.lastName}</span>
+                    <span class="customer-phone">${customer.phone}</span>
+                    ${visitCount > 0 ? `<span class="customer-visits">(${visitCount} visits)</span>` : ''}
+                `;
+                
+                fragment.appendChild(option);
+            });
+        }
 
         // Clear and append all at once
         dropdown.innerHTML = '';
@@ -570,6 +581,7 @@ class CustomerManager {
         console.log('🔽 Attempting to show customer dropdown');
         const dropdown = document.getElementById('checkoutCustomerDropdown');
         const container = document.querySelector('.customer-search-container');
+        const searchInput = document.getElementById('checkoutCustomerSearchInput');
         
         console.log('📦 Dropdown element:', dropdown);
         console.log('📦 Container element:', container);
@@ -577,6 +589,12 @@ class CustomerManager {
         if (dropdown && container) {
             dropdown.style.display = 'block';
             container.classList.add('active');
+            
+            // On focus, if empty, show only "Add New Customer"
+            if (searchInput && !searchInput.value.trim()) {
+                this.renderCustomerOptions([], '');
+            }
+            
             console.log('✅ Dropdown shown successfully');
         } else {
             console.error('❌ Cannot show dropdown - elements not found');
