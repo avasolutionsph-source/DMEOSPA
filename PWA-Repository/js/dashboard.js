@@ -720,11 +720,18 @@ class EnhancedDashboardManager {
 
     async initializeRevenueChart(retryCount = 0) {
         const chartRenderStart = performance.now();
-        const ctx = document.getElementById('revenueChart');
+        const canvas = document.getElementById('revenueChart');
         const loadingIndicator = document.getElementById('chartLoadingIndicator');
         
-        if (!ctx) {
+        if (!canvas) {
             console.error('❌ Revenue chart canvas element not found');
+            return;
+        }
+        
+        // Get 2D context for Chart.js
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            console.error('❌ Could not get 2D context from canvas');
             return;
         }
         
@@ -772,7 +779,8 @@ class EnhancedDashboardManager {
             this.revenueChart.destroy();
         }
 
-        this.revenueChart = new Chart(ctx, {
+        try {
+            this.revenueChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: revenueData.labels,
@@ -854,12 +862,20 @@ class EnhancedDashboardManager {
                     }
                 }
             }
-        });
-        
-        // Hide loading indicator after chart is created
-        const loadingIndicator = document.getElementById('chartLoadingIndicator');
-        if (loadingIndicator) {
-            loadingIndicator.style.display = 'none';
+            });
+            
+            // Hide loading indicator after chart is created
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
+            
+            console.warn('✅ Chart created successfully');
+            
+        } catch (error) {
+            console.error('❌ Failed to create chart:', error);
+            if (loadingIndicator) {
+                loadingIndicator.innerHTML = '<p style="color: #d32f2f;">Error creating chart</p>';
+            }
         }
         
         this.performanceMetrics.chartRenderTime = performance.now() - chartRenderStart;
@@ -925,9 +941,20 @@ class EnhancedDashboardManager {
             
             let dayRevenue = 0;
             
-            // Use real transaction data
+            // Use real transaction data with better date parsing
             dayRevenue = transactions
-                .filter(t => t.date && new Date(t.date).toISOString().split('T')[0] === dateStr)
+                .filter(t => {
+                    if (!t.date) return false;
+                    try {
+                        const transactionDate = new Date(t.date);
+                        // Check if date is valid
+                        if (isNaN(transactionDate.getTime())) return false;
+                        return transactionDate.toISOString().split('T')[0] === dateStr;
+                    } catch (e) {
+                        console.warn('Invalid date in transaction:', t.date);
+                        return false;
+                    }
+                })
                 .reduce((sum, t) => sum + (parseFloat(t.total) || 0), 0);
             
             values.push(dayRevenue);

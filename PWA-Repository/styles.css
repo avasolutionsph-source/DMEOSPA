@@ -1291,7 +1291,7 @@ body {
 }
 
 .chart-container canvas {
-    max-height: 240px !important;
+    height: 240px;
     border-radius: var(--border-radius-sm);
 }
 
