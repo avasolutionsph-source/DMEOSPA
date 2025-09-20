@@ -561,9 +561,14 @@ class CustomerManager {
             } else if (value === 'new-from-search' && searchTerm) {
                 this.addNewCustomerFromSearch(searchTerm);
             } else if (customerId) {
-                const customer = this.customers.find(c => c.id === customerId);
+                const customer = this.customers.find(c => 
+                    String(c.id) === String(customerId) || 
+                    String(c._id) === String(customerId)
+                );
                 if (customer) {
                     this.selectCustomer(customer);
+                } else {
+                    console.error('Customer not found with ID:', customerId);
                 }
             }
         };
