@@ -1345,7 +1345,7 @@ class SyncManager {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${this.authToken}`
+                                'Authorization': `Bearer ${this.getAuthToken()}`
                             },
                             body: JSON.stringify(serverRecord)
                         });
@@ -1389,7 +1389,7 @@ class SyncManager {
             
             const response = await fetch(`${this.apiUrl}/api/attendance?limit=500`, {
                 headers: {
-                    'Authorization': `Bearer ${this.authToken}`
+                    'Authorization': `Bearer ${this.getAuthToken()}`
                 }
             });
             

@@ -85,7 +85,6 @@ class EnhancedDashboardManager {
 
     async init() {
         this.performanceMetrics.initStartTime = performance.now();
-        console.log('🚀 Initializing Enhanced Dashboard Manager...');
         
         try {
             // Ensure database is ready
@@ -104,7 +103,6 @@ class EnhancedDashboardManager {
             this.isInitialized = true;
             this.performanceMetrics.initEndTime = performance.now();
             this.logPerformanceMetrics();
-            console.log('✅ Enhanced Dashboard Manager initialized successfully');
             
         } catch (error) {
             console.error('❌ Failed to initialize Enhanced Dashboard Manager:', error);
@@ -114,7 +112,6 @@ class EnhancedDashboardManager {
 
     async loadAllDashboardData() {
         const dataLoadStart = performance.now();
-        console.log('📊 Loading comprehensive dashboard data...');
         
         try {
             // Load all data in parallel for better performance
@@ -131,7 +128,6 @@ class EnhancedDashboardManager {
             this.updateBusinessIntelligence();
             
             this.performanceMetrics.dataLoadTime = performance.now() - dataLoadStart;
-            console.log('✅ All dashboard data loaded successfully');
             
         } catch (error) {
             console.error('❌ Error loading dashboard data:', error);
@@ -144,7 +140,6 @@ class EnhancedDashboardManager {
     
     async loadFinancialPerformance() {
         try {
-            console.log('💰 Loading financial performance data...');
             
             // Get authentication token
             const token = localStorage.getItem('authToken') || '';
@@ -152,7 +147,6 @@ class EnhancedDashboardManager {
             // PRIORITY FIX: Get stats from backend business API for accurate data
             // SECURITY: Only make API call if we have a valid user token
             if (!token) {
-                console.log('⚠️ [SECURITY] No valid user token found, skipping backend API call');
                 // Continue to fallback code instead of throwing error
             } else {
                 try {
@@ -165,7 +159,6 @@ class EnhancedDashboardManager {
                 
                 if (backendStatsResponse.ok) {
                     const backendStats = await backendStatsResponse.json();
-                    console.log('🌐 [DASHBOARD] Using backend business stats for accuracy:', backendStats);
                     
                     // Use backend calculated stats instead of local calculations
                     this.stats.todayRevenue = backendStats.todaySales || 0;
@@ -176,13 +169,11 @@ class EnhancedDashboardManager {
                         ? backendStats.totalSales / backendStats.totalTransactions 
                         : 0;
                     
-                    console.log('✅ [DASHBOARD] Revenue data updated from backend API - no local calculation needed');
                     // Update the display with backend data
                     this.updateAllStatsDisplay();
                     return; // Skip local calculations
                 }
                 } catch (backendError) {
-                    console.log('⚠️ [DASHBOARD] Backend business stats unavailable, falling back to local calculation');
                 }
             }
             
@@ -202,7 +193,6 @@ class EnhancedDashboardManager {
                         return transactionDate >= thirtyDaysAgo;
                     });
                     
-                    console.log(`✅ [DASHBOARD] Loaded ${allTransactions.length} recent transactions (last 30 days) from ${result.source || 'API'}`);
                 } else {
                     console.error('❌ [DASHBOARD] Failed to load transactions:', result.error);
                     allTransactions = [];
@@ -254,7 +244,6 @@ class EnhancedDashboardManager {
             this.stats.giftCertRevenue = activeGiftCerts.reduce((sum, gc) => sum + (gc.amount || 0), 0);
             this.stats.giftCertCount = activeGiftCerts.length;
             
-            console.log('✅ Financial performance data loaded');
             this.updateAllStatsDisplay(); // Update UI with calculated stats
             
         } catch (error) {
@@ -268,7 +257,6 @@ class EnhancedDashboardManager {
     
     async loadOperationsData() {
         try {
-            console.log('🏢 Loading operations data...');
             
             // Appointments data - with error handling for missing store
             const appointments = await this.safeGetAll('appointments');
@@ -335,7 +323,6 @@ class EnhancedDashboardManager {
                 }
             }
             
-            console.log('✅ Operations data loaded');
             
         } catch (error) {
             console.error('❌ Error loading operations data:', error);
@@ -348,7 +335,6 @@ class EnhancedDashboardManager {
     
     async loadStaffAttendanceData() {
         try {
-            console.log('👥 Loading staff and attendance data...');
             
             // Get employees and attendance records
             const employees = await this.safeGetAll('employees');
@@ -401,7 +387,6 @@ class EnhancedDashboardManager {
             this.stats.earlyDepartures = todayAttendance.filter(a => a.earlyDeparture).length;
             this.stats.attendanceIssues = this.stats.lateArrivals + this.stats.earlyDepartures;
             
-            console.log('✅ Staff and attendance data loaded');
             
         } catch (error) {
             console.error('❌ Error loading staff attendance data:', error);
@@ -414,7 +399,6 @@ class EnhancedDashboardManager {
     
     async loadInventoryData() {
         try {
-            console.log('📦 Loading inventory data for dashboard...');
             
             // CRITICAL: Use same smart caching as POS to preserve field changes
             let inventory = [];
@@ -429,11 +413,9 @@ class EnhancedDashboardManager {
                 });
                 
                 if (recentItems.length > 0) {
-                    console.log('📦 [DASHBOARD] Using local IndexedDB data to preserve recent POS changes');
                     inventory = localInventory;
                 } else {
                     // Only load from API if no recent changes (prevents field overwrite)
-                    console.log('📦 [DASHBOARD] Loading inventory from API (no recent changes)');
                     try {
                         const inventoryResult = await window.HybridAPIClient.getInventory();
                         if (inventoryResult.success) {
@@ -468,7 +450,6 @@ class EnhancedDashboardManager {
             // Today's usage (simplified - would need usage tracking)
             this.stats.todayUsage = 0; // Actual usage - no random data
             
-            console.log('✅ Inventory data loaded');
             
         } catch (error) {
             console.error('❌ Error loading inventory data:', error);
@@ -481,7 +462,6 @@ class EnhancedDashboardManager {
     
     async loadActivityData() {
         try {
-            console.log('📋 Loading activity data...');
             
             // Load recent transactions
             await this.loadRecentTransactions();
@@ -492,7 +472,6 @@ class EnhancedDashboardManager {
             // Load system alerts
             await this.loadSystemAlerts();
             
-            console.log('✅ Activity data loaded');
             
         } catch (error) {
             console.error('❌ Error loading activity data:', error);
@@ -637,17 +616,8 @@ class EnhancedDashboardManager {
     // ========================================
     
     updateAllStatsDisplay() {
-        console.log('🎨 [DASHBOARD] ✅ UPDATING ALL STATS DISPLAY');
-        console.log('📊 [DASHBOARD] Current stats values:', {
-            todayRevenue: this.stats.todayRevenue,
-            weeklyRevenue: this.stats.weeklyRevenue,
-            monthlyRevenue: this.stats.monthlyRevenue,
-            avgTransaction: this.stats.avgTransaction
-        });
-        
         try {
             // Financial Performance
-            console.log('💰 [DASHBOARD] Updating revenue displays...');
             this.updateElement('todayRevenue', this.formatCurrency(this.stats.todayRevenue));
             this.updateElement('weeklyRevenue', this.formatCurrency(this.stats.weeklyRevenue));
             this.updateElement('monthlyRevenue', this.formatCurrency(this.stats.monthlyRevenue));
@@ -689,7 +659,6 @@ class EnhancedDashboardManager {
             this.updateElementSafe('inventoryValue', this.formatCurrency(this.stats.inventoryValue));
             this.updateElementSafe('todayUsage', this.stats.todayUsage);
             
-            console.log('✅ All dashboard statistics updated');
             
         } catch (error) {
             console.error('❌ Error updating stats display:', error);
@@ -756,7 +725,6 @@ class EnhancedDashboardManager {
         
         // Wait for Chart.js if not loaded yet
         if (typeof Chart === 'undefined') {
-            console.log('⏳ Waiting for Chart.js to load...');
             setTimeout(() => this.initializeRevenueChart(), 500);
             return;
         }
@@ -766,7 +734,6 @@ class EnhancedDashboardManager {
         
         // Skip rendering if data hasn't changed
         if (this.lastDataHash === dataHash && this.revenueChart) {
-            console.log('📊 Skipping chart render - data unchanged');
             return;
         }
         
@@ -891,12 +858,9 @@ class EnhancedDashboardManager {
             
             if (result.success) {
                 transactions = result.data || [];
-                console.log(`📊 Loaded ${transactions.length} transactions from ${result.source || 'API'} for chart`);
             } else {
-                console.log('📊 Could not load transactions:', result.error);
             }
         } catch (error) {
-            console.log('📊 Error loading transactions for chart:', error);
         }
         
         // Generate labels for the specified period
@@ -933,7 +897,6 @@ class EnhancedDashboardManager {
             values.push(dayRevenue);
         }
         
-        console.log('📊 Chart data generated:', { period: this.currentChartPeriod, days, labels: labels.length, values: values.length, transactionCount: transactions.length });
         return { labels, values };
     }
     
@@ -1023,7 +986,6 @@ class EnhancedDashboardManager {
     }
 
     async updateChartPeriod(period) {
-        console.log(`📊 Updating chart period to: ${period}`);
         this.currentChartPeriod = period;
         
         // Force chart refresh by clearing the data hash
@@ -1041,14 +1003,12 @@ class EnhancedDashboardManager {
         const element = document.getElementById(id);
         if (element) {
             const oldValue = element.textContent;
-            console.log(`🎯 [DASHBOARD] BEFORE UPDATE - Element '${id}': '${oldValue}' → '${value}'`);
             element.textContent = value;
             
             // Verify the update actually took
             setTimeout(() => {
                 const newValue = document.getElementById(id)?.textContent;
                 if (newValue === value) {
-                    console.log(`✅ [DASHBOARD] CONFIRMED - Element '${id}' successfully updated to '${newValue}'`);
                 } else {
                     console.error(`❌ [DASHBOARD] FAILED - Element '${id}' was overwritten! Expected '${value}', got '${newValue}'`);
                 }
@@ -1056,7 +1016,6 @@ class EnhancedDashboardManager {
         } else {
             console.warn(`⚠️ [DASHBOARD] Element '${id}' not found in DOM`);
             // Let's check what elements actually exist
-            console.log('🔍 [DASHBOARD] Available elements with similar IDs:', 
                 Array.from(document.querySelectorAll('[id*="revenue"], [id*="Revenue"], [id*="today"], [id*="Today"]'))
                     .map(el => ({ id: el.id, text: el.textContent.substring(0, 20) }))
             );
@@ -1088,7 +1047,6 @@ class EnhancedDashboardManager {
                 console.warn(`⚠️ [DASHBOARD] Skipping update of '${id}' - element is in a modal`);
                 return;
             }
-            console.log(`🎯 [DASHBOARD] Updated optional element '${id}' to '${value}'`);
             element.textContent = value;
         }
         // No warning for missing optional elements
@@ -1134,18 +1092,15 @@ class EnhancedDashboardManager {
     }
 
     showErrorState() {
-        console.log('⚠️ Showing dashboard error state');
         // Implementation for error state UI
     }
 
     async refreshDashboard() {
-        console.log('🔄 Manually refreshing dashboard...');
         
         // Clear cache to ensure fresh data
         if (window.HybridAPIClient && window.HybridAPIClient.invalidateTransactionCache) {
             try {
                 await window.HybridAPIClient.invalidateTransactionCache();
-                console.log('🗑️ Cache cleared for fresh dashboard data');
             } catch (error) {
                 console.warn('⚠️ Failed to clear cache:', error);
             }
@@ -1159,15 +1114,11 @@ class EnhancedDashboardManager {
         
         if (initStartTime && initEndTime) {
             const totalInitTime = initEndTime - initStartTime;
-            console.log('⚡ Dashboard Performance Metrics:');
-            console.log(`   📊 Total Initialization: ${totalInitTime.toFixed(2)}ms`);
             
             if (dataLoadTime) {
-                console.log(`   📈 Data Loading: ${dataLoadTime.toFixed(2)}ms (${((dataLoadTime/totalInitTime)*100).toFixed(1)}%)`);
             }
             
             if (chartRenderTime) {
-                console.log(`   📊 Chart Rendering: ${chartRenderTime.toFixed(2)}ms (${((chartRenderTime/totalInitTime)*100).toFixed(1)}%)`);
             }
             
             // Performance grade
@@ -1176,12 +1127,10 @@ class EnhancedDashboardManager {
             else if (totalInitTime > 1000) grade = 'C';
             else if (totalInitTime > 500) grade = 'B';
             
-            console.log(`   🏆 Performance Grade: ${grade} ${totalInitTime < 500 ? '(Excellent)' : totalInitTime < 1000 ? '(Good)' : totalInitTime < 2000 ? '(Acceptable)' : '(Needs Optimization)'}`);
         }
     }
 
     destroy() {
-        console.log('🧹 Cleaning up dashboard resources...');
         
         // Clear interval
         if (this.updateInterval) {
@@ -1230,7 +1179,6 @@ class EnhancedDashboardManager {
             window.gc();
         }
         
-        console.log('✅ Dashboard cleanup complete');
     }
     
     removeEventListeners() {
@@ -1255,13 +1203,11 @@ class EnhancedDashboardManager {
                 if (this.updateInterval) {
                     clearInterval(this.updateInterval);
                     this.updateInterval = null;
-                    console.log('⏸️ Dashboard updates paused (page hidden)');
                 }
             } else if (document.visibilityState === 'visible' && this.isPageActive()) {
                 // Resume updates when page is visible
                 if (!this.updateInterval && this.isInitialized) {
                     this.setupRefreshTimer();
-                    console.log('▶️ Dashboard updates resumed (page visible)');
                 }
             }
         };
@@ -1278,7 +1224,6 @@ class EnhancedDashboardManager {
         
         // Create new handler
         this.transactionHandler = (event) => {
-            console.log('🔔 Dashboard received transaction completed event');
             const transaction = event.detail.transaction;
             
             // Immediately update stats without API calls (works offline)
@@ -1290,14 +1235,12 @@ class EnhancedDashboardManager {
 
     // Immediate local stats update for new transactions (offline-capable)
     updateStatsWithNewTransaction(transaction) {
-        console.log('🚀 [DASHBOARD] updateStatsWithNewTransaction called!');
         
         if (!transaction) {
             console.error('❌ [DASHBOARD] No transaction data provided');
             return;
         }
         
-        console.log('📊 [DASHBOARD] Processing transaction:', {
             id: transaction.id,
             total: transaction.total,
             employee: transaction.employee?.name || 'No Employee',
@@ -1307,13 +1250,11 @@ class EnhancedDashboardManager {
         const today = new Date().toISOString().split('T')[0];
         const transactionDate = new Date(transaction.createdAt).toISOString().split('T')[0];
         
-        console.log('📅 [DASHBOARD] Date check:', {
             today: today,
             transactionDate: transactionDate,
             isToday: transactionDate === today
         });
         
-        console.log('💰 [DASHBOARD] Stats BEFORE update:', {
             todayRevenue: this.stats.todayRevenue,
             todayTransactions: this.stats.todayTransactions
         });
@@ -1321,13 +1262,11 @@ class EnhancedDashboardManager {
         if (transactionDate === today) {
             this.stats.todayRevenue += transaction.total;
             this.stats.todayTransactions += 1;
-            console.log('💰 [DASHBOARD] Stats AFTER update:', {
                 todayRevenue: this.stats.todayRevenue,
                 todayTransactions: this.stats.todayTransactions,
                 addedAmount: transaction.total
             });
         } else {
-            console.log('⚠️ [DASHBOARD] Transaction not from today, skipping update');
         }
         
         // Update weekly/monthly stats
@@ -1350,15 +1289,12 @@ class EnhancedDashboardManager {
         }
         
         // Update UI immediately
-        console.log('🎨 [DASHBOARD] Calling updateAllStatsDisplay to refresh UI');
         this.updateAllStatsDisplay();
         
-        console.log('✅ [DASHBOARD] Dashboard stats updated immediately with transaction');
     }
 
     // Fallback method to refresh stats from local data only (fully offline)
     async refreshStatsFromLocalData() {
-        console.log('🔄 Refreshing dashboard from local data (trying backend first)');
         
         try {
             // CRITICAL FIX: Try backend API first, even in "fallback" mode
@@ -1366,7 +1302,6 @@ class EnhancedDashboardManager {
             
             // SECURITY: Only make API call if we have a valid user token
             if (!token) {
-                console.log('⚠️ [SECURITY] No valid user token found, skipping backend API call');
                 throw new Error('No authentication token');
             }
             
@@ -1380,7 +1315,6 @@ class EnhancedDashboardManager {
                 
                 if (backendStatsResponse.ok) {
                     const backendStats = await backendStatsResponse.json();
-                    console.log('🌐 [FALLBACK] Backend API available, using accurate data:', backendStats);
                     
                     // Use backend calculated stats instead of local calculations
                     this.stats.todayRevenue = backendStats.todaySales || 0;
@@ -1393,11 +1327,9 @@ class EnhancedDashboardManager {
                     
                     // Update UI and return - no need for local calculations
                     this.updateAllStatsDisplay();
-                    console.log('✅ [FALLBACK] Successfully used backend data');
                     return;
                 }
             } catch (backendError) {
-                console.log('⚠️ [FALLBACK] Backend unavailable, falling back to local data');
             }
             
             // TRUE FALLBACK: Only use local data if backend is completely unavailable
@@ -1406,7 +1338,6 @@ class EnhancedDashboardManager {
                 return;
             }
             
-            console.log('📱 [FALLBACK] Using local IndexedDB data as last resort');
             
             // Get recent local transactions (last 30 days only for memory efficiency)
             const thirtyDaysAgo = new Date();
@@ -1418,7 +1349,6 @@ class EnhancedDashboardManager {
                 return transactionDate >= thirtyDaysAgo;
             });
             
-            console.log(`📱 Found ${allTransactions.length} recent local transactions (last 30 days) for offline dashboard refresh`);
             
             // Reset stats
             this.stats.todayRevenue = 0;
@@ -1464,7 +1394,6 @@ class EnhancedDashboardManager {
             // Update UI
             this.updateAllStatsDisplay();
             
-            console.log('✅ Dashboard refreshed from local data:', {
                 today: this.stats.todayRevenue,
                 weekly: this.stats.weeklyRevenue,
                 monthly: this.stats.monthlyRevenue,
@@ -1490,16 +1419,13 @@ window.refreshDashboard = async function() {
 };
 
 window.exportDailySales = function() {
-    console.log('📊 Exporting daily sales data...');
     // Implementation for sales export
 };
 
 window.runDataSync = function() {
-    console.log('🔄 Running data synchronization...');
     if (window.syncManager && typeof window.syncManager.syncAll === 'function') {
         window.syncManager.syncAll();
     } else {
-        console.log('Sync manager not available');
     }
 };
 
@@ -1507,12 +1433,9 @@ window.runDataSync = function() {
 
 // Auto-initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('📋 [DASHBOARD] DOM Content Loaded, checking for dashboard element...');
     const dashboardElement = document.getElementById('dashboard');
-    console.log('📋 [DASHBOARD] Dashboard element found:', !!dashboardElement);
     
     if (dashboardElement) {
-        console.log('🚀 [DASHBOARD] Initializing dashboard manager...');
         enhancedDashboardManager.init();
     } else {
         console.warn('⚠️ [DASHBOARD] Dashboard element not found on DOM load, will try again when navigated to');
@@ -1521,13 +1444,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Also try to initialize when the dashboard page is loaded/shown
 window.loadDashboard = async function() {
-    console.log('🔄 Loading dashboard data...');
     
     // Clear cache for fresh data when navigating to dashboard
     if (window.HybridAPIClient && window.HybridAPIClient.invalidateTransactionCache) {
         try {
             await window.HybridAPIClient.invalidateTransactionCache();
-            console.log('🗑️ Cache cleared for fresh dashboard navigation');
         } catch (error) {
             console.warn('⚠️ Failed to clear cache on navigation:', error);
         }
@@ -1535,10 +1456,8 @@ window.loadDashboard = async function() {
     
     // CRITICAL: Always ensure dashboard is initialized when loading
     if (enhancedDashboardManager && !enhancedDashboardManager.isInitialized) {
-        console.log('🚀 [DASHBOARD] Dashboard not initialized, initializing now...');
         await enhancedDashboardManager.init();
     } else if (enhancedDashboardManager) {
-        console.log('🔄 [DASHBOARD] Dashboard already initialized, refreshing...');
         await enhancedDashboardManager.refreshDashboard();
     } else {
         console.error('❌ [DASHBOARD] enhancedDashboardManager not found!');
@@ -1547,7 +1466,6 @@ window.loadDashboard = async function() {
 
 // Clean up when navigating away from dashboard
 window.unloadDashboard = function() {
-    console.log('🧹 Unloading dashboard...');
     if (enhancedDashboardManager && enhancedDashboardManager.isInitialized) {
         enhancedDashboardManager.destroy();
     }
@@ -1558,11 +1476,9 @@ window.enhancedDashboardManager = enhancedDashboardManager;
 
 // Manual dashboard refresh function (can be called from anywhere)
 window.forceRefreshDashboard = async function() {
-    console.log('🔄 [FORCE] Manual dashboard refresh triggered');
     if (window.enhancedDashboardManager) {
         try {
             await window.enhancedDashboardManager.refreshDashboard();
-            console.log('✅ [FORCE] Dashboard force refreshed successfully');
         } catch (error) {
             console.error('❌ [FORCE] Dashboard force refresh failed:', error);
         }
@@ -1578,4 +1494,3 @@ window.forceRefreshDashboard = async function() {
 // REMOVED: Duplicate global transaction listener that was causing data duplication
 // The class already has a proper listener in setupTransactionListener() method
 
-console.log('✅ Enhanced Dashboard Manager loaded successfully');
