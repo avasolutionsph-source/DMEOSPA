@@ -466,7 +466,7 @@ class EnhancedDashboardManager {
             );
             
             // Today's usage (simplified - would need usage tracking)
-            this.stats.todayUsage = Math.floor(Math.random() * 10); // Placeholder
+            this.stats.todayUsage = 0; // Actual usage - no random data
             
             console.log('✅ Inventory data loaded');
             
@@ -753,6 +753,13 @@ class EnhancedDashboardManager {
         const chartRenderStart = performance.now();
         const ctx = document.getElementById('revenueChart');
         if (!ctx) return;
+        
+        // Wait for Chart.js if not loaded yet
+        if (typeof Chart === 'undefined') {
+            console.log('⏳ Waiting for Chart.js to load...');
+            setTimeout(() => this.initializeRevenueChart(), 500);
+            return;
+        }
 
         const revenueData = await this.getRevenueChartData();
         const dataHash = this.hashData(revenueData);
