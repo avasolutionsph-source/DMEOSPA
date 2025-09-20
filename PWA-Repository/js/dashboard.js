@@ -718,22 +718,50 @@ class EnhancedDashboardManager {
         }
     }
 
-    async initializeRevenueChart() {
+    async initializeRevenueChart(retryCount = 0) {
         const chartRenderStart = performance.now();
         const ctx = document.getElementById('revenueChart');
-        if (!ctx) return;
+        const loadingIndicator = document.getElementById('chartLoadingIndicator');
         
-        // Wait for Chart.js if not loaded yet
+        if (!ctx) {
+            console.error('❌ Revenue chart canvas element not found');
+            return;
+        }
+        
+        // Show loading indicator on first attempt
+        if (retryCount === 0 && loadingIndicator) {
+            loadingIndicator.style.display = 'block';
+        }
+        
+        // Wait for Chart.js if not loaded yet (max 10 retries = 5 seconds)
         if (typeof Chart === 'undefined') {
-            setTimeout(() => this.initializeRevenueChart(), 500);
+            if (retryCount < 10) {
+                console.warn(`⏳ Waiting for Chart.js to load... (attempt ${retryCount + 1}/10)`);
+                setTimeout(() => this.initializeRevenueChart(retryCount + 1), 500);
+            } else {
+                console.error('❌ Chart.js failed to load after 5 seconds');
+                if (loadingIndicator) {
+                    loadingIndicator.innerHTML = '<p style="color: #d32f2f;">Failed to load chart library</p>';
+                }
+            }
             return;
         }
 
         const revenueData = await this.getRevenueChartData();
         const dataHash = this.hashData(revenueData);
         
+        // Log chart data for debugging
+        console.warn('📊 Chart data received:', {
+            labels: revenueData.labels,
+            values: revenueData.values,
+            hasData: revenueData.values.some(v => v > 0)
+        });
+        
         // Skip rendering if data hasn't changed
         if (this.lastDataHash === dataHash && this.revenueChart) {
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
             return;
         }
         
@@ -828,6 +856,12 @@ class EnhancedDashboardManager {
             }
         });
         
+        // Hide loading indicator after chart is created
+        const loadingIndicator = document.getElementById('chartLoadingIndicator');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
+        
         this.performanceMetrics.chartRenderTime = performance.now() - chartRenderStart;
     }
 
@@ -859,8 +893,10 @@ class EnhancedDashboardManager {
             if (result.success) {
                 transactions = result.data || [];
             } else {
+                console.error('❌ Failed to get transactions for chart:', result.error);
             }
         } catch (error) {
+            console.error('❌ Error fetching transactions for chart:', error);
         }
         
         // Generate labels for the specified period
