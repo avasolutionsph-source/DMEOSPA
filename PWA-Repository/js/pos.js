@@ -2120,7 +2120,9 @@ class POSSystem {
             } catch (error) {
                 console.error('Customer validation failed:', error);
                 hideLoading();
+                setButtonLoading('confirmCheckoutBtn', false);
                 showError(error.message);
+                this.isProcessingCheckout = false;
                 return;
             }
 
