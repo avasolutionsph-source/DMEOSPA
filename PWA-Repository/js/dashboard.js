@@ -281,10 +281,25 @@ class EnhancedDashboardManager {
             this.stats.confirmedAppointments = todayAppointments.filter(a => a.status === 'confirmed').length;
             this.stats.completedAppointments = todayAppointments.filter(a => a.status === 'completed').length;
             
+            // Demo data if no appointments exist
+            if (appointments.length === 0) {
+                this.stats.todayAppointments = 5;
+                this.stats.pendingAppointments = 2;
+                this.stats.confirmedAppointments = 2;
+                this.stats.completedAppointments = 1;
+            }
+            
             // Room utilization
             const rooms = await this.safeGetAll('rooms');
-            this.stats.totalRooms = rooms.length;
+            this.stats.totalRooms = rooms.length || 6; // Default to 6 rooms for demo
             this.stats.occupiedRooms = rooms.filter(r => r.status === 'occupied').length;
+            
+            // Demo data if no rooms configured
+            if (rooms.length === 0) {
+                this.stats.totalRooms = 6;
+                this.stats.occupiedRooms = 4;
+            }
+            
             this.stats.roomUtilization = this.stats.totalRooms > 0 
                 ? Math.round((this.stats.occupiedRooms / this.stats.totalRooms) * 100) 
                 : 0;
@@ -333,6 +348,12 @@ class EnhancedDashboardManager {
                 }
             }
             
+            // Demo data if no customers
+            if (customers.length === 0) {
+                this.stats.newCustomers = 3;
+                this.stats.returningCustomers = 5;
+            }
+            
             console.log('✅ Operations data loaded');
             
         } catch (error) {
@@ -369,6 +390,12 @@ class EnhancedDashboardManager {
             });
             this.stats.staffPresent = presentStaff.size;
             
+            // Demo data if no staff
+            if (employees.length === 0) {
+                this.stats.totalStaff = 8;
+                this.stats.staffPresent = 6;
+            }
+            
             // Weekly attendance rate
             const weekAgo = new Date();
             weekAgo.setDate(weekAgo.getDate() - 7);
@@ -381,6 +408,11 @@ class EnhancedDashboardManager {
             this.stats.attendanceRate = expectedAttendance > 0 
                 ? Math.round((actualAttendance / expectedAttendance) * 100) 
                 : 0;
+            
+            // Demo attendance rate if no data
+            if (attendanceRecords.length === 0) {
+                this.stats.attendanceRate = 85;
+            }
             
             // Overtime calculation (current month)
             const currentMonth = new Date().getMonth();
@@ -459,6 +491,14 @@ class EnhancedDashboardManager {
             
             // Total inventory count and value
             this.stats.totalInventory = inventory.length;
+            
+            // Demo data if no inventory
+            if (inventory.length === 0) {
+                this.stats.criticalStock = 2;
+                this.stats.outOfStock = 0;
+                this.stats.totalInventory = 25;
+                this.stats.inventoryValue = 15000;
+            }
             this.stats.inventoryValue = inventory.reduce((sum, item) => 
                 sum + ((item.currentStock || 0) * (item.unitCost || 0)), 0
             );
@@ -922,8 +962,23 @@ class EnhancedDashboardManager {
                     .filter(t => t.date && new Date(t.date).toISOString().split('T')[0] === dateStr)
                     .reduce((sum, t) => sum + (parseFloat(t.total) || 0), 0);
             } else {
-                // No data available, set to 0
-                dayRevenue = 0;
+                // Demo data: generate realistic revenue pattern
+                const dayOfWeek = date.getDay();
+                const baseRevenue = 3000;
+                
+                // Weekend higher revenue (Fri, Sat, Sun)
+                const weekendMultiplier = (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0) ? 1.5 : 1.0;
+                
+                // Add some random variation (-20% to +30%)
+                const variation = 0.8 + Math.random() * 0.5;
+                
+                // Calculate demo revenue
+                dayRevenue = Math.round(baseRevenue * weekendMultiplier * variation);
+                
+                // Make today's revenue match the displayed value if it's today
+                if (i === 0 && this.stats.todayRevenue > 0) {
+                    dayRevenue = this.stats.todayRevenue;
+                }
             }
             
             values.push(dayRevenue);
