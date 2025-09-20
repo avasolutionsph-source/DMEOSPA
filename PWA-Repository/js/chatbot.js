@@ -627,17 +627,23 @@ Need help with anything specific? Just ask! 😊`;
     async handleCustomerLookup(customerName) {
         try {
             await this.refreshDataCache();
-            const customer = this.dataCache.customers?.find(c => 
-                c.name.toLowerCase() === customerName.toLowerCase()
-            );
+            const customer = this.dataCache.customers?.find(c => {
+                const fullName = `${c.firstName} ${c.lastName}`.toLowerCase();
+                return fullName === customerName.toLowerCase() || 
+                       c.firstName?.toLowerCase() === customerName.toLowerCase() ||
+                       c.lastName?.toLowerCase() === customerName.toLowerCase();
+            });
             
             if (customer) {
-                return `👤 **Customer: ${customer.name}**\n\n` +
+                const fullName = `${customer.firstName} ${customer.lastName}`;
+                const isVIP = customer.vipStatus || (customer.totalSpent && customer.totalSpent > 5000);
+                
+                return `👤 **Customer: ${fullName}**\n\n` +
                        `📧 Email: ${customer.email || 'Not provided'}\n` +
                        `📱 Phone: ${customer.phone || 'Not provided'}\n` +
                        `📅 Last Visit: ${customer.lastVisit ? new Date(customer.lastVisit).toLocaleDateString() : 'No recent visits'}\n` +
                        `💰 Total Spent: ₱${customer.totalSpent || 0}\n` +
-                       `🏆 Status: ${customer.vipStatus ? 'VIP Customer' : 'Regular Customer'}`;
+                       `🏆 Status: ${isVIP ? 'VIP Customer' : 'Regular Customer'}`;
             } else {
                 return `❌ Customer "${customerName}" not found in the database.`;
             }
@@ -651,24 +657,28 @@ Need help with anything specific? Just ask! 😊`;
     async handleEmployeeLookup(employeeName) {
         try {
             await this.refreshDataCache();
-            const employee = this.dataCache.employees?.find(e => 
-                e.name.toLowerCase() === employeeName.toLowerCase()
-            );
+            const employee = this.dataCache.employees?.find(e => {
+                const fullName = `${e.firstName} ${e.lastName}`.toLowerCase();
+                return fullName === employeeName.toLowerCase() || 
+                       e.firstName?.toLowerCase() === employeeName.toLowerCase() ||
+                       e.lastName?.toLowerCase() === employeeName.toLowerCase();
+            });
             
             if (employee) {
                 // Get additional data for comprehensive report
-                const attendanceData = await this.getEmployeeAttendance(employee.id || employee.name);
-                const salaryData = await this.getEmployeeSalaryDetails(employee.id || employee.name);
-                const performanceData = await this.getEmployeePerformance(employee.id || employee.name);
+                const attendanceData = await this.getEmployeeAttendance(employee.id || `${employee.firstName} ${employee.lastName}`);
+                const salaryData = await this.getEmployeeSalaryDetails(employee.id || `${employee.firstName} ${employee.lastName}`);
+                const performanceData = await this.getEmployeePerformance(employee.id || `${employee.firstName} ${employee.lastName}`);
 
-                let response = `👨‍💼 **Employee Profile: ${employee.name}**\n\n`;
+                const fullName = `${employee.firstName} ${employee.lastName}`;
+                let response = `👨‍💼 **Employee Profile: ${fullName}**\n\n`;
                 
                 // Basic Information
                 response += `**📋 BASIC INFORMATION**\n`;
                 response += `💼 Position: ${employee.position || 'Not specified'}\n`;
                 response += `📧 Email: ${employee.email || 'Not provided'}\n`;
                 response += `📱 Phone: ${employee.phone || 'Not provided'}\n`;
-                response += `⏰ Status: ${employee.status === 'active' ? '🟢 Active' : '🔴 Inactive'}\n`;
+                response += `⏰ Status: ${employee.isActive === true ? '🟢 Active' : '🔴 Inactive'}\n`;
                 response += `📅 Hire Date: ${employee.hireDate ? new Date(employee.hireDate).toLocaleDateString() : 'Not provided'}\n\n`;
                 
                 // Salary Information
@@ -834,7 +844,56 @@ Need help with anything specific? Just ask! 😊`;
 
     // Handle all new PWA features
     async handleAppointmentQuery() {
-        return `📅 **Appointments & Booking**\n\nAppointment management feature coming soon! This will help you track bookings, schedules, and client appointments.`;
+        try {
+            await this.refreshDataCache();
+            
+            // Get appointments data
+            const appointments = await window.db?.getAll('appointments') || [];
+            const today = new Date().toDateString();
+            const todayAppointments = appointments.filter(a => 
+                new Date(a.date).toDateString() === today
+            );
+            const upcomingAppointments = appointments.filter(a => 
+                new Date(a.date) > new Date()
+            ).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 5);
+            
+            let response = `📅 **Appointments & Booking**\n\n`;
+            
+            // Today's appointments
+            response += `**Today's Appointments (${todayAppointments.length})**\n`;
+            if (todayAppointments.length > 0) {
+                todayAppointments.forEach(apt => {
+                    const time = new Date(apt.date).toLocaleTimeString('en-PH', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    response += `• ${time} - ${apt.customerName || 'Customer'} - ${apt.service || 'Service'}\n`;
+                });
+            } else {
+                response += `No appointments scheduled for today\n`;
+            }
+            
+            response += `\n**Upcoming Appointments**\n`;
+            if (upcomingAppointments.length > 0) {
+                upcomingAppointments.forEach(apt => {
+                    const date = new Date(apt.date).toLocaleDateString('en-PH');
+                    const time = new Date(apt.date).toLocaleTimeString('en-PH', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    response += `• ${date} ${time} - ${apt.customerName || 'Customer'}\n`;
+                });
+            } else {
+                response += `No upcoming appointments scheduled\n`;
+            }
+            
+            response += `\n📊 Total Appointments: ${appointments.length}`;
+            
+            return response;
+        } catch (error) {
+            console.error('Error fetching appointments:', error);
+            return `📅 **Appointments**\n\nUnable to fetch appointment data. Please check the appointments section.`;
+        }
     }
 
     async handleCustomerManagement() {
@@ -866,15 +925,175 @@ Need help with anything specific? Just ask! 😊`;
     }
 
     async handleRoomManagement() {
-        return `🏠 **Room Management**\n\nRoom booking and availability tracking for treatment rooms and service areas.`;
+        try {
+            await this.refreshDataCache();
+            
+            // Get rooms and active services data
+            const rooms = await window.db?.getAll('rooms') || [];
+            const activeServices = await window.db?.getAll('activeServices') || [];
+            
+            // Categorize rooms
+            const availableRooms = rooms.filter(r => r.status === 'available');
+            const occupiedRooms = rooms.filter(r => r.status === 'occupied' || r.status === 'in-use');
+            const maintenanceRooms = rooms.filter(r => r.status === 'maintenance');
+            
+            let response = `🏠 **Room Management**\n\n`;
+            
+            response += `**Room Status Overview**\n`;
+            response += `✅ Available: ${availableRooms.length} rooms\n`;
+            response += `🔴 Occupied: ${occupiedRooms.length} rooms\n`;
+            response += `🔧 Maintenance: ${maintenanceRooms.length} rooms\n`;
+            response += `📊 Total Rooms: ${rooms.length}\n\n`;
+            
+            // Show occupied rooms with details
+            if (occupiedRooms.length > 0) {
+                response += `**Currently Occupied**\n`;
+                occupiedRooms.forEach(room => {
+                    const activeService = activeServices.find(s => s.roomId === room.id);
+                    response += `• ${room.name || `Room ${room.roomNumber}`}`;
+                    if (activeService) {
+                        response += ` - ${activeService.customerName || 'Customer'} (${activeService.service || 'Service'})`;
+                        if (activeService.therapist) {
+                            response += ` with ${activeService.therapist}`;
+                        }
+                    }
+                    response += `\n`;
+                });
+                response += `\n`;
+            }
+            
+            // Show available rooms
+            if (availableRooms.length > 0) {
+                response += `**Available Rooms**\n`;
+                availableRooms.slice(0, 5).forEach(room => {
+                    response += `• ${room.name || `Room ${room.roomNumber}`}`;
+                    if (room.type) response += ` (${room.type})`;
+                    response += `\n`;
+                });
+                if (availableRooms.length > 5) {
+                    response += `  ...and ${availableRooms.length - 5} more available\n`;
+                }
+            }
+            
+            // Calculate occupancy rate
+            const occupancyRate = rooms.length > 0 
+                ? ((occupiedRooms.length / rooms.length) * 100).toFixed(1)
+                : 0;
+            
+            response += `\n📈 **Occupancy Rate**: ${occupancyRate}%`;
+            response += `\n🔄 **Active Services**: ${activeServices.length}`;
+            
+            return response;
+        } catch (error) {
+            console.error('Error fetching room data:', error);
+            return `🏠 **Room Management**\n\nUnable to fetch room data. Please check the rooms section.`;
+        }
     }
 
     async handleExpenseManagement() {
-        return `💸 **Expense Tracking**\n\nBusiness expense monitoring and cost analysis for better financial management.`;
+        try {
+            await this.refreshDataCache();
+            
+            // Get expenses data
+            const expenses = await window.db?.getAll('expenses') || [];
+            
+            // Calculate totals by category
+            const categoryTotals = {};
+            let totalExpenses = 0;
+            
+            expenses.forEach(expense => {
+                const category = expense.category || 'Uncategorized';
+                const amount = parseFloat(expense.amount) || 0;
+                
+                if (!categoryTotals[category]) {
+                    categoryTotals[category] = 0;
+                }
+                categoryTotals[category] += amount;
+                totalExpenses += amount;
+            });
+            
+            // Get current month expenses
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            const monthlyExpenses = expenses.filter(e => {
+                const expDate = new Date(e.date || e.createdAt);
+                return expDate.getMonth() === currentMonth && expDate.getFullYear() === currentYear;
+            });
+            const monthlyTotal = monthlyExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+            
+            let response = `💸 **Expense Tracking**\n\n`;
+            response += `**This Month's Expenses**\n`;
+            response += `💰 Total: ₱${monthlyTotal.toFixed(2)}\n`;
+            response += `📊 Transactions: ${monthlyExpenses.length}\n\n`;
+            
+            response += `**Expense Categories**\n`;
+            Object.entries(categoryTotals)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .forEach(([category, amount]) => {
+                    const percentage = ((amount / totalExpenses) * 100).toFixed(1);
+                    response += `• ${category}: ₱${amount.toFixed(2)} (${percentage}%)\n`;
+                });
+            
+            response += `\n**Overall Statistics**\n`;
+            response += `💵 Total Expenses: ₱${totalExpenses.toFixed(2)}\n`;
+            response += `📈 Average per Transaction: ₱${expenses.length > 0 ? (totalExpenses / expenses.length).toFixed(2) : '0.00'}\n`;
+            response += `📝 Total Records: ${expenses.length}`;
+            
+            return response;
+        } catch (error) {
+            console.error('Error fetching expenses:', error);
+            return `💸 **Expense Tracking**\n\nUnable to fetch expense data. Please check the expenses section.`;
+        }
     }
 
     async handleGiftCertificateQuery() {
-        return `🎁 **Gift Certificates**\n\nTrack gift certificate sales, redemptions, and manage promotional vouchers.`;
+        try {
+            await this.refreshDataCache();
+            
+            // Get gift certificates data
+            const giftCerts = await window.db?.getAll('giftCertificates') || [];
+            
+            // Categorize certificates
+            const activeCerts = giftCerts.filter(gc => gc.status === 'active' && !gc.isRedeemed);
+            const redeemedCerts = giftCerts.filter(gc => gc.isRedeemed || gc.status === 'redeemed');
+            const expiredCerts = giftCerts.filter(gc => {
+                if (!gc.expiryDate) return false;
+                return new Date(gc.expiryDate) < new Date();
+            });
+            
+            // Calculate totals
+            const totalValue = giftCerts.reduce((sum, gc) => sum + (parseFloat(gc.amount) || 0), 0);
+            const activeValue = activeCerts.reduce((sum, gc) => sum + (parseFloat(gc.amount) || 0), 0);
+            const redeemedValue = redeemedCerts.reduce((sum, gc) => sum + (parseFloat(gc.amountUsed || gc.amount) || 0), 0);
+            
+            let response = `🎁 **Gift Certificates**\n\n`;
+            
+            response += `**Active Certificates (${activeCerts.length})**\n`;
+            response += `💵 Total Value: ₱${activeValue.toFixed(2)}\n`;
+            if (activeCerts.length > 0) {
+                activeCerts.slice(0, 3).forEach(gc => {
+                    response += `• ${gc.controlNumber || gc.code || 'GC'} - ₱${gc.amount || 0}`;
+                    if (gc.recipientName) response += ` (${gc.recipientName})`;
+                    response += `\n`;
+                });
+                if (activeCerts.length > 3) {
+                    response += `  ...and ${activeCerts.length - 3} more\n`;
+                }
+            }
+            
+            response += `\n**Statistics**\n`;
+            response += `✅ Active: ${activeCerts.length} certificates (₱${activeValue.toFixed(2)})\n`;
+            response += `🔄 Redeemed: ${redeemedCerts.length} certificates (₱${redeemedValue.toFixed(2)})\n`;
+            response += `⏰ Expired: ${expiredCerts.length} certificates\n`;
+            response += `\n💰 **Total Issued Value**: ₱${totalValue.toFixed(2)}\n`;
+            response += `📊 **Redemption Rate**: ${giftCerts.length > 0 ? ((redeemedCerts.length / giftCerts.length) * 100).toFixed(1) : 0}%`;
+            
+            return response;
+        } catch (error) {
+            console.error('Error fetching gift certificates:', error);
+            return `🎁 **Gift Certificates**\n\nUnable to fetch gift certificate data. Please check the gift certificates section.`;
+        }
     }
 
     async handleBusinessAnalysis() {
