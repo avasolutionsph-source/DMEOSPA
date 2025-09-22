@@ -786,19 +786,19 @@ class AuthSystem {
     updateMenuForRole() {
         // Define what pages each role can access
         const rolePermissions = {
-            // Therapist roles can only see their own data
+            // Therapist roles can only see their own data - they use payroll-requests instead of payroll
             'senior_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
             'junior_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
             'new_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
             
-            // Receptionist has broader access
+            // Receptionist has broader access - also uses payroll-requests
             'receptionist': ['pos', 'inventory', 'customers', 'attendance', 'payroll', 'rooms', 'expenses'],
             
-            // Manager can read everything
+            // Manager can read everything - uses full payroll page
             'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers', 
                        'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'settings'],
             
-            // Other staff limited access
+            // Other staff limited access - uses payroll-requests
             'other_staff': ['attendance', 'payroll']
         };
         
@@ -882,15 +882,20 @@ class AuthSystem {
         // Owners have all permissions
         if (this.currentUser.type !== 'employee') return true;
         
+        // Special handling for payroll-requests page - all employees can access
+        if (page === 'payroll-requests' && this.currentUser.type === 'employee') {
+            return true;
+        }
+        
         // Define permissions (same as above)
         const rolePermissions = {
-            'senior_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
-            'junior_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
-            'new_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
-            'receptionist': ['pos', 'inventory', 'customers', 'attendance', 'payroll', 'rooms', 'expenses'],
+            'senior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
+            'junior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
+            'new_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
+            'receptionist': ['pos', 'inventory', 'customers', 'attendance', 'payroll-requests', 'rooms', 'expenses'],
             'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers', 
                        'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'settings'],
-            'other_staff': ['attendance', 'payroll']
+            'other_staff': ['attendance', 'payroll-requests']
         };
         
         const userRole = this.currentUser.role;
