@@ -50,10 +50,11 @@ class PayrollManager {
         try {
             // Check user role first to determine what to load
             const user = window.authSystem?.currentUser;
+            // Include ALL employee roles: therapists, receptionist, and other staff
             const isEmployee = user?.type === 'employee' && 
-                ['senior_therapist', 'junior_therapist', 'new_therapist', 'other_staff'].includes(user?.role);
+                ['senior_therapist', 'junior_therapist', 'new_therapist', 'receptionist', 'other_staff'].includes(user?.role);
             
-            // Setup UI based on role
+            // Setup UI based on role (this will hide manager elements for employees)
             this.setupRoleBasedUI();
             
             // Wait for database to be ready before proceeding
@@ -97,20 +98,27 @@ class PayrollManager {
                 console.log('👤 Employee payroll view - loading personal data only');
                 await this.loadEmployeePayrollData(user);
                 await this.loadEmployeeRequests(user);
-            } else {
-                // For managers/owners, load full payroll management data
-                console.log('📋 [PAYROLL] Step 1: Loading attendance rules...');
-                await this.loadAttendanceRules();
-                console.log('✅ [PAYROLL] Attendance rules loaded');
                 
-                console.log('📋 [PAYROLL] Step 2: Loading employees...');
-                await this.loadEmployees();
-                console.log('✅ [PAYROLL] Employees loaded:', this.employees.length);
-                
-                console.log('📋 [PAYROLL] Step 3: Loading holidays...');
-                await this.loadHolidays();
-                console.log('✅ [PAYROLL] Holidays loaded:', this.holidays.length);
+                // IMPORTANT: Return early for employees - don't run any manager display functions
+                console.log('✅ Employee payroll interface initialized');
+                return;
             }
+            
+            // MANAGER/OWNER SECTION - Only runs if NOT an employee
+            console.log('👔 Manager/Owner payroll view - loading full management data');
+            
+            // Load manager-specific data
+            console.log('📋 [PAYROLL] Step 1: Loading attendance rules...');
+            await this.loadAttendanceRules();
+            console.log('✅ [PAYROLL] Attendance rules loaded');
+            
+            console.log('📋 [PAYROLL] Step 2: Loading employees...');
+            await this.loadEmployees();
+            console.log('✅ [PAYROLL] Employees loaded:', this.employees.length);
+            
+            console.log('📋 [PAYROLL] Step 3: Loading holidays...');
+            await this.loadHolidays();
+            console.log('✅ [PAYROLL] Holidays loaded:', this.holidays.length);
             
             console.log('📋 [PAYROLL] Step 4: Loading payroll records...');
             await this.loadPayrollRecords();
