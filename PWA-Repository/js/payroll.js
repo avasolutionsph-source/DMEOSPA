@@ -296,14 +296,32 @@ class PayrollManager {
             role: user.role
         });
         
+        // Include receptionist as employee role
         const isEmployee = user.type === 'employee' && 
-            ['senior_therapist', 'junior_therapist', 'new_therapist', 'other_staff'].includes(user.role);
+            ['senior_therapist', 'junior_therapist', 'new_therapist', 'receptionist', 'other_staff'].includes(user.role);
         
         // Hide manager tabs and show employee UI if employee
         if (isEmployee) {
-            // Hide manager sections
-            const managerSections = document.querySelectorAll('.tab-nav, .tab-content');
-            managerSections.forEach(section => section.style.display = 'none');
+            // Get payroll page container
+            const payrollPage = document.getElementById('payroll');
+            if (!payrollPage) return;
+            
+            // Hide ALL manager sections comprehensively
+            const elementsToHide = [
+                '.page-header',     // Hide the header with title
+                '.stats-grid',      // Hide the statistics cards
+                '.tab-nav',         // Hide the tab navigation
+                '.tab-content',     // Hide all tab content
+                '.tab-pane',        // Hide individual tab panes
+                '#payroll-processing', // Hide processing section
+                '#payroll-records',    // Hide records section
+                '#payroll-requests'    // Hide requests section
+            ];
+            
+            elementsToHide.forEach(selector => {
+                const elements = payrollPage.querySelectorAll(selector);
+                elements.forEach(el => el.style.display = 'none');
+            });
             
             // Show employee payroll UI
             this.createEmployeePayrollUI();
