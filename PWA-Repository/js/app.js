@@ -467,15 +467,30 @@ class App {
                 // Initialize employee payroll requests page
                 if (window.payrollManager) {
                     const user = window.authSystem?.currentUser;
+                    console.log('Loading payroll-requests for user:', user);
+                    
                     if (user) {
-                        // Update employee info display
+                        // Update employee info display with better fallbacks
                         const nameDisplay = document.getElementById('employeeNameDisplay');
                         const roleDisplay = document.getElementById('employeeRoleDisplay');
                         const emailDisplay = document.getElementById('employeeEmailDisplay');
                         
-                        if (nameDisplay) nameDisplay.textContent = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Employee';
-                        if (roleDisplay) roleDisplay.textContent = user.role?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Position';
-                        if (emailDisplay) emailDisplay.textContent = user.email || 'Email';
+                        // Build full name with proper fallbacks
+                        const fullName = [user.firstName, user.lastName]
+                            .filter(Boolean)
+                            .join(' ')
+                            .trim() || user.name || user.email?.split('@')[0] || 'Employee';
+                        
+                        // Format role properly
+                        const formattedRole = user.role
+                            ?.replace(/_/g, ' ')
+                            .split(' ')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join(' ') || 'Staff Member';
+                        
+                        if (nameDisplay) nameDisplay.textContent = fullName;
+                        if (roleDisplay) roleDisplay.textContent = formattedRole;
+                        if (emailDisplay) emailDisplay.textContent = user.email || 'Not provided';
                         
                         // Load employee's data
                         setTimeout(async () => {

@@ -1388,8 +1388,8 @@ class PayrollManager {
         return payrollBatch;
     }
 
-    // Request management
-    async submitRequest(employeeId, requestType, requestData) {
+    // Manager request management (renamed to avoid conflict with employee submitRequest)
+    async submitManagerRequest(employeeId, requestType, requestData) {
         const request = {
             employeeId,
             requestType, // 'overtime' or 'leave'

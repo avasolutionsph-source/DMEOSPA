@@ -2,7 +2,7 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 13; // Incremented to add appointments and operations stores
+        this.version = 14; // Incremented to add payrollRequests store
         this.db = null;
         this.userId = null;
         this.isInitializing = false;
@@ -366,6 +366,15 @@ class Database {
                     requestsStore.createIndex('status', 'status', { unique: false });
                     requestsStore.createIndex('requestDate', 'requestDate', { unique: false });
                     requestsStore.createIndex('approvedBy', 'approvedBy', { unique: false });
+                }
+
+                // Payroll requests store (for employee portal)
+                if (!this.db.objectStoreNames.contains('payrollRequests')) {
+                    const payrollRequestsStore = this.db.createObjectStore('payrollRequests', { keyPath: 'id' });
+                    payrollRequestsStore.createIndex('employeeId', 'employeeId', { unique: false });
+                    payrollRequestsStore.createIndex('type', 'type', { unique: false });
+                    payrollRequestsStore.createIndex('status', 'status', { unique: false });
+                    payrollRequestsStore.createIndex('createdAt', 'createdAt', { unique: false });
                 }
                 
                 // Audit Log store
