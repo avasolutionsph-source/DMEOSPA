@@ -263,9 +263,19 @@ class App {
     }
 
     async showPage(pageName) {
+        // Check if employee is trying to access payroll, redirect to payroll-requests
+        if (pageName === 'payroll' && window.authSystem && window.authSystem.isAuthenticated()) {
+            const user = window.authSystem.currentUser;
+            if (user?.type === 'employee' && 
+                ['senior_therapist', 'junior_therapist', 'new_therapist', 'receptionist', 'other_staff'].includes(user?.role)) {
+                console.log('🔄 Redirecting employee to payroll-requests page');
+                pageName = 'payroll-requests';
+            }
+        }
+        
         // Check permission before navigating
         if (window.authSystem && window.authSystem.isAuthenticated()) {
-            if (!window.authSystem.hasPagePermission(pageName)) {
+            if (!window.authSystem.hasPagePermission(pageName) && pageName !== 'payroll-requests') {
                 console.log('❌ Access denied to page:', pageName);
                 
                 // Show access denied message
@@ -451,6 +461,33 @@ class App {
                             }
                         }
                     }, 100);
+                }
+                break;
+            case 'payroll-requests':
+                // Initialize employee payroll requests page
+                if (window.payrollManager) {
+                    const user = window.authSystem?.currentUser;
+                    if (user) {
+                        // Update employee info display
+                        const nameDisplay = document.getElementById('employeeNameDisplay');
+                        const roleDisplay = document.getElementById('employeeRoleDisplay');
+                        const emailDisplay = document.getElementById('employeeEmailDisplay');
+                        
+                        if (nameDisplay) nameDisplay.textContent = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Employee';
+                        if (roleDisplay) roleDisplay.textContent = user.role?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Position';
+                        if (emailDisplay) emailDisplay.textContent = user.email || 'Email';
+                        
+                        // Load employee's data
+                        setTimeout(async () => {
+                            try {
+                                await window.payrollManager.loadEmployeePayrollData(user);
+                                await window.payrollManager.loadEmployeeRequests(user);
+                                console.log('✅ Employee payroll requests loaded');
+                            } catch (e) {
+                                console.error('❌ Failed to load employee payroll data:', e);
+                            }
+                        }, 100);
+                    }
                 }
                 break;
             case 'rooms':
