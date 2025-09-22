@@ -95,13 +95,27 @@ class PayrollManager {
             // For employees, only load their own payroll data
             if (isEmployee) {
                 console.log('👤 Employee payroll view - loading personal data only');
+                console.log('   User details:', {
+                    email: user.email,
+                    type: user.type,
+                    role: user.role,
+                    firstName: user.firstName
+                });
                 
-                // Setup UI with a delay to ensure DOM is ready
-                // Use setTimeout to let the page render first
+                // Hide manager UI immediately - don't wait
+                this.hideAllManagerElements();
+                
+                // Then create employee UI with a delay to ensure DOM is ready
                 setTimeout(() => {
-                    console.log('🎨 Setting up employee UI...');
+                    console.log('🎨 Creating employee UI...');
                     this.setupRoleBasedUI();
-                }, 100);
+                    
+                    // Force hide manager elements again after UI setup
+                    setTimeout(() => {
+                        this.hideAllManagerElements();
+                        console.log('🔒 Ensured manager elements are hidden');
+                    }, 100);
+                }, 500); // Increased delay to 500ms
                 
                 // Load employee data
                 await this.loadEmployeePayrollData(user);
@@ -300,6 +314,41 @@ class PayrollManager {
         }
     }
 
+    // Hide all manager elements immediately
+    hideAllManagerElements() {
+        const payrollPage = document.getElementById('payroll');
+        if (!payrollPage) return;
+        
+        // Hide ALL direct children first
+        const allChildren = payrollPage.children;
+        for (let i = 0; i < allChildren.length; i++) {
+            // Skip if it's the employee UI
+            if (allChildren[i].id === 'employeePayrollUI') continue;
+            allChildren[i].style.setProperty('display', 'none', 'important');
+            allChildren[i].style.setProperty('visibility', 'hidden', 'important');
+        }
+        
+        // Also hide specific elements by selector
+        const selectorsToHide = [
+            '.page-header',
+            '.stats-grid', 
+            '.tab-nav',
+            '.tab-content',
+            '.tab-pane',
+            '#payroll-processing',
+            '#payroll-records',
+            '#payroll-requests'
+        ];
+        
+        selectorsToHide.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(el => {
+                el.style.setProperty('display', 'none', 'important');
+                el.style.setProperty('visibility', 'hidden', 'important');
+            });
+        });
+    }
+    
     // Setup UI based on user role
     setupRoleBasedUI() {
         const user = window.authSystem?.currentUser;
