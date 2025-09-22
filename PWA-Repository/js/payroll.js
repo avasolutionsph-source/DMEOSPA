@@ -54,8 +54,7 @@ class PayrollManager {
             const isEmployee = user?.type === 'employee' && 
                 ['senior_therapist', 'junior_therapist', 'new_therapist', 'receptionist', 'other_staff'].includes(user?.role);
             
-            // Setup UI based on role (this will hide manager elements for employees)
-            this.setupRoleBasedUI();
+            // Don't setup UI yet - wait until after database is ready
             
             // Wait for database to be ready before proceeding
             if (!window.isDatabaseReady || !window.isDatabaseReady()) {
@@ -96,6 +95,15 @@ class PayrollManager {
             // For employees, only load their own payroll data
             if (isEmployee) {
                 console.log('👤 Employee payroll view - loading personal data only');
+                
+                // Setup UI with a delay to ensure DOM is ready
+                // Use setTimeout to let the page render first
+                setTimeout(() => {
+                    console.log('🎨 Setting up employee UI...');
+                    this.setupRoleBasedUI();
+                }, 100);
+                
+                // Load employee data
                 await this.loadEmployeePayrollData(user);
                 await this.loadEmployeeRequests(user);
                 
@@ -106,6 +114,9 @@ class PayrollManager {
             
             // MANAGER/OWNER SECTION - Only runs if NOT an employee
             console.log('👔 Manager/Owner payroll view - loading full management data');
+            
+            // Setup manager UI (show everything)
+            this.setupRoleBasedUI();
             
             // Load manager-specific data
             console.log('📋 [PAYROLL] Step 1: Loading attendance rules...');
@@ -312,9 +323,18 @@ class PayrollManager {
         if (isEmployee) {
             // Get payroll page container
             const payrollPage = document.getElementById('payroll');
-            if (!payrollPage) return;
+            if (!payrollPage) {
+                console.error('❌ Payroll page not found!');
+                return;
+            }
             
-            // Hide ALL manager sections comprehensively
+            // First, hide EVERYTHING in the payroll page
+            const allChildren = payrollPage.children;
+            for (let i = 0; i < allChildren.length; i++) {
+                allChildren[i].style.setProperty('display', 'none', 'important');
+            }
+            
+            // Also hide specific manager sections with stronger CSS
             const elementsToHide = [
                 '.page-header',     // Hide the header with title
                 '.stats-grid',      // Hide the statistics cards
@@ -323,16 +343,33 @@ class PayrollManager {
                 '.tab-pane',        // Hide individual tab panes
                 '#payroll-processing', // Hide processing section
                 '#payroll-records',    // Hide records section
-                '#payroll-requests'    // Hide requests section
+                '#payroll-requests',   // Hide requests section
+                '.requests-section',   // Hide requests section
+                '.holidays-section'    // Hide holidays section
             ];
             
             elementsToHide.forEach(selector => {
                 const elements = payrollPage.querySelectorAll(selector);
-                elements.forEach(el => el.style.display = 'none');
+                elements.forEach(el => {
+                    el.style.setProperty('display', 'none', 'important');
+                    el.style.setProperty('visibility', 'hidden', 'important');
+                });
             });
             
-            // Show employee payroll UI
+            // Now create and show ONLY the employee payroll UI
             this.createEmployeePayrollUI();
+            
+            console.log('✅ Employee UI setup complete - manager elements hidden');
+        } else {
+            // For managers, make sure everything is visible
+            const payrollPage = document.getElementById('payroll');
+            if (payrollPage) {
+                const allChildren = payrollPage.children;
+                for (let i = 0; i < allChildren.length; i++) {
+                    allChildren[i].style.removeProperty('display');
+                    allChildren[i].style.removeProperty('visibility');
+                }
+            }
         }
     }
     
