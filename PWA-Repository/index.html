@@ -4048,27 +4048,12 @@
 
     <!-- Browser compatibility fix -->
     
-    <!-- Simple CSS fix for navigation visibility -->
+    <!-- Navigation styling - role-based visibility handled by JavaScript -->
     <style>
-        /* Ensure all nav items are visible */
-        .nav-item {
-            display: flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            align-items: center;
-        }
-        
         /* Fix nav menu overflow */
         .nav-menu {
             overflow: visible !important;
             height: auto !important;
-        }
-        
-        /* Ensure Rooms is visible if it exists */
-        [data-page="rooms"] {
-            display: flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
         }
         
         /* Remove any max-height restrictions */
@@ -4076,6 +4061,9 @@
             max-height: none !important;
             overflow-y: auto !important;
         }
+        
+        /* Note: Navigation item visibility is controlled by JavaScript based on user role.
+           Do not force display with !important as it will override role-based filtering. */
     </style>
     
     <!-- FINAL FIX - Attach Event Listeners After Everything Loads -->
