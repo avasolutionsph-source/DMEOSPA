@@ -48,6 +48,14 @@ class PayrollManager {
     async init() {
         console.log('🚀 Initializing Payroll System...');
         try {
+            // Check user role first to determine what to load
+            const user = window.authSystem?.currentUser;
+            const isEmployee = user?.type === 'employee' && 
+                ['senior_therapist', 'junior_therapist', 'new_therapist', 'other_staff'].includes(user?.role);
+            
+            // Setup UI based on role
+            this.setupRoleBasedUI();
+            
             // Wait for database to be ready before proceeding
             if (!window.isDatabaseReady || !window.isDatabaseReady()) {
                 console.log('⏳ Waiting for database before initializing payroll...');
@@ -84,17 +92,25 @@ class PayrollManager {
                 throw new Error(`Database not functional: ${testError.message}`);
             }
             
-            console.log('📋 [PAYROLL] Step 1: Loading attendance rules...');
-            await this.loadAttendanceRules();
-            console.log('✅ [PAYROLL] Attendance rules loaded');
-            
-            console.log('📋 [PAYROLL] Step 2: Loading employees...');
-            await this.loadEmployees();
-            console.log('✅ [PAYROLL] Employees loaded:', this.employees.length);
-            
-            console.log('📋 [PAYROLL] Step 3: Loading holidays...');
-            await this.loadHolidays();
-            console.log('✅ [PAYROLL] Holidays loaded:', this.holidays.length);
+            // For employees, only load their own payroll data
+            if (isEmployee) {
+                console.log('👤 Employee payroll view - loading personal data only');
+                await this.loadEmployeePayrollData(user);
+                await this.loadEmployeeRequests(user);
+            } else {
+                // For managers/owners, load full payroll management data
+                console.log('📋 [PAYROLL] Step 1: Loading attendance rules...');
+                await this.loadAttendanceRules();
+                console.log('✅ [PAYROLL] Attendance rules loaded');
+                
+                console.log('📋 [PAYROLL] Step 2: Loading employees...');
+                await this.loadEmployees();
+                console.log('✅ [PAYROLL] Employees loaded:', this.employees.length);
+                
+                console.log('📋 [PAYROLL] Step 3: Loading holidays...');
+                await this.loadHolidays();
+                console.log('✅ [PAYROLL] Holidays loaded:', this.holidays.length);
+            }
             
             console.log('📋 [PAYROLL] Step 4: Loading payroll records...');
             await this.loadPayrollRecords();
@@ -265,6 +281,427 @@ class PayrollManager {
         }
     }
 
+    // Setup UI based on user role
+    setupRoleBasedUI() {
+        const user = window.authSystem?.currentUser;
+        
+        if (!user) {
+            console.log('⚠️ No user found, showing default UI');
+            return;
+        }
+        
+        console.log('🔐 Setting up payroll UI for:', {
+            email: user.email,
+            type: user.type,
+            role: user.role
+        });
+        
+        const isEmployee = user.type === 'employee' && 
+            ['senior_therapist', 'junior_therapist', 'new_therapist', 'other_staff'].includes(user.role);
+        
+        // Hide manager tabs and show employee UI if employee
+        if (isEmployee) {
+            // Hide manager sections
+            const managerSections = document.querySelectorAll('.tab-nav, .tab-content');
+            managerSections.forEach(section => section.style.display = 'none');
+            
+            // Show employee payroll UI
+            this.createEmployeePayrollUI();
+        }
+    }
+    
+    // Create employee-specific payroll UI
+    createEmployeePayrollUI() {
+        const payrollPage = document.getElementById('payroll');
+        if (!payrollPage) return;
+        
+        const user = window.authSystem?.currentUser;
+        
+        // Create employee payroll interface
+        const employeeUI = document.createElement('div');
+        employeeUI.id = 'employeePayrollUI';
+        employeeUI.className = 'employee-payroll-container';
+        employeeUI.innerHTML = `
+            <div class="employee-info-card">
+                <h2><i class="fas fa-user"></i> My Payroll Dashboard</h2>
+                <div class="employee-details">
+                    <p><strong>Name:</strong> ${user.firstName} ${user.lastName}</p>
+                    <p><strong>Position:</strong> ${user.role?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                    <p><strong>Email:</strong> ${user.email}</p>
+                </div>
+            </div>
+            
+            <div class="request-buttons-grid">
+                <button class="request-btn leave-btn" onclick="payrollManager.showLeaveRequestModal()">
+                    <i class="fas fa-calendar-times"></i>
+                    <span>Request Leave</span>
+                </button>
+                <button class="request-btn overtime-btn" onclick="payrollManager.showOvertimeRequestModal()">
+                    <i class="fas fa-clock"></i>
+                    <span>Request Overtime</span>
+                </button>
+                <button class="request-btn payroll-btn" onclick="payrollManager.showPayrollRequestModal()">
+                    <i class="fas fa-money-check-alt"></i>
+                    <span>Request Payroll</span>
+                </button>
+            </div>
+            
+            <div class="my-requests-section">
+                <h3><i class="fas fa-list"></i> My Requests</h3>
+                <div id="myRequestsList" class="requests-list">
+                    <p class="loading-text">Loading your requests...</p>
+                </div>
+            </div>
+            
+            <div class="my-payroll-history">
+                <h3><i class="fas fa-history"></i> My Payroll History</h3>
+                <div id="myPayrollHistory" class="payroll-history-list">
+                    <p class="loading-text">Loading payroll history...</p>
+                </div>
+            </div>
+        `;
+        
+        // Add styles for employee UI
+        if (!document.getElementById('employeePayrollStyles')) {
+            const styles = document.createElement('style');
+            styles.id = 'employeePayrollStyles';
+            styles.innerHTML = `
+                .employee-payroll-container {
+                    padding: 20px;
+                    max-width: 1200px;
+                    margin: 0 auto;
+                }
+                
+                .employee-info-card {
+                    background: white;
+                    border-radius: 10px;
+                    padding: 20px;
+                    margin-bottom: 30px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                }
+                
+                .employee-details {
+                    margin-top: 15px;
+                    display: grid;
+                    gap: 10px;
+                }
+                
+                .request-buttons-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 20px;
+                    margin-bottom: 30px;
+                }
+                
+                .request-btn {
+                    background: white;
+                    border: 2px solid #e5e7eb;
+                    border-radius: 10px;
+                    padding: 30px 20px;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                    text-align: center;
+                }
+                
+                .request-btn:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+                }
+                
+                .request-btn i {
+                    font-size: 2rem;
+                    display: block;
+                    margin-bottom: 10px;
+                }
+                
+                .leave-btn:hover {
+                    border-color: #f59e0b;
+                    background: #fef3c7;
+                }
+                
+                .overtime-btn:hover {
+                    border-color: #3b82f6;
+                    background: #dbeafe;
+                }
+                
+                .payroll-btn:hover {
+                    border-color: #10b981;
+                    background: #d1fae5;
+                }
+                
+                .my-requests-section, .my-payroll-history {
+                    background: white;
+                    border-radius: 10px;
+                    padding: 20px;
+                    margin-bottom: 20px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                }
+                
+                .requests-list, .payroll-history-list {
+                    margin-top: 15px;
+                }
+                
+                .request-item, .payroll-item {
+                    padding: 15px;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 5px;
+                    margin-bottom: 10px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                
+                .request-status {
+                    padding: 5px 10px;
+                    border-radius: 20px;
+                    font-size: 0.85rem;
+                    font-weight: bold;
+                }
+                
+                .status-pending {
+                    background: #fef3c7;
+                    color: #d97706;
+                }
+                
+                .status-approved {
+                    background: #d1fae5;
+                    color: #059669;
+                }
+                
+                .status-rejected {
+                    background: #fee2e2;
+                    color: #dc2626;
+                }
+            `;
+            document.head.appendChild(styles);
+        }
+        
+        // Clear existing content and add employee UI
+        const existingUI = payrollPage.querySelector('#employeePayrollUI');
+        if (existingUI) existingUI.remove();
+        
+        payrollPage.appendChild(employeeUI);
+    }
+    
+    // Load employee's own payroll data
+    async loadEmployeePayrollData(user) {
+        try {
+            // Load payroll records for this employee
+            const allRecords = await window.db.getAll('payrollRecords');
+            this.payrollRecords = allRecords.filter(r => r.employeeId === user.id);
+            
+            // Display payroll history
+            this.displayEmployeePayrollHistory();
+        } catch (error) {
+            console.error('Failed to load employee payroll data:', error);
+        }
+    }
+    
+    // Load employee's requests
+    async loadEmployeeRequests(user) {
+        try {
+            // Load requests for this employee
+            const allRequests = await window.db.getAll('payrollRequests') || [];
+            const myRequests = allRequests.filter(r => r.employeeId === user.id);
+            
+            // Display requests
+            this.displayEmployeeRequests(myRequests);
+        } catch (error) {
+            console.error('Failed to load employee requests:', error);
+            // If store doesn't exist, create it
+            if (error.name === 'NotFoundError') {
+                await window.db.createStore('payrollRequests');
+            }
+        }
+    }
+    
+    // Display employee's payroll history
+    displayEmployeePayrollHistory() {
+        const historyContainer = document.getElementById('myPayrollHistory');
+        if (!historyContainer) return;
+        
+        if (this.payrollRecords.length === 0) {
+            historyContainer.innerHTML = '<p class="no-data">No payroll history found</p>';
+            return;
+        }
+        
+        const historyHTML = this.payrollRecords.map(record => `
+            <div class="payroll-item">
+                <div>
+                    <strong>Period:</strong> ${new Date(record.periodStart).toLocaleDateString()} - ${new Date(record.periodEnd).toLocaleDateString()}<br>
+                    <small>Generated: ${new Date(record.generatedDate).toLocaleDateString()}</small>
+                </div>
+                <div>
+                    <strong>₱${record.netPay?.toFixed(2) || '0.00'}</strong>
+                </div>
+            </div>
+        `).join('');
+        
+        historyContainer.innerHTML = historyHTML;
+    }
+    
+    // Display employee's requests
+    displayEmployeeRequests(requests) {
+        const requestsContainer = document.getElementById('myRequestsList');
+        if (!requestsContainer) return;
+        
+        if (requests.length === 0) {
+            requestsContainer.innerHTML = '<p class="no-data">No requests submitted yet</p>';
+            return;
+        }
+        
+        const requestsHTML = requests.map(request => `
+            <div class="request-item">
+                <div>
+                    <strong>${request.type.replace(/_/g, ' ').toUpperCase()}</strong><br>
+                    <small>${new Date(request.createdAt).toLocaleDateString()}</small>
+                    ${request.details ? `<br><small>${request.details}</small>` : ''}
+                </div>
+                <span class="request-status status-${request.status}">
+                    ${request.status.toUpperCase()}
+                </span>
+            </div>
+        `).join('');
+        
+        requestsContainer.innerHTML = requestsHTML;
+    }
+    
+    // Show leave request modal
+    showLeaveRequestModal() {
+        const modal = this.createRequestModal('Leave Request', 'leave', [
+            { label: 'Start Date', type: 'date', name: 'startDate', required: true },
+            { label: 'End Date', type: 'date', name: 'endDate', required: true },
+            { label: 'Leave Type', type: 'select', name: 'leaveType', options: ['Sick Leave', 'Vacation Leave', 'Emergency Leave', 'Personal Leave'], required: true },
+            { label: 'Reason', type: 'textarea', name: 'reason', required: true }
+        ]);
+        document.body.appendChild(modal);
+    }
+    
+    // Show overtime request modal
+    showOvertimeRequestModal() {
+        const modal = this.createRequestModal('Overtime Request', 'overtime', [
+            { label: 'Date', type: 'date', name: 'date', required: true },
+            { label: 'Start Time', type: 'time', name: 'startTime', required: true },
+            { label: 'End Time', type: 'time', name: 'endTime', required: true },
+            { label: 'Reason', type: 'textarea', name: 'reason', required: true }
+        ]);
+        document.body.appendChild(modal);
+    }
+    
+    // Show payroll request modal
+    showPayrollRequestModal() {
+        const modal = this.createRequestModal('Payroll Request', 'payroll', [
+            { label: 'Request Type', type: 'select', name: 'requestType', options: ['Advance Pay', 'Final Pay', 'Adjustment', 'Reimbursement'], required: true },
+            { label: 'Amount (if applicable)', type: 'number', name: 'amount' },
+            { label: 'Details', type: 'textarea', name: 'details', required: true }
+        ]);
+        document.body.appendChild(modal);
+    }
+    
+    // Create request modal
+    createRequestModal(title, requestType, fields) {
+        const modal = document.createElement('div');
+        modal.className = 'modal fade show';
+        modal.style.display = 'block';
+        modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        
+        const fieldsHTML = fields.map(field => {
+            if (field.type === 'select') {
+                return `
+                    <div class="mb-3">
+                        <label class="form-label">${field.label}</label>
+                        <select class="form-control" name="${field.name}" ${field.required ? 'required' : ''}>
+                            <option value="">Select ${field.label}</option>
+                            ${field.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            } else if (field.type === 'textarea') {
+                return `
+                    <div class="mb-3">
+                        <label class="form-label">${field.label}</label>
+                        <textarea class="form-control" name="${field.name}" rows="3" ${field.required ? 'required' : ''}></textarea>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="mb-3">
+                        <label class="form-label">${field.label}</label>
+                        <input type="${field.type}" class="form-control" name="${field.name}" ${field.required ? 'required' : ''}>
+                    </div>
+                `;
+            }
+        }).join('');
+        
+        modal.innerHTML = `
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">${title}</h5>
+                        <button type="button" class="btn-close" onclick="this.closest('.modal').remove()"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="requestForm">
+                            ${fieldsHTML}
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="payrollManager.submitRequest('${requestType}', this)">Submit Request</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        return modal;
+    }
+    
+    // Submit request
+    async submitRequest(requestType, buttonElement) {
+        const modal = buttonElement.closest('.modal');
+        const form = modal.querySelector('#requestForm');
+        const formData = new FormData(form);
+        
+        const user = window.authSystem?.currentUser;
+        const request = {
+            id: `REQ_${Date.now()}`,
+            employeeId: user.id,
+            employeeName: `${user.firstName} ${user.lastName}`,
+            type: requestType,
+            status: 'pending',
+            createdAt: new Date().toISOString(),
+            details: {}
+        };
+        
+        // Collect form data
+        for (let [key, value] of formData.entries()) {
+            request.details[key] = value;
+        }
+        
+        try {
+            // Save to IndexedDB
+            const existingRequests = await window.db.getAll('payrollRequests') || [];
+            existingRequests.push(request);
+            await window.db.put('payrollRequests', existingRequests, 'requests');
+            
+            // Refresh display
+            await this.loadEmployeeRequests(user);
+            
+            // Show success message
+            if (window.showNotification) {
+                window.showNotification('Request submitted successfully!', 'success');
+            }
+            
+            // Close modal
+            modal.remove();
+        } catch (error) {
+            console.error('Failed to submit request:', error);
+            if (window.showNotification) {
+                window.showNotification('Failed to submit request', 'error');
+            }
+        }
+    }
+    
     async loadEmployees() {
         try {
             console.log('👥 [PAYROLL] Loading employees from MongoDB API...');
@@ -435,14 +872,29 @@ class PayrollManager {
                 this.requests = [];
                 return;
             }
-            this.requests = await window.db.getAll('employeeRequests');
             
-            // Add sample requests for pok@gmail.com account ONLY if no requests exist
-            const currentUser = window.currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
+            // Try to load from new payrollRequests store first
+            try {
+                this.requests = await window.db.getAll('payrollRequests') || [];
+            } catch (e) {
+                // Fallback to old store name if new one doesn't exist
+                try {
+                    this.requests = await window.db.getAll('employeeRequests') || [];
+                } catch (err) {
+                    this.requests = [];
+                }
+            }
             
             // Initialize empty requests array if none exist
-            if (this.requests.length === 0) {
+            if (!Array.isArray(this.requests)) {
                 this.requests = [];
+            }
+            
+            // Update pending requests count in dashboard
+            const pendingCount = this.requests.filter(r => r.status === 'pending').length;
+            const pendingRequestsCount = document.getElementById('pendingRequestsCount');
+            if (pendingRequestsCount) {
+                pendingRequestsCount.textContent = pendingCount;
             }
         } catch (error) {
             console.error('Failed to load requests:', error);
@@ -2755,13 +3207,53 @@ Net Pay: ₱${record.netPay.toFixed(2)}
         
         requestsList.innerHTML = `
             <div class="requests-container">
-                ${pendingRequests.map(request => `
+                ${pendingRequests.map(request => {
+                    // Get request type label
+                    let requestTypeLabel = 'Request';
+                    if (request.type === 'leave') requestTypeLabel = 'Leave Request';
+                    else if (request.type === 'overtime') requestTypeLabel = 'Overtime Request';
+                    else if (request.type === 'payroll') requestTypeLabel = 'Payroll Request';
+                    else if (request.requestType === 'leave') requestTypeLabel = 'Leave Request'; // legacy
+                    else if (request.requestType === 'overtime') requestTypeLabel = 'Overtime Request'; // legacy
+                    
+                    // Build details string
+                    let detailsHtml = '';
+                    if (request.details) {
+                        if (request.type === 'leave' || request.requestType === 'leave') {
+                            detailsHtml = `
+                                <p style="margin: 0.5rem 0; font-size: 0.875rem; color: #4b5563;">
+                                    <strong>Type:</strong> ${request.details.leaveType || 'Not specified'}<br>
+                                    <strong>From:</strong> ${request.details.startDate || request.startDate || 'Not specified'}<br>
+                                    <strong>To:</strong> ${request.details.endDate || request.endDate || 'Not specified'}<br>
+                                    <strong>Reason:</strong> ${request.details.reason || request.reason || 'Not specified'}
+                                </p>
+                            `;
+                        } else if (request.type === 'overtime' || request.requestType === 'overtime') {
+                            detailsHtml = `
+                                <p style="margin: 0.5rem 0; font-size: 0.875rem; color: #4b5563;">
+                                    <strong>Date:</strong> ${request.details.date || request.date || 'Not specified'}<br>
+                                    <strong>Time:</strong> ${request.details.startTime || request.startTime || ''} - ${request.details.endTime || request.endTime || ''}<br>
+                                    <strong>Reason:</strong> ${request.details.reason || request.reason || 'Not specified'}
+                                </p>
+                            `;
+                        } else if (request.type === 'payroll') {
+                            detailsHtml = `
+                                <p style="margin: 0.5rem 0; font-size: 0.875rem; color: #4b5563;">
+                                    <strong>Type:</strong> ${request.details.requestType || 'Not specified'}<br>
+                                    ${request.details.amount ? `<strong>Amount:</strong> ₱${request.details.amount}<br>` : ''}
+                                    <strong>Details:</strong> ${request.details.details || 'Not specified'}
+                                </p>
+                            `;
+                        }
+                    }
+                    
+                    return `
                     <div class="request-card" style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
                             <div>
                                 <h4 style="margin: 0; color: #1f2937;">${request.employeeName || 'Unknown Employee'}</h4>
                                 <p style="margin: 0.25rem 0; color: #6b7280; font-size: 0.875rem;">
-                                    ${request.requestType === 'leave' ? 'Leave Request' : 'Overtime Request'}
+                                    ${requestTypeLabel}
                                 </p>
                             </div>
                             <span style="background: #fbbf24; color: #92400e; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500;">
@@ -2770,12 +3262,14 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                         </div>
                         
                         <div style="color: #374151; font-size: 0.875rem; margin-bottom: 0.75rem;">
-                            <p style="margin: 0.25rem 0;">
-                                <strong>Date:</strong> ${new Date(request.requestDate).toLocaleDateString()}
-                                ${request.endDate ? ` - ${new Date(request.endDate).toLocaleDateString()}` : ''}
-                            </p>
-                            ${request.hours ? `<p style="margin: 0.25rem 0;"><strong>Hours:</strong> ${request.hours}</p>` : ''}
-                            ${request.reason ? `<p style="margin: 0.25rem 0;"><strong>Reason:</strong> ${request.reason}</p>` : ''}
+                            ${detailsHtml || `
+                                <p style="margin: 0.25rem 0;">
+                                    <strong>Date:</strong> ${new Date(request.createdAt || request.requestDate || new Date()).toLocaleDateString()}
+                                    ${request.endDate ? ` - ${new Date(request.endDate).toLocaleDateString()}` : ''}
+                                </p>
+                                ${request.hours ? `<p style="margin: 0.25rem 0;"><strong>Hours:</strong> ${request.hours}</p>` : ''}
+                                ${request.reason ? `<p style="margin: 0.25rem 0;"><strong>Reason:</strong> ${request.reason}</p>` : ''}
+                            `}
                         </div>
                         
                         <div style="display: flex; gap: 0.5rem;">
@@ -2796,13 +3290,15 @@ Net Pay: ₱${record.netPay.toFixed(2)}
 
     async approveRequest(requestId) {
         try {
-            const request = this.requests.find(r => r.id === requestId);
-            if (!request) return;
+            // Find the request and update its status
+            const requestIndex = this.requests.findIndex(r => r.id === requestId);
+            if (requestIndex === -1) return;
             
-            request.status = 'approved';
-            request.approvedDate = new Date().toISOString();
+            this.requests[requestIndex].status = 'approved';
+            this.requests[requestIndex].approvedDate = new Date().toISOString();
             
-            await window.db.put('employeeRequests', request);
+            // Save all requests back to the store
+            await window.db.put('payrollRequests', this.requests, 'requests');
             
             // Reload and refresh display
             await this.loadRequests();
@@ -2822,13 +3318,15 @@ Net Pay: ₱${record.netPay.toFixed(2)}
 
     async rejectRequest(requestId) {
         try {
-            const request = this.requests.find(r => r.id === requestId);
-            if (!request) return;
+            // Find the request and update its status
+            const requestIndex = this.requests.findIndex(r => r.id === requestId);
+            if (requestIndex === -1) return;
             
-            request.status = 'rejected';
-            request.rejectedDate = new Date().toISOString();
+            this.requests[requestIndex].status = 'rejected';
+            this.requests[requestIndex].rejectedDate = new Date().toISOString();
             
-            await window.db.put('employeeRequests', request);
+            // Save all requests back to the store
+            await window.db.put('payrollRequests', this.requests, 'requests');
             
             // Reload and refresh display
             await this.loadRequests();

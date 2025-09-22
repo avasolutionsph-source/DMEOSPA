@@ -75,9 +75,25 @@ class AttendanceManager {
             // Check user role and setup appropriate UI
             this.setupRoleBasedUI();
             
-            // Simple initialization like POS
-            // Load employees
-            await this.loadEmployeesSimple();
+            // Get current user from auth system
+            const user = window.authSystem?.currentUser;
+            const isSelfAttendanceUser = user?.type === 'employee' && 
+                ['senior_therapist', 'junior_therapist', 'new_therapist', 'other_staff'].includes(user?.role);
+            
+            // Only load all employees if user manages others' attendance
+            if (!isSelfAttendanceUser) {
+                // Load employees for managers/receptionists/owners
+                await this.loadEmployeesSimple();
+                
+                // Show notification about employees loaded only for managers
+                if (window.showNotification && this.employees.length === 0) {
+                    window.showNotification('No employees found. Add employees in Employee Management first.', 'info');
+                }
+            } else {
+                // For self-attendance users, just set empty array to avoid errors
+                this.employees = [];
+                console.log('👤 Self-attendance user detected, skipping employee loading');
+            }
             
             // Load attendance records and setup UI
             await this.loadAttendanceRecords();
@@ -99,12 +115,7 @@ class AttendanceManager {
             
             // Mark as initialized
             window.attendanceManager.initialized = true;
-            console.log('✅ [ATTENDANCE] Initialization complete with', this.employees.length, 'employees loaded');
-            
-            // Show notification about employees loaded
-            if (window.showNotification && this.employees.length === 0) {
-                window.showNotification('No employees found. Add employees in Employee Management first.', 'info');
-            }
+            console.log('✅ [ATTENDANCE] Initialization complete');
         } catch (error) {
             console.error('❌ [ATTENDANCE] Initialization failed:', error);
             if (window.showNotification) {
