@@ -1,7 +1,9 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../../models/User.js';
+import Employee from '../../models/Employee.js';
 import { generateToken, verifyToken } from '../../middleware/auth.js';
+import logger from '../../utils/logger.js';
 
 const router = express.Router();
 
@@ -538,5 +540,269 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+// ============================================
+// EMPLOYEE AUTHENTICATION ENDPOINTS
+// ============================================
+
+// POST /api/auth/employee/login - Employee login with branch and role detection
+router.post('/employee/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide email and password'
+      });
+    }
+    
+    logger.info('[EMPLOYEE AUTH] Login attempt', { email });
+    
+    // Find employee by email
+    const employee = await Employee.findOne({ 
+      email: email.toLowerCase(),
+      isActive: true,
+      isLocked: false
+    }).populate('branchId', 'businessName email');
+    
+    if (!employee) {
+      logger.warn('[EMPLOYEE AUTH] Employee not found', { email });
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid credentials'
+      });
+    }
+    
+    // Check if employee has password (for login capability)
+    if (!employee.password) {
+      logger.warn('[EMPLOYEE AUTH] Employee has no password set', { email });
+      return res.status(401).json({
+        success: false,
+        error: 'Please contact your branch owner to set up your login credentials'
+      });
+    }
+    
+    // Verify password
+    const isPasswordValid = await employee.comparePassword(password);
+    
+    if (!isPasswordValid) {
+      // Increment login attempts
+      employee.loginAttempts += 1;
+      if (employee.loginAttempts >= 5) {
+        employee.isLocked = true;
+        logger.warn('[EMPLOYEE AUTH] Account locked due to failed attempts', { email });
+      }
+      await employee.save();
+      
+      return res.status(401).json({
+        success: false,
+        error: employee.isLocked ? 'Account locked. Contact your branch owner.' : 'Invalid credentials'
+      });
+    }
+    
+    // Reset login attempts on successful login
+    employee.loginAttempts = 0;
+    employee.lastLogin = new Date();
+    await employee.save();
+    
+    // Get permissions based on role
+    const permissions = getEmployeePermissions(employee.role);
+    
+    // Generate JWT token with employee data
+    const token = generateToken({
+      id: employee._id,
+      employeeId: employee._id,
+      email: employee.email,
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      role: employee.role,
+      branchId: employee.branchId._id,
+      branchName: employee.branchId.businessName,
+      userId: employee.userId, // Original branch owner ID
+      permissions,
+      type: 'employee' // Distinguish from owner tokens
+    });
+    
+    logger.info('[EMPLOYEE AUTH] Login successful', {
+      employeeId: employee._id,
+      role: employee.role,
+      branchId: employee.branchId._id
+    });
+    
+    res.json({
+      success: true,
+      message: 'Employee login successful',
+      token,
+      user: {
+        id: employee._id,
+        email: employee.email,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        role: employee.role,
+        branchId: employee.branchId._id,
+        branchName: employee.branchId.businessName,
+        permissions,
+        assignedRooms: employee.assignedRooms,
+        type: 'employee'
+      }
+    });
+    
+  } catch (error) {
+    logger.error('[EMPLOYEE AUTH] Login error', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Employee login failed'
+    });
+  }
+});
+
+// POST /api/auth/employee/verify - Verify employee token
+router.post('/employee/verify', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        error: 'No token provided'
+      });
+    }
+    
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+    
+    if (!decoded || decoded.type !== 'employee') {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid employee token'
+      });
+    }
+    
+    // Get fresh employee data
+    const employee = await Employee.findById(decoded.employeeId)
+      .select('-password')
+      .populate('branchId', 'businessName email');
+    
+    if (!employee || !employee.isActive || employee.isLocked) {
+      return res.status(401).json({
+        success: false,
+        error: 'Employee account inactive or locked'
+      });
+    }
+    
+    res.json({
+      success: true,
+      user: {
+        id: employee._id,
+        email: employee.email,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        role: employee.role,
+        branchId: employee.branchId._id,
+        branchName: employee.branchId.businessName,
+        permissions: getEmployeePermissions(employee.role),
+        assignedRooms: employee.assignedRooms,
+        type: 'employee'
+      }
+    });
+    
+  } catch (error) {
+    logger.error('[EMPLOYEE AUTH] Verify error', error);
+    res.status(401).json({
+      success: false,
+      error: 'Token verification failed'
+    });
+  }
+});
+
+// POST /api/auth/employee/change-password - Employee change password
+router.post('/employee/change-password', async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        error: 'No token provided'
+      });
+    }
+    
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+    
+    if (!decoded || decoded.type !== 'employee') {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid employee token'
+      });
+    }
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide current and new password'
+      });
+    }
+    
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: 'New password must be at least 6 characters'
+      });
+    }
+    
+    const employee = await Employee.findById(decoded.employeeId);
+    
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        error: 'Employee not found'
+      });
+    }
+    
+    // Verify current password
+    const isPasswordValid = await employee.comparePassword(currentPassword);
+    
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        error: 'Current password is incorrect'
+      });
+    }
+    
+    // Update password (will be hashed by pre-save hook)
+    employee.password = newPassword;
+    await employee.save();
+    
+    logger.info('[EMPLOYEE AUTH] Password changed', { employeeId: employee._id });
+    
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+    
+  } catch (error) {
+    logger.error('[EMPLOYEE AUTH] Change password error', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to change password'
+    });
+  }
+});
+
+// Helper function to get employee permissions based on role
+function getEmployeePermissions(role) {
+  const rolePermissions = {
+    owner: ['*'],
+    manager: ['read:*'],
+    senior_therapist: ['read:own_appointments', 'write:own_appointments', 'read:own_attendance', 'read:own_payroll', 'read:assigned_rooms'],
+    junior_therapist: ['read:own_appointments', 'write:own_appointments', 'read:own_attendance', 'read:own_payroll', 'read:assigned_rooms'],
+    new_therapist: ['read:own_appointments', 'write:own_appointments', 'read:own_attendance', 'read:own_payroll', 'read:assigned_rooms'],
+    receptionist: ['read:pos', 'write:pos', 'read:inventory', 'write:inventory', 'read:customers', 'write:customers', 'read:attendance', 'write:attendance', 'read:payroll', 'read:rooms', 'read:expenses', 'write:expenses'],
+    other_staff: ['read:own_attendance', 'write:own_attendance', 'read:own_payroll']
+  };
+  
+  return rolePermissions[role] || [];
+}
 
 export default router;

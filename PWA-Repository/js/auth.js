@@ -197,11 +197,12 @@ class AuthSystem {
         if (registerForm) registerForm.style.display = 'block';
     }
 
-    // Handle user login
+    // Handle user login (owner or employee)
     async handleLogin() {
         const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value;
         const rememberMe = document.getElementById('rememberMe').checked;
+        const isEmployeeLogin = document.getElementById('employeeLoginToggle')?.checked;
 
         if (!email || !password) {
             showError('Please enter email and password');
@@ -214,9 +215,16 @@ class AuthSystem {
             // Use unified backend URL from API_CONFIG
             const serverUrl = window.API_CONFIG ? window.API_CONFIG.BASE_URL : 'https://daetspa-backend.onrender.com';
             
-            console.log('🔐 Attempting login to unified backend:', serverUrl);
+            // Determine login endpoint based on login type
+            const loginEndpoint = isEmployeeLogin ? '/api/auth/employee/login' : '/api/auth/login';
             
-            const response = await fetch(`${serverUrl}/api/auth/login`, {
+            console.log('🔐 Attempting login:', { 
+                serverUrl, 
+                isEmployee: isEmployeeLogin,
+                endpoint: loginEndpoint 
+            });
+            
+            const response = await fetch(`${serverUrl}${loginEndpoint}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

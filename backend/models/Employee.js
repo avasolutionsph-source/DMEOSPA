@@ -1,9 +1,18 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const employeeSchema = new mongoose.Schema({
-  // User context
+  // User context (branch owner)
   userId: {
     type: String,
+    required: true,
+    index: true
+  },
+  
+  // Branch association for employee login
+  branchId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
     index: true
   },
@@ -27,12 +36,54 @@ const employeeSchema = new mongoose.Schema({
   },
   email: {
     type: String,
+    required: true,
     trim: true,
     lowercase: true
+  },
+  password: {
+    type: String,
+    required: function() {
+      // Password required for employee login
+      return this.role !== undefined;
+    },
+    minlength: 6
   },
   phone: {
     type: String,
     trim: true
+  },
+  
+  // Employee role (required only if has login/password)
+  role: {
+    type: String,
+    enum: ['owner', 'manager', 'senior_therapist', 'junior_therapist', 'new_therapist', 'receptionist', 'other_staff'],
+    required: false, // Optional for PWA-only employees without login
+    index: true
+  },
+  
+  // Room assignments for therapists
+  assignedRooms: [{
+    type: String,
+    trim: true
+  }],
+  
+  // Authentication tracking
+  lastLogin: {
+    type: Date
+  },
+  isLocked: {
+    type: Boolean,
+    default: false
+  },
+  loginAttempts: {
+    type: Number,
+    default: 0
+  },
+  passwordResetToken: {
+    type: String
+  },
+  passwordResetExpires: {
+    type: Date
   },
   
   // Employment details
@@ -200,13 +251,47 @@ employeeSchema.virtual('fullName').get(function() {
   return `${this.firstName} ${this.lastName}`;
 });
 
+// Hash password before saving (for employee login)
+employeeSchema.pre('save', async function(next) {
+  // If password is set, role must also be set
+  if (this.password && !this.role) {
+    return next(new Error('Role is required when creating employee login'));
+  }
+  
+  if (!this.isModified('password') || !this.password) return next();
+  
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+// Compare password method for employee login
+employeeSchema.methods.comparePassword = async function(candidatePassword) {
+  if (!this.password) return false;
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Method to check if employee has specific permission
+employeeSchema.methods.hasPermission = function(permission) {
+  const rolePermissions = {
+    owner: ['*'],
+    manager: ['read:*'],
+    senior_therapist: ['read:own_appointments', 'write:own_appointments', 'read:own_attendance', 'read:own_payroll', 'read:assigned_rooms'],
+    junior_therapist: ['read:own_appointments', 'write:own_appointments', 'read:own_attendance', 'read:own_payroll', 'read:assigned_rooms'],
+    new_therapist: ['read:own_appointments', 'write:own_appointments', 'read:own_attendance', 'read:own_payroll', 'read:assigned_rooms'],
+    receptionist: ['read:pos', 'write:pos', 'read:inventory', 'write:inventory', 'read:customers', 'write:customers', 'read:attendance', 'write:attendance', 'read:payroll', 'read:rooms', 'read:expenses', 'write:expenses'],
+    other_staff: ['read:own_attendance', 'write:own_attendance', 'read:own_payroll']
+  };
+  
+  const permissions = rolePermissions[this.role] || [];
+  if (permissions.includes('*')) return true;
+  if (permissions.includes(`${permission.split(':')[0]}:*`)) return true;
+  return permissions.includes(permission);
+};
+
 // Indexes for performance and uniqueness
 employeeSchema.index({ userId: 1, isActive: 1 });
-employeeSchema.index({ userId: 1, localId: 1 }, { 
-  unique: true, 
-  sparse: true,
-  partialFilterExpression: { localId: { $exists: true, $ne: null } }
-});
+employeeSchema.index({ branchId: 1, role: 1 });
 employeeSchema.index({ syncStatus: 1 });
 employeeSchema.index({ userId: 1, totalSales: -1 }); // For performance ranking
 
@@ -224,12 +309,13 @@ employeeSchema.index(
   }
 );
 
+// Email unique per branch (for employee login)
 employeeSchema.index(
-  { userId: 1, email: 1 }, 
+  { branchId: 1, email: 1 }, 
   { 
     unique: true, 
     sparse: true,
-    name: 'unique_employee_email_per_user',
+    name: 'unique_employee_email_per_branch',
     partialFilterExpression: { 
       email: { $exists: true, $ne: null, $ne: "" }
     }
