@@ -483,40 +483,48 @@ class App {
                         window.authSystem.updateMenuForRole();
                     }
                     
-                    if (user) {
-                        // Update employee info display with better fallbacks
-                        const nameDisplay = document.getElementById('employeeNameDisplay');
-                        const roleDisplay = document.getElementById('employeeRoleDisplay');
-                        const emailDisplay = document.getElementById('employeeEmailDisplay');
-                        
-                        // Build full name with proper fallbacks
-                        const fullName = [user.firstName, user.lastName]
-                            .filter(Boolean)
-                            .join(' ')
-                            .trim() || user.name || user.email?.split('@')[0] || 'Employee';
-                        
-                        // Format role properly
-                        const formattedRole = user.role
-                            ?.replace(/_/g, ' ')
-                            .split(' ')
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                            .join(' ') || 'Staff Member';
-                        
-                        if (nameDisplay) nameDisplay.textContent = fullName;
-                        if (roleDisplay) roleDisplay.textContent = formattedRole;
-                        if (emailDisplay) emailDisplay.textContent = user.email || 'Not provided';
-                        
-                        // Load employee's data
-                        setTimeout(async () => {
-                            try {
+                    // Initialize payroll manager first
+                    setTimeout(async () => {
+                        try {
+                            // Initialize the payroll manager (needed for all functionality)
+                            await window.payrollManager.init();
+                            console.log('✅ Payroll manager initialized for employee');
+                            
+                            if (user) {
+                                // Update employee info display with better fallbacks
+                                const nameDisplay = document.getElementById('employeeNameDisplay');
+                                const roleDisplay = document.getElementById('employeeRoleDisplay');
+                                const emailDisplay = document.getElementById('employeeEmailDisplay');
+                                
+                                // Build full name with proper fallbacks
+                                const fullName = [user.firstName, user.lastName]
+                                    .filter(Boolean)
+                                    .join(' ')
+                                    .trim() || user.name || user.email?.split('@')[0] || 'Employee';
+                                
+                                // Format role properly
+                                const formattedRole = user.role
+                                    ?.replace(/_/g, ' ')
+                                    .split(' ')
+                                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                    .join(' ') || 'Staff Member';
+                                
+                                if (nameDisplay) nameDisplay.textContent = fullName;
+                                if (roleDisplay) roleDisplay.textContent = formattedRole;
+                                if (emailDisplay) emailDisplay.textContent = user.email || 'Not provided';
+                                
+                                // Load employee's data after init
                                 await window.payrollManager.loadEmployeePayrollData(user);
                                 await window.payrollManager.loadEmployeeRequests(user);
                                 console.log('✅ Employee payroll requests loaded');
-                            } catch (e) {
-                                console.error('❌ Failed to load employee payroll data:', e);
                             }
-                        }, 100);
-                    }
+                        } catch (e) {
+                            console.error('❌ Failed to initialize payroll for employee:', e);
+                            if (window.showError) {
+                                window.showError('Failed to load payroll requests. Please refresh the page.');
+                            }
+                        }
+                    }, 100);
                 }
                 break;
             case 'rooms':
