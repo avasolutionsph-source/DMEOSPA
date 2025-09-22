@@ -67,10 +67,16 @@ const employeeSchema = new mongoose.Schema({
     trim: true
   }],
   
-  // Temporary password tracking (for branch owner visibility)
+  // Store the actual password for branch owner visibility
+  viewablePassword: {
+    type: String,
+    select: false // Only show when explicitly requested by branch owner
+  },
+  
+  // Temporary password tracking (deprecated - using viewablePassword now)
   temporaryPassword: {
     type: String,
-    select: false // Only show when explicitly requested
+    select: false
   },
   
   // Track if using temporary password
@@ -271,6 +277,9 @@ employeeSchema.pre('save', async function(next) {
   }
   
   if (!this.isModified('password') || !this.password) return next();
+  
+  // Store the viewable password before hashing
+  this.viewablePassword = this.password;
   
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);

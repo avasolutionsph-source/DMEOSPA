@@ -151,11 +151,11 @@
                         <tr>
                             <th>Name</th>
                             <th>Email</th>
+                            <th>Password</th>
                             <th>Position</th>
                             <th>Login Status</th>
                             <th>Login Role</th>
                             <th>Department</th>
-                            <th>Last Login</th>
                             <th width="200">Actions</th>
                         </tr>
                     </thead>
@@ -245,20 +245,37 @@
                             <div id="passwordOptions">
                                 <div class="mb-3">
                                     <label for="temporaryPassword" class="form-label">
-                                        Temporary Password (optional)
+                                        Password
                                     </label>
-                                    <input type="text" class="form-control" id="temporaryPassword" 
-                                           placeholder="Leave blank to auto-generate">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="temporaryPassword" 
+                                               placeholder="Enter password or leave blank to auto-generate">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="generateRandomPassword()">
+                                            <i class="fas fa-dice"></i> Generate
+                                        </button>
+                                    </div>
                                     <small class="text-muted">
-                                        If blank, a random password will be generated
+                                        Branch owner can set a custom password or generate a random one
                                     </small>
+                                </div>
+                                
+                                <div id="currentPasswordDisplay" style="display: none;">
+                                    <div class="mb-3">
+                                        <label class="form-label">Current Password</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="currentPassword" readonly>
+                                            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(document.getElementById('currentPassword').value)">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <div id="resetPasswordSection" style="display: none;">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="resetPassword">
+                                        <input class="form-check-input" type="checkbox" id="resetPassword" onchange="togglePasswordReset()">
                                         <label class="form-check-label" for="resetPassword">
-                                            Reset password and unlock account
+                                            Change password
                                         </label>
                                     </div>
                                 </div>
@@ -406,14 +423,27 @@
                     </button>
                 `;
                 
+                // Password display with copy button
+                let passwordDisplay = '-';
+                if (emp.viewablePassword) {
+                    passwordDisplay = `
+                        <div class="input-group input-group-sm" style="max-width: 150px;">
+                            <input type="text" class="form-control form-control-sm" value="${emp.viewablePassword}" readonly style="font-family: monospace;">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="copyToClipboard('${emp.viewablePassword}')" title="Copy">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+                
                 const row = [
                     `${emp.firstName} ${emp.lastName}`,
                     emp.email || '<span class="text-muted">No email</span>',
+                    passwordDisplay,
                     position,
                     loginStatusBadge,
                     loginRoleDisplay,
                     emp.department || '-',
-                    lastLogin,
                     `<div class="action-buttons">${actionButtons}</div>`
                 ];
                 
@@ -465,6 +495,7 @@
                 document.getElementById('employeeModalTitle').textContent = 'Edit Employee';
                 document.getElementById('submitBtnText').textContent = 'Update Employee';
                 document.getElementById('resetPasswordSection').style.display = 'block';
+                document.getElementById('currentPasswordDisplay').style.display = 'block';
                 
                 const employee = employees.find(e => e._id === employeeId);
                 if (employee) {
@@ -477,6 +508,18 @@
                     document.getElementById('department').value = employee.department || '';
                     document.getElementById('commissionRate').value = employee.commissionRate || 0;
                     
+                    // Show current password if available
+                    if (employee.viewablePassword) {
+                        document.getElementById('currentPassword').value = employee.viewablePassword;
+                        document.getElementById('currentPasswordDisplay').style.display = 'block';
+                    } else {
+                        document.getElementById('currentPasswordDisplay').style.display = 'none';
+                    }
+                    
+                    // Clear password field for editing
+                    document.getElementById('temporaryPassword').value = '';
+                    document.getElementById('resetPassword').checked = false;
+                    
                     if (employee.assignedRooms && employee.assignedRooms.length > 0) {
                         document.getElementById('assignedRooms').value = employee.assignedRooms.join(', ');
                     }
@@ -488,6 +531,7 @@
                 document.getElementById('employeeModalTitle').textContent = 'Add New Employee';
                 document.getElementById('submitBtnText').textContent = 'Add Employee';
                 document.getElementById('resetPasswordSection').style.display = 'none';
+                document.getElementById('currentPasswordDisplay').style.display = 'none';
                 document.getElementById('employeeForm').reset();
                 document.getElementById('employeeId').value = '';
             }
@@ -557,9 +601,13 @@
                     : [];
             }
             
-            // Handle password reset for edit mode
+            // Handle password update for edit mode
             if (isEdit && document.getElementById('resetPassword').checked) {
-                employeeData.resetPassword = true;
+                const newPassword = document.getElementById('temporaryPassword').value;
+                if (newPassword) {
+                    employeeData.password = newPassword;
+                    employeeData.resetPassword = true;
+                }
             }
             
             try {
@@ -635,6 +683,30 @@
                 passwordOptions.style.display = 'block';
             } else {
                 passwordOptions.style.display = 'none';
+            }
+        }
+        
+        // Generate random password
+        function generateRandomPassword() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+            let password = '';
+            for (let i = 0; i < 8; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('temporaryPassword').value = password;
+        }
+        
+        // Toggle password reset
+        function togglePasswordReset() {
+            const resetChecked = document.getElementById('resetPassword').checked;
+            const passwordField = document.getElementById('temporaryPassword');
+            
+            if (resetChecked) {
+                passwordField.disabled = false;
+                passwordField.placeholder = 'Enter new password or generate one';
+            } else {
+                passwordField.disabled = true;
+                passwordField.value = '';
             }
         }
         

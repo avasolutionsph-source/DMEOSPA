@@ -66,12 +66,10 @@ router.post('/', withErrorHandling(async (req, res) => {
         }
     }
     
-    // Generate temporary password if creating login
+    // Use provided password or generate one
     let password = null;
-    let tempPassword = null;
     if (createLogin && email) {
-        tempPassword = temporaryPassword || crypto.randomBytes(4).toString('hex');
-        password = tempPassword;
+        password = temporaryPassword || crypto.randomBytes(4).toString('hex');
     }
     
     // Create employee
@@ -81,9 +79,7 @@ router.post('/', withErrorHandling(async (req, res) => {
         firstName,
         lastName,
         email: email ? email.toLowerCase() : `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${branchUser.businessName.replace(/\s+/g, '').toLowerCase()}.temp`,
-        password: password, // Will be hashed by pre-save hook
-        temporaryPassword: tempPassword, // Store unhashed for display
-        isUsingTemporaryPassword: !!tempPassword,
+        password: password, // Will be hashed by pre-save hook, viewablePassword set in pre-save
         role,
         phone: phone || '',
         position: position || role,
@@ -113,10 +109,11 @@ router.post('/', withErrorHandling(async (req, res) => {
         message: 'Employee created successfully'
     };
     
-    // Include temporary password in response if created
+    // Include password in response if created
     if (password) {
         response.temporaryPassword = password;
-        response.loginInstructions = `Employee can login with email: ${employee.email} and temporary password: ${password}. They should change their password after first login.`;
+        response.viewablePassword = password;
+        response.loginInstructions = `Employee can login with email: ${employee.email} and password: ${password}.`;
     }
     
     res.json(response);
@@ -159,7 +156,7 @@ router.get('/', withErrorHandling(async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [employees, total] = await Promise.all([
         Employee.find(query)
-            .select('+temporaryPassword') // Include temporary password for branch owners
+            .select('+temporaryPassword +viewablePassword') // Include passwords for branch owners
             .sort({ firstName: 1 })
             .skip(skip)
             .limit(parseInt(limit))
@@ -167,14 +164,15 @@ router.get('/', withErrorHandling(async (req, res) => {
         Employee.countDocuments(query)
     ]);
     
-    // Add login status indicator and include temp password for branch owners only
+    // Add login status indicator and include viewable password for branch owners
     const employeesWithLoginStatus = employees.map(emp => {
-        const { password, temporaryPassword, ...employeeData } = emp;
+        const { password, temporaryPassword, viewablePassword, ...employeeData } = emp;
         return {
             ...employeeData,
             hasLogin: !!password,
             loginRole: emp.role || null,
-            // Only include temporary password if it exists and user is using it
+            // Include viewable password for branch owners
+            viewablePassword: viewablePassword || temporaryPassword || null,
             temporaryPassword: emp.isUsingTemporaryPassword ? temporaryPassword : null,
             isUsingTemporaryPassword: emp.isUsingTemporaryPassword || false
         };
@@ -202,16 +200,16 @@ router.put('/:id', withErrorHandling(async (req, res) => {
     delete updateData.userId;
     delete updateData.branchId;
     
-    // Handle password reset
-    let newTempPassword = null;
-    if (updateData.resetPassword) {
-        newTempPassword = updateData.temporaryPassword || crypto.randomBytes(4).toString('hex');
-        updateData.password = newTempPassword;
-        updateData.temporaryPassword = newTempPassword; // Store unhashed version
-        updateData.isUsingTemporaryPassword = true;
+    // Handle password reset or update
+    let newPassword = null;
+    if (updateData.resetPassword || updateData.password) {
+        newPassword = updateData.password || updateData.temporaryPassword || crypto.randomBytes(4).toString('hex');
+        updateData.password = newPassword;
+        updateData.viewablePassword = newPassword; // Store viewable version
         updateData.loginAttempts = 0;
         updateData.isLocked = false;
         delete updateData.resetPassword;
+        delete updateData.temporaryPassword;
     }
     
     // Find and update employee
@@ -244,9 +242,10 @@ router.put('/:id', withErrorHandling(async (req, res) => {
     };
     
     // Include new password if reset
-    if (newTempPassword) {
-        response.temporaryPassword = newTempPassword;
-        response.loginInstructions = `Employee password has been reset. New temporary password: ${newTempPassword}`;
+    if (newPassword) {
+        response.temporaryPassword = newPassword;
+        response.viewablePassword = newPassword;
+        response.loginInstructions = `Employee password has been updated. New password: ${newPassword}`;
     }
     
     res.json(response);
