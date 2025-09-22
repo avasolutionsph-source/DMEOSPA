@@ -197,12 +197,11 @@ class AuthSystem {
         if (registerForm) registerForm.style.display = 'block';
     }
 
-    // Handle user login (owner or employee)
+    // Handle user login (owner or employee) with auto-detection
     async handleLogin() {
         const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value;
         const rememberMe = document.getElementById('rememberMe').checked;
-        const isEmployeeLogin = document.getElementById('employeeLoginToggle')?.checked;
 
         if (!email || !password) {
             showError('Please enter email and password');
@@ -215,16 +214,12 @@ class AuthSystem {
             // Use unified backend URL from API_CONFIG
             const serverUrl = window.API_CONFIG ? window.API_CONFIG.BASE_URL : 'https://daetspa-backend.onrender.com';
             
-            // Determine login endpoint based on login type
-            const loginEndpoint = isEmployeeLogin ? '/api/auth/employee/login' : '/api/auth/login';
+            // Auto-detection: Try owner login first, then employee if it fails
+            console.log('🔐 Attempting auto-detection login for:', email);
             
-            console.log('🔐 Attempting login:', { 
-                serverUrl, 
-                isEmployee: isEmployeeLogin,
-                endpoint: loginEndpoint 
-            });
-            
-            const response = await fetch(`${serverUrl}${loginEndpoint}`, {
+            // First try branch owner login
+            console.log('1️⃣ Trying OWNER login endpoint...');
+            let response = await fetch(`${serverUrl}/api/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -232,10 +227,31 @@ class AuthSystem {
                 body: JSON.stringify({ email, password })
             });
 
-            const data = await response.json();
-            console.log('🔐 Login response:', data);
+            let data = await response.json();
+            console.log('   Owner login response:', data);
+            
+            // If owner login failed with invalid credentials, try employee login
+            if (!data.success && (data.error === 'Invalid email or password' || data.error === 'Invalid credentials')) {
+                console.log('2️⃣ Owner login failed, trying EMPLOYEE login endpoint...');
+                
+                response = await fetch(`${serverUrl}/api/auth/employee/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                data = await response.json();
+                console.log('   Employee login response:', data);
+            }
 
             if (response.ok && data.success && data.token) {
+                console.log('✅ LOGIN SUCCESSFUL!');
+                console.log('   User type:', data.user.type || 'owner');
+                console.log('   User email:', data.user.email);
+                console.log('   User role:', data.user.role);
+                
                 // Store authentication
                 this.authToken = data.token;
                 this.currentUser = data.user;
