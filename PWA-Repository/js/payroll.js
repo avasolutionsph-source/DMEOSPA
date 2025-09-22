@@ -510,7 +510,7 @@ class PayrollManager {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
-                        <button type="button" class="btn btn-primary" onclick="payrollManager.submitRequest('${requestType}', this)">Submit Request</button>
+                        <button type="button" class="btn btn-primary" onclick="window.payrollManager.submitRequest('${requestType}', this)">Submit Request</button>
                     </div>
                 </div>
             </div>
