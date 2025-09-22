@@ -300,17 +300,14 @@
                     <input type="password" id="password" class="form-input" required placeholder="Enter your password" autocomplete="current-password">
                 </div>
                 
-                <div class="checkbox-container" style="background: #f0f8ff; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                <!-- Employee checkbox hidden - auto-detection handles login routing -->
+                <div class="checkbox-container" style="display: none;">
                     <input type="checkbox" id="employeeLogin" onchange="toggleEmployeeInfo()">
-                    <label for="employeeLogin" style="font-weight: 500; color: #0369a1;">
-                        <i class="fas fa-user-tie"></i> I'm an employee
-                    </label>
+                    <label for="employeeLogin">I'm an employee</label>
                 </div>
                 
-                <div id="employeeInfo" style="display: none; background: #fef3c7; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
-                    <small style="color: #92400e;">
-                        <i class="fas fa-info-circle"></i> Use the credentials provided by your branch owner. Your access will be limited based on your role.
-                    </small>
+                <div id="employeeInfo" style="display: none;">
+                    <small>Use the credentials provided by your branch owner.</small>
                 </div>
                 
                 <div class="checkbox-container">
@@ -377,7 +374,6 @@
                 const email = document.getElementById('email').value.trim();
                 const password = document.getElementById('password').value;
                 const rememberMe = document.getElementById('rememberMe').checked;
-                const isEmployeeLogin = document.getElementById('employeeLogin').checked;
                 
                 if (!email || !password) {
                     this.showError('Please enter both email and password.');
@@ -388,18 +384,16 @@
                 this.hideMessages();
                 
                 try {
-                    // Determine the correct endpoint based on login type
+                    // Determine the correct backend URL
                     const baseUrl = window.location.hostname === 'localhost' 
                         ? 'http://localhost:4001' 
                         : 'https://daetspa-backend.onrender.com';
                     
-                    const endpoint = isEmployeeLogin 
-                        ? '/api/auth/employee/login' 
-                        : '/api/auth/login';
+                    // Auto-detection: Try owner login first, then employee if it fails
+                    console.log('🔐 Attempting auto-detection login...');
                     
-                    console.log(`🔐 Attempting ${isEmployeeLogin ? 'employee' : 'owner'} login to: ${baseUrl}${endpoint}`);
-                    
-                    const response = await fetch(`${baseUrl}${endpoint}`, {
+                    // First try branch owner login
+                    let response = await fetch(`${baseUrl}/api/auth/login`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -407,7 +401,22 @@
                         body: JSON.stringify({ email, password })
                     });
                     
-                    const data = await response.json();
+                    let data = await response.json();
+                    
+                    // If owner login failed with invalid credentials, try employee login
+                    if (!data.success && (data.error === 'Invalid email or password' || data.error === 'Invalid credentials')) {
+                        console.log('👤 Owner login failed, trying employee login...');
+                        
+                        response = await fetch(`${baseUrl}/api/auth/employee/login`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ email, password })
+                        });
+                        
+                        data = await response.json();
+                    }
                     
                     if (data.success) {
                         // Store authentication data using auth system
