@@ -1237,8 +1237,29 @@
                         </div>
                     </div>
 
-                    <!-- Name Selection Section -->
-                    <div class="attendance-section">
+                    <!-- Self Check-in Section (For Employees) -->
+                    <div class="attendance-section" id="selfAttendanceSection" style="display: none;">
+                        <h2>My Attendance</h2>
+                        <div class="self-attendance-controls" style="text-align: center; padding: 2rem;">
+                            <div id="employeeNameDisplay" style="margin-bottom: 1.5rem; font-size: 1.2rem; font-weight: 500; color: #4b5563;">
+                                <!-- Employee name will be shown here -->
+                            </div>
+                            <div style="display: flex; gap: 1rem; justify-content: center;">
+                                <button class="btn btn-primary" id="selfCheckinBtn" style="padding: 1rem 2rem; font-size: 1.1rem;">
+                                    <i class="fas fa-user-check"></i> Check In
+                                </button>
+                                <button class="btn btn-danger" id="selfCheckoutBtn" style="padding: 1rem 2rem; font-size: 1.1rem;">
+                                    <i class="fas fa-user-times"></i> Check Out
+                                </button>
+                            </div>
+                            <div id="lastCheckInTime" style="margin-top: 1rem; font-size: 0.9rem; color: #6b7280;">
+                                <!-- Last check-in time will be shown here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Name Selection Section (For Managers/Owners/Receptionists) -->
+                    <div class="attendance-section" id="managerAttendanceSection">
                         <h2>Choose Your Name</h2>
                         <div class="manual-selection-container">
                             <div class="form-group">

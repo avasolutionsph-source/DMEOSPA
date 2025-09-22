@@ -72,6 +72,9 @@ class AttendanceManager {
     async init() {
         console.log('🚀 [ATTENDANCE] Initializing attendance system...');
         try {
+            // Check user role and setup appropriate UI
+            this.setupRoleBasedUI();
+            
             // Simple initialization like POS
             // Load employees
             await this.loadEmployeesSimple();
@@ -110,6 +113,234 @@ class AttendanceManager {
             // Still mark as initialized to prevent re-initialization loops
             window.attendanceManager.initialized = true;
         }
+    }
+    
+    // Setup UI based on user role
+    setupRoleBasedUI() {
+        // Get current user from auth system
+        const user = window.authSystem?.currentUser;
+        
+        if (!user) {
+            console.log('⚠️ No user found, showing default UI');
+            return;
+        }
+        
+        console.log('🔐 Setting up attendance UI for:', {
+            email: user.email,
+            type: user.type,
+            role: user.role
+        });
+        
+        const selfAttendanceSection = document.getElementById('selfAttendanceSection');
+        const managerAttendanceSection = document.getElementById('managerAttendanceSection');
+        const employeeNameDisplay = document.getElementById('employeeNameDisplay');
+        
+        if (!selfAttendanceSection || !managerAttendanceSection) return;
+        
+        // Check if user is an employee who should only check themselves in/out
+        if (user.type === 'employee') {
+            const role = user.role;
+            
+            // Therapists and staff only see self check-in
+            if (['senior_therapist', 'junior_therapist', 'new_therapist', 'other_staff'].includes(role)) {
+                // Show self attendance UI
+                selfAttendanceSection.style.display = 'block';
+                managerAttendanceSection.style.display = 'none';
+                
+                // Store current employee info for check-in/out
+                this.currentEmployeeId = user.id;
+                this.currentEmployeeName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+                
+                // Display employee name
+                if (employeeNameDisplay) {
+                    employeeNameDisplay.innerHTML = `
+                        <i class="fas fa-user"></i> ${this.currentEmployeeName}
+                        <div style="font-size: 0.9rem; color: #9ca3af; margin-top: 0.5rem;">
+                            ${user.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </div>
+                    `;
+                }
+                
+                // Check if already checked in today
+                this.updateSelfAttendanceStatus();
+                
+            } 
+            // Receptionists and managers see dropdown (they manage others)
+            else if (['receptionist', 'manager'].includes(role)) {
+                selfAttendanceSection.style.display = 'none';
+                managerAttendanceSection.style.display = 'block';
+            }
+        } else {
+            // Owners see dropdown (manage all employees)
+            selfAttendanceSection.style.display = 'none';
+            managerAttendanceSection.style.display = 'block';
+        }
+    }
+    
+    // Update self attendance status (check if already checked in)
+    async updateSelfAttendanceStatus() {
+        if (!this.currentEmployeeId) return;
+        
+        const today = new Date().toLocaleDateString();
+        const todayRecord = this.attendanceRecords.find(record => 
+            record.employeeId === this.currentEmployeeId && 
+            new Date(record.date).toLocaleDateString() === today
+        );
+        
+        const selfCheckinBtn = document.getElementById('selfCheckinBtn');
+        const selfCheckoutBtn = document.getElementById('selfCheckoutBtn');
+        const lastCheckInTime = document.getElementById('lastCheckInTime');
+        
+        if (todayRecord) {
+            // Already checked in today
+            if (selfCheckinBtn) selfCheckinBtn.disabled = true;
+            if (selfCheckoutBtn) selfCheckoutBtn.disabled = !todayRecord.checkInTime || todayRecord.checkOutTime;
+            
+            if (lastCheckInTime && todayRecord.checkInTime) {
+                const checkInTime = new Date(`${todayRecord.date} ${todayRecord.checkInTime}`);
+                lastCheckInTime.innerHTML = `
+                    <i class="fas fa-clock"></i> 
+                    Checked in at ${todayRecord.checkInTime}
+                    ${todayRecord.checkOutTime ? `<br>Checked out at ${todayRecord.checkOutTime}` : ''}
+                `;
+            }
+        } else {
+            // Not checked in yet
+            if (selfCheckinBtn) selfCheckinBtn.disabled = false;
+            if (selfCheckoutBtn) selfCheckoutBtn.disabled = true;
+            if (lastCheckInTime) lastCheckInTime.innerHTML = '<i class="fas fa-info-circle"></i> Not checked in today';
+        }
+    }
+    
+    // Self check-in for employees
+    async selfCheckin() {
+        if (!this.currentEmployeeId || !this.currentEmployeeName) {
+            if (window.showNotification) {
+                window.showNotification('User information not found', 'error');
+            }
+            return;
+        }
+        
+        // Find employee data
+        const employee = this.employees.find(emp => 
+            (emp.id || emp._id) === this.currentEmployeeId
+        ) || {
+            id: this.currentEmployeeId,
+            name: this.currentEmployeeName,
+            position: window.authSystem?.currentUser?.role || 'Employee'
+        };
+        
+        const now = new Date();
+        const date = now.toISOString().split('T')[0];
+        const time = now.toTimeString().split(' ')[0].substring(0, 5);
+        
+        // Check for late check-in (after 9:00 AM)
+        const [hours, minutes] = time.split(':').map(Number);
+        const isLate = hours > 9 || (hours === 9 && minutes > 0);
+        const status = isLate ? 'Late' : 'Present';
+        
+        // Create attendance record
+        const record = {
+            id: Date.now(),
+            employeeId: employee.id,
+            employeeName: employee.name,
+            date: date,
+            checkInTime: time,
+            checkOutTime: null,
+            hours: 0,
+            status: status,
+            capturedImage: this.lastCapturedImage || null,
+            recordedVideo: this.recordedVideoData || null
+        };
+        
+        // Save record
+        this.attendanceRecords.push(record);
+        this.allAttendanceRecords.push(record);
+        this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
+        this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
+        
+        // Sync with backend
+        await this.syncAttendanceWithBackend(record);
+        
+        // Show notification
+        const message = isLate ? 
+            `⚠️ ${employee.name} checked in late at ${time}` : 
+            `✅ ${employee.name} checked in successfully at ${time}`;
+        
+        if (window.showNotification) {
+            window.showNotification(message, isLate ? 'warning' : 'success');
+        }
+        
+        // Update UI
+        this.updateSelfAttendanceStatus();
+        await this.loadAttendanceRecords();
+        this.renderAttendanceRecords();
+        this.renderAttendanceHistoryTable();
+        this.updateAttendanceStats();
+    }
+    
+    // Self check-out for employees
+    async selfCheckout() {
+        if (!this.currentEmployeeId) {
+            if (window.showNotification) {
+                window.showNotification('User information not found', 'error');
+            }
+            return;
+        }
+        
+        const today = new Date().toISOString().split('T')[0];
+        const record = this.attendanceRecords.find(r => 
+            r.employeeId === this.currentEmployeeId && 
+            r.date === today && 
+            r.checkInTime && 
+            !r.checkOutTime
+        );
+        
+        if (!record) {
+            if (window.showNotification) {
+                window.showNotification('No active check-in found for today', 'warning');
+            }
+            return;
+        }
+        
+        const now = new Date();
+        const checkOutTime = now.toTimeString().split(' ')[0].substring(0, 5);
+        
+        // Calculate hours worked
+        const checkInDate = new Date(`${record.date} ${record.checkInTime}`);
+        const checkOutDate = new Date(`${record.date} ${checkOutTime}`);
+        const hoursWorked = ((checkOutDate - checkInDate) / (1000 * 60 * 60)).toFixed(2);
+        
+        // Update record
+        record.checkOutTime = checkOutTime;
+        record.hours = parseFloat(hoursWorked);
+        
+        // Check for early departure (before 5:00 PM)
+        const [hours] = checkOutTime.split(':').map(Number);
+        const isEarlyDeparture = hours < 17;
+        
+        // Save locally
+        this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
+        this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
+        
+        // Sync with backend
+        await this.syncAttendanceWithBackend(record);
+        
+        // Show notification
+        const message = isEarlyDeparture ? 
+            `⚠️ ${record.employeeName} checked out early at ${checkOutTime} (${hoursWorked} hours worked)` :
+            `✅ ${record.employeeName} checked out at ${checkOutTime} (${hoursWorked} hours worked)`;
+        
+        if (window.showNotification) {
+            window.showNotification(message, isEarlyDeparture ? 'warning' : 'success');
+        }
+        
+        // Update UI
+        this.updateSelfAttendanceStatus();
+        await this.loadAttendanceRecords();
+        this.renderAttendanceRecords();
+        this.renderAttendanceHistoryTable();
+        this.updateAttendanceStats();
     }
     
     // Load employees using HybridAPIClient (consistent with Employee Management)
@@ -403,6 +634,18 @@ class AttendanceManager {
         if (!attendancePage) return;
         
         this._listenersAttached = true;
+        
+        // Self check-in button (for employees)
+        const selfCheckinBtn = document.getElementById('selfCheckinBtn');
+        if (selfCheckinBtn) {
+            selfCheckinBtn.addEventListener('click', () => this.selfCheckin());
+        }
+        
+        // Self check-out button (for employees)
+        const selfCheckoutBtn = document.getElementById('selfCheckoutBtn');
+        if (selfCheckoutBtn) {
+            selfCheckoutBtn.addEventListener('click', () => this.selfCheckout());
+        }
         
         // Employee dropdown
         const employeeSelect = document.getElementById('attendanceEmployeeSelect');
