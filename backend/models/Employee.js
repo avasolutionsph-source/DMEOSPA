@@ -269,14 +269,25 @@ employeeSchema.virtual('fullName').get(function() {
   return `${this.firstName} ${this.lastName}`;
 });
 
-// Hash password before saving (for employee login)
+// Pre-save middleware
 employeeSchema.pre('save', async function(next) {
+  // Set branchId to userId if not set (for backward compatibility)
+  if (!this.branchId && this.userId) {
+    this.branchId = this.userId;
+  }
+  
   // If password is set, role must also be set
   if (this.password && !this.role) {
     return next(new Error('Role is required when creating employee login'));
   }
   
   if (!this.isModified('password') || !this.password) return next();
+  
+  // Check if password is already hashed (bcrypt hashes start with $2a$ or $2b$)
+  if (this.password.startsWith('$2a$') || this.password.startsWith('$2b$')) {
+    // Password is already hashed, don't hash again
+    return next();
+  }
   
   // Store the viewable password before hashing
   this.viewablePassword = this.password;
