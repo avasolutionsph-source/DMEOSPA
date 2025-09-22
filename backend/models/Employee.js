@@ -67,6 +67,18 @@ const employeeSchema = new mongoose.Schema({
     trim: true
   }],
   
+  // Temporary password tracking (for branch owner visibility)
+  temporaryPassword: {
+    type: String,
+    select: false // Only show when explicitly requested
+  },
+  
+  // Track if using temporary password
+  isUsingTemporaryPassword: {
+    type: Boolean,
+    default: false
+  },
+  
   // Authentication tracking
   lastLogin: {
     type: Date

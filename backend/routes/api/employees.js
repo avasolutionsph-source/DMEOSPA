@@ -68,8 +68,10 @@ router.post('/', withErrorHandling(async (req, res) => {
     
     // Generate temporary password if creating login
     let password = null;
+    let tempPassword = null;
     if (createLogin && email) {
-        password = temporaryPassword || crypto.randomBytes(4).toString('hex');
+        tempPassword = temporaryPassword || crypto.randomBytes(4).toString('hex');
+        password = tempPassword;
     }
     
     // Create employee
@@ -80,6 +82,8 @@ router.post('/', withErrorHandling(async (req, res) => {
         lastName,
         email: email ? email.toLowerCase() : `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${branchUser.businessName.replace(/\s+/g, '').toLowerCase()}.temp`,
         password: password, // Will be hashed by pre-save hook
+        temporaryPassword: tempPassword, // Store unhashed for display
+        isUsingTemporaryPassword: !!tempPassword,
         role,
         phone: phone || '',
         position: position || role,
@@ -155,6 +159,7 @@ router.get('/', withErrorHandling(async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [employees, total] = await Promise.all([
         Employee.find(query)
+            .select('+temporaryPassword') // Include temporary password for branch owners
             .sort({ firstName: 1 })
             .skip(skip)
             .limit(parseInt(limit))
@@ -162,13 +167,16 @@ router.get('/', withErrorHandling(async (req, res) => {
         Employee.countDocuments(query)
     ]);
     
-    // Add login status indicator and remove password from response
+    // Add login status indicator and include temp password for branch owners only
     const employeesWithLoginStatus = employees.map(emp => {
-        const { password, ...employeeData } = emp;
+        const { password, temporaryPassword, ...employeeData } = emp;
         return {
             ...employeeData,
             hasLogin: !!password,
-            loginRole: emp.role || null
+            loginRole: emp.role || null,
+            // Only include temporary password if it exists and user is using it
+            temporaryPassword: emp.isUsingTemporaryPassword ? temporaryPassword : null,
+            isUsingTemporaryPassword: emp.isUsingTemporaryPassword || false
         };
     });
     
@@ -195,12 +203,15 @@ router.put('/:id', withErrorHandling(async (req, res) => {
     delete updateData.branchId;
     
     // Handle password reset
+    let newTempPassword = null;
     if (updateData.resetPassword) {
-        updateData.password = updateData.temporaryPassword || crypto.randomBytes(4).toString('hex');
+        newTempPassword = updateData.temporaryPassword || crypto.randomBytes(4).toString('hex');
+        updateData.password = newTempPassword;
+        updateData.temporaryPassword = newTempPassword; // Store unhashed version
+        updateData.isUsingTemporaryPassword = true;
         updateData.loginAttempts = 0;
         updateData.isLocked = false;
         delete updateData.resetPassword;
-        delete updateData.temporaryPassword;
     }
     
     // Find and update employee
@@ -233,9 +244,9 @@ router.put('/:id', withErrorHandling(async (req, res) => {
     };
     
     // Include new password if reset
-    if (updateData.password) {
-        response.temporaryPassword = updateData.password;
-        response.loginInstructions = `Employee password has been reset. New temporary password: ${updateData.password}`;
+    if (newTempPassword) {
+        response.temporaryPassword = newTempPassword;
+        response.loginInstructions = `Employee password has been reset. New temporary password: ${newTempPassword}`;
     }
     
     res.json(response);

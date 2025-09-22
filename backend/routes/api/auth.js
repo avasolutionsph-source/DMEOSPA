@@ -772,6 +772,9 @@ router.post('/employee/change-password', async (req, res) => {
     
     // Update password (will be hashed by pre-save hook)
     employee.password = newPassword;
+    // Clear temporary password since employee has changed it
+    employee.temporaryPassword = undefined;
+    employee.isUsingTemporaryPassword = false;
     await employee.save();
     
     logger.info('[EMPLOYEE AUTH] Password changed', { employeeId: employee._id });
