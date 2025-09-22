@@ -352,29 +352,38 @@ class PayrollManager {
             // Load payroll records for this employee
             const allRecords = await window.db.getAll('payroll');
             this.payrollRecords = allRecords.filter(r => r.employeeId === user.id);
-            
-            // Display payroll history
-            this.displayEmployeePayrollHistory();
         } catch (error) {
             console.error('Failed to load employee payroll data:', error);
+            // Initialize empty array on error so UI can update
+            this.payrollRecords = [];
+        } finally {
+            // Always display payroll history, even if empty or error occurred
+            this.displayEmployeePayrollHistory();
         }
     }
     
     // Load employee's requests
     async loadEmployeeRequests(user) {
+        let myRequests = [];
         try {
             // Load requests for this employee
             const allRequests = await window.db.getAll('payrollRequests') || [];
-            const myRequests = allRequests.filter(r => r.employeeId === user.id);
-            
-            // Display requests
-            this.displayEmployeeRequests(myRequests);
+            myRequests = allRequests.filter(r => r.employeeId === user.id);
         } catch (error) {
             console.error('Failed to load employee requests:', error);
-            // If store doesn't exist, create it
-            if (error.name === 'NotFoundError') {
-                await window.db.createStore('payrollRequests');
+            // If store doesn't exist, try to create it
+            if (error.name === 'NotFoundError' || error.message?.includes('payrollRequests')) {
+                try {
+                    await window.db.createStore('payrollRequests');
+                    console.log('Created payrollRequests store');
+                } catch (createError) {
+                    console.error('Failed to create payrollRequests store:', createError);
+                }
             }
+            // Keep myRequests as empty array so UI can update
+        } finally {
+            // Always display requests, even if empty or error occurred
+            this.displayEmployeeRequests(myRequests);
         }
     }
     
