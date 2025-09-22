@@ -796,7 +796,7 @@ class AuthSystem {
             
             // Manager can read everything - uses full payroll page
             'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers', 
-                       'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'settings'],
+                       'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
             
             // Other staff limited access - uses payroll-requests
             'other_staff': ['attendance', 'payroll']
@@ -831,15 +831,6 @@ class AuthSystem {
         
         menuItems.forEach(item => {
             const page = item.getAttribute('data-page');
-            
-            // Always allow chatbot (AI Assistant) for all users
-            if (page === 'chatbot') {
-                item.style.display = 'flex';
-                if (item.parentElement) {
-                    item.parentElement.style.display = 'block';
-                }
-                return;
-            }
             
             // Check if this page is allowed for the user's role
             if (allowedPages.includes(page)) {
@@ -894,15 +885,12 @@ class AuthSystem {
             'new_therapist': ['appointments', 'attendance', 'payroll-requests'],
             'receptionist': ['pos', 'inventory', 'customers', 'attendance', 'payroll-requests', 'rooms', 'expenses'],
             'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers', 
-                       'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'settings'],
+                       'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
             'other_staff': ['attendance', 'payroll-requests']
         };
         
         const userRole = this.currentUser.role;
         const allowedPages = rolePermissions[userRole] || [];
-        
-        // Always allow chatbot
-        if (page === 'chatbot') return true;
         
         return allowedPages.includes(page);
     }

@@ -469,6 +469,11 @@ class App {
                     const user = window.authSystem?.currentUser;
                     console.log('Loading payroll-requests for user:', user);
                     
+                    // Update menu to hide unauthorized items for employees
+                    if (window.authSystem && window.authSystem.updateMenuForRole) {
+                        window.authSystem.updateMenuForRole();
+                    }
+                    
                     if (user) {
                         // Update employee info display with better fallbacks
                         const nameDisplay = document.getElementById('employeeNameDisplay');
