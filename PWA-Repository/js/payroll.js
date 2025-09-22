@@ -350,7 +350,7 @@ class PayrollManager {
     async loadEmployeePayrollData(user) {
         try {
             // Load payroll records for this employee
-            const allRecords = await window.db.getAll('payrollRecords');
+            const allRecords = await window.db.getAll('payroll');
             this.payrollRecords = allRecords.filter(r => r.employeeId === user.id);
             
             // Display payroll history
