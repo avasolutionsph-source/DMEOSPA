@@ -59,6 +59,11 @@ class AuthSystem {
             // Update UI to show correct auth state
             this.updateAuthUI();
             
+            // Update menu based on role if logged in
+            if (this.isLoggedIn) {
+                this.updateMenuForRole();
+            }
+            
             // Update initialization state
             if (window.initState) {
                 window.initState.auth = 'ready';
@@ -293,6 +298,9 @@ class AuthSystem {
                 // Update UI
                 this.updateAuthUI();
                 
+                // Update menu based on role
+                this.updateMenuForRole();
+                
                 // Initialize user session
                 await this.initializeUserSession();
 
@@ -391,6 +399,9 @@ class AuthSystem {
                 
                 // Update UI
                 this.updateAuthUI();
+                
+                // Update menu based on role
+                this.updateMenuForRole();
                 
                 // Initialize user session
                 await this.initializeUserSession();
@@ -769,6 +780,126 @@ class AuthSystem {
     // Get auth token
     getAuthToken() {
         return this.authToken;
+    }
+
+    // Update menu based on user role
+    updateMenuForRole() {
+        // Define what pages each role can access
+        const rolePermissions = {
+            // Therapist roles can only see their own data
+            'senior_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
+            'junior_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
+            'new_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
+            
+            // Receptionist has broader access
+            'receptionist': ['pos', 'inventory', 'customers', 'attendance', 'payroll', 'rooms', 'expenses'],
+            
+            // Manager can read everything
+            'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers', 
+                       'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'settings'],
+            
+            // Other staff limited access
+            'other_staff': ['attendance', 'payroll']
+        };
+        
+        // Get all menu items
+        const menuItems = document.querySelectorAll('.nav-link');
+        
+        if (!this.currentUser) return;
+        
+        // If user is an owner (not employee), show everything
+        if (this.currentUser.type !== 'employee') {
+            menuItems.forEach(item => {
+                item.style.display = 'flex';
+                if (item.parentElement) {
+                    item.parentElement.style.display = 'block';
+                }
+            });
+            return;
+        }
+        
+        // For employees, filter based on role
+        const userRole = this.currentUser.role;
+        const allowedPages = rolePermissions[userRole] || [];
+        
+        console.log('🔐 Role-based menu filtering:', {
+            user: this.currentUser.email,
+            role: userRole,
+            type: this.currentUser.type,
+            allowedPages: allowedPages
+        });
+        
+        menuItems.forEach(item => {
+            const page = item.getAttribute('data-page');
+            
+            // Always allow chatbot (AI Assistant) for all users
+            if (page === 'chatbot') {
+                item.style.display = 'flex';
+                if (item.parentElement) {
+                    item.parentElement.style.display = 'block';
+                }
+                return;
+            }
+            
+            // Check if this page is allowed for the user's role
+            if (allowedPages.includes(page)) {
+                item.style.display = 'flex';
+                if (item.parentElement) {
+                    item.parentElement.style.display = 'block';
+                }
+            } else {
+                item.style.display = 'none';
+                if (item.parentElement) {
+                    item.parentElement.style.display = 'none';
+                }
+            }
+        });
+        
+        // After filtering, activate the first visible menu item
+        const visibleItems = Array.from(menuItems).filter(item => 
+            item.style.display !== 'none' && item.getAttribute('data-page') !== 'chatbot'
+        );
+        
+        if (visibleItems.length > 0) {
+            // Remove active class from all items
+            menuItems.forEach(item => item.classList.remove('active'));
+            
+            // Set first visible item as active and navigate to it
+            const firstPage = visibleItems[0].getAttribute('data-page');
+            visibleItems[0].classList.add('active');
+            
+            // Navigate to the first allowed page
+            if (typeof navigateToPage === 'function') {
+                setTimeout(() => navigateToPage(firstPage), 100);
+            }
+        }
+    }
+    
+    // Check if user has permission for a specific page
+    hasPagePermission(page) {
+        if (!this.currentUser) return false;
+        
+        // Owners have all permissions
+        if (this.currentUser.type !== 'employee') return true;
+        
+        // Define permissions (same as above)
+        const rolePermissions = {
+            'senior_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
+            'junior_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
+            'new_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
+            'receptionist': ['pos', 'inventory', 'customers', 'attendance', 'payroll', 'rooms', 'expenses'],
+            'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers', 
+                       'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'settings'],
+            'other_staff': ['attendance', 'payroll']
+        };
+        
+        const userRole = this.currentUser.role;
+        const allowedPages = rolePermissions[userRole] || [];
+        
+        // Always allow chatbot
+        if (page === 'chatbot') return true;
+        
+        return allowedPages.includes(page);
     }
 }
 

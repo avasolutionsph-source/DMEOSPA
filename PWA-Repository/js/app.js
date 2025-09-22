@@ -263,6 +263,28 @@ class App {
     }
 
     async showPage(pageName) {
+        // Check permission before navigating
+        if (window.authSystem && window.authSystem.isAuthenticated()) {
+            if (!window.authSystem.hasPagePermission(pageName)) {
+                console.log('❌ Access denied to page:', pageName);
+                
+                // Show access denied message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-error';
+                alertDiv.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 10000; padding: 15px 20px; background: #dc2626; color: white; border-radius: 8px; animation: slideIn 0.3s ease;';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Access Denied: You don't have permission to view this page.
+                `;
+                document.body.appendChild(alertDiv);
+                
+                setTimeout(() => alertDiv.remove(), 3000);
+                
+                // Don't navigate to the restricted page
+                return;
+            }
+        }
+        
         // Update state immediately for responsive UI
         if (window.StateHelpers) {
             window.StateHelpers.navigate(pageName);
