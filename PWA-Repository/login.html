@@ -390,9 +390,11 @@
                         : 'https://daetspa-backend.onrender.com';
                     
                     // Auto-detection: Try owner login first, then employee if it fails
-                    console.log('🔐 Attempting auto-detection login...');
+                    console.log('🔐 Attempting auto-detection login for:', email);
+                    console.log('📍 Using backend URL:', baseUrl);
                     
                     // First try branch owner login
+                    console.log('1️⃣ Trying OWNER login endpoint...');
                     let response = await fetch(`${baseUrl}/api/auth/login`, {
                         method: 'POST',
                         headers: {
@@ -402,10 +404,11 @@
                     });
                     
                     let data = await response.json();
+                    console.log('   Owner login response:', data);
                     
                     // If owner login failed with invalid credentials, try employee login
                     if (!data.success && (data.error === 'Invalid email or password' || data.error === 'Invalid credentials')) {
-                        console.log('👤 Owner login failed, trying employee login...');
+                        console.log('2️⃣ Owner login failed, trying EMPLOYEE login endpoint...');
                         
                         response = await fetch(`${baseUrl}/api/auth/employee/login`, {
                             method: 'POST',
@@ -416,11 +419,16 @@
                         });
                         
                         data = await response.json();
+                        console.log('   Employee login response:', data);
                     }
                     
                     if (data.success) {
                         // Store authentication data using auth system
-                        console.log('🔐 Login successful, storing auth data via auth system');
+                        console.log('✅ LOGIN SUCCESSFUL!');
+                        console.log('   User type:', data.user.type || 'owner');
+                        console.log('   User email:', data.user.email);
+                        console.log('   User role:', data.user.role);
+                        console.log('   Token received:', data.token ? 'Yes' : 'No');
                         
                         // Wait for auth system to be available
                         const storeAuthData = () => {
@@ -458,6 +466,9 @@
                             window.location.href = 'index.html#dashboard';
                         }, 1500);
                     } else {
+                        console.log('❌ LOGIN FAILED!');
+                        console.log('   Error message:', data.error);
+                        console.log('   Full response:', data);
                         this.showError(data.error || 'Login failed. Please try again.');
                     }
                 } catch (error) {
