@@ -263,6 +263,9 @@ class App {
     }
 
     async showPage(pageName) {
+        // Store original page name for permission checking
+        const originalPageName = pageName;
+        
         // Check if employee is trying to access payroll, redirect to payroll-requests
         if (pageName === 'payroll' && window.authSystem && window.authSystem.isAuthenticated()) {
             const user = window.authSystem.currentUser;
@@ -274,8 +277,14 @@ class App {
         }
         
         // Check permission before navigating
+        // Skip permission check if:
+        // 1. Page is payroll-requests
+        // 2. Original page was payroll and got redirected (employee accessing payroll)
         if (window.authSystem && window.authSystem.isAuthenticated()) {
-            if (!window.authSystem.hasPagePermission(pageName) && pageName !== 'payroll-requests') {
+            const skipPermissionCheck = pageName === 'payroll-requests' || 
+                                       (originalPageName === 'payroll' && pageName === 'payroll-requests');
+            
+            if (!skipPermissionCheck && !window.authSystem.hasPagePermission(pageName)) {
                 console.log('❌ Access denied to page:', pageName);
                 
                 // Show access denied message
