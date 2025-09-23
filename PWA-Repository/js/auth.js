@@ -248,6 +248,24 @@ class AuthSystem {
                 console.log('   User email:', data.user.email);
                 console.log('   User role:', data.user.role);
                 
+                // If we're on login.html, redirect after successful login
+                if (window.location.pathname.includes('login.html')) {
+                    setTimeout(() => {
+                        const returnTo = sessionStorage.getItem('returnToPage');
+                        if (returnTo) {
+                            sessionStorage.removeItem('returnToPage');
+                            window.location.href = 'index.html' + returnTo;
+                        } else {
+                            // Redirect based on user type
+                            if (data.user.type === 'employee') {
+                                window.location.href = 'index.html#attendance';
+                            } else {
+                                window.location.href = 'index.html#dashboard';
+                            }
+                        }
+                    }, 1500);
+                }
+                
                 // Store authentication
                 this.authToken = data.token;
                 this.currentUser = data.user;

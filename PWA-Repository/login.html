@@ -349,7 +349,14 @@
             if (token) {
                 showSuccess('Already logged in. Redirecting...');
                 setTimeout(() => {
-                    window.location.href = 'index.html';
+                    // Check if there's a page to return to
+                    const returnTo = sessionStorage.getItem('returnToPage');
+                    if (returnTo) {
+                        sessionStorage.removeItem('returnToPage');
+                        window.location.href = 'index.html' + returnTo;
+                    } else {
+                        window.location.href = 'index.html#dashboard';
+                    }
                 }, 1500);
                 return;
             }

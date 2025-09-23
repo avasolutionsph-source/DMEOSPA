@@ -128,10 +128,29 @@ class App {
         // DEFERRED: Now check authentication after PWA is fully loaded
         console.log('🛡️ PWA fully loaded, now checking authentication...');
         setTimeout(() => {
+            // Check authentication and redirect to login if needed
+            const checkAuth = () => {
+                const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+                const user = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+                
+                if (!token || !user) {
+                    console.log('🚫 Not authenticated, redirecting to login...');
+                    window.location.href = 'login.html';
+                    return false;
+                }
+                return true;
+            };
+            
+            // Check auth immediately
+            if (!checkAuth()) {
+                return; // Stop execution if redirecting
+            }
+            
             if (window.checkAuthenticationAfterLoad) {
                 const isAuthenticated = window.checkAuthenticationAfterLoad();
                 if (!isAuthenticated) {
-                    console.log('🚫 Authentication failed after load, will redirect to login');
+                    console.log('🚫 Authentication failed after load, redirecting to login');
+                    window.location.href = 'login.html';
                 }
             }
         }, 1000); // Give PWA 1 second to fully render before auth check
