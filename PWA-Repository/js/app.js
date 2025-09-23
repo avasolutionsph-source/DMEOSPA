@@ -474,7 +474,30 @@ class App {
                 break;
             case 'payroll-requests':
                 // Initialize employee payroll requests page
-                if (window.payrollManager) {
+                let retryCount = 0;
+                const maxRetries = 50; // 5 seconds max wait
+                
+                const initPayrollRequests = async () => {
+                    if (!window.payrollManager) {
+                        retryCount++;
+                        if (retryCount > maxRetries) {
+                            console.error('❌ PayrollManager failed to load after 5 seconds');
+                            // Try to create it as last resort
+                            if (typeof PayrollManager !== 'undefined') {
+                                console.log('Creating PayrollManager as fallback...');
+                                window.payrollManager = new PayrollManager();
+                            } else {
+                                alert('Failed to load payroll system. Please refresh the page.');
+                                return;
+                            }
+                        } else {
+                            console.log(`⏳ Waiting for payrollManager to load... (attempt ${retryCount}/${maxRetries})`);
+                            // Wait a bit and retry
+                            setTimeout(initPayrollRequests, 100);
+                            return;
+                        }
+                    }
+                    
                     const user = window.authSystem?.currentUser;
                     console.log('Loading payroll-requests for user:', user);
                     
@@ -526,7 +549,10 @@ class App {
                             }
                         }
                     })(); // Execute immediately
-                }
+                };
+                
+                // Start the initialization
+                initPayrollRequests();
                 break;
             case 'rooms':
                 if (window.loadRooms) {
