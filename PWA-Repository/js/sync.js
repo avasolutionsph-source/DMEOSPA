@@ -374,7 +374,9 @@ class SyncManager {
                 // Clear and repopulate
                 const existingProducts = await window.db.getAll('products');  
                 for (const existing of existingProducts) {
-                    await window.db.delete('products', existing.id);
+                    if (existing.id) {
+                        await window.db.delete('products', existing.id);
+                    }
                 }
                 
                 for (const product of products) {
@@ -410,7 +412,9 @@ class SyncManager {
                 // Clear and repopulate
                 const existingTransactions = await window.db.getAll('transactions');  
                 for (const existing of existingTransactions) {
-                    await window.db.delete('transactions', existing.id);
+                    if (existing.id) {
+                        await window.db.delete('transactions', existing.id);
+                    }
                 }
                 
                 for (const transaction of transactions) {
@@ -446,7 +450,9 @@ class SyncManager {
                 // Clear and repopulate
                 const existingCustomers = await window.db.getAll('customers');  
                 for (const existing of existingCustomers) {
-                    await window.db.delete('customers', existing.id);
+                    if (existing.id) {
+                        await window.db.delete('customers', existing.id);
+                    }
                 }
                 
                 for (const customer of customers) {
@@ -484,7 +490,7 @@ class SyncManager {
                 const existingSettings = await window.db.getAll('settings');
                 for (const existing of existingSettings) {
                     // Don't delete local-only settings like sync timestamps
-                    if (!existing.id?.includes('Sync') && !existing.id?.includes('timestamp')) {
+                    if (existing.id && !existing.id.includes('Sync') && !existing.id.includes('timestamp')) {
                         await window.db.delete('settings', existing.id);
                     }
                 }
