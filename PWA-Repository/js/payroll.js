@@ -11,6 +11,7 @@ class PayrollManager {
         this.attendanceRules = null;
         this.requests = [];
         this.managerPassword = '1234'; // Default password, should be configurable
+        this.isInitialized = false; // Track initialization state
     }
     
     // Get authentication token for API requests
@@ -64,6 +65,13 @@ class PayrollManager {
 
     async init() {
         console.log('🚀 Initializing Payroll System...');
+        
+        // If already initialized, return early
+        if (this.isInitialized) {
+            console.log('✅ Payroll system already initialized');
+            return;
+        }
+        
         try {
             // Check user role first to determine what to load
             const user = window.authSystem?.currentUser;
@@ -125,6 +133,7 @@ class PayrollManager {
                 
                 // IMPORTANT: Return early for employees - don't run any manager display functions
                 console.log('✅ Employee payroll interface initialized');
+                this.isInitialized = true; // Mark as initialized
                 return;
             }
             
@@ -179,8 +188,10 @@ class PayrollManager {
             console.log('✅ [PAYROLL] Pending requests displayed');
             
             console.log('✅ Payroll System initialized with', this.employees.length, 'employees');
+            this.isInitialized = true; // Mark as initialized for managers
         } catch (error) {
             console.error('❌ Failed to initialize payroll:', error);
+            this.isInitialized = false; // Mark as failed
             // Don't throw - just log the error to prevent breaking the page
         }
     }

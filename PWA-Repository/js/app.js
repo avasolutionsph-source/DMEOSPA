@@ -483,10 +483,11 @@ class App {
                         window.authSystem.updateMenuForRole();
                     }
                     
-                    // Initialize payroll manager first
-                    setTimeout(async () => {
+                    // Initialize payroll manager immediately for employees
+                    (async () => {
                         try {
                             // Initialize the payroll manager (needed for all functionality)
+                            console.log('Initializing payroll for employee...');
                             await window.payrollManager.init();
                             console.log('✅ Payroll manager initialized for employee');
                             
@@ -524,7 +525,7 @@ class App {
                                 window.showError('Failed to load payroll requests. Please refresh the page.');
                             }
                         }
-                    }, 100);
+                    })(); // Execute immediately
                 }
                 break;
             case 'rooms':
