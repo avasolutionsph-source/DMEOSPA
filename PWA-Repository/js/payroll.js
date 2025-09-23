@@ -441,6 +441,15 @@ class PayrollManager {
                             request.syncStatus = 'synced';
                             await window.db.put('payrollRequests', request);
                         }
+                    } else {
+                        console.error(`❌ API returned error: ${response.status} ${response.statusText}`);
+                        const errorText = await response.text();
+                        console.error('Error response body:', errorText);
+                        
+                        // If 404 or similar, might mean no requests exist yet
+                        if (response.status === 404) {
+                            console.log('No requests found for employee (404) - this is normal for new employees');
+                        }
                     }
                 }
             } catch (serverError) {

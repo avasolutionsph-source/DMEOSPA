@@ -533,10 +533,11 @@ class App {
                                 if (roleDisplay) roleDisplay.textContent = formattedRole;
                                 if (emailDisplay) emailDisplay.textContent = user.email || 'Not provided';
                                 
-                                // Load employee's data after init
-                                await window.payrollManager.loadEmployeePayrollData(user);
-                                await window.payrollManager.loadEmployeeRequests(user);
-                                console.log('✅ Employee payroll requests loaded');
+                                // Don't load data here - payrollManager.init() already does this!
+                                // The init() method in payroll.js already calls:
+                                // - loadEmployeePayrollData(user)
+                                // - loadEmployeeRequests(user)
+                                console.log('✅ Employee payroll requests loaded by init');
                             }
                         } catch (e) {
                             console.error('❌ Failed to initialize payroll for employee:', e);

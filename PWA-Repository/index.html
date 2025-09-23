@@ -3878,10 +3878,13 @@
     <script defer src="js/attendance-history.js"></script>
     <script src="js/payroll.js"></script>
     <script>
-        // Ensure payrollManager is available for employee pages
-        if (!window.payrollManager && window.PayrollManager) {
-            console.log('Creating payrollManager fallback...');
+        // Create payrollManager immediately after script loads
+        if (typeof PayrollManager !== 'undefined') {
+            console.log('Creating payrollManager instance...');
             window.payrollManager = new PayrollManager();
+            console.log('✅ PayrollManager instance created');
+        } else {
+            console.error('❌ PayrollManager class not found - payroll.js may not have loaded');
         }
     </script>
     <script defer src="js/rooms.js"></script>
