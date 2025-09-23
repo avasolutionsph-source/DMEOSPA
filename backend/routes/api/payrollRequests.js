@@ -20,15 +20,37 @@ router.get('/', async (req, res) => {
     // Determine access level
     if (user.type === 'employee') {
       // Employees can only see their own requests
-      const employee = await Employee.findOne({ 
+      // Try multiple ways to find the employee record
+      let employee = await Employee.findOne({ 
         email: user.email,
         branchId: user.branchId || user.userId
       });
       
+      // If not found with branchId, try just email
       if (!employee) {
-        return res.status(404).json({
-          success: false,
-          error: 'Employee record not found'
+        employee = await Employee.findOne({ 
+          email: user.email
+        });
+      }
+      
+      // If still not found, try by _id if user has employeeId
+      if (!employee && user.employeeId) {
+        employee = await Employee.findById(user.employeeId);
+      }
+      
+      if (!employee) {
+        logger.warn('Employee record not found for payroll requests', {
+          email: user.email,
+          userId: user.id,
+          branchId: user.branchId
+        });
+        
+        // Return empty array instead of 404 for better UX
+        return res.json({
+          success: true,
+          data: [],
+          total: 0,
+          message: 'No employee record linked to this account'
         });
       }
       
@@ -95,10 +117,50 @@ router.post('/', async (req, res) => {
     // Get employee record
     let employee;
     if (user.type === 'employee') {
+      // Try multiple ways to find the employee
       employee = await Employee.findOne({ 
         email: user.email,
         branchId: user.branchId || user.userId
       });
+      
+      // If not found with branchId, try just email
+      if (!employee) {
+        employee = await Employee.findOne({ 
+          email: user.email
+        });
+      }
+      
+      // If still not found, try by _id if user has employeeId
+      if (!employee && user.employeeId) {
+        employee = await Employee.findById(user.employeeId);
+      }
+      
+      // If still no employee record, create a minimal one for the request
+      if (!employee) {
+        logger.info('Creating temporary employee data for request', {
+          email: user.email,
+          name: `${user.firstName} ${user.lastName}`
+        });
+        
+        // Use user data to create request without Employee record
+        const payrollRequest = new PayrollRequest({
+          userId: user.branchId || user.userId || user.id,
+          employeeId: user.id, // Use user ID as fallback
+          employeeName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+          type,
+          status: 'pending',
+          details,
+          localId: req.body.localId
+        });
+        
+        await payrollRequest.save();
+        
+        return res.status(201).json({
+          success: true,
+          data: payrollRequest,
+          message: 'Request submitted successfully (without employee record)'
+        });
+      }
     } else {
       // For testing, allow managers to create requests for employees
       if (req.body.employeeId) {
@@ -106,7 +168,7 @@ router.post('/', async (req, res) => {
       }
     }
     
-    if (!employee) {
+    if (!employee && user.type !== 'employee') {
       return res.status(404).json({
         success: false,
         error: 'Employee record not found'

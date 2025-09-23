@@ -1901,15 +1901,15 @@
         
         <!-- Request Buttons -->
         <div class="request-buttons-grid">
-            <button class="request-btn leave-btn" onclick="window.payrollManager.showLeaveRequestModal()">
+            <button class="request-btn leave-btn" onclick="if(window.payrollManager && window.payrollManager.showLeaveRequestModal) window.payrollManager.showLeaveRequestModal(); else alert('Please wait for page to load completely');">
                 <i class="fas fa-calendar-times"></i>
                 <span>Request Leave</span>
             </button>
-            <button class="request-btn overtime-btn" onclick="window.payrollManager.showOvertimeRequestModal()">
+            <button class="request-btn overtime-btn" onclick="if(window.payrollManager && window.payrollManager.showOvertimeRequestModal) window.payrollManager.showOvertimeRequestModal(); else alert('Please wait for page to load completely');">
                 <i class="fas fa-clock"></i>
                 <span>Request Overtime</span>
             </button>
-            <button class="request-btn payroll-btn" onclick="window.payrollManager.showPayrollRequestModal()">
+            <button class="request-btn payroll-btn" onclick="if(window.payrollManager && window.payrollManager.showPayrollRequestModal) window.payrollManager.showPayrollRequestModal(); else alert('Please wait for page to load completely');">
                 <i class="fas fa-money-check-alt"></i>
                 <span>Request Payroll</span>
             </button>

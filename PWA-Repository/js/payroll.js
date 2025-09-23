@@ -15,33 +15,50 @@ class PayrollManager {
     
     // Get authentication token for API requests
     getAuthToken() {
+        // First check if TokenManager is available
+        if (window.tokenManager && window.tokenManager.getAuthToken) {
+            const token = window.tokenManager.getAuthToken();
+            if (token) {
+                console.log('✅ Token retrieved from TokenManager');
+                return token;
+            }
+        }
+        
         // Use global token manager if available
         if (window.getAuthToken) {
-            return window.getAuthToken();
+            const token = window.getAuthToken();
+            if (token) {
+                console.log('✅ Token retrieved from global getAuthToken');
+                return token;
+            }
         }
         
         // Check auth system if available
         if (window.authSystem && window.authSystem.authToken) {
+            console.log('✅ Token retrieved from authSystem');
             return window.authSystem.authToken;
         }
         
         // Check multiple possible token locations
-        const possibleKeys = ['authToken', 'userToken', 'jwt_token', 'token'];
+        const possibleKeys = ['authToken', 'userToken', 'jwt_token', 'jwtToken', 'token'];
         
         for (const key of possibleKeys) {
             // Check localStorage first
             let token = localStorage.getItem(key);
             if (token && token !== 'null' && token !== 'undefined') {
+                console.log(`✅ Token found in localStorage: ${key}`);
                 return token;
             }
             
             // Then check sessionStorage
             token = sessionStorage.getItem(key);
             if (token && token !== 'null' && token !== 'undefined') {
+                console.log(`✅ Token found in sessionStorage: ${key}`);
                 return token;
             }
         }
         
+        console.error('❌ No authentication token found in any location');
         return null;
     }
 
@@ -654,34 +671,49 @@ class PayrollManager {
     
     // Show leave request modal
     showLeaveRequestModal() {
-        const modal = this.createRequestModal('Leave Request', 'leave', [
-            { label: 'Start Date', type: 'date', name: 'startDate', required: true },
-            { label: 'End Date', type: 'date', name: 'endDate', required: true },
-            { label: 'Leave Type', type: 'select', name: 'leaveType', options: ['Sick Leave', 'Vacation Leave', 'Emergency Leave', 'Personal Leave'], required: true },
-            { label: 'Reason', type: 'textarea', name: 'reason', required: true }
-        ]);
-        document.body.appendChild(modal);
+        try {
+            const modal = this.createRequestModal('Leave Request', 'leave', [
+                { label: 'Start Date', type: 'date', name: 'startDate', required: true },
+                { label: 'End Date', type: 'date', name: 'endDate', required: true },
+                { label: 'Leave Type', type: 'select', name: 'leaveType', options: ['Sick Leave', 'Vacation Leave', 'Emergency Leave', 'Personal Leave'], required: true },
+                { label: 'Reason', type: 'textarea', name: 'reason', required: true }
+            ]);
+            document.body.appendChild(modal);
+        } catch (error) {
+            console.error('Failed to show leave request modal:', error);
+            alert('Unable to open request form. Please refresh the page and try again.');
+        }
     }
     
     // Show overtime request modal
     showOvertimeRequestModal() {
-        const modal = this.createRequestModal('Overtime Request', 'overtime', [
-            { label: 'Date', type: 'date', name: 'date', required: true },
-            { label: 'Start Time', type: 'time', name: 'startTime', required: true },
-            { label: 'End Time', type: 'time', name: 'endTime', required: true },
-            { label: 'Reason', type: 'textarea', name: 'reason', required: true }
-        ]);
-        document.body.appendChild(modal);
+        try {
+            const modal = this.createRequestModal('Overtime Request', 'overtime', [
+                { label: 'Date', type: 'date', name: 'date', required: true },
+                { label: 'Start Time', type: 'time', name: 'startTime', required: true },
+                { label: 'End Time', type: 'time', name: 'endTime', required: true },
+                { label: 'Reason', type: 'textarea', name: 'reason', required: true }
+            ]);
+            document.body.appendChild(modal);
+        } catch (error) {
+            console.error('Failed to show overtime request modal:', error);
+            alert('Unable to open request form. Please refresh the page and try again.');
+        }
     }
     
-    // Show payroll request modal
+    // Show payroll request modal  
     showPayrollRequestModal() {
-        const modal = this.createRequestModal('Payroll Request', 'payroll', [
-            { label: 'Request Type', type: 'select', name: 'requestType', options: ['Advance Pay', 'Final Pay', 'Adjustment', 'Reimbursement'], required: true },
-            { label: 'Amount (if applicable)', type: 'number', name: 'amount' },
-            { label: 'Details', type: 'textarea', name: 'details', required: true }
-        ]);
-        document.body.appendChild(modal);
+        try {
+            const modal = this.createRequestModal('Payroll Request', 'payroll', [
+                { label: 'Request Type', type: 'select', name: 'requestType', options: ['Advance Pay', 'Final Pay', 'Adjustment', 'Reimbursement'], required: true },
+                { label: 'Amount (if applicable)', type: 'number', name: 'amount' },
+                { label: 'Details', type: 'textarea', name: 'details', required: true }
+            ]);
+            document.body.appendChild(modal);
+        } catch (error) {
+            console.error('Failed to show payroll request modal:', error);
+            alert('Unable to open request form. Please refresh the page and try again.');
+        }
     }
     
     // Create request modal
