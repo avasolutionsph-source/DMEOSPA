@@ -296,20 +296,96 @@ class SyncManager {
         // Double-check online status to prevent freezing
         if (this.isOnline && navigator.onLine && !this.syncInProgress) {
             console.log('🔄 Starting initial sync - device is online');
-            // CRITICAL: Only download data from MongoDB to populate new device
-            // DO NOT do upload sync after download - this prevents data loss
-            this.downloadAllDataFromServer();
+            
+            // Check user type to determine what to sync
+            const user = this.getCurrentUser();
+            if (user?.type === 'employee') {
+                console.log('👤 Employee account detected - syncing employee data only');
+                this.downloadEmployeeData();
+            } else {
+                console.log('🏢 Business account detected - syncing all business data');
+                // CRITICAL: Only download data from MongoDB to populate new device
+                // DO NOT do upload sync after download - this prevents data loss
+                this.downloadAllDataFromServer();
+            }
         } else {
             console.log('📴 Skipping initial sync - device is offline');
         }
+    }
+    
+    // Get current user from various sources
+    getCurrentUser() {
+        // Try authSystem first
+        if (window.authSystem?.currentUser) {
+            return window.authSystem.currentUser;
+        }
+        
+        // Try localStorage
+        const userStr = localStorage.getItem('currentUser');
+        if (userStr) {
+            try {
+                return JSON.parse(userStr);
+            } catch (e) {
+                console.error('Failed to parse currentUser from localStorage');
+            }
+        }
+        
+        // Try tokenManager
+        if (window.tokenManager?.getUserData) {
+            return window.tokenManager.getUserData();
+        }
+        
+        return null;
     }
 
     // ============================================================================
     // DOWNLOAD SYNC: Get data from MongoDB to populate IndexedDB on new devices
     // ============================================================================
     
+    // Employee-specific data sync - only payroll and related data
+    async downloadEmployeeData() {
+        console.log('📥 Starting employee data download...');
+        
+        // Final online check to prevent freeze
+        if (!navigator.onLine || !this.isOnline) {
+            console.log('📴 Device went offline - aborting data download to prevent freeze');
+            return;
+        }
+        
+        // Debug: Check authentication
+        const token = this.getAuthToken();
+        console.log('🔑 Auth token available:', !!token);
+        
+        if (!token) {
+            console.error('❌ No authentication token found - cannot download data');
+            return;
+        }
+        
+        try {
+            // Only download payroll-related data for employees
+            await this.downloadPayrollUpdates();
+            
+            console.log('✅ Employee data sync completed');
+            
+            // Trigger UI refresh if on relevant page
+            if (window.location.pathname.includes('payroll')) {
+                window.dispatchEvent(new Event('payrollDataUpdated'));
+            }
+            
+        } catch (error) {
+            console.error('❌ Failed to download employee data:', error);
+        }
+    }
+    
     async downloadAllDataFromServer() {
         console.log('📥 Starting complete data download from MongoDB for new device...');
+        
+        // Check if employee user - should use downloadEmployeeData instead
+        const user = this.getCurrentUser();
+        if (user?.type === 'employee') {
+            console.log('⚠️ Employee detected in downloadAllDataFromServer - redirecting to employee sync');
+            return this.downloadEmployeeData();
+        }
         
         // Final online check to prevent freeze
         if (!navigator.onLine || !this.isOnline) {
