@@ -247,9 +247,22 @@ class AuthSystem {
                 console.log('   User type:', data.user.type || 'owner');
                 console.log('   User email:', data.user.email);
                 console.log('   User role:', data.user.role);
+                console.log('   Current pathname:', window.location.pathname);
                 
-                // If we're on login.html, redirect after successful login
-                if (window.location.pathname.includes('login.html')) {
+                // Check if we're on the login page (handle various URL patterns)
+                const isLoginPage = window.location.pathname.includes('login.html') || 
+                                   window.location.pathname.endsWith('/login') ||
+                                   window.location.pathname === '/' ||
+                                   !window.location.pathname.includes('index.html');
+                
+                console.log('   Is login page?', isLoginPage);
+                
+                if (isLoginPage) {
+                    // Show success message
+                    if (window.showSuccess) {
+                        window.showSuccess('Login successful! Redirecting...');
+                    }
+                    
                     setTimeout(() => {
                         const returnTo = sessionStorage.getItem('returnToPage');
                         if (returnTo) {
