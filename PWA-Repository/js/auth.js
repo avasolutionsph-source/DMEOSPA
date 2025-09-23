@@ -168,30 +168,21 @@ class AuthSystem {
         if (registerForm) registerForm.style.display = 'none';
     }
 
-    // Show login modal (called from sync system and other components)
+    // Redirect to login page instead of showing modal
     showLoginModal() {
-        logInfo('AuthSystem.showLoginModal called', {
+        logInfo('AuthSystem.showLoginModal called - redirecting to login.html', {
             category: 'AUTH',
-            operation: 'show_login_modal'
+            operation: 'redirect_to_login'
         });
         
-        // Show the auth modal
-        const modal = document.getElementById('authModal');
-        if (modal) {
-            modal.style.display = 'block';
-            modal.classList.add('show');
+        // Save current page to return after login
+        const currentHash = window.location.hash;
+        if (currentHash && currentHash !== '#login') {
+            sessionStorage.setItem('returnToPage', currentHash);
         }
         
-        // Make sure login form is visible (not register)
-        this.showLoginForm();
-        
-        // Focus on email field for better UX
-        setTimeout(() => {
-            const emailField = document.getElementById('loginEmail');
-            if (emailField) {
-                emailField.focus();
-            }
-        }, 100);
+        // Redirect to login page
+        window.location.href = 'login.html';
     }
 
     showRegisterForm() {

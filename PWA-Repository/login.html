@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In - Ava Solutions PWA</title>
-    <meta name="description" content="Sign in to access your spa management system">
+    <title>Sign In - Daet Massage and Spa</title>
+    <meta name="description" content="Sign in to Daet Massage and Spa management system">
     <link rel="manifest" href="manifest.json?v=2">
     <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
     <link rel="alternate icon" href="icons/icon.svg">
@@ -260,10 +260,11 @@
             }
         }
 
-        /* CSS Variables */
+        /* CSS Variables - Daet Massage Brand Colors */
         :root {
-            --primary-color: #6366f1;
-            --secondary-color: #8b5cf6;
+            --primary-color: #8B1538; /* Daet maroon */
+            --secondary-color: #a91d43; /* Lighter maroon */
+            --accent-color: #d4af37; /* Gold accent */
             --text-primary: #1f2937;
             --text-secondary: #6b7280;
             --border-color: #d1d5db;
@@ -272,7 +273,7 @@
 </head>
 <body>
     <!-- Back to marketing website link -->
-    <a href="https://ava-solutions-marketing.netlify.app" class="back-link">
+    <a href="#" class="back-link" style="display: none;">
         <i class="fas fa-arrow-left"></i> Back to Website
     </a>
 
@@ -281,8 +282,8 @@
             <div class="logo">
                 <i class="fas fa-spa"></i>
             </div>
-            <h1>Welcome Back</h1>
-            <p>Sign in to your spa management system</p>
+            <h1>Daet Massage and Spa</h1>
+            <p>Sign in to manage your spa</p>
         </div>
         
         <div class="login-body">
@@ -323,240 +324,115 @@
             </form>
             
             <div class="login-footer">
-                <p>Don't have an account? <a href="https://ava-solutions-marketing.netlify.app/register">Create one here</a></p>
+                <p>Don't have an account? <a href="register.html">Create one here</a></p>
             </div>
         </div>
     </div>
 
-    <!-- Core Scripts for login functionality - Updated for old system -->
+    <!-- Core Scripts for login functionality -->
     <script src="js/config-service.js"></script>
     <script src="js/database.js"></script>
     <script src="js/auth.js"></script>
 
     <script>
-        // Toggle employee info display
-        function toggleEmployeeInfo() {
-            const isEmployee = document.getElementById('employeeLogin').checked;
-            const infoDiv = document.getElementById('employeeInfo');
-            infoDiv.style.display = isEmployee ? 'block' : 'none';
-        }
-        
-        // Login page functionality
-        class LoginPage {
-            constructor() {
-                this.form = document.getElementById('loginForm');
-                this.loginBtn = document.getElementById('loginBtn');
-                this.errorMessage = document.getElementById('errorMessage');
-                this.successMessage = document.getElementById('successMessage');
-                
-                this.setupEventListeners();
-                this.checkExistingAuth();
+        // Initialize AuthSystem for login
+        window.addEventListener('DOMContentLoaded', async () => {
+            console.log('Initializing login page...');
+            
+            // Create auth system if not exists
+            if (!window.authSystem) {
+                window.authSystem = new AuthSystem();
             }
-
-            setupEventListeners() {
-                this.form.addEventListener('submit', (e) => this.handleLogin(e));
+            
+            // Check if already logged in
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            if (token) {
+                showSuccess('Already logged in. Redirecting...');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+                return;
             }
-
-            async checkExistingAuth() {
-                // Check if user is already logged in
-                const token = localStorage.getItem('userToken') || localStorage.getItem('authToken');
-                if (token) {
-                    this.showSuccess('Already logged in. Redirecting to dashboard...');
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 1500);
-                }
-            }
-
-            async handleLogin(e) {
+            
+            // Setup login form
+            const form = document.getElementById('loginForm');
+            form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
-                const email = document.getElementById('email').value.trim();
-                const password = document.getElementById('password').value;
-                const rememberMe = document.getElementById('rememberMe').checked;
-                
-                if (!email || !password) {
-                    this.showError('Please enter both email and password.');
-                    return;
+                // Create hidden fields for AuthSystem compatibility
+                if (!document.getElementById('loginEmail')) {
+                    const hiddenEmail = document.createElement('input');
+                    hiddenEmail.type = 'hidden';
+                    hiddenEmail.id = 'loginEmail';
+                    document.body.appendChild(hiddenEmail);
+                }
+                if (!document.getElementById('loginPassword')) {
+                    const hiddenPassword = document.createElement('input');
+                    hiddenPassword.type = 'hidden';
+                    hiddenPassword.id = 'loginPassword';
+                    document.body.appendChild(hiddenPassword);
+                }
+                if (!document.getElementById('rememberMe')) {
+                    const hiddenRemember = document.createElement('input');
+                    hiddenRemember.type = 'hidden';
+                    hiddenRemember.id = 'rememberMe';
+                    document.body.appendChild(hiddenRemember);
                 }
                 
-                this.setLoading(true);
-                this.hideMessages();
+                // Map form fields to match what AuthSystem expects
+                document.getElementById('loginEmail').value = document.getElementById('email').value;
+                document.getElementById('loginPassword').value = document.getElementById('password').value;
+                document.getElementById('rememberMe').checked = document.getElementById('rememberMe').checked;
                 
-                try {
-                    // Determine the correct backend URL
-                    const baseUrl = window.location.hostname === 'localhost' 
-                        ? 'http://localhost:4001' 
-                        : 'https://daetspa-backend.onrender.com';
-                    
-                    // Auto-detection: Try owner login first, then employee if it fails
-                    console.log('🔐 Attempting auto-detection login for:', email);
-                    console.log('📍 Using backend URL:', baseUrl);
-                    
-                    // First try branch owner login
-                    console.log('1️⃣ Trying OWNER login endpoint...');
-                    let response = await fetch(`${baseUrl}/api/auth/login`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ email, password })
-                    });
-                    
-                    let data = await response.json();
-                    console.log('   Owner login response:', data);
-                    
-                    // If owner login failed with invalid credentials, try employee login
-                    if (!data.success && (data.error === 'Invalid email or password' || data.error === 'Invalid credentials')) {
-                        console.log('2️⃣ Owner login failed, trying EMPLOYEE login endpoint...');
-                        
-                        response = await fetch(`${baseUrl}/api/auth/employee/login`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ email, password })
-                        });
-                        
-                        data = await response.json();
-                        console.log('   Employee login response:', data);
-                    }
-                    
-                    if (data.success) {
-                        // Store authentication data using auth system
-                        console.log('✅ LOGIN SUCCESSFUL!');
-                        console.log('   User type:', data.user.type || 'owner');
-                        console.log('   User email:', data.user.email);
-                        console.log('   User role:', data.user.role);
-                        console.log('   Token received:', data.token ? 'Yes' : 'No');
-                        
-                        // Wait for auth system to be available
-                        const storeAuthData = () => {
-                            if (window.authSystem) {
-                                // Use auth system for proper backend integration
-                                window.authSystem.authToken = data.token;
-                                window.authSystem.currentUser = data.user;
-                                window.authSystem.isLoggedIn = true;
-                                
-                                // Store in appropriate storage
-                                const storage = rememberMe ? localStorage : sessionStorage;
-                                storage.setItem('authToken', data.token);
-                                storage.setItem('currentUser', JSON.stringify(data.user));
-                                storage.setItem('isLoggedIn', 'true');
-                                
-                                console.log('✅ Auth data stored via auth system');
-                            } else {
-                                console.warn('⚠️ Auth system not available, using direct storage');
-                                // Fallback to direct storage
-                                const storage = rememberMe ? localStorage : sessionStorage;
-                                storage.setItem('authToken', data.token);
-                                storage.setItem('currentUser', JSON.stringify(data.user));
-                                storage.setItem('isLoggedIn', 'true');
-                            }
-                        };
-                        
-                        // Try immediately, with fallback after delay
-                        storeAuthData();
-                        setTimeout(storeAuthData, 100);
-                        
-                        this.showSuccess('Login successful! Redirecting to dashboard...');
-                        
-                        // Redirect to PWA dashboard
-                        setTimeout(() => {
-                            window.location.href = 'index.html#dashboard';
-                        }, 1500);
-                    } else {
-                        console.log('❌ LOGIN FAILED!');
-                        console.log('   Error message:', data.error);
-                        console.log('   Full response:', data);
-                        this.showError(data.error || 'Login failed. Please try again.');
-                    }
-                } catch (error) {
-                    console.error('Login error:', error);
-                    
-                    // Check if this is a demo/test login attempt
-                    if (email === 'pos@gmail.com' || email === 'demo@spa.com' || email === 'test@test.com') {
-                        console.log('🎯 Demo login detected, using offline mode');
-                        
-                        // Create demo user data
-                        const demoUser = {
-                            id: 'demo-user-123',
-                            firstName: 'Demo',
-                            lastName: 'User',
-                            email: email,
-                            businessName: 'Ava Solutions Spa',
-                            role: 'admin',
-                            isDemo: true
-                        };
-                        
-                        const demoToken = 'demo-token-' + Date.now();
-                        
-                        // Store demo authentication data
-                        const storage = rememberMe ? localStorage : sessionStorage;
-                        storage.setItem('authToken', demoToken);
-                        storage.setItem('currentUser', JSON.stringify(demoUser));
-                        storage.setItem('isLoggedIn', 'true');
-                        storage.setItem('demoMode', 'true');
-                        
-                        // Also set in authSystem if available
-                        if (window.authSystem) {
-                            window.authSystem.authToken = demoToken;
-                            window.authSystem.currentUser = demoUser;
-                            window.authSystem.isLoggedIn = true;
-                        }
-                        
-                        this.showSuccess('Demo login successful! Redirecting to dashboard...');
-                        
-                        setTimeout(() => {
-                            window.location.href = 'index.html#dashboard';
-                        }, 1500);
-                        
-                        this.setLoading(false);
-                        return;
-                    }
-                    
-                    this.showError('Connection error. Please check your internet connection and try again.' + 
-                                 '<br><small>Try demo login: pos@gmail.com / any password</small>');
-                }
-                
-                this.setLoading(false);
+                // Call AuthSystem's handleLogin
+                await window.authSystem.handleLogin();
+            });
+        });
+        
+        // Helper functions for messages
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            if (errorDiv) {
+                errorDiv.innerHTML = message;
+                errorDiv.style.display = 'block';
             }
-
-
-            setLoading(loading) {
-                if (loading) {
-                    this.loginBtn.classList.add('loading');
-                    this.loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
-                    this.loginBtn.disabled = true;
-                } else {
-                    this.loginBtn.classList.remove('loading');
-                    this.loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
-                    this.loginBtn.disabled = false;
-                }
-            }
-
-            showError(message) {
-                this.errorMessage.textContent = message;
-                this.errorMessage.style.display = 'block';
-                this.successMessage.style.display = 'none';
-            }
-
-            showSuccess(message) {
-                this.successMessage.textContent = message;
-                this.successMessage.style.display = 'block';
-                this.errorMessage.style.display = 'none';
-            }
-
-            hideMessages() {
-                this.errorMessage.style.display = 'none';
-                this.successMessage.style.display = 'none';
+            const successDiv = document.getElementById('successMessage');
+            if (successDiv) {
+                successDiv.style.display = 'none';
             }
         }
-
-        // Initialize login page when DOM is ready
-        document.addEventListener('DOMContentLoaded', () => {
-            window.loginPage = new LoginPage();
-        });
+        
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            if (successDiv) {
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+            }
+            const errorDiv = document.getElementById('errorMessage');
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+            }
+        }
+        
+        function setButtonLoading(btnId, loading) {
+            const btn = document.getElementById(btnId);
+            if (!btn) return;
+            
+            if (loading) {
+                btn.classList.add('loading');
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
+                btn.disabled = true;
+            } else {
+                btn.classList.remove('loading');
+                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+                btn.disabled = false;
+            }
+        }
+        
+        // Make functions available globally for AuthSystem
+        window.showError = showError;
+        window.showSuccess = showSuccess;
+        window.setButtonLoading = setButtonLoading;
     </script>
 </body>
 </html>
