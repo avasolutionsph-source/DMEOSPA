@@ -11,6 +11,7 @@ import inventoryRoutes from './inventory.js';
 import employeesRoutes from './employees.js';
 import transactionsRoutes from './transactions.js';
 import payrollRoutes from './payroll.js';
+import payrollRequestsRoutes from './payrollRequests.js';
 import customersRoutes from './customers.js';
 import attendanceRoutes from './attendance.js';
 import settingsRoutes from './settings.js';
@@ -241,6 +242,7 @@ router.use('/transactions', authenticateJWT, requireBusinessUser, transactionsRo
 router.use('/customers', authenticateJWT, requireBusinessUser, customersRoutes);
 router.use('/attendance', authenticateJWT, requireBusinessUser, attendanceRoutes);
 router.use('/payroll', payrollRoutes); // Payroll with built-in auth middleware
+router.use('/payroll-requests', payrollRequestsRoutes); // Payroll requests with auth
 router.use('/settings', authenticateJWT, requireBusinessUser, settingsRoutes);
 router.use('/entitlements', optionalAuth, entitlementsRoutes);
 router.use('/data-validation', authenticateJWT, requireBusinessUser, dataValidationRoutes);

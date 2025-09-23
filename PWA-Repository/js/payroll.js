@@ -349,11 +349,17 @@ class PayrollManager {
     // Load employee's own payroll data
     async loadEmployeePayrollData(user) {
         try {
+            console.log('Loading payroll history for employee:', user.id);
             // Load payroll records for this employee
-            const allRecords = await window.db.getAll('payroll');
+            const allRecords = await window.db.getAll('payroll') || [];
             this.payrollRecords = allRecords.filter(r => r.employeeId === user.id);
+            console.log(`Found ${this.payrollRecords.length} payroll records`);
         } catch (error) {
             console.error('Failed to load employee payroll data:', error);
+            // Store might not exist yet
+            if (error.name === 'NotFoundError' || error.message?.includes('not found') || error.message?.includes('payroll')) {
+                console.log('Payroll store does not exist yet - no history to show');
+            }
             // Initialize empty array on error so UI can update
             this.payrollRecords = [];
         } finally {
@@ -365,25 +371,58 @@ class PayrollManager {
     // Load employee's requests
     async loadEmployeeRequests(user) {
         let myRequests = [];
-        try {
-            // Load requests for this employee
-            const allRequests = await window.db.getAll('payrollRequests') || [];
-            myRequests = allRequests.filter(r => r.employeeId === user.id);
-        } catch (error) {
-            console.error('Failed to load employee requests:', error);
-            // If store doesn't exist, try to create it
-            if (error.name === 'NotFoundError' || error.message?.includes('payrollRequests')) {
-                try {
-                    await window.db.createStore('payrollRequests');
-                    console.log('Created payrollRequests store');
-                } catch (createError) {
-                    console.error('Failed to create payrollRequests store:', createError);
+        
+        // Try to load from server if online
+        if (navigator.onLine) {
+            try {
+                const token = this.getAuthToken();
+                if (token) {
+                    const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/payroll-requests`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        myRequests = result.data || [];
+                        console.log(`✅ Loaded ${myRequests.length} requests from server`);
+                        
+                        // Update local store with server data
+                        for (const request of myRequests) {
+                            request.syncStatus = 'synced';
+                            await window.db.put('payrollRequests', request);
+                        }
+                    }
+                }
+            } catch (serverError) {
+                console.error('Failed to load from server:', serverError);
+            }
+        }
+        
+        // If offline or server failed, load from local store
+        if (myRequests.length === 0) {
+            try {
+                console.log('Loading requests from local store...');
+                const allRequests = await window.db.getAll('payrollRequests') || [];
+                myRequests = allRequests.filter(r => r.employeeId === user.id);
+                console.log(`Found ${myRequests.length} local requests`);
+            } catch (error) {
+                console.error('Failed to load local requests:', error);
+                if (error.name === 'NotFoundError' || error.message?.includes('not found') || error.message?.includes('payrollRequests')) {
+                    console.log('PayrollRequests store does not exist yet');
                 }
             }
-            // Keep myRequests as empty array so UI can update
-        } finally {
-            // Always display requests, even if empty or error occurred
-            this.displayEmployeeRequests(myRequests);
+        }
+        
+        // Always display requests
+        this.displayEmployeeRequests(myRequests);
+        
+        // For managers, also load all requests
+        const isManager = user.type === 'business' || user.role === 'owner' || user.role === 'manager';
+        if (isManager) {
+            await this.loadAllRequestsForManager(user);
         }
     }
     
@@ -436,6 +475,181 @@ class PayrollManager {
         `).join('');
         
         requestsContainer.innerHTML = requestsHTML;
+    }
+    
+    // Load all requests for manager view
+    async loadAllRequestsForManager(user) {
+        try {
+            const token = this.getAuthToken();
+            if (!token) return;
+            
+            // Fetch all pending requests from server
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/payroll-requests?status=pending`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                const allRequests = result.data || [];
+                console.log(`Manager view: ${allRequests.length} pending requests`);
+                
+                // Display manager view if container exists
+                this.displayManagerRequestsView(allRequests);
+            }
+        } catch (error) {
+            console.error('Failed to load manager requests:', error);
+        }
+    }
+    
+    // Display manager view of all employee requests
+    displayManagerRequestsView(requests) {
+        // Check if we're on the payroll page
+        const payrollPage = document.getElementById('payrollPage');
+        if (!payrollPage) return;
+        
+        // Check if manager section already exists
+        let managerSection = document.getElementById('managerRequestsSection');
+        if (!managerSection) {
+            // Create manager section
+            managerSection = document.createElement('div');
+            managerSection.id = 'managerRequestsSection';
+            managerSection.className = 'card';
+            managerSection.innerHTML = `
+                <div class="card-header">
+                    <h5>🔔 Employee Requests (Manager View)</h5>
+                </div>
+                <div class="card-body">
+                    <div id="allEmployeeRequests">Loading requests...</div>
+                </div>
+            `;
+            
+            // Insert at the top of the page
+            payrollPage.insertBefore(managerSection, payrollPage.firstChild);
+        }
+        
+        const container = document.getElementById('allEmployeeRequests');
+        if (!container) return;
+        
+        if (requests.length === 0) {
+            container.innerHTML = '<p class="text-muted">No pending requests</p>';
+            return;
+        }
+        
+        const requestsHTML = requests.map(request => {
+            const employee = request.employeeId || {};
+            const employeeName = request.employeeName || `${employee.firstName} ${employee.lastName}` || 'Unknown Employee';
+            
+            let detailsHTML = '';
+            if (request.type === 'leave' && request.details) {
+                detailsHTML = `
+                    <strong>Type:</strong> ${request.details.leaveType || 'N/A'}<br>
+                    <strong>Dates:</strong> ${request.details.startDate ? new Date(request.details.startDate).toLocaleDateString() : ''} 
+                    to ${request.details.endDate ? new Date(request.details.endDate).toLocaleDateString() : ''}<br>
+                    <strong>Reason:</strong> ${request.details.reason || 'N/A'}
+                `;
+            } else if (request.type === 'overtime' && request.details) {
+                detailsHTML = `
+                    <strong>Date:</strong> ${request.details.date ? new Date(request.details.date).toLocaleDateString() : 'N/A'}<br>
+                    <strong>Time:</strong> ${request.details.startTime || ''} to ${request.details.endTime || ''}<br>
+                    <strong>Reason:</strong> ${request.details.reason || 'N/A'}
+                `;
+            } else if (request.type === 'payroll' && request.details) {
+                detailsHTML = `
+                    <strong>Type:</strong> ${request.details.requestType || 'N/A'}<br>
+                    ${request.details.amount ? `<strong>Amount:</strong> ₱${request.details.amount}<br>` : ''}
+                    <strong>Details:</strong> ${request.details.details || 'N/A'}
+                `;
+            }
+            
+            return `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6>${employeeName} - ${request.type.toUpperCase()} Request</h6>
+                                <small class="text-muted">Submitted: ${new Date(request.createdAt).toLocaleString()}</small><br>
+                                <div class="mt-2">
+                                    ${detailsHTML}
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button class="btn btn-success btn-sm" onclick="window.payrollManager.approveRequest('${request._id || request.id}')">
+                                    ✅ Approve
+                                </button>
+                                <button class="btn btn-danger btn-sm ms-2" onclick="window.payrollManager.rejectRequest('${request._id || request.id}')">
+                                    ❌ Reject
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        container.innerHTML = requestsHTML;
+    }
+    
+    // Approve request
+    async approveRequest(requestId) {
+        const notes = prompt('Add approval notes (optional):');
+        await this.updateRequestStatus(requestId, 'approved', notes);
+    }
+    
+    // Reject request
+    async rejectRequest(requestId) {
+        const notes = prompt('Reason for rejection:');
+        if (!notes) {
+            alert('Please provide a reason for rejection');
+            return;
+        }
+        await this.updateRequestStatus(requestId, 'rejected', notes);
+    }
+    
+    // Update request status
+    async updateRequestStatus(requestId, status, notes) {
+        try {
+            const token = this.getAuthToken();
+            if (!token) {
+                alert('Authentication required');
+                return;
+            }
+            
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/payroll-requests/${requestId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: status,
+                    managerNotes: notes
+                })
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (window.showNotification) {
+                    window.showNotification(`Request ${status} successfully!`, 'success');
+                } else {
+                    alert(`Request ${status} successfully!`);
+                }
+                
+                // Reload the requests
+                const user = window.authSystem?.currentUser;
+                if (user) {
+                    await this.loadAllRequestsForManager(user);
+                }
+            } else {
+                const error = await response.json();
+                alert(`Failed to update request: ${error.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Failed to update request status:', error);
+            alert('Failed to update request. Please try again.');
+        }
     }
     
     // Show leave request modal
@@ -535,10 +749,12 @@ class PayrollManager {
         const formData = new FormData(form);
         
         const user = window.authSystem?.currentUser;
+        const localId = `REQ_${Date.now()}`;
         const request = {
-            id: `REQ_${Date.now()}`,
+            id: localId,
+            localId: localId,
             employeeId: user.id,
-            employeeName: `${user.firstName} ${user.lastName}`,
+            employeeName: [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.name || 'Employee',
             type: requestType,
             status: 'pending',
             createdAt: new Date().toISOString(),
@@ -551,10 +767,51 @@ class PayrollManager {
         }
         
         try {
-            // Save to IndexedDB
-            const existingRequests = await window.db.getAll('payrollRequests') || [];
-            existingRequests.push(request);
-            await window.db.put('payrollRequests', existingRequests, 'requests');
+            // Save to IndexedDB first
+            await window.db.put('payrollRequests', request);
+            console.log('✅ Request saved locally:', request);
+            
+            // Try to sync with MongoDB if online
+            if (navigator.onLine) {
+                try {
+                    const token = this.getAuthToken();
+                    if (token) {
+                        const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/payroll-requests`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                type: requestType,
+                                details: request.details,
+                                localId: localId
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            console.log('✅ Request synced to server:', result.data);
+                            
+                            // Update local record with server ID
+                            request._id = result.data._id;
+                            request.syncStatus = 'synced';
+                            await window.db.put('payrollRequests', request);
+                        } else {
+                            console.warn('Failed to sync to server, will retry later');
+                            request.syncStatus = 'pending';
+                            await window.db.put('payrollRequests', request);
+                        }
+                    }
+                } catch (syncError) {
+                    console.error('Sync error:', syncError);
+                    request.syncStatus = 'pending';
+                    await window.db.put('payrollRequests', request);
+                }
+            } else {
+                request.syncStatus = 'pending';
+                await window.db.put('payrollRequests', request);
+            }
             
             // Refresh display
             await this.loadEmployeeRequests(user);
@@ -562,14 +819,42 @@ class PayrollManager {
             // Show success message
             if (window.showNotification) {
                 window.showNotification('Request submitted successfully!', 'success');
+            } else {
+                alert('Request submitted successfully!');
             }
             
             // Close modal
             modal.remove();
         } catch (error) {
             console.error('Failed to submit request:', error);
-            if (window.showNotification) {
-                window.showNotification('Failed to submit request', 'error');
+            // If store doesn't exist, try to create it
+            if (error.name === 'NotFoundError' || error.message?.includes('not found')) {
+                try {
+                    console.log('Creating payrollRequests store...');
+                    await window.db.createStore('payrollRequests');
+                    // Try again
+                    await window.db.put('payrollRequests', request);
+                    await this.loadEmployeeRequests(user);
+                    if (window.showNotification) {
+                        window.showNotification('Request submitted successfully!', 'success');
+                    } else {
+                        alert('Request submitted successfully!');
+                    }
+                    modal.remove();
+                } catch (retryError) {
+                    console.error('Failed after creating store:', retryError);
+                    if (window.showNotification) {
+                        window.showNotification('Failed to submit request', 'error');
+                    } else {
+                        alert('Failed to submit request. Please try again.');
+                    }
+                }
+            } else {
+                if (window.showNotification) {
+                    window.showNotification('Failed to submit request', 'error');
+                } else {
+                    alert('Failed to submit request. Please try again.');
+                }
             }
         }
     }
