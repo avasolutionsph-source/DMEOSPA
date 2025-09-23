@@ -481,11 +481,11 @@ class App {
                     if (!window.payrollManager) {
                         retryCount++;
                         if (retryCount > maxRetries) {
-                            console.warn('⚠️ PayrollManager not found after 5 seconds, continuing anyway...');
+                            console.warn('⚠️ PayrollManager not found after 5 seconds, will initialize when ready...');
                             // The PayrollManager will be created by payroll.js eventually
-                            // Don't show alert as it's a false positive - the system is working
-                            // Just log and continue
+                            // Don't try to initialize yet - just return and let it load naturally
                             console.log('PayrollManager will be initialized when script loads');
+                            return; // Exit here to prevent trying to use undefined payrollManager
                         } else {
                             console.log(`⏳ Waiting for payrollManager to load... (attempt ${retryCount}/${maxRetries})`);
                             // Wait a bit and retry
