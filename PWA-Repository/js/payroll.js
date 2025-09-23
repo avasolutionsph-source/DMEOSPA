@@ -127,6 +127,25 @@ class PayrollManager {
                     firstName: user.firstName
                 });
                 
+                // Display employee information in the UI immediately
+                const nameDisplay = document.getElementById('employeeNameDisplay');
+                const roleDisplay = document.getElementById('employeeRoleDisplay');
+                const emailDisplay = document.getElementById('employeeEmailDisplay');
+                
+                if (nameDisplay) {
+                    nameDisplay.textContent = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Employee';
+                    console.log('✅ Updated employee name display');
+                }
+                if (roleDisplay) {
+                    const formattedRole = user.role?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Position';
+                    roleDisplay.textContent = formattedRole;
+                    console.log('✅ Updated employee role display');
+                }
+                if (emailDisplay) {
+                    emailDisplay.textContent = user.email || 'Email not available';
+                    console.log('✅ Updated employee email display');
+                }
+                
                 // Load employee data
                 await this.loadEmployeePayrollData(user);
                 await this.loadEmployeeRequests(user);
