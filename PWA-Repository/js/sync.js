@@ -353,6 +353,78 @@ class SyncManager {
 
 
 
+    async downloadProductsFromServer() {
+        try {
+            console.log('📦 Downloading products from MongoDB...');
+            
+            const response = await this.fetchWithTimeout(`${this.apiUrl}/api/products`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.getAuthToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const products = result.data || [];
+                
+                console.log(`📥 Downloaded ${products.length} products from MongoDB`);
+                
+                // Clear and repopulate
+                const existingProducts = await window.db.getAll('products');  
+                for (const existing of existingProducts) {
+                    await window.db.delete('products', existing.id);
+                }
+                
+                for (const product of products) {
+                    product.syncStatus = 'synced';
+                    await window.db.add('products', product);
+                }
+                
+                console.log(`✅ ${products.length} products saved to IndexedDB`);
+            }
+        } catch (error) {
+            console.error('❌ Download products error:', error);
+        }
+    }
+
+    async downloadTransactionsFromServer() {
+        try {
+            console.log('💳 Downloading transactions from MongoDB...');
+            
+            const response = await this.fetchWithTimeout(`${this.apiUrl}/api/transactions`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.getAuthToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const transactions = result.data || [];
+                
+                console.log(`📥 Downloaded ${transactions.length} transactions from MongoDB`);
+                
+                // Clear and repopulate
+                const existingTransactions = await window.db.getAll('transactions');  
+                for (const existing of existingTransactions) {
+                    await window.db.delete('transactions', existing.id);
+                }
+                
+                for (const transaction of transactions) {
+                    transaction.syncStatus = 'synced';
+                    await window.db.add('transactions', transaction);
+                }
+                
+                console.log(`✅ ${transactions.length} transactions saved to IndexedDB`);
+            }
+        } catch (error) {
+            console.error('❌ Download transactions error:', error);
+        }
+    }
+
     async downloadCustomersFromServer() {
         try {
             console.log('👤 Downloading customers from MongoDB...');
