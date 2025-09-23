@@ -457,6 +457,23 @@
         })();
     </script>
     
+    <!-- Immediate authentication check before any content loads -->
+    <script>
+        (function() {
+            // Check authentication immediately on page load
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            const user = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+            
+            if (!token || !user) {
+                // Not authenticated - redirect to login immediately
+                console.log('🚫 No authentication found - redirecting to login.html');
+                window.location.replace('login.html');
+                // Stop all execution
+                throw new Error('Redirecting to login');
+            }
+        })();
+    </script>
+    
     <div class="app-container">
         <!-- Navigation -->
         <nav class="main-nav">
@@ -486,35 +503,8 @@
                     <span class="sync-indicator online" id="sync-indicator"></span>
                     <span id="sync-status">Online</span>
                 </div>
+                <!-- Login button removed - authentication through login.html only -->
                 <div class="auth-indicator" id="authIndicator">
-                    <button id="showLoginBtn" class="btn btn-primary" style="cursor: pointer; z-index: 10; position: relative;">
-                        <i class="fas fa-sign-in-alt"></i> Login
-                    </button>
-                    <script>
-                        // Redirect to login page
-                        function showLoginModal() {
-                            console.log('🔐 Login button clicked - Redirecting to login.html');
-                            // Save current page to return after login
-                            const currentHash = window.location.hash;
-                            if (currentHash && currentHash !== '#login') {
-                                sessionStorage.setItem('returnToPage', currentHash);
-                            }
-                            // Redirect to login page
-                            window.location.href = 'login.html';
-                            return false;
-                        }
-                        
-                        // Override window.showLoginModal to use our version
-                        window.showLoginModal = showLoginModal;
-                        
-                        // Add click event listener immediately
-                        document.getElementById('showLoginBtn').addEventListener('click', function(e) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            showLoginModal();
-                            return false;
-                        });
-                    </script>
                     <div id="userInfo" style="display: none;">
                         <button id="logoutBtn" class="btn btn-primary" style="cursor: pointer; z-index: 10; position: relative;">
                             <i class="fas fa-sign-out-alt"></i> Logout
@@ -3223,10 +3213,8 @@
                     console.log('👤 Restoring user session:', user.email);
                     
                     // Update UI to show logged in state
-                    const showLoginBtn = document.getElementById('showLoginBtn');
+                    // Login button removed - only using userInfo now
                     const userInfo = document.getElementById('userInfo');
-                    
-                    if (showLoginBtn) showLoginBtn.style.display = 'none';
                     if (userInfo) userInfo.style.display = 'block';
                     
                     // Initialize entitlements system with full access
@@ -3269,7 +3257,7 @@
                             localStorage.removeItem('isLoggedIn');
                             
                             // Update UI back to logged out state
-                            if (showLoginBtn) showLoginBtn.style.display = 'block';
+                            // Login button removed - authentication through login.html only
                             if (userInfo) userInfo.style.display = 'none';
                             
                             // Notify app about logout
@@ -3315,12 +3303,8 @@
             } else {
                 // Show login button for unauthenticated users but don't block content
                 console.log('🔐 User not logged in - showing login button but allowing content access');
-                const showLoginBtn = document.getElementById('showLoginBtn');
+                // Login button removed - redirect to login.html for authentication
                 const userInfo = document.getElementById('userInfo');
-                
-                if (showLoginBtn) {
-                    showLoginBtn.style.display = 'block';
-                }
                 if (userInfo) {
                     userInfo.style.display = 'none';
                 }
@@ -3512,10 +3496,8 @@
                     localStorage.setItem('isLoggedIn', 'true');
                     
                     // Update UI to show logged in state
-                    const showLoginBtn = document.getElementById('showLoginBtn');
+                    // Login button removed - only using userInfo now
                     const userInfo = document.getElementById('userInfo');
-                    
-                    if (showLoginBtn) showLoginBtn.style.display = 'none';
                     if (userInfo) userInfo.style.display = 'block';
                     
                     // Add logout functionality
@@ -3528,7 +3510,7 @@
                             localStorage.removeItem('isLoggedIn');
                             
                             // Update UI back to logged out state
-                            if (showLoginBtn) showLoginBtn.style.display = 'block';
+                            // Login button removed - authentication through login.html only
                             if (userInfo) userInfo.style.display = 'none';
                             
                             // Notify app about logout
