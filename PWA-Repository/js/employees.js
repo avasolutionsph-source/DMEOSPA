@@ -979,11 +979,25 @@ class EmployeeManager {
             const firstName = nameParts[0] || '';
             const lastName = nameParts.slice(1).join(' ') || 'N/A'; // Backend requires lastName
             
+            // Map position to role for backend compatibility
+            const position = document.getElementById('employeePosition').value;
+            const positionToRoleMap = {
+                'Owner': 'owner',
+                'Manager': 'manager',
+                'Senior Therapist': 'senior_therapist',
+                'Junior Therapist': 'junior_therapist',
+                'New Therapist': 'new_therapist',
+                'Receptionist': 'receptionist',
+                'Other Staff': 'other_staff'
+            };
+            const role = positionToRoleMap[position] || 'other_staff';
+            
             const employeeData = {
                 // Backend model fields (firstName/lastName)
                 firstName: firstName,
                 lastName: lastName,
-                position: document.getElementById('employeePosition').value,
+                position: position,
+                role: role, // Add role field required by backend
                 email: document.getElementById('employeeEmail').value,
                 phone: document.getElementById('employeePhone').value,
                 commissionRate: parseFloat(document.getElementById('employeeCommission').value || '0') || 0,
