@@ -750,27 +750,58 @@ class HybridAPIClient {
         
         // The response format should now be standardized by the HybridAPIClient
         // Expected format: { success: true, data: [...employees array...] }
+        let employees = [];
         if (result.success && result.data) {
             if (Array.isArray(result.data)) {
                 console.log('✅ [HYBRID-API] Employee data in correct array format');
-                console.log('👥 [HYBRID-API] Employee count:', result.data.length);
+                console.log('👥 [HYBRID-API] Employee count from API:', result.data.length);
                 console.log('👥 [HYBRID-API] Sample employee:', result.data[0]);
-                return result;
+                employees = result.data;
             } else {
                 console.log('❓ [HYBRID-API] Unexpected data format - expected array but got:', typeof result.data);
                 console.log('❓ [HYBRID-API] Data content:', result.data);
             }
         }
         
+        // IMPORTANT: Also load any local-only employees from IndexedDB
+        if (window.db && window.db.db) {
+            try {
+                console.log('💾 [HYBRID-API] Checking for local-only employees in IndexedDB...');
+                const allLocalEmployees = await window.db.getAll('employees');
+                const localOnlyEmployees = allLocalEmployees.filter(emp => emp.localOnly === true);
+                
+                if (localOnlyEmployees.length > 0) {
+                    console.log(`📦 [HYBRID-API] Found ${localOnlyEmployees.length} local-only employees`);
+                    
+                    // Merge local employees with API employees
+                    // Avoid duplicates by checking IDs
+                    const apiEmployeeIds = new Set(employees.map(e => e.id || e._id));
+                    const uniqueLocalEmployees = localOnlyEmployees.filter(emp => 
+                        !apiEmployeeIds.has(emp.id) && !apiEmployeeIds.has(emp._id)
+                    );
+                    
+                    employees = [...employees, ...uniqueLocalEmployees];
+                    console.log(`✅ [HYBRID-API] Total employees after merging: ${employees.length}`);
+                }
+            } catch (error) {
+                console.error('❌ [HYBRID-API] Error loading local employees:', error);
+            }
+        }
+        
         console.log('👥 [HYBRID-API] getEmployees() final result:', {
-            success: result.success,
-            dataCount: result.data?.length || 0,
-            source: result.source,
+            success: result.success || employees.length > 0,
+            dataCount: employees.length,
+            source: employees.length > 0 ? 'merged' : result.source,
             error: result.error,
             queued: result.queued
         });
         
-        return result;
+        return {
+            ...result,
+            success: result.success || employees.length > 0,
+            data: employees,
+            source: employees.length > 0 ? 'merged' : result.source
+        };
     }
     
     // Quick test function - run window.HybridAPIClient.quickTestEmployees() in console
