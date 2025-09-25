@@ -932,7 +932,16 @@ class EmployeeManager {
                     token = window.authSystem.authToken;
                     console.log('🔑 Using token from authSystem for employee save');
                 }
+                
+                // Also check TokenManager
+                if (!token && window.tokenManager && window.tokenManager.getAuthToken) {
+                    token = window.tokenManager.getAuthToken();
+                    console.log('🔑 Using token from TokenManager for employee save');
+                }
             }
+            
+            console.log('📝 Employee data to save:', employeeData);
+            console.log('🔐 Auth token available:', !!token);
             
             if (!token) {
                 console.error('❌ No authentication token found for saving employee');
@@ -1000,13 +1009,59 @@ class EmployeeManager {
                     closeModal('employeeModal');
                     showSuccess('Employee added successfully');
                 } else {
-                    console.error('❌ Failed to add employee:', response.status);
-                    hideLoading();
-                    saveBtn.classList.remove('loading');
-                    saveBtn.disabled = false;
-                    saveBtn.innerHTML = originalText;
-                    showError('Failed to add employee');
-                    return;
+                    const errorText = await response.text();
+                    let errorMessage = 'Failed to add employee';
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMessage = errorJson.error || errorJson.message || errorMessage;
+                    } catch (e) {
+                        // If not JSON, use the text directly
+                        errorMessage = errorText || errorMessage;
+                    }
+                    console.error(`❌ Failed to add employee via API: ${response.status} - ${errorMessage}`);
+                    console.error('Request data:', employeeData);
+                    console.error('Response:', errorText);
+                    
+                    // Try to save locally to IndexedDB as fallback
+                    console.log('💾 Attempting to save employee locally to IndexedDB...');
+                    try {
+                        // Generate a local ID
+                        employeeData.id = `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                        employeeData._id = employeeData.id; // For compatibility
+                        employeeData.syncStatus = 'pending'; // Mark for later sync
+                        employeeData.localOnly = true;
+                        
+                        // Map name fields for IndexedDB
+                        employeeData.name = `${employeeData.firstName} ${employeeData.lastName}`.trim();
+                        
+                        await window.db.put('employees', employeeData);
+                        console.log('✅ Employee saved locally to IndexedDB');
+                        
+                        hideLoading();
+                        saveBtn.classList.remove('loading');
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = originalText;
+                        closeModal('employeeModal');
+                        showSuccess('Employee added locally (will sync when online)');
+                        
+                        // Reload employees to show the new one
+                        await this.loadEmployees();
+                        
+                        // Try to sync in the background
+                        if (window.HybridAPIClient) {
+                            window.HybridAPIClient.queueRequest('POST', '/api/employees', employeeData);
+                        }
+                        
+                        return; // Exit after local save
+                    } catch (localError) {
+                        console.error('❌ Failed to save locally:', localError);
+                        hideLoading();
+                        saveBtn.classList.remove('loading');
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = originalText;
+                        showError(`Failed to save employee: ${errorMessage}`);
+                        return;
+                    }
                 }
             }
 
@@ -1017,20 +1072,60 @@ class EmployeeManager {
                 window.loadPOS && window.loadPOS();
             }
         } catch (error) {
-            if (window.logger) {
-                window.logger.error('Failed to save employee', {
-                    category: 'EMPLOYEES',
-                    operation: 'save_employee',
-                    error: error
-                });
-            } else {
-                console.error('Failed to save employee:', error);
+            console.error('Failed to save employee:', error);
+            
+            // Try to save locally as last resort
+            console.log('💾 Network error - attempting local save to IndexedDB...');
+            try {
+                // Generate a local ID if not editing
+                if (!this.editingEmployee) {
+                    employeeData.id = `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    employeeData._id = employeeData.id;
+                    employeeData.syncStatus = 'pending';
+                    employeeData.localOnly = true;
+                    employeeData.name = `${employeeData.firstName} ${employeeData.lastName}`.trim();
+                    employeeData.createdAt = new Date().toISOString();
+                    
+                    await window.db.put('employees', employeeData);
+                    console.log('✅ Employee saved locally after network error');
+                    
+                    hideLoading();
+                    saveBtn.classList.remove('loading');
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalText;
+                    closeModal('employeeModal');
+                    showSuccess('Employee saved locally (offline mode)');
+                    
+                    await this.loadEmployees();
+                    
+                    // Queue for sync
+                    if (window.HybridAPIClient) {
+                        window.HybridAPIClient.queueRequest('POST', '/api/employees', employeeData);
+                    }
+                } else {
+                    // For editing, just show error
+                    hideLoading();
+                    saveBtn.classList.remove('loading');
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalText;
+                    showError('Failed to update employee - please try again');
+                }
+            } catch (localError) {
+                console.error('Failed to save locally:', localError);
+                if (window.logger) {
+                    window.logger.error('Failed to save employee', {
+                        category: 'EMPLOYEES',
+                        operation: 'save_employee',
+                        error: error,
+                        localError: localError
+                    });
+                }
+                hideLoading();
+                saveBtn.classList.remove('loading');
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+                showError('Failed to save employee - please check your connection');
             }
-            hideLoading();
-            saveBtn.classList.remove('loading');
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = originalText;
-            showError('Failed to save employee');
         } finally {
             // Always reset the saving flag
             this.isSaving = false;
