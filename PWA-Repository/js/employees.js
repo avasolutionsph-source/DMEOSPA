@@ -513,68 +513,90 @@ class EmployeeManager {
             employee.id = employee._id || employee.id; // Map MongoDB _id to frontend id field
             employee.name = employee.firstName ? `${employee.firstName} ${employee.lastName}`.trim() : employee.name;
 
-            // Get employee statistics from MongoDB API
+            // Get employee statistics from both API and local data
             let totalSales = 0;
             let totalCommission = 0;
             let transactionCount = 0;
             let avgSale = 0;
+            let allTransactions = [];
 
-            try {
-                const transResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/transactions`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (transResponse.ok) {
-                    const transResult = await transResponse.json();
-                    const allTransactions = transResult.data || [];
-                    
-                    // Filter transactions for this employee (same logic as displayEmployees)
-                    const employeeTransactions = allTransactions.filter(t => {
-                        if (!t.employee) return false;
-                        
-                        const empIdStr = String(employee.id);
-                        const empName = employee.name;
-                        
-                        return (t.employee.id && (String(t.employee.id) === empIdStr || String(t.employee.id) === String(employee.id))) ||
-                               (t.employee.name && t.employee.name === empName) ||
-                               (t.employeeId && (String(t.employeeId) === empIdStr || String(t.employeeId) === String(employee.id)));
+            // First try to get transactions from API
+            const token = this.getAuthToken();
+            if (token) {
+                try {
+                    const transResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/transactions`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
                     });
 
-                    totalSales = employeeTransactions.reduce((sum, t) => sum + (t.total || 0), 0);
-                    totalCommission = totalSales * ((employee.commissionRate || 0) / 100);
-                    transactionCount = employeeTransactions.length;
-                    avgSale = transactionCount > 0 ? totalSales / transactionCount : 0;
-                    
-                    console.log(`👁️ [VIEW-EMPLOYEE] ${employee.name}: ${transactionCount} transactions, ₱${totalSales} sales`);
-                } else {
-                    console.warn('❌ Failed to fetch transactions for employee view');
+                    if (transResponse.ok) {
+                        const transResult = await transResponse.json();
+                        allTransactions = transResult.data || [];
+                    }
+                } catch (transError) {
+                    console.warn('Failed to load transaction data from API:', transError);
                 }
-            } catch (transError) {
-                console.warn('Failed to load transaction data for view:', transError);
             }
+
+            // Also get transactions from IndexedDB
+            if (window.db && window.db.db) {
+                try {
+                    const localTransactions = await window.db.getAll('transactions');
+                    if (localTransactions && localTransactions.length > 0) {
+                        // Merge local transactions with API transactions (avoid duplicates)
+                        const apiTransIds = new Set(allTransactions.map(t => t.id || t._id));
+                        const uniqueLocalTrans = localTransactions.filter(t => 
+                            !apiTransIds.has(t.id) && !apiTransIds.has(t._id)
+                        );
+                        allTransactions = [...allTransactions, ...uniqueLocalTrans];
+                    }
+                } catch (dbError) {
+                    console.warn('Failed to load local transactions:', dbError);
+                }
+            }
+
+            // Filter transactions for this employee
+            const employeeTransactions = allTransactions.filter(t => {
+                if (!t.employee) return false;
+                
+                const empIdStr = String(employee.id);
+                const empName = employee.name;
+                
+                return (t.employee.id && (String(t.employee.id) === empIdStr || String(t.employee.id) === String(employee._id))) ||
+                       (t.employee.name && t.employee.name === empName) ||
+                       (t.employeeId && (String(t.employeeId) === empIdStr || String(t.employeeId) === String(employee._id)));
+            });
+
+            totalSales = employeeTransactions.reduce((sum, t) => sum + (t.total || 0), 0);
+            totalCommission = totalSales * ((employee.commissionRate || 0) / 100);
+            transactionCount = employeeTransactions.length;
+            avgSale = transactionCount > 0 ? totalSales / transactionCount : 0;
+            
+            console.log(`👁️ [VIEW-EMPLOYEE] ${employee.name}: ${transactionCount} transactions, ₱${totalSales} sales`);
 
             // Get attendance data from MongoDB API
             let totalDays = 0;
-            try {
-                const attResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance?employeeId=${employee.id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
+            if (token) {
+                try {
+                    const attResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance?employeeId=${employee.id}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
 
                 if (attResponse.ok) {
                     const attResult = await attResponse.json();
                     totalDays = (attResult.data || []).length;
                     console.log(`📅 [VIEW-EMPLOYEE] ${employee.name}: ${totalDays} attendance days`);
-                } else {
-                    console.warn('❌ Failed to fetch attendance data:', attResponse.status);
+                    } else {
+                        console.warn('❌ Failed to fetch attendance data:', attResponse.status);
+                    }
+                } catch (attError) {
+                    console.warn('Failed to load attendance data:', attError);
                 }
-            } catch (attError) {
-                console.warn('Failed to load attendance data:', attError);
             }
 
             // Format hire date
@@ -775,30 +797,56 @@ class EmployeeManager {
 
     async editEmployee(id) {
         try {
-            // Get employee from MongoDB API instead of IndexedDB
-            const token = this.getAuthToken();
-            if (!token) {
-                console.error('❌ No authentication token for editing employee');
-                showError('Authentication required - please log in');
-                return;
-            }
-
-            // Fetch employee from MongoDB
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/employees/${id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+            let employee = null;
+            
+            // First check if it's a local employee
+            const localEmployees = this.employees.filter(emp => (emp.id === id || emp._id === id));
+            if (localEmployees.length > 0) {
+                console.log('📦 Using local employee data for editing');
+                employee = localEmployees[0];
+            } else {
+                // Get employee from MongoDB API
+                const token = this.getAuthToken();
+                if (!token) {
+                    console.error('❌ No authentication token for editing employee');
+                    showError('Authentication required - please log in');
+                    return;
                 }
-            });
 
-            if (!response.ok) {
-                console.error('❌ Failed to fetch employee for editing:', response.status);
-                showError('Failed to load employee for editing');
-                return;
+                // Fetch employee from MongoDB
+                const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/employees/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    // Try to get from IndexedDB as fallback
+                    if (window.db && window.db.db) {
+                        try {
+                            employee = await window.db.get('employees', id);
+                            if (!employee) {
+                                // Try with _id field
+                                const allEmployees = await window.db.getAll('employees');
+                                employee = allEmployees.find(e => e._id === id || e.id === id);
+                            }
+                        } catch (dbError) {
+                            console.error('❌ Failed to get employee from IndexedDB:', dbError);
+                        }
+                    }
+                    
+                    if (!employee) {
+                        console.error('❌ Failed to fetch employee for editing:', response.status);
+                        showError('Failed to load employee for editing');
+                        return;
+                    }
+                } else {
+                    const result = await response.json();
+                    employee = result.data;
+                }
             }
-
-            const result = await response.json();
-            const employee = result.data;
+            
             if (!employee) {
                 console.error('❌ Employee not found for editing');
                 showError('Employee not found');
