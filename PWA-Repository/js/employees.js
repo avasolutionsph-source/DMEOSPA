@@ -991,14 +991,37 @@ class EmployeeManager {
                 // Add new employee via API
                 employeeData.createdAt = new Date().toISOString();
                 
-                const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/employees`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(employeeData)
-                });
+                // Try both endpoints - first the standard one, then business endpoint
+                let response;
+                let endpoint = '/api/employees';
+                
+                try {
+                    response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}${endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(employeeData)
+                    });
+                    
+                    // If first endpoint fails with 404, try business endpoint
+                    if (response.status === 404) {
+                        console.log('🔄 First endpoint returned 404, trying /api/business/employees...');
+                        endpoint = '/api/business/employees';
+                        response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}${endpoint}`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(employeeData)
+                        });
+                    }
+                } catch (error) {
+                    console.error('Network error during employee save:', error);
+                    response = { ok: false, status: 0 };
+                }
                 
                 if (response.ok) {
                     console.log('✅ Employee added to MongoDB');
@@ -1029,13 +1052,44 @@ class EmployeeManager {
                         employeeData.id = `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                         employeeData._id = employeeData.id; // For compatibility
                         employeeData.syncStatus = 'pending'; // Mark for later sync
-                        employeeData.localOnly = true;
+                        employeeData.localOnly = true; // Mark as local-only until synced
                         
                         // Map name fields for IndexedDB
                         employeeData.name = `${employeeData.firstName} ${employeeData.lastName}`.trim();
                         
                         await window.db.put('employees', employeeData);
                         console.log('✅ Employee saved locally to IndexedDB');
+                        
+                        // Try to sync immediately if possible
+                        if (navigator.onLine) {
+                            setTimeout(async () => {
+                                console.log('🔄 Attempting immediate sync of local employee...');
+                                try {
+                                    const syncResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/employees`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Authorization': `Bearer ${token}`,
+                                            'Content-Type': 'application/json'
+                                        },
+                                        body: JSON.stringify({
+                                            ...employeeData,
+                                            localOnly: undefined, // Remove localOnly flag when syncing
+                                            syncStatus: undefined
+                                        })
+                                    });
+                                    
+                                    if (syncResponse.ok) {
+                                        console.log('✅ Employee synced to server successfully');
+                                        // Update local record to remove localOnly flag
+                                        employeeData.localOnly = false;
+                                        employeeData.syncStatus = 'synced';
+                                        await window.db.put('employees', employeeData);
+                                    }
+                                } catch (syncError) {
+                                    console.log('⚠️ Background sync failed, will retry later:', syncError);
+                                }
+                            }, 2000); // Small delay to ensure UI updates first
+                        }
                         
                         hideLoading();
                         saveBtn.classList.remove('loading');
