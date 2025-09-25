@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Sync Fix Tool</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .card h2 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .employee-item {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .employee-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .employee-details {
+            font-size: 14px;
+            color: #666;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .status-badge.local {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-badge.synced {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-badge.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #f56565 0%, #c53030 100%);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78 0%, #2f855a 100%);
+        }
+        .log {
+            background: #2d3436;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 13px;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin-bottom: 4px;
+        }
+        .log-entry.error {
+            color: #ff6b6b;
+        }
+        .log-entry.success {
+            color: #51cf66;
+        }
+        .log-entry.warning {
+            color: #ffd93d;
+        }
+        .log-entry.info {
+            color: #339af0;
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .stat {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .actions {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e9ecef;
+        }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Employee Sync Fix Tool</h1>
+        <p class="subtitle">Diagnose and fix employee synchronization between PWA and Marketing Website</p>
+        
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="localCount">0</div>
+                <div class="stat-label">Local Employees</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="backendCount">0</div>
+                <div class="stat-label">Backend Employees</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="syncedCount">0</div>
+                <div class="stat-label">Synced</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="unsyncedCount">0</div>
+                <div class="stat-label">Need Sync</div>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <input type="text" id="tokenInput" placeholder="Auth token (leave empty to use stored)" />
+            <button class="btn" onclick="checkAll()">🔍 Check All Systems</button>
+            <button class="btn btn-success" onclick="syncAllEmployees()">🔄 Sync All to Backend</button>
+            <button class="btn btn-danger" onclick="forceResync()">⚡ Force Complete Resync</button>
+            <button class="btn" onclick="testBackendEndpoints()">🧪 Test Endpoints</button>
+        </div>
+        
+        <div class="grid">
+            <div class="card">
+                <h2>📦 Local Employees (IndexedDB)</h2>
+                <div id="localEmployees" class="employee-list">
+                    <div class="no-data">Click "Check All Systems" to load</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>☁️ Backend Employees</h2>
+                <div id="backendEmployees" class="employee-list">
+                    <div class="no-data">Click "Check All Systems" to load</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log" id="log">
+            <div class="log-entry info">🚀 Employee Sync Fix Tool Ready</div>
+            <div class="log-entry info">Click "Check All Systems" to begin diagnosis</div>
+        </div>
+    </div>
+    
+    <script>
+        let localEmployees = [];
+        let backendEmployees = [];
+        let token = null;
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function getToken() {
+            const inputToken = document.getElementById('tokenInput').value;
+            return inputToken || 
+                   localStorage.getItem('authToken') || 
+                   localStorage.getItem('userToken') || 
+                   sessionStorage.getItem('authToken');
+        }
+        
+        async function checkAll() {
+            log('Starting comprehensive system check...', 'info');
+            token = getToken();
+            
+            if (!token) {
+                log('❌ No authentication token found', 'error');
+                return;
+            }
+            
+            // Check local employees
+            await checkLocalEmployees();
+            
+            // Check backend employees
+            await checkBackendEmployees();
+            
+            // Compare and analyze
+            analyzeSync();
+        }
+        
+        async function checkLocalEmployees() {
+            log('Checking local IndexedDB...', 'info');
+            
+            try {
+                const db = await openDatabase();
+                const transaction = db.transaction(['employees'], 'readonly');
+                const store = transaction.objectStore('employees');
+                const request = store.getAll();
+                
+                return new Promise((resolve) => {
+                    request.onsuccess = () => {
+                        localEmployees = request.result || [];
+                        log(`Found ${localEmployees.length} employees in local database`, 'success');
+                        displayLocalEmployees();
+                        updateStats();
+                        resolve();
+                    };
+                    
+                    request.onerror = () => {
+                        log('Failed to read local database', 'error');
+                        resolve();
+                    };
+                });
+            } catch (error) {
+                log(`Error accessing IndexedDB: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkBackendEmployees() {
+            log('Checking backend API...', 'info');
+            
+            const endpoints = [
+                'https://daetspa-backend.onrender.com/api/business/employees',
+                'https://daetspa-backend.onrender.com/api/employees'
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    log(`Trying ${endpoint}...`, 'info');
+                    const response = await fetch(endpoint, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        backendEmployees = data.employees || data.data || data || [];
+                        log(`Found ${backendEmployees.length} employees from backend`, 'success');
+                        displayBackendEmployees();
+                        updateStats();
+                        return;
+                    } else {
+                        log(`${endpoint} returned ${response.status}`, 'warning');
+                    }
+                } catch (error) {
+                    log(`Failed to fetch from ${endpoint}: ${error.message}`, 'error');
+                }
+            }
+            
+            backendEmployees = [];
+            log('Could not fetch employees from backend', 'error');
+        }
+        
+        function displayLocalEmployees() {
+            const container = document.getElementById('localEmployees');
+            
+            if (localEmployees.length === 0) {
+                container.innerHTML = '<div class="no-data">No local employees found</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            localEmployees.forEach(emp => {
+                const div = document.createElement('div');
+                div.className = 'employee-item';
+                const status = emp.localOnly ? 'local' : 'synced';
+                div.innerHTML = `
+                    <div class="employee-name">
+                        ${emp.name || emp.firstName + ' ' + emp.lastName}
+                        <span class="status-badge ${status}">${status.toUpperCase()}</span>
+                    </div>
+                    <div class="employee-details">
+                        Email: ${emp.email}<br>
+                        Position: ${emp.position}<br>
+                        ID: ${emp.id || emp._id}<br>
+                        Sync: ${emp.syncStatus || 'unknown'}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function displayBackendEmployees() {
+            const container = document.getElementById('backendEmployees');
+            
+            if (backendEmployees.length === 0) {
+                container.innerHTML = '<div class="no-data">No backend employees found</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            backendEmployees.forEach(emp => {
+                const div = document.createElement('div');
+                div.className = 'employee-item';
+                div.innerHTML = `
+                    <div class="employee-name">
+                        ${emp.name || emp.firstName + ' ' + emp.lastName}
+                        <span class="status-badge synced">BACKEND</span>
+                    </div>
+                    <div class="employee-details">
+                        Email: ${emp.email}<br>
+                        Position: ${emp.position || emp.role}<br>
+                        ID: ${emp._id || emp.id}<br>
+                        Created: ${emp.createdAt ? new Date(emp.createdAt).toLocaleDateString() : 'N/A'}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function analyzeSync() {
+            const localOnlyCount = localEmployees.filter(e => e.localOnly).length;
+            const backendIds = backendEmployees.map(e => e._id || e.id);
+            const localIds = localEmployees.map(e => e.id || e._id);
+            
+            const missingInBackend = localEmployees.filter(e => 
+                !backendIds.includes(e.id) && !backendIds.includes(e._id)
+            );
+            
+            if (missingInBackend.length > 0) {
+                log(`⚠️ ${missingInBackend.length} employees exist locally but not in backend`, 'warning');
+                missingInBackend.forEach(emp => {
+                    log(`  - ${emp.name || emp.firstName}: ${emp.email}`, 'warning');
+                });
+            } else {
+                log('✅ All local employees are synced to backend', 'success');
+            }
+        }
+        
+        function updateStats() {
+            document.getElementById('localCount').textContent = localEmployees.length;
+            document.getElementById('backendCount').textContent = backendEmployees.length;
+            
+            const localOnlyCount = localEmployees.filter(e => e.localOnly).length;
+            document.getElementById('unsyncedCount').textContent = localOnlyCount;
+            document.getElementById('syncedCount').textContent = localEmployees.length - localOnlyCount;
+        }
+        
+        async function syncAllEmployees() {
+            log('Starting sync of all local employees to backend...', 'info');
+            
+            const unsyncedEmployees = localEmployees.filter(e => e.localOnly);
+            
+            if (unsyncedEmployees.length === 0) {
+                log('No unsynced employees to sync', 'info');
+                return;
+            }
+            
+            for (const employee of unsyncedEmployees) {
+                await syncEmployee(employee);
+            }
+            
+            // Refresh data
+            await checkAll();
+        }
+        
+        async function syncEmployee(employee) {
+            log(`Syncing ${employee.name || employee.firstName}...`, 'info');
+            
+            // Map position to role
+            const positionToRoleMap = {
+                'Owner': 'owner',
+                'Manager': 'manager',
+                'Senior Therapist': 'senior_therapist',
+                'Junior Therapist': 'junior_therapist',
+                'Therapist': 'junior_therapist',
+                'Massage Therapist': 'senior_therapist',
+                'New Therapist': 'new_therapist',
+                'Receptionist': 'receptionist',
+                'Other Staff': 'other_staff'
+            };
+            
+            const role = positionToRoleMap[employee.position] || 'other_staff';
+            
+            const employeeData = {
+                firstName: employee.firstName || employee.name?.split(' ')[0] || 'Unknown',
+                lastName: employee.lastName || employee.name?.split(' ').slice(1).join(' ') || 'N/A',
+                email: employee.email,
+                phone: employee.phone || '',
+                position: employee.position,
+                role: role,
+                commissionRate: employee.commissionRate || 0,
+                dailyRate: employee.dailyRate || 0,
+                monthlyRate: employee.monthlyRate || 0,
+                hourlyRate: employee.hourlyRate || 0
+            };
+            
+            const endpoints = [
+                'https://daetspa-backend.onrender.com/api/employees',
+                'https://daetspa-backend.onrender.com/api/business/employees'
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(employeeData)
+                    });
+                    
+                    if (response.ok) {
+                        log(`✅ ${employee.name} synced successfully via ${endpoint}`, 'success');
+                        
+                        // Update local record
+                        await updateLocalEmployee(employee.id || employee._id, {
+                            localOnly: false,
+                            syncStatus: 'synced'
+                        });
+                        
+                        return true;
+                    } else {
+                        const errorText = await response.text();
+                        log(`Failed at ${endpoint}: ${errorText}`, 'error');
+                    }
+                } catch (error) {
+                    log(`Network error: ${error.message}`, 'error');
+                }
+            }
+            
+            return false;
+        }
+        
+        async function updateLocalEmployee(id, updates) {
+            try {
+                const db = await openDatabase();
+                const transaction = db.transaction(['employees'], 'readwrite');
+                const store = transaction.objectStore('employees');
+                const getRequest = store.get(id);
+                
+                return new Promise((resolve) => {
+                    getRequest.onsuccess = () => {
+                        const employee = getRequest.result;
+                        if (employee) {
+                            Object.assign(employee, updates);
+                            store.put(employee);
+                            resolve(true);
+                        } else {
+                            resolve(false);
+                        }
+                    };
+                });
+            } catch (error) {
+                log(`Failed to update local employee: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        async function forceResync() {
+            if (!confirm('This will delete all local employees and fetch fresh data from backend. Continue?')) {
+                return;
+            }
+            
+            log('Starting force resync...', 'warning');
+            
+            try {
+                // Clear local employees
+                const db = await openDatabase();
+                const transaction = db.transaction(['employees'], 'readwrite');
+                const store = transaction.objectStore('employees');
+                const clearRequest = store.clear();
+                
+                clearRequest.onsuccess = async () => {
+                    log('Local employees cleared', 'success');
+                    
+                    // Fetch from backend and save locally
+                    await checkBackendEmployees();
+                    
+                    if (backendEmployees.length > 0) {
+                        const saveTransaction = db.transaction(['employees'], 'readwrite');
+                        const saveStore = saveTransaction.objectStore('employees');
+                        
+                        backendEmployees.forEach(emp => {
+                            const localEmp = {
+                                ...emp,
+                                id: emp._id || emp.id,
+                                _id: emp._id || emp.id,
+                                syncStatus: 'synced',
+                                localOnly: false
+                            };
+                            saveStore.put(localEmp);
+                        });
+                        
+                        log(`Saved ${backendEmployees.length} employees locally`, 'success');
+                    }
+                    
+                    // Refresh display
+                    await checkAll();
+                };
+            } catch (error) {
+                log(`Force resync failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testBackendEndpoints() {
+            log('Testing all backend endpoints...', 'info');
+            
+            const endpoints = [
+                '/api/employees',
+                '/api/business/employees',
+                '/api/sync/employees'
+            ];
+            
+            const baseUrl = 'https://daetspa-backend.onrender.com';
+            
+            for (const endpoint of endpoints) {
+                try {
+                    log(`Testing ${endpoint}...`, 'info');
+                    
+                    // Test GET
+                    const getResponse = await fetch(`${baseUrl}${endpoint}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (getResponse.ok) {
+                        const data = await getResponse.json();
+                        log(`✅ GET ${endpoint}: Success (${JSON.stringify(data).length} bytes)`, 'success');
+                    } else {
+                        log(`❌ GET ${endpoint}: ${getResponse.status} ${getResponse.statusText}`, 'error');
+                    }
+                    
+                } catch (error) {
+                    log(`❌ ${endpoint}: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function openDatabase() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('AvaBusinessDB', 13);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+        
+        // Auto-load on page load
+        window.addEventListener('load', () => {
+            log('Tool initialized. Click "Check All Systems" to begin.', 'info');
+        });
+    </script>
+</body>
+</html>
