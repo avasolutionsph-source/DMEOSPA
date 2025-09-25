@@ -3186,13 +3186,23 @@
                     // Add logout functionality
                     const logoutBtn = document.getElementById('logoutBtn');
                     if (logoutBtn) {
-                        logoutBtn.onclick = function() {
-                            // Clear login state
-                            localStorage.removeItem('userToken');
-                            localStorage.removeItem('userData');
-                            localStorage.removeItem('isLoggedIn');
+                        logoutBtn.onclick = async function() {
+                            console.log('🔄 Logging out...');
                             
-                            // Update UI back to logged out state
+                            // Use authSystem logout if available
+                            if (window.authSystem && window.authSystem.logout) {
+                                await window.authSystem.logout();
+                            } else {
+                                // Fallback: Clear login state manually
+                                localStorage.removeItem('userToken');
+                                localStorage.removeItem('userData');
+                                localStorage.removeItem('isLoggedIn');
+                            
+                                // Redirect to login page
+                                window.location.href = '/login.html';
+                            }
+                            
+                            // Update UI back to logged out state (won't run if authSystem.logout redirects)
                             // Login button removed - authentication through login.html only
                             if (userInfo) userInfo.style.display = 'none';
                             
@@ -3439,13 +3449,23 @@
                     // Add logout functionality
                     const logoutBtn = document.getElementById('logoutBtn');
                     if (logoutBtn) {
-                        logoutBtn.onclick = function() {
-                            // Clear login state
-                            localStorage.removeItem('userToken');
-                            localStorage.removeItem('userData');
-                            localStorage.removeItem('isLoggedIn');
+                        logoutBtn.onclick = async function() {
+                            console.log('🔄 Logging out...');
                             
-                            // Update UI back to logged out state
+                            // Use authSystem logout if available
+                            if (window.authSystem && window.authSystem.logout) {
+                                await window.authSystem.logout();
+                            } else {
+                                // Fallback: Clear login state manually
+                                localStorage.removeItem('userToken');
+                                localStorage.removeItem('userData');
+                                localStorage.removeItem('isLoggedIn');
+                            
+                                // Redirect to login page
+                                window.location.href = '/login.html';
+                            }
+                            
+                            // Update UI back to logged out state (won't run if authSystem.logout redirects)
                             // Login button removed - authentication through login.html only
                             if (userInfo) userInfo.style.display = 'none';
                             

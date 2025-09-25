@@ -530,10 +530,9 @@ class AuthSystem {
             // Update UI
             this.updateAuthUI();
 
-            // Show login modal
-            if (typeof showLoginModal === 'function') {
-                showLoginModal();
-            }
+            // Redirect to login page
+            console.log('🔄 Redirecting to login page...');
+            window.location.href = '/login.html';
         }
     }
 
