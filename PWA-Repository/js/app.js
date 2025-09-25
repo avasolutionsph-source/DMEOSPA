@@ -288,7 +288,12 @@ class App {
             const user = window.authSystem.currentUser;
             if (user?.type === 'employee' && 
                 ['senior_therapist', 'junior_therapist', 'new_therapist', 'receptionist', 'other_staff'].includes(user?.role)) {
-                console.log('🔄 Redirecting employee to payroll-requests page');
+                console.log('🔄 [APP] Redirecting employee to payroll-requests page', {
+                    userType: user.type,
+                    userRole: user.role,
+                    originalPage: 'payroll',
+                    redirectTo: 'payroll-requests'
+                });
                 pageName = 'payroll-requests';
             }
         }

@@ -146,13 +146,24 @@ class PayrollManager {
                     console.log('✅ Updated employee email display');
                 }
                 
-                // Load employee data
-                await this.loadEmployeePayrollData(user);
-                await this.loadEmployeeRequests(user);
+                // Load employee data with error handling
+                try {
+                    await this.loadEmployeePayrollData(user);
+                } catch (error) {
+                    console.error('❌ [PAYROLL] Error loading payroll data:', error);
+                    // Continue anyway - show empty state
+                }
+                
+                try {
+                    await this.loadEmployeeRequests(user);
+                } catch (error) {
+                    console.error('❌ [PAYROLL] Error loading requests:', error);
+                    // Continue anyway - show empty state
+                }
                 
                 // IMPORTANT: Return early for employees - don't run any manager display functions
-                console.log('✅ Employee payroll interface initialized');
-                this.isInitialized = true; // Mark as initialized
+                console.log('✅ [PAYROLL] Employee payroll interface initialized successfully');
+                this.isInitialized = true; // Mark as initialized even if data loading failed
                 return;
             }
             
@@ -395,17 +406,32 @@ class PayrollManager {
     
     // Load employee's own payroll data
     async loadEmployeePayrollData(user) {
+        console.log('📊 [PAYROLL] Loading employee payroll data for:', {
+            userId: user.id,
+            email: user.email,
+            role: user.role
+        });
+        
         try {
+            // Ensure database is ready
+            if (!window.db || !window.db.db) {
+                console.warn('⏳ [PAYROLL] Database not ready, waiting...');
+                await new Promise(resolve => setTimeout(resolve, 500));
+                if (!window.db || !window.db.db) {
+                    throw new Error('Database not available after waiting');
+                }
+            }
+            
             console.log('Loading payroll history for employee:', user.id);
             // Load payroll records for this employee
             const allRecords = await window.db.getAll('payroll') || [];
             this.payrollRecords = allRecords.filter(r => r.employeeId === user.id);
-            console.log(`Found ${this.payrollRecords.length} payroll records`);
+            console.log(`✅ [PAYROLL] Found ${this.payrollRecords.length} payroll records for employee`);
         } catch (error) {
-            console.error('Failed to load employee payroll data:', error);
+            console.error('❌ [PAYROLL] Failed to load employee payroll data:', error);
             // Store might not exist yet
             if (error.name === 'NotFoundError' || error.message?.includes('not found') || error.message?.includes('payroll')) {
-                console.log('Payroll store does not exist yet - no history to show');
+                console.log('ℹ️ [PAYROLL] Payroll store does not exist yet - no history to show');
             }
             // Initialize empty array on error so UI can update
             this.payrollRecords = [];
@@ -418,6 +444,12 @@ class PayrollManager {
     // Load employee's requests
     async loadEmployeeRequests(user) {
         let myRequests = [];
+        
+        console.log('📋 [PAYROLL] Loading payroll requests for employee:', {
+            userId: user.id,
+            email: user.email,
+            role: user.role
+        });
         
         // Try to load from server if online
         if (navigator.onLine) {
@@ -485,10 +517,20 @@ class PayrollManager {
     // Display employee's payroll history
     displayEmployeePayrollHistory() {
         const historyContainer = document.getElementById('myPayrollHistory');
-        if (!historyContainer) return;
+        if (!historyContainer) {
+            console.error('❌ [PAYROLL] myPayrollHistory container not found in DOM');
+            return;
+        }
         
-        if (this.payrollRecords.length === 0) {
-            historyContainer.innerHTML = '<p class="no-data">No payroll history found</p>';
+        console.log(`📊 [PAYROLL] Displaying ${this.payrollRecords?.length || 0} payroll records`);
+        
+        if (!this.payrollRecords || this.payrollRecords.length === 0) {
+            historyContainer.innerHTML = `
+                <div class="no-data-container" style="text-align: center; padding: 40px 20px;">
+                    <i class="fas fa-history" style="font-size: 3rem; color: #d1d5db; margin-bottom: 15px;"></i>
+                    <p class="no-data" style="color: #9ca3af; font-size: 1rem; margin: 0;">No payroll history yet</p>
+                    <p style="color: #9ca3af; font-size: 0.875rem; margin-top: 10px;">Your payroll history will appear here once processed</p>
+                </div>`;
             return;
         }
         
@@ -510,10 +552,20 @@ class PayrollManager {
     // Display employee's requests
     displayEmployeeRequests(requests) {
         const requestsContainer = document.getElementById('myRequestsList');
-        if (!requestsContainer) return;
+        if (!requestsContainer) {
+            console.error('❌ [PAYROLL] myRequestsList container not found in DOM');
+            return;
+        }
         
-        if (requests.length === 0) {
-            requestsContainer.innerHTML = '<p class="no-data">No requests submitted yet</p>';
+        console.log(`📋 [PAYROLL] Displaying ${requests?.length || 0} requests`);
+        
+        if (!requests || requests.length === 0) {
+            requestsContainer.innerHTML = `
+                <div class="no-data-container" style="text-align: center; padding: 40px 20px;">
+                    <i class="fas fa-inbox" style="font-size: 3rem; color: #d1d5db; margin-bottom: 15px;"></i>
+                    <p class="no-data" style="color: #9ca3af; font-size: 1rem; margin: 0;">No requests submitted yet</p>
+                    <p style="color: #9ca3af; font-size: 0.875rem; margin-top: 10px;">Click the buttons above to create your first request</p>
+                </div>`;
             return;
         }
         
