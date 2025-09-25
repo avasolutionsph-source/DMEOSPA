@@ -139,14 +139,27 @@ export const requireBusinessUser = (req, res, next) => {
 
 // Generate JWT token
 export const generateToken = (user) => {
-  return jwt.sign(
-    { 
-      id: user.id || user._id,
-      email: user.email,
-      businessId: user.businessId,
-      role: user.role || 'branch'
-    },
-    JWT_SECRET,
-    { expiresIn: '7d' }
-  );
+  // Pass through all user properties for employee tokens
+  const tokenPayload = { 
+    id: user.id || user._id,
+    email: user.email,
+    businessId: user.businessId,
+    role: user.role || 'branch'
+  };
+  
+  // Include additional fields for employee tokens
+  if (user.type === 'employee') {
+    tokenPayload.type = 'employee';
+    tokenPayload.employeeId = user.employeeId;
+    tokenPayload.userId = user.userId; // Branch owner ID for data access
+    tokenPayload.branchId = user.branchId;
+    tokenPayload.branchName = user.branchName;
+    tokenPayload.permissions = user.permissions;
+  }
+  
+  // Include name fields if available
+  if (user.firstName) tokenPayload.firstName = user.firstName;
+  if (user.lastName) tokenPayload.lastName = user.lastName;
+  
+  return jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
 };
