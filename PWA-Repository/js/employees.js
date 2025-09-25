@@ -924,11 +924,14 @@ class EmployeeManager {
 
             let token = this.getAuthToken();
             
-            // SECURITY FIX: Removed development token generation to prevent cross-user data access
-            if (!token && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-                console.warn('🚨 No auth token found for employee management - user must login properly');
-                console.log('🔐 Development tokens disabled to prevent data contamination');
-                return; // Exit early if no authentication available
+            // For development, check if user is properly authenticated
+            if (!token) {
+                // Check if we have a logged-in user
+                if (window.authSystem && window.authSystem.isAuthenticated && window.authSystem.isAuthenticated()) {
+                    // Try to get token from authSystem
+                    token = window.authSystem.authToken;
+                    console.log('🔑 Using token from authSystem for employee save');
+                }
             }
             
             if (!token) {
@@ -938,6 +941,7 @@ class EmployeeManager {
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = originalText;
                 showError('Authentication required - please log in');
+                this.isSaving = false;
                 return;
             }
 
