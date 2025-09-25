@@ -1069,12 +1069,13 @@ class EmployeeManager {
                     return;
                 }
             } else {
-                console.log('➕ Adding new employee to MongoDB...');
-                // Add new employee via API
+                console.log('➕ Adding new employee - BACKEND FIRST POLICY...');
+                // IMPORTANT: Always save to backend first to ensure data consistency
                 employeeData.createdAt = new Date().toISOString();
                 
                 // Try both endpoints - first the standard one, then business endpoint
                 let response;
+                let savedEmployee = null;
                 let endpoint = '/api/employees';
                 
                 try {
@@ -1102,50 +1103,141 @@ class EmployeeManager {
                     }
                 } catch (error) {
                     console.error('Network error during employee save:', error);
-                    response = { ok: false, status: 0 };
+                    response = { ok: false, status: 0, text: async () => '' };
                 }
                 
-                if (response.ok) {
-                    console.log('✅ Employee added to MongoDB');
+                if (response && response.ok) {
+                    const result = await response.json();
+                    savedEmployee = result.data || result.employee || result;
+                    console.log('✅ Employee successfully saved to BACKEND!', savedEmployee);
+                    
+                    // Also cache locally for offline access
+                    if (window.db && window.db.db && savedEmployee) {
+                        try {
+                            const localEmployee = {
+                                ...employeeData,
+                                ...savedEmployee,
+                                id: savedEmployee._id || savedEmployee.id,
+                                _id: savedEmployee._id || savedEmployee.id,
+                                name: `${employeeData.firstName} ${employeeData.lastName}`.trim(),
+                                syncStatus: 'synced',
+                                localOnly: false,
+                                lastSyncedAt: new Date().toISOString()
+                            };
+                            await window.db.put('employees', localEmployee);
+                            console.log('✅ Employee also cached locally for offline access');
+                        } catch (cacheError) {
+                            console.log('⚠️ Could not cache locally (non-critical):', cacheError);
+                        }
+                    }
+                    
                     hideLoading();
                     saveBtn.classList.remove('loading');
                     saveBtn.disabled = false;
                     saveBtn.innerHTML = originalText;
                     closeModal('employeeModal');
-                    showSuccess('Employee added successfully');
-                } else {
-                    const errorText = await response.text();
-                    let errorMessage = 'Failed to add employee';
+                    showSuccess('Employee added to server successfully!');
+                } else if (response) {
+                    let errorText = '';
+                    let errorMessage = 'Failed to add employee to server';
                     try {
-                        const errorJson = JSON.parse(errorText);
-                        errorMessage = errorJson.error || errorJson.message || errorMessage;
+                        if (response.text) {
+                            errorText = await response.text();
+                            try {
+                                const errorJson = JSON.parse(errorText);
+                                errorMessage = errorJson.error || errorJson.message || errorMessage;
+                            } catch (parseError) {
+                                // If not JSON, use the text directly
+                                errorMessage = errorText || errorMessage;
+                            }
+                        }
                     } catch (e) {
-                        // If not JSON, use the text directly
-                        errorMessage = errorText || errorMessage;
+                        // If can't read response, use default message
+                        console.error('Could not read error response:', e);
                     }
-                    console.error(`❌ Failed to add employee via API: ${response.status} - ${errorMessage}`);
-                    console.error('Request data:', employeeData);
-                    console.error('Response:', errorText);
+                    console.error(`❌ Failed to add employee to backend: ${response.status} - ${errorMessage}`);
                     
-                    // Try to save locally to IndexedDB as fallback
-                    console.log('💾 Attempting to save employee locally to IndexedDB...');
-                    try {
-                        // Generate a local ID
-                        employeeData.id = `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                        employeeData._id = employeeData.id; // For compatibility
-                        employeeData.syncStatus = 'pending'; // Mark for later sync
-                        employeeData.localOnly = true; // Mark as local-only until synced
+                    // Check if offline
+                    if (!navigator.onLine) {
+                        console.log('📵 Device is offline - Cannot add employees while offline');
+                        hideLoading();
+                        saveBtn.classList.remove('loading');
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = originalText;
+                        showError('Cannot add new employees while offline. Please connect to internet and try again.');
+                        return;
+                    }
+                    
+                    // Online but failed - attempt immediate retries
+                    console.log('🔄 Backend save failed, attempting retries...');
+                    let retrySuccess = false;
+                    
+                    for (let retry = 1; retry <= 3; retry++) {
+                        console.log(`🔄 Retry attempt ${retry}/3...`);
+                        await new Promise(resolve => setTimeout(resolve, 1000 * retry));
                         
-                        // Map name fields for IndexedDB
-                        employeeData.name = `${employeeData.firstName} ${employeeData.lastName}`.trim();
-                        
-                        await window.db.put('employees', employeeData);
-                        console.log('✅ Employee saved locally to IndexedDB');
-                        
-                        // Try to sync immediately if possible
-                        if (navigator.onLine) {
-                            setTimeout(async () => {
-                                console.log('🔄 Attempting immediate sync of local employee...');
+                        try {
+                            const retryResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/employees`, {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(employeeData)
+                            });
+                            
+                            if (retryResponse.ok) {
+                                const retryResult = await retryResponse.json();
+                                savedEmployee = retryResult.data || retryResult.employee || retryResult;
+                                console.log(`✅ Retry ${retry} successful!`, savedEmployee);
+                                
+                                // Cache locally
+                                if (window.db && window.db.db && savedEmployee) {
+                                    const localEmployee = {
+                                        ...employeeData,
+                                        ...savedEmployee,
+                                        id: savedEmployee._id || savedEmployee.id,
+                                        _id: savedEmployee._id || savedEmployee.id,
+                                        name: `${employeeData.firstName} ${employeeData.lastName}`.trim(),
+                                        syncStatus: 'synced',
+                                        localOnly: false,
+                                        lastSyncedAt: new Date().toISOString()
+                                    };
+                                    await window.db.put('employees', localEmployee);
+                                }
+                                
+                                retrySuccess = true;
+                                hideLoading();
+                                saveBtn.classList.remove('loading');
+                                saveBtn.disabled = false;
+                                saveBtn.innerHTML = originalText;
+                                closeModal('employeeModal');
+                                showSuccess('Employee added to server successfully!');
+                                break;
+                            }
+                        } catch (retryError) {
+                            console.log(`❌ Retry ${retry} failed:`, retryError.message);
+                        }
+                    }
+                    
+                    if (!retrySuccess) {
+                        // All retries failed - save locally but with warning
+                        console.log('⚠️ All backend attempts failed - saving locally with sync flag...');
+                        try {
+                            employeeData.id = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                            employeeData._id = employeeData.id;
+                            employeeData.syncStatus = 'pending_critical'; // Critical sync needed
+                            employeeData.localOnly = true;
+                            employeeData.name = `${employeeData.firstName} ${employeeData.lastName}`.trim();
+                            employeeData.failedBackendSave = true;
+                            employeeData.retryCount = 3;
+                            
+                            await window.db.put('employees', employeeData);
+                            console.log('⚠️ Employee saved locally with critical sync flag');
+                            
+                            // Set up aggressive background sync
+                            const syncInterval = setInterval(async () => {
+                                console.log('🔄 Attempting critical background sync...');
                                 try {
                                     const syncResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/employees`, {
                                         method: 'POST',
@@ -1155,49 +1247,71 @@ class EmployeeManager {
                                         },
                                         body: JSON.stringify({
                                             ...employeeData,
-                                            localOnly: undefined, // Remove localOnly flag when syncing
-                                            syncStatus: undefined
+                                            localOnly: undefined,
+                                            syncStatus: undefined,
+                                            failedBackendSave: undefined,
+                                            retryCount: undefined
                                         })
                                     });
                                     
                                     if (syncResponse.ok) {
-                                        console.log('✅ Employee synced to server successfully');
-                                        // Update local record to remove localOnly flag
+                                        const syncResult = await syncResponse.json();
+                                        console.log('✅ Critical sync successful!');
+                                        clearInterval(syncInterval);
+                                        
+                                        // Update local record
+                                        const serverEmployee = syncResult.data || syncResult.employee || syncResult;
+                                        employeeData.id = serverEmployee._id || serverEmployee.id;
+                                        employeeData._id = serverEmployee._id || serverEmployee.id;
                                         employeeData.localOnly = false;
                                         employeeData.syncStatus = 'synced';
+                                        delete employeeData.failedBackendSave;
+                                        delete employeeData.retryCount;
                                         await window.db.put('employees', employeeData);
+                                        
+                                        // Reload employees
+                                        if (window.employeeManager) {
+                                            window.employeeManager.loadEmployees();
+                                        }
                                     }
                                 } catch (syncError) {
-                                    console.log('⚠️ Background sync failed, will retry later:', syncError);
+                                    console.log('⚠️ Critical sync attempt failed:', syncError);
                                 }
-                            }, 2000); // Small delay to ensure UI updates first
+                            }, 5000); // Try every 5 seconds
+                            
+                            // Stop after 1 minute
+                            setTimeout(() => clearInterval(syncInterval), 60000);
+                            
+                            hideLoading();
+                            saveBtn.classList.remove('loading');
+                            saveBtn.disabled = false;
+                            saveBtn.innerHTML = originalText;
+                            closeModal('employeeModal');
+                            showWarning('Employee saved locally. Attempting to sync to server in background...');
+                            
+                            // Reload employees
+                            await this.loadEmployees();
+                            
+                            return;
+                        } catch (localError) {
+                            console.error('❌ Critical: Could not save employee at all:', localError);
+                            hideLoading();
+                            saveBtn.classList.remove('loading');
+                            saveBtn.disabled = false;
+                            saveBtn.innerHTML = originalText;
+                            showError(`Failed to save employee: ${errorMessage}`);
+                            return;
                         }
-                        
-                        hideLoading();
-                        saveBtn.classList.remove('loading');
-                        saveBtn.disabled = false;
-                        saveBtn.innerHTML = originalText;
-                        closeModal('employeeModal');
-                        showSuccess('Employee added locally (will sync when online)');
-                        
-                        // Reload employees to show the new one
-                        await this.loadEmployees();
-                        
-                        // Try to sync in the background
-                        if (window.HybridAPIClient) {
-                            window.HybridAPIClient.queueRequest('POST', '/api/employees', employeeData);
-                        }
-                        
-                        return; // Exit after local save
-                    } catch (localError) {
-                        console.error('❌ Failed to save locally:', localError);
-                        hideLoading();
-                        saveBtn.classList.remove('loading');
-                        saveBtn.disabled = false;
-                        saveBtn.innerHTML = originalText;
-                        showError(`Failed to save employee: ${errorMessage}`);
-                        return;
                     }
+                } else {
+                    // No response object at all
+                    console.error('❌ No response received from server');
+                    hideLoading();
+                    saveBtn.classList.remove('loading');
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalText;
+                    showError('Failed to connect to server. Please check your connection and try again.');
+                    return;
                 }
             }
 
