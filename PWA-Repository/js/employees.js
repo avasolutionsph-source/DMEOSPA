@@ -99,6 +99,14 @@ class EmployeeManager {
     async init() {
         await this.loadEmployees();
         this.setupEventListeners();
+        
+        // Auto-sync local employees in background
+        if (navigator.onLine) {
+            setTimeout(() => {
+                console.log('🔄 Auto-syncing local employees...');
+                this.syncLocalEmployees().catch(console.error);
+            }, 3000); // Wait 3 seconds after init
+        }
     }
 
     setupEventListeners() {
@@ -451,24 +459,50 @@ class EmployeeManager {
 
     async viewEmployee(id) {
         try {
-            // Get employee from MongoDB API instead of IndexedDB
-            const token = this.getAuthToken();
-            if (!token) {
-                console.error('❌ No authentication token for viewing employee');
-                showError('Authentication required - please log in');
-                return;
-            }
-
-            // Fetch employee using HybridAPIClient
-            const empResult = await window.HybridAPIClient.get(`/api/employees/${id}`, `employee_${id}`);
+            let employee = null;
             
-            if (!empResult.success) {
-                console.error('❌ Failed to fetch employee details:', empResult.error);
-                showError('Failed to load employee details');
-                return;
-            }
+            // First check if it's a local employee
+            const localEmployees = this.employees.filter(emp => (emp.id === id || emp._id === id));
+            if (localEmployees.length > 0) {
+                console.log('📦 Using local employee data for viewing');
+                employee = localEmployees[0];
+            } else {
+                // Get employee from MongoDB API
+                const token = this.getAuthToken();
+                if (!token) {
+                    console.error('❌ No authentication token for viewing employee');
+                    showError('Authentication required - please log in');
+                    return;
+                }
 
-            const employee = empResult.data;
+                // Fetch employee using HybridAPIClient
+                const empResult = await window.HybridAPIClient.get(`/api/employees/${id}`, `employee_${id}`);
+                
+                if (!empResult.success) {
+                    // Try to get from IndexedDB as fallback
+                    if (window.db && window.db.db) {
+                        try {
+                            employee = await window.db.get('employees', id);
+                            if (!employee) {
+                                // Try with _id field
+                                const allEmployees = await window.db.getAll('employees');
+                                employee = allEmployees.find(e => e._id === id || e.id === id);
+                            }
+                        } catch (dbError) {
+                            console.error('❌ Failed to get employee from IndexedDB:', dbError);
+                        }
+                    }
+                    
+                    if (!employee) {
+                        console.error('❌ Failed to fetch employee details:', empResult.error);
+                        showError('Failed to load employee details');
+                        return;
+                    }
+                } else {
+                    employee = empResult.data;
+                }
+            }
+            
             if (!employee) {
                 console.error('❌ Employee not found');
                 showError('Employee not found');
@@ -1186,6 +1220,68 @@ class EmployeeManager {
         }
     }
 
+    // Sync local employees to server
+    async syncLocalEmployees() {
+        console.log('🔄 Starting local employee sync...');
+        
+        if (!window.db || !window.db.db) {
+            console.log('❌ Database not available for sync');
+            return;
+        }
+        
+        const token = this.getAuthToken();
+        if (!token) {
+            console.log('❌ No auth token for sync');
+            return;
+        }
+        
+        try {
+            const allEmployees = await window.db.getAll('employees');
+            const localEmployees = allEmployees.filter(emp => emp.localOnly === true || emp.syncStatus === 'pending');
+            
+            console.log(`📦 Found ${localEmployees.length} local employees to sync`);
+            
+            for (const employee of localEmployees) {
+                try {
+                    console.log(`🔄 Syncing employee: ${employee.name || employee.firstName}`);
+                    
+                    // Remove local-only flags before sending
+                    const syncData = { ...employee };
+                    delete syncData.localOnly;
+                    delete syncData.syncStatus;
+                    
+                    const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/employees`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(syncData)
+                    });
+                    
+                    if (response.ok) {
+                        console.log(`✅ Employee ${employee.name} synced successfully`);
+                        // Update local record
+                        employee.localOnly = false;
+                        employee.syncStatus = 'synced';
+                        await window.db.put('employees', employee);
+                    } else {
+                        console.log(`⚠️ Failed to sync ${employee.name}: ${response.status}`);
+                    }
+                } catch (error) {
+                    console.error(`❌ Error syncing employee ${employee.name}:`, error);
+                }
+            }
+            
+            console.log('✅ Local employee sync complete');
+            // Reload employees to show updated status
+            await this.loadEmployees();
+            
+        } catch (error) {
+            console.error('❌ Error during sync:', error);
+        }
+    }
+    
     // Generate commission report
     async generateCommissionReport() {
         const startDate = prompt('Enter start date (YYYY-MM-DD):');
