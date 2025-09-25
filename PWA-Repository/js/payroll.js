@@ -3980,8 +3980,10 @@ Net Pay: ₱${record.netPay.toFixed(2)}
     }
 }
 
-// Create and export payroll manager
-const payrollManager = new PayrollManager();
-window.payrollManager = payrollManager;
+// Make PayrollManager class available globally
+window.PayrollManager = PayrollManager;
 
-// export default payrollManager; // Commented out for compatibility
+// Don't auto-create instance here - let index.html or app.js handle it
+console.log('✅ PayrollManager class defined and available');
+
+// export default PayrollManager; // Commented out for compatibility

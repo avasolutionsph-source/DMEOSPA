@@ -3093,82 +3093,7 @@
         </div>
     </div>
 
-    <!-- Auth modal removed - using login.html instead
-    <div id="authModal" class="modal" style="display:none!important;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="authModalTitle">Welcome to Daet Massage and Spa</h2>
-                <button class="modal-close" onclick="closeModal('authModal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <!-- Login Form -->
-                <div id="authLoginForm" class="auth-form">
-                    <div class="auth-header">
-                        <h3>Sign In to Your Account</h3>
-                        <p class="text-muted">Access your spa management dashboard</p>
-                    </div>
-                    <form id="loginForm" onsubmit="event.preventDefault(); handleDirectLogin(); return false;">
-                        <div class="form-group">
-                            <label>Email Address</label>
-                            <input type="email" id="loginEmail" class="form-input" required placeholder="Enter your email">
-                        </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" id="loginPassword" class="form-input" required placeholder="Enter your password">
-                        </div>
-                        <div class="form-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="rememberMe">
-                                <span class="checkmark"></span>
-                                Remember me on this device
-                            </label>
-                        </div>
-                        <button type="submit" id="loginBtn" class="btn btn-primary btn-full" onclick="event.preventDefault(); if(window.authSystem && window.authSystem.handleLogin) { window.authSystem.handleLogin(); } else { console.error('AuthSystem not available'); } return false;">
-                            <i class="fas fa-sign-in-alt"></i> Sign In
-                        </button>
-                    </form>
-                    <div class="auth-footer">
-                        <p>Don't have an account? <a href="https://ava-solutions-marketing.netlify.app/register" target="_blank">Create one here</a></p>
-                    </div>
-                </div>
-
-                <!-- Register Form -->
-                <div id="authRegisterForm" class="auth-form" style="display: none;">
-                    <div class="auth-header">
-                        <h3>Create Your Account</h3>
-                        <p class="text-muted">Start managing your spa business today</p>
-                    </div>
-                    <form id="registerForm">
-                        <div class="form-group">
-                            <label>Business Name</label>
-                            <input type="text" id="regBusinessName" class="form-input" required placeholder="Your spa business name">
-                        </div>
-                        <div class="form-group">
-                            <label>Email Address</label>
-                            <input type="email" id="regEmail" class="form-input" required placeholder="Your email address">
-                        </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" id="regPassword" class="form-input" required placeholder="Create a password">
-                        </div>
-                        <div class="form-group">
-                            <label>Confirm Password</label>
-                            <input type="password" id="regConfirmPassword" class="form-input" required placeholder="Confirm your password">
-                        </div>
-                        <button type="submit" id="registerBtn" class="btn btn-primary btn-full">
-                            <i class="fas fa-user-plus"></i> Create Account
-                        </button>
-                    </form>
-                    <div class="auth-footer">
-                        <p>Already have an account? <a href="#" id="showLogin">Sign in here</a></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    -->
+    <!-- Auth modal completely removed - using login.html for authentication -->
 
 
     <script>window.ChartShim=class{constructor(){}};</script>
@@ -3824,16 +3749,38 @@
     <script defer src="js/appointments.js"></script>
     <script defer src="js/attendance.js?v=20250911"></script>
     <script defer src="js/attendance-history.js"></script>
-    <script src="js/payroll.js"></script>
+    <script src="js/payroll.js" onload="console.log('✅ payroll.js loaded successfully')" onerror="console.error('❌ Failed to load payroll.js')"></script>
     <script>
-        // Create payrollManager immediately after script loads
-        if (typeof PayrollManager !== 'undefined') {
-            console.log('Creating payrollManager instance...');
-            window.payrollManager = new PayrollManager();
-            console.log('✅ PayrollManager instance created');
-        } else {
-            console.error('❌ PayrollManager class not found - payroll.js may not have loaded');
-        }
+        // Wait a moment for the script to fully execute, then create payrollManager
+        setTimeout(() => {
+            if (typeof PayrollManager !== 'undefined') {
+                console.log('Creating payrollManager instance...');
+                window.payrollManager = new PayrollManager();
+                console.log('✅ PayrollManager instance created');
+                
+                // Also set a flag that PayrollManager is available
+                window.PayrollManagerAvailable = true;
+            } else {
+                console.error('❌ PayrollManager class not found - payroll.js may not have loaded');
+                
+                // Try to load it dynamically as fallback
+                console.log('Attempting to load payroll.js dynamically...');
+                const script = document.createElement('script');
+                script.src = 'js/payroll.js';
+                script.onload = () => {
+                    console.log('✅ payroll.js loaded dynamically');
+                    if (typeof PayrollManager !== 'undefined') {
+                        window.payrollManager = new PayrollManager();
+                        window.PayrollManagerAvailable = true;
+                        console.log('✅ PayrollManager created after dynamic load');
+                    }
+                };
+                script.onerror = () => {
+                    console.error('❌ Failed to load payroll.js dynamically');
+                };
+                document.head.appendChild(script);
+            }
+        }, 100);
     </script>
     <script defer src="js/rooms.js"></script>
     <script defer src="js/expense-manager.js"></script>
