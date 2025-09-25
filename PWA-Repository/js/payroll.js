@@ -217,9 +217,14 @@ class PayrollManager {
             await this.loadPayrollRecords();
             console.log('✅ [PAYROLL] Payroll records loaded:', this.payrollRecords.length);
             
-            console.log('📋 [PAYROLL] Step 5: Loading requests...');
-            await this.loadRequests();
-            console.log('✅ [PAYROLL] Requests loaded:', this.requests.length);
+            // Don't reload requests for managers - they were already loaded with loadAllRequestsForManager
+            if (!user || user.type === 'employee') {
+                console.log('📋 [PAYROLL] Step 5: Loading requests...');
+                await this.loadRequests();
+                console.log('✅ [PAYROLL] Requests loaded:', this.requests.length);
+            } else {
+                console.log('📋 [PAYROLL] Step 5: Skipping request reload for manager (already loaded)');
+            }
             
             console.log('📋 [PAYROLL] Step 6: Setting up event listeners...');
             this.setupEventListeners();
@@ -663,11 +668,11 @@ class PayrollManager {
             
             console.log(`📊 Manager view: Displaying ${pendingRequests.length} pending requests`);
             
-            // Display manager view
-            this.displayManagerRequestsView(pendingRequests);
-            
-            // Store all requests for later use
+            // Store all requests for later use (do this BEFORE display)
             this.requests = allRequests;
+            
+            // Don't call displayManagerRequestsView - let displayPendingRequests handle it
+            console.log(`📊 Manager storing ${allRequests.length} total requests for display`);
             
         } catch (error) {
             console.error('❌ Failed to load manager requests:', error);
@@ -3601,7 +3606,7 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                                 <p style="margin: 0.5rem 0; font-size: 0.875rem; color: #4b5563;">
                                     <strong>Type:</strong> ${request.details.requestType || 'Not specified'}<br>
                                     ${request.details.amount ? `<strong>Amount:</strong> ₱${request.details.amount}<br>` : ''}
-                                    <strong>Details:</strong> ${request.details.details || 'Not specified'}
+                                    <strong>Details:</strong> ${typeof request.details.details === 'object' ? JSON.stringify(request.details.details) : (request.details.details || 'Not specified')}
                                 </p>
                             `;
                         }
