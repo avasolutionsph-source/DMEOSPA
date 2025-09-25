@@ -565,8 +565,10 @@ class PayrollManager {
             }
         }
         
-        // Always display requests (even if empty)
-        this.displayEmployeeRequests(myRequests);
+        // Always display requests (even if empty) - with a small delay to ensure DOM is ready
+        setTimeout(() => {
+            this.displayEmployeeRequests(myRequests);
+        }, 100);
         
         // For managers, also load all requests
         const isManager = user.type === 'business' || user.role === 'owner' || user.role === 'manager';

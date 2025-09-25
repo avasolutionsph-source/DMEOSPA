@@ -4871,6 +4871,17 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
     display: flex !important;
 }
 
+/* Force hide auth modal - it's been replaced with login.html */
+#authModal {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: fixed !important;
+    top: -9999px !important;
+    left: -9999px !important;
+}
+
 .modal-content {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px) saturate(180%);

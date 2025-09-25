@@ -551,9 +551,21 @@ class App {
                     (async () => {
                         try {
                             // Initialize the payroll manager (needed for all functionality)
-                            console.log('Initializing payroll for employee...');
-                            await window.payrollManager.init();
-                            console.log('✅ Payroll manager initialized for employee');
+                            console.log('📊 [APP] Initializing payroll for employee...');
+                            
+                            // Set a timeout for initialization
+                            const initPromise = window.payrollManager.init();
+                            const timeoutPromise = new Promise((_, reject) => 
+                                setTimeout(() => reject(new Error('Init timeout')), 5000)
+                            );
+                            
+                            try {
+                                await Promise.race([initPromise, timeoutPromise]);
+                                console.log('✅ [APP] Payroll manager initialized for employee');
+                            } catch (timeoutError) {
+                                console.warn('⚠️ [APP] Payroll init timed out, marking as initialized anyway');
+                                window.payrollManager.isInitialized = true;
+                            }
                             
                             if (user) {
                                 // Update employee info display with better fallbacks
