@@ -3573,6 +3573,17 @@ Net Pay: ₱${record.netPay.toFixed(2)}
         requestsList.innerHTML = `
             <div class="requests-container">
                 ${pendingRequests.map(request => {
+                    // Debug log to see request structure
+                    console.log('Processing request for display:', request);
+                    
+                    // Ensure request has an ID
+                    const requestId = request.id || request.localId || request._id || `TEMP_${Date.now()}_${Math.random()}`;
+                    if (!request.id && !request.localId && !request._id) {
+                        console.warn('Request missing ID, assigning temporary:', requestId, request);
+                        // Store the temporary ID on the request object so we can find it later
+                        request.tempId = requestId;
+                    }
+                    
                     // Get request type label
                     let requestTypeLabel = 'Request';
                     if (request.type === 'leave') requestTypeLabel = 'Leave Request';
@@ -3638,12 +3649,12 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                         </div>
                         
                         <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                            <button onclick="window.payrollManager.approveRequest('${request.id || request.localId || request._id}')" 
+                            <button onclick="window.payrollManager.approveRequest('${requestId}')" 
                                     class="btn btn-success"
                                     style="flex: 1; padding: 0.5rem 1rem; font-size: 0.875rem;">
                                 <i class="fas fa-check"></i> Approve
                             </button>
-                            <button onclick="window.payrollManager.rejectRequest('${request.id || request.localId || request._id}')" 
+                            <button onclick="window.payrollManager.rejectRequest('${requestId}')" 
                                     class="btn btn-danger"
                                     style="flex: 1; padding: 0.5rem 1rem; font-size: 0.875rem;">
                                 <i class="fas fa-times"></i> Reject
@@ -3664,7 +3675,8 @@ Net Pay: ₱${record.netPay.toFixed(2)}
             const requestIndex = this.requests.findIndex(r => 
                 r.id === requestId || 
                 r.localId === requestId || 
-                r._id === requestId
+                r._id === requestId ||
+                r.tempId === requestId
             );
             
             if (requestIndex === -1) {
@@ -3705,7 +3717,8 @@ Net Pay: ₱${record.netPay.toFixed(2)}
             const requestIndex = this.requests.findIndex(r => 
                 r.id === requestId || 
                 r.localId === requestId || 
-                r._id === requestId
+                r._id === requestId ||
+                r.tempId === requestId
             );
             
             if (requestIndex === -1) {
