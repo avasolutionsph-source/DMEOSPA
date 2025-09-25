@@ -876,7 +876,7 @@ class PayrollManager {
     showPayrollRequestModal() {
         try {
             const modal = this.createRequestModal('Payroll Request', 'payroll', [
-                { label: 'Request Type', type: 'select', name: 'requestType', options: ['Advance Pay', 'Final Pay', 'Adjustment', 'Reimbursement'], required: true },
+                { label: 'Request Type', type: 'select', name: 'requestType', options: ['Payroll This Month'], required: true },
                 { label: 'Amount (if applicable)', type: 'number', name: 'amount' },
                 { label: 'Details', type: 'textarea', name: 'details', required: true }
             ]);
