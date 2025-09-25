@@ -11,7 +11,7 @@ router.get('/low-stock', withErrorHandling(async (req, res) => {
     const { threshold = 10 } = req.query;
     
     const lowStockItems = await InventoryItem.find({
-        userId: req.user._id,
+        userId: (req.userId || req.user._id),
         currentStock: { $lte: parseInt(threshold) },
         isActive: true
     })
@@ -45,7 +45,7 @@ router.patch('/:id/stock', withErrorHandling(async (req, res) => {
         if (id.match(/^[0-9a-fA-F]{24}$/)) {
             item = await InventoryItem.findOne({
                 _id: id,
-                userId: req.user._id
+                userId: (req.userId || req.user._id)
             });
         }
         
@@ -56,7 +56,7 @@ router.patch('/:id/stock', withErrorHandling(async (req, res) => {
                     { _id: id },
                     { name: { $regex: new RegExp(id, 'i') } } // Case insensitive name search
                 ],
-                userId: req.user._id
+                userId: (req.userId || req.user._id)
             });
         }
     } catch (error) {
@@ -122,7 +122,7 @@ router.post('/restock', withErrorHandling(async (req, res) => {
         updateOne: {
             filter: { 
                 _id: update.id, 
-                userId: req.user._id 
+                userId: (req.userId || req.user._id) 
             },
             update: { 
                 $inc: { currentStock: update.quantity }, // Add to existing stock
@@ -155,10 +155,10 @@ router.post('/restock', withErrorHandling(async (req, res) => {
 
 // Clean up duplicate inventory items
 router.post('/cleanup-duplicates', withErrorHandling(async (req, res) => {
-    console.log('🧹 [INVENTORY] Starting duplicate cleanup for user:', req.user._id);
+    console.log('🧹 [INVENTORY] Starting duplicate cleanup for user:', (req.userId || req.user._id));
     
     const pipeline = [
-        { $match: { userId: req.user._id } },
+        { $match: { userId: (req.userId || req.user._id) } },
         {
             $group: {
                 _id: { 
@@ -191,7 +191,7 @@ router.post('/cleanup-duplicates', withErrorHandling(async (req, res) => {
         category: 'DATABASE',
         operation: 'cleanup_duplicates',
         data: { 
-            userId: req.user._id,
+            userId: (req.userId || req.user._id),
             duplicateGroups: duplicateGroups.length,
             deletedCount 
         }

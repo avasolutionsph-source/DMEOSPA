@@ -42,13 +42,23 @@ export const authenticateJWT = (req, res, next) => {
     // Normalize the user object to ensure consistency
     req.user = {
       ...user,
-      id: user.id || user.userId || user._id
+      id: user.id || user.userId || user._id,
+      isEmployee: user.type === 'employee' // Set isEmployee flag for employee tokens
     };
-    req.userId = req.user.id;
+    
+    // For employees, set userId to the branch owner's ID for data access
+    if (req.user.isEmployee) {
+      req.userId = user.userId; // Branch owner's ID for data queries
+    } else {
+      req.userId = req.user.id;
+    }
+    
     logger.debug('[AUTH] JWT token verified, user:', {
       id: req.user.id,
       role: req.user.role,
-      email: req.user.email
+      email: req.user.email,
+      isEmployee: req.user.isEmployee,
+      userId: req.userId
     });
     next();
   });

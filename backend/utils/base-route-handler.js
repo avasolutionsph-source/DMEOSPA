@@ -44,7 +44,8 @@ export class BaseRouteHandler {
             
             // Add user-specific filtering if owner field exists
             if (this.requireAuth && this.ownerField && req.user) {
-                query[this.ownerField] = req.user.id || req.user._id;
+                // Use req.userId which is properly set for both owners and employees
+                query[this.ownerField] = req.userId || req.user.id || req.user._id;
             }
             
             // Add search functionality
@@ -108,7 +109,8 @@ export class BaseRouteHandler {
             
             // Add user-specific filtering if owner field exists
             if (this.requireAuth && this.ownerField && req.user) {
-                query[this.ownerField] = req.user.id || req.user._id;
+                // Use req.userId which is properly set for both owners and employees
+                query[this.ownerField] = req.userId || req.user.id || req.user._id;
             }
             
             const item = await this.model
@@ -190,7 +192,8 @@ export class BaseRouteHandler {
             
             // Add user-specific filtering if owner field exists
             if (this.requireAuth && this.ownerField && req.user) {
-                query[this.ownerField] = req.user.id || req.user._id;
+                // Use req.userId which is properly set for both owners and employees
+                query[this.ownerField] = req.userId || req.user.id || req.user._id;
             }
             
             // Check unique fields (excluding current record)
@@ -233,7 +236,8 @@ export class BaseRouteHandler {
             
             // Add user-specific filtering if owner field exists
             if (this.requireAuth && this.ownerField && req.user) {
-                query[this.ownerField] = req.user.id || req.user._id;
+                // Use req.userId which is properly set for both owners and employees
+                query[this.ownerField] = req.userId || req.user.id || req.user._id;
             }
             
             // Only validate unique fields that are being updated
@@ -284,7 +288,8 @@ export class BaseRouteHandler {
             
             // Add user-specific filtering if owner field exists
             if (this.requireAuth && this.ownerField && req.user) {
-                query[this.ownerField] = req.user.id || req.user._id;
+                // Use req.userId which is properly set for both owners and employees
+                query[this.ownerField] = req.userId || req.user.id || req.user._id;
             }
             
             const item = await this.model.findOneAndDelete(query);
@@ -402,7 +407,8 @@ export class BaseRouteHandler {
             
             // Add user-specific filtering if owner field exists
             if (this.requireAuth && this.ownerField && req.user) {
-                query[this.ownerField] = req.user.id || req.user._id;
+                // Use req.userId which is properly set for both owners and employees
+                query[this.ownerField] = req.userId || req.user.id || req.user._id;
             }
             
             const result = await this.model.deleteMany(query);

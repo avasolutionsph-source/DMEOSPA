@@ -27,7 +27,7 @@ router.get('/category/:category', withErrorHandling(async (req, res) => {
     const { page = 1, limit = 50 } = req.query;
     
     const query = {
-        userId: req.user._id,
+        userId: req.userId || req.user._id,
         category,
         isActive: true
     };
@@ -65,7 +65,7 @@ router.get('/search/:query', withErrorHandling(async (req, res) => {
     const { page = 1, limit = 50 } = req.query;
     
     const searchQuery = {
-        userId: req.user._id,
+        userId: req.userId || req.user._id,
         isActive: true,
         $or: [
             { name: { $regex: query, $options: 'i' } },
@@ -137,7 +137,7 @@ router.get('/popular', withErrorHandling(async (req, res) => {
     
     // This would typically involve transaction data, but for now return active products
     const products = await Product.find({
-        userId: req.user._id,
+        userId: req.userId || req.user._id,
         isActive: true
     })
         .sort({ name: 1 }) // In real implementation, sort by usage/sales
