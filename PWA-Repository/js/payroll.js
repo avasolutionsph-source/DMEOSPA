@@ -64,11 +64,11 @@ class PayrollManager {
     }
 
     async init() {
-        console.log('🚀 Initializing Payroll System...');
+        console.log('🚀 [PAYROLL] Initializing Payroll System...');
         
         // If already initialized, return early
         if (this.isInitialized) {
-            console.log('✅ Payroll system already initialized');
+            console.log('✅ [PAYROLL] Payroll system already initialized');
             return;
         }
         
@@ -81,21 +81,33 @@ class PayrollManager {
             
             // Don't setup UI yet - wait until after database is ready
             
-            // Wait for database to be ready before proceeding
-            if (!window.isDatabaseReady || !window.isDatabaseReady()) {
-                console.log('⏳ Waiting for database before initializing payroll...');
-                if (window.waitForDatabase) {
-                    await window.waitForDatabase();
-                } else {
-                    // Fallback: wait for database the old way
-                    let attempts = 0;
-                    while (!window.db?.db && attempts < 50) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        attempts++;
-                    }
-                    if (!window.db?.db) {
-                        throw new Error('Database not available after 5 seconds');
-                    }
+            // Wait for database to be ready before proceeding - with shorter timeout
+            let dbReady = false;
+            if (window.isDatabaseReady && window.isDatabaseReady()) {
+                dbReady = true;
+            } else if (window.waitForDatabase) {
+                console.log('⏳ [PAYROLL] Waiting for database...');
+                try {
+                    // Add timeout for database wait
+                    const dbPromise = window.waitForDatabase();
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Database timeout')), 3000)
+                    );
+                    await Promise.race([dbPromise, timeoutPromise]);
+                    dbReady = true;
+                } catch (e) {
+                    console.warn('⚠️ [PAYROLL] Database wait timed out, continuing anyway');
+                }
+            } else {
+                // Fallback: quick check for database
+                let attempts = 0;
+                while (!window.db?.db && attempts < 10) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                dbReady = !!window.db?.db;
+                if (!dbReady) {
+                    console.warn('⚠️ [PAYROLL] Database not ready after 1 second, continuing with limited functionality');
                 }
             }
             
@@ -104,17 +116,22 @@ class PayrollManager {
                 windowDb: !!window.db,
                 dbObject: !!window.db?.db,
                 isOpen: window.db?.isOpen,
-                isDatabaseReady: window.isDatabaseReady ? window.isDatabaseReady() : 'function not available'
+                isDatabaseReady: window.isDatabaseReady ? window.isDatabaseReady() : 'function not available',
+                dbReady: dbReady
             });
             
-            // TEST: Try a simple database operation first
-            console.log('🔍 [PAYROLL] Testing database with simple operation...');
-            try {
-                const testStores = await window.db.getAllStoreNames();
-                console.log('✅ [PAYROLL] Database stores available:', testStores);
-            } catch (testError) {
-                console.error('❌ [PAYROLL] Database test failed:', testError);
-                throw new Error(`Database not functional: ${testError.message}`);
+            // Only test database if it's ready
+            if (dbReady && window.db?.db) {
+                console.log('🔍 [PAYROLL] Testing database with simple operation...');
+                try {
+                    const testStores = await window.db.getAllStoreNames();
+                    console.log('✅ [PAYROLL] Database stores available:', testStores);
+                } catch (testError) {
+                    console.warn('⚠️ [PAYROLL] Database test failed, continuing with limited functionality:', testError.message);
+                    dbReady = false;
+                }
+            } else {
+                console.log('ℹ️ [PAYROLL] Skipping database test - database not ready');
             }
             
             // For employees, only load their own payroll data
@@ -444,6 +461,7 @@ class PayrollManager {
     // Load employee's requests
     async loadEmployeeRequests(user) {
         let myRequests = [];
+        let serverAttempted = false;
         
         console.log('📋 [PAYROLL] Loading payroll requests for employee:', {
             userId: user.id,
@@ -456,55 +474,98 @@ class PayrollManager {
             try {
                 const token = this.getAuthToken();
                 if (token) {
-                    const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/payroll-requests`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
+                    // Add timeout for server request
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
                     
-                    if (response.ok) {
-                        const result = await response.json();
-                        myRequests = result.data || [];
-                        console.log(`✅ Loaded ${myRequests.length} requests from server`);
+                    try {
+                        const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/payroll-requests`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            signal: controller.signal
+                        });
                         
-                        // Update local store with server data
-                        for (const request of myRequests) {
-                            request.syncStatus = 'synced';
-                            await window.db.put('payrollRequests', request);
+                        clearTimeout(timeoutId);
+                        serverAttempted = true;
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            myRequests = result.data || [];
+                            console.log(`✅ [PAYROLL] Loaded ${myRequests.length} requests from server`);
+                            
+                            // Update local store with server data
+                            if (window.db && window.db.db) {
+                                for (const request of myRequests) {
+                                    request.syncStatus = 'synced';
+                                    try {
+                                        await window.db.put('payrollRequests', request);
+                                    } catch (e) {
+                                        console.warn('Could not update local store:', e);
+                                    }
+                                }
+                            }
+                        } else {
+                            console.warn(`⚠️ [PAYROLL] API returned ${response.status}: ${response.statusText}`);
+                            
+                            // If 404 or 401, this is expected for new employees
+                            if (response.status === 404 || response.status === 401) {
+                                console.log('ℹ️ [PAYROLL] No requests found - this is normal for new employees or auth issues');
+                            }
                         }
-                    } else {
-                        console.error(`❌ API returned error: ${response.status} ${response.statusText}`);
-                        const errorText = await response.text();
-                        console.error('Error response body:', errorText);
-                        
-                        // If 404 or similar, might mean no requests exist yet
-                        if (response.status === 404) {
-                            console.log('No requests found for employee (404) - this is normal for new employees');
+                    } catch (fetchError) {
+                        clearTimeout(timeoutId);
+                        if (fetchError.name === 'AbortError') {
+                            console.warn('⏱️ [PAYROLL] Server request timed out after 5 seconds');
+                        } else {
+                            console.warn('⚠️ [PAYROLL] Server request failed:', fetchError.message);
                         }
                     }
+                } else {
+                    console.warn('⚠️ [PAYROLL] No auth token available, using local data only');
                 }
             } catch (serverError) {
-                console.error('Failed to load from server:', serverError);
+                console.error('❌ [PAYROLL] Failed to load from server:', serverError);
             }
+        } else {
+            console.log('📴 [PAYROLL] Offline - using local data only');
         }
         
-        // If offline or server failed, load from local store
-        if (myRequests.length === 0) {
+        // Always try to load from local store as fallback
+        if (myRequests.length === 0 || !serverAttempted) {
             try {
-                console.log('Loading requests from local store...');
-                const allRequests = await window.db.getAll('payrollRequests') || [];
-                myRequests = allRequests.filter(r => r.employeeId === user.id);
-                console.log(`Found ${myRequests.length} local requests`);
+                if (window.db && window.db.db) {
+                    console.log('💾 [PAYROLL] Loading requests from local store...');
+                    const allRequests = await window.db.getAll('payrollRequests') || [];
+                    const localRequests = allRequests.filter(r => 
+                        r.employeeId === user.id || 
+                        r.employeeEmail === user.email
+                    );
+                    
+                    // Merge with server requests if any
+                    if (myRequests.length > 0) {
+                        // Keep server data, add any local-only requests
+                        const serverIds = new Set(myRequests.map(r => r.id));
+                        const uniqueLocal = localRequests.filter(r => !serverIds.has(r.id));
+                        myRequests = [...myRequests, ...uniqueLocal];
+                    } else {
+                        myRequests = localRequests;
+                    }
+                    
+                    console.log(`💾 [PAYROLL] Found ${myRequests.length} total requests (server + local)`);
+                } else {
+                    console.warn('⚠️ [PAYROLL] Database not ready for local storage');
+                }
             } catch (error) {
-                console.error('Failed to load local requests:', error);
-                if (error.name === 'NotFoundError' || error.message?.includes('not found') || error.message?.includes('payrollRequests')) {
-                    console.log('PayrollRequests store does not exist yet');
+                console.error('❌ [PAYROLL] Failed to load local requests:', error);
+                if (error.name === 'NotFoundError' || error.message?.includes('not found')) {
+                    console.log('ℹ️ [PAYROLL] PayrollRequests store does not exist yet - will be created on first save');
                 }
             }
         }
         
-        // Always display requests
+        // Always display requests (even if empty)
         this.displayEmployeeRequests(myRequests);
         
         // For managers, also load all requests

@@ -497,20 +497,43 @@ class App {
             case 'payroll-requests':
                 // Initialize employee payroll requests page
                 let retryCount = 0;
-                const maxRetries = 50; // 5 seconds max wait
+                const maxRetries = 30; // 3 seconds max wait
                 
                 const initPayrollRequests = async () => {
                     if (!window.payrollManager) {
                         retryCount++;
                         if (retryCount > maxRetries) {
-                            console.warn('⚠️ PayrollManager not found after 5 seconds, will initialize when ready...');
-                            // The PayrollManager will be created by payroll.js eventually
-                            // Don't try to initialize yet - just return and let it load naturally
-                            console.log('PayrollManager will be initialized when script loads');
-                            return; // Exit here to prevent trying to use undefined payrollManager
-                        } else {
-                            console.log(`⏳ Waiting for payrollManager to load... (attempt ${retryCount}/${maxRetries})`);
-                            // Wait a bit and retry
+                            console.warn('⚠️ PayrollManager not found after 3 seconds, creating now...');
+                            // Create PayrollManager if it doesn't exist
+                            if (typeof PayrollManager !== 'undefined') {
+                                window.payrollManager = new PayrollManager();
+                                console.log('✅ Created new PayrollManager instance');
+                            } else {
+                                console.error('❌ PayrollManager class not found - payroll.js may not be loaded');
+                                // Show error to user
+                                const requestsList = document.getElementById('myRequestsList');
+                                const historyList = document.getElementById('myPayrollHistory');
+                                if (requestsList) {
+                                    requestsList.innerHTML = `
+                                        <div class="error-message" style="text-align: center; padding: 20px; color: #dc2626;">
+                                            <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                                            <p>Unable to load payroll system</p>
+                                            <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                                Refresh Page
+                                            </button>
+                                        </div>`;
+                                }
+                                if (historyList) {
+                                    historyList.innerHTML = '';
+                                }
+                                return;
+                            }
+                        } else if (retryCount % 10 === 0) {
+                            console.log(`⏳ Waiting for payrollManager... (${retryCount}/${maxRetries})`);
+                        }
+                        
+                        // Only retry if PayrollManager doesn't exist
+                        if (!window.payrollManager) {
                             setTimeout(initPayrollRequests, 100);
                             return;
                         }

@@ -1846,15 +1846,15 @@
         
         <!-- Request Buttons -->
         <div class="request-buttons-grid">
-            <button class="request-btn leave-btn" onclick="if(window.payrollManager && window.payrollManager.isInitialized) window.payrollManager.showLeaveRequestModal(); else if(window.payrollManager) { alert('Initializing, please try again in a moment'); window.payrollManager.init(); } else alert('Loading, please wait...');">
+            <button class="request-btn leave-btn" onclick="if(window.payrollManager && window.payrollManager.isInitialized) window.payrollManager.showLeaveRequestModal(); else if(window.payrollManager) { window.showNotification ? window.showNotification('System initializing, please try again in a moment...', 'info') : alert('Initializing, please try again in a moment'); window.payrollManager.init().catch(console.error); } else { window.showNotification ? window.showNotification('Payroll system is loading, please wait...', 'info') : alert('Loading, please wait...'); if(typeof PayrollManager !== 'undefined') { window.payrollManager = new PayrollManager(); window.payrollManager.init().catch(console.error); } }">
                 <i class="fas fa-calendar-times"></i>
                 <span>Request Leave</span>
             </button>
-            <button class="request-btn overtime-btn" onclick="if(window.payrollManager && window.payrollManager.isInitialized) window.payrollManager.showOvertimeRequestModal(); else if(window.payrollManager) { alert('Initializing, please try again in a moment'); window.payrollManager.init(); } else alert('Loading, please wait...');">
+            <button class="request-btn overtime-btn" onclick="if(window.payrollManager && window.payrollManager.isInitialized) window.payrollManager.showOvertimeRequestModal(); else if(window.payrollManager) { window.showNotification ? window.showNotification('System initializing, please try again in a moment...', 'info') : alert('Initializing, please try again in a moment'); window.payrollManager.init().catch(console.error); } else { window.showNotification ? window.showNotification('Payroll system is loading, please wait...', 'info') : alert('Loading, please wait...'); if(typeof PayrollManager !== 'undefined') { window.payrollManager = new PayrollManager(); window.payrollManager.init().catch(console.error); } }">
                 <i class="fas fa-clock"></i>
                 <span>Request Overtime</span>
             </button>
-            <button class="request-btn payroll-btn" onclick="if(window.payrollManager && window.payrollManager.isInitialized) window.payrollManager.showPayrollRequestModal(); else if(window.payrollManager) { alert('Initializing, please try again in a moment'); window.payrollManager.init(); } else alert('Loading, please wait...');">
+            <button class="request-btn payroll-btn" onclick="if(window.payrollManager && window.payrollManager.isInitialized) window.payrollManager.showPayrollRequestModal(); else if(window.payrollManager) { window.showNotification ? window.showNotification('System initializing, please try again in a moment...', 'info') : alert('Initializing, please try again in a moment'); window.payrollManager.init().catch(console.error); } else { window.showNotification ? window.showNotification('Payroll system is loading, please wait...', 'info') : alert('Loading, please wait...'); if(typeof PayrollManager !== 'undefined') { window.payrollManager = new PayrollManager(); window.payrollManager.init().catch(console.error); } }">
                 <i class="fas fa-money-check-alt"></i>
                 <span>Request Payroll</span>
             </button>
@@ -1879,10 +1879,18 @@
 </div>
 
 <style>
+    /* Ensure payroll-requests page displays properly */
+    #payroll-requests {
+        position: relative;
+        z-index: 1;
+    }
+    
     .employee-payroll-container {
         padding: 20px;
         max-width: 1200px;
         margin: 0 auto;
+        position: relative;
+        z-index: 2;
     }
     
     .employee-info-card {
@@ -1891,6 +1899,8 @@
         padding: 20px;
         margin-bottom: 30px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        position: relative;
+        z-index: 3;
     }
     
     .employee-details {
