@@ -3637,13 +3637,15 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                             `}
                         </div>
                         
-                        <div style="display: flex; gap: 0.5rem;">
+                        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
                             <button onclick="window.payrollManager.approveRequest('${request.id}')" 
-                                    style="flex: 1; background: #800020; color: white; border: none; padding: 0.5rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                                    class="btn btn-success"
+                                    style="flex: 1; padding: 0.5rem 1rem; font-size: 0.875rem;">
                                 <i class="fas fa-check"></i> Approve
                             </button>
                             <button onclick="window.payrollManager.rejectRequest('${request.id}')" 
-                                    style="flex: 1; background: #800020; color: white; border: none; padding: 0.5rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                                    class="btn btn-danger"
+                                    style="flex: 1; padding: 0.5rem 1rem; font-size: 0.875rem;">
                                 <i class="fas fa-times"></i> Reject
                             </button>
                         </div>
@@ -3657,22 +3659,25 @@ Net Pay: ₱${record.netPay.toFixed(2)}
     async approveRequest(requestId) {
         try {
             // Find the request and update its status
-            const requestIndex = this.requests.findIndex(r => r.id === requestId);
-            if (requestIndex === -1) return;
+            const requestIndex = this.requests.findIndex(r => r.id === requestId || r.localId === requestId);
+            if (requestIndex === -1) {
+                console.error('Request not found:', requestId);
+                return;
+            }
             
+            // Update the request
             this.requests[requestIndex].status = 'approved';
             this.requests[requestIndex].approvedDate = new Date().toISOString();
             
-            // Save all requests back to the store
-            await window.db.put('payrollRequests', this.requests, 'requests');
+            // Save the updated request to IndexedDB
+            await window.db.put('payrollRequests', this.requests[requestIndex]);
             
-            // Reload and refresh display
-            await this.loadRequests();
+            // Refresh display
             this.displayPendingRequests();
             this.updateDashboardStats();
             
             if (window.showNotification) {
-                window.showNotification('Request approved', 'success');
+                window.showNotification('Request approved successfully', 'success');
             }
         } catch (error) {
             console.error('Failed to approve request:', error);
@@ -3685,17 +3690,20 @@ Net Pay: ₱${record.netPay.toFixed(2)}
     async rejectRequest(requestId) {
         try {
             // Find the request and update its status
-            const requestIndex = this.requests.findIndex(r => r.id === requestId);
-            if (requestIndex === -1) return;
+            const requestIndex = this.requests.findIndex(r => r.id === requestId || r.localId === requestId);
+            if (requestIndex === -1) {
+                console.error('Request not found:', requestId);
+                return;
+            }
             
+            // Update the request
             this.requests[requestIndex].status = 'rejected';
             this.requests[requestIndex].rejectedDate = new Date().toISOString();
             
-            // Save all requests back to the store
-            await window.db.put('payrollRequests', this.requests, 'requests');
+            // Save the updated request to IndexedDB
+            await window.db.put('payrollRequests', this.requests[requestIndex]);
             
-            // Reload and refresh display
-            await this.loadRequests();
+            // Refresh display
             this.displayPendingRequests();
             this.updateDashboardStats();
             
