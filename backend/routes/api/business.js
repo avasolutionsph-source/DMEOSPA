@@ -136,8 +136,45 @@ router.get('/employees', async (req, res) => {
     const Transaction = (await import('../../models/Transaction.js')).default;
     const userId = req.userId || req.user?.userId || req.user?.id;
     
-    // Get all employees for this user
-    const employees = await Employee.find({ userId });
+    // Enhanced debugging for manager account employee access
+    console.log('👥 [BUSINESS-EMPLOYEES] Request details:', {
+      userId: userId,
+      userRole: req.user?.role,
+      userEmail: req.user?.email,
+      reqUserId: req.userId,
+      reqUserDetails: req.user
+    });
+    
+    // ENHANCED: Support both userId and branchId filtering for manager accounts
+    let query = { userId };
+    
+    // If no employees found with userId, try branchId for manager accounts
+    let employees = await Employee.find(query);
+    
+    if (employees.length === 0 && req.user?.role === 'manager') {
+      console.log('👥 [BUSINESS-EMPLOYEES] No employees found with userId, trying branchId for manager account...');
+      const branchQuery = { branchId: userId };
+      employees = await Employee.find(branchQuery);
+      query = branchQuery;
+      
+      console.log('👥 [BUSINESS-EMPLOYEES] BranchId query result:', {
+        foundEmployees: employees.length,
+        branchId: userId
+      });
+    }
+    
+    console.log('👥 [BUSINESS-EMPLOYEES] Database query result:', {
+      finalQuery: query,
+      foundEmployees: employees.length,
+      queryUserId: userId,
+      userRole: req.user?.role,
+      sampleEmployee: employees[0] ? {
+        name: employees[0].firstName + ' ' + employees[0].lastName,
+        userId: employees[0].userId,
+        branchId: employees[0].branchId,
+        role: employees[0].role
+      } : null
+    });
     
     // Get all transactions for this user to calculate stats
     const transactions = await Transaction.find({ userId });
@@ -188,8 +225,11 @@ router.get('/employees', async (req, res) => {
       }))
     );
     
+    // CRITICAL FIX: Return in standard API format that frontend expects
     res.json({
-      employees: employeesWithStats,
+      success: true,
+      data: employeesWithStats,
+      employees: employeesWithStats, // Keep backward compatibility 
       totalEmployees: employees.length,
       lastSyncDate: new Date()
     });
