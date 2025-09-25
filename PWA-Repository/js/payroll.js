@@ -676,8 +676,8 @@ class PayrollManager {
             
         } catch (error) {
             console.error('❌ Failed to load manager requests:', error);
-            // Still try to display empty state
-            this.displayManagerRequestsView([]);
+            // Set empty requests array so displayPendingRequests handles it
+            this.requests = [];
         }
     }
     
