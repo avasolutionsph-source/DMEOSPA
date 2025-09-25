@@ -1054,21 +1054,41 @@ class EmployeeManager {
                 'Senior Therapist': 'senior_therapist',
                 'Junior Therapist': 'junior_therapist',
                 'New Therapist': 'new_therapist',
+                'Massage Therapist': 'senior_therapist', // Map to senior_therapist
+                'Therapist': 'junior_therapist', // Map generic therapist to junior
                 'Receptionist': 'receptionist',
-                'Other Staff': 'other_staff'
+                'Other Staff': 'other_staff',
+                'Other': 'other_staff'
             };
             const role = positionToRoleMap[position] || 'other_staff';
             
+            console.log('🎯 Position to Role mapping:', {
+                selectedPosition: position,
+                mappedRole: role,
+                availableRoles: Object.keys(positionToRoleMap)
+            });
+            
+            // Validate required fields before creating data object
+            if (!firstName) {
+                hideLoading();
+                saveBtn.classList.remove('loading');
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+                showError('Employee name is required');
+                this.isSaving = false;
+                return;
+            }
+            
             const employeeData = {
-                // Backend model fields (firstName/lastName)
-                firstName: firstName,
-                lastName: lastName,
-                position: position,
-                role: role, // Add role field required by backend
-                email: document.getElementById('employeeEmail').value,
-                phone: document.getElementById('employeePhone').value,
+                // Backend model fields (firstName/lastName) - REQUIRED
+                firstName: firstName || 'Unknown',
+                lastName: lastName || 'N/A',
+                position: position || 'Other Staff',
+                role: role, // REQUIRED by backend
+                email: document.getElementById('employeeEmail').value || `${firstName.toLowerCase()}.${Date.now()}@temp.com`,
+                phone: document.getElementById('employeePhone').value || '',
                 commissionRate: parseFloat(document.getElementById('employeeCommission').value || '0') || 0,
-                hireDate: document.getElementById('employeeHireDate').value,
+                hireDate: document.getElementById('employeeHireDate').value || new Date().toISOString().split('T')[0],
                 // Salary Configuration
                 wageType: document.getElementById('employeeWageType')?.value || 'daily',
                 dailyRate: parseFloat(document.getElementById('employeeDailyRate')?.value || '0') || 0,
@@ -1229,6 +1249,13 @@ class EmployeeManager {
                 let endpoint = '/api/employees';
                 
                 try {
+                    console.log(`📤 Sending to ${endpoint}:`, {
+                        firstName: employeeData.firstName,
+                        lastName: employeeData.lastName,
+                        role: employeeData.role,
+                        hasAllRequired: !!(employeeData.firstName && employeeData.lastName && employeeData.role)
+                    });
+                    
                     response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}${endpoint}`, {
                         method: 'POST',
                         headers: {
