@@ -1846,15 +1846,15 @@
         
         <!-- Request Buttons -->
         <div class="request-buttons-grid">
-            <button class="request-btn leave-btn" onclick="if(window.payrollManager && window.payrollManager.isInitialized) window.payrollManager.showLeaveRequestModal(); else if(window.payrollManager) { window.showNotification ? window.showNotification('System initializing, please try again in a moment...', 'info') : alert('Initializing, please try again in a moment'); window.payrollManager.init().catch(console.error); } else { window.showNotification ? window.showNotification('Payroll system is loading, please wait...', 'info') : alert('Loading, please wait...'); if(typeof PayrollManager !== 'undefined') { window.payrollManager = new PayrollManager(); window.payrollManager.init().catch(console.error); } }">
+            <button class="request-btn leave-btn" onclick="if(window.payrollManager) { window.payrollManager.showLeaveRequestModal(); } else { alert('Payroll system not available. Please refresh the page.'); }">
                 <i class="fas fa-calendar-times"></i>
                 <span>Request Leave</span>
             </button>
-            <button class="request-btn overtime-btn" onclick="if(window.payrollManager && window.payrollManager.isInitialized) window.payrollManager.showOvertimeRequestModal(); else if(window.payrollManager) { window.showNotification ? window.showNotification('System initializing, please try again in a moment...', 'info') : alert('Initializing, please try again in a moment'); window.payrollManager.init().catch(console.error); } else { window.showNotification ? window.showNotification('Payroll system is loading, please wait...', 'info') : alert('Loading, please wait...'); if(typeof PayrollManager !== 'undefined') { window.payrollManager = new PayrollManager(); window.payrollManager.init().catch(console.error); } }">
+            <button class="request-btn overtime-btn" onclick="if(window.payrollManager) { window.payrollManager.showOvertimeRequestModal(); } else { alert('Payroll system not available. Please refresh the page.'); }">
                 <i class="fas fa-clock"></i>
                 <span>Request Overtime</span>
             </button>
-            <button class="request-btn payroll-btn" onclick="if(window.payrollManager && window.payrollManager.isInitialized) window.payrollManager.showPayrollRequestModal(); else if(window.payrollManager) { window.showNotification ? window.showNotification('System initializing, please try again in a moment...', 'info') : alert('Initializing, please try again in a moment'); window.payrollManager.init().catch(console.error); } else { window.showNotification ? window.showNotification('Payroll system is loading, please wait...', 'info') : alert('Loading, please wait...'); if(typeof PayrollManager !== 'undefined') { window.payrollManager = new PayrollManager(); window.payrollManager.init().catch(console.error); } }">
+            <button class="request-btn payroll-btn" onclick="if(window.payrollManager) { window.payrollManager.showPayrollRequestModal(); } else { alert('Payroll system not available. Please refresh the page.'); }">
                 <i class="fas fa-money-check-alt"></i>
                 <span>Request Payroll</span>
             </button>
@@ -3769,38 +3769,46 @@
     <script defer src="js/appointments.js"></script>
     <script defer src="js/attendance.js?v=20250911"></script>
     <script defer src="js/attendance-history.js"></script>
-    <script src="js/payroll.js" onload="console.log('✅ payroll.js loaded successfully')" onerror="console.error('❌ Failed to load payroll.js')"></script>
+    <script src="js/payroll.js"></script>
     <script>
-        // Wait a moment for the script to fully execute, then create payrollManager
-        setTimeout(() => {
-            if (typeof PayrollManager !== 'undefined') {
-                console.log('Creating payrollManager instance...');
-                window.payrollManager = new PayrollManager();
-                console.log('✅ PayrollManager instance created');
-                
-                // Also set a flag that PayrollManager is available
-                window.PayrollManagerAvailable = true;
-            } else {
-                console.error('❌ PayrollManager class not found - payroll.js may not have loaded');
-                
-                // Try to load it dynamically as fallback
-                console.log('Attempting to load payroll.js dynamically...');
-                const script = document.createElement('script');
-                script.src = 'js/payroll.js';
-                script.onload = () => {
-                    console.log('✅ payroll.js loaded dynamically');
-                    if (typeof PayrollManager !== 'undefined') {
-                        window.payrollManager = new PayrollManager();
-                        window.PayrollManagerAvailable = true;
-                        console.log('✅ PayrollManager created after dynamic load');
+        // Create PayrollManager instance immediately (no delay)
+        // The IIFE in payroll.js ensures the class is available synchronously
+        if (typeof PayrollManager !== 'undefined') {
+            console.log('Creating payrollManager instance...');
+            window.payrollManager = new PayrollManager();
+            console.log('✅ PayrollManager instance created');
+            window.PayrollManagerAvailable = true;
+        } else {
+            console.error('❌ PayrollManager class not found - check payroll.js for errors');
+            
+            // Create a minimal fallback PayrollManager
+            window.PayrollManager = class {
+                constructor() { 
+                    this.isInitialized = false; 
+                    console.warn('⚠️ Using emergency fallback PayrollManager');
+                }
+                async init() { 
+                    console.warn('Fallback PayrollManager init');
+                    this.isInitialized = true;
+                    const requestsList = document.getElementById('myRequestsList');
+                    const historyList = document.getElementById('myPayrollHistory');
+                    if (requestsList) {
+                        requestsList.innerHTML = '<div style="text-align:center;padding:20px;color:#dc2626"><i class="fas fa-exclamation-triangle" style="font-size:2rem;margin-bottom:10px"></i><p>Payroll system error</p><button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#dc2626;color:white;border:none;border-radius:5px;cursor:pointer">Refresh Page</button></div>';
                     }
-                };
-                script.onerror = () => {
-                    console.error('❌ Failed to load payroll.js dynamically');
-                };
-                document.head.appendChild(script);
-            }
-        }, 100);
+                    if (historyList) {
+                        historyList.innerHTML = '<p style="color:#dc2626;text-align:center">Unable to load payroll history</p>';
+                    }
+                }
+                displayEmployeeRequests() {}
+                displayEmployeePayrollHistory() {}
+                showLeaveRequestModal() { alert('Payroll system is unavailable. Please refresh the page.'); }
+                showOvertimeRequestModal() { alert('Payroll system is unavailable. Please refresh the page.'); }
+                showPayrollRequestModal() { alert('Payroll system is unavailable. Please refresh the page.'); }
+            };
+            window.payrollManager = new window.PayrollManager();
+            window.PayrollManagerAvailable = true;
+            console.warn('✅ Emergency fallback PayrollManager created');
+        }
     </script>
     <script defer src="js/rooms.js"></script>
     <script defer src="js/expense-manager.js"></script>

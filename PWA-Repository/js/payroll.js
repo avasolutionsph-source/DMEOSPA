@@ -2,6 +2,13 @@
 // NOTE: This system focuses on payroll calculations and management.
 // Attendance management has been moved to the dedicated Attendance page.
 // This system only REFERENCES attendance data for payroll calculations.
+
+// Immediately expose the class to ensure it's available even if there are errors later
+(function() {
+    'use strict';
+    
+try {
+
 class PayrollManager {
     constructor() {
         this.payrollRecords = [];
@@ -169,6 +176,7 @@ class PayrollManager {
                 } catch (error) {
                     console.error('❌ [PAYROLL] Error loading payroll data:', error);
                     // Continue anyway - show empty state
+                    this.displayEmployeePayrollHistory(); // Force display empty state
                 }
                 
                 try {
@@ -176,6 +184,7 @@ class PayrollManager {
                 } catch (error) {
                     console.error('❌ [PAYROLL] Error loading requests:', error);
                     // Continue anyway - show empty state
+                    this.displayEmployeeRequests([]); // Force display empty state
                 }
                 
                 // IMPORTANT: Return early for employees - don't run any manager display functions
@@ -190,6 +199,10 @@ class PayrollManager {
             // Load manager-specific data
             console.log('📋 [PAYROLL] Step 1: Loading attendance rules...');
             await this.loadAttendanceRules();
+            
+            // Load all employee requests for manager to review
+            console.log('📋 [PAYROLL] Loading employee requests for manager review...');
+            await this.loadAllRequestsForManager(user);
             console.log('✅ [PAYROLL] Attendance rules loaded');
             
             console.log('📋 [PAYROLL] Step 2: Loading employees...');
@@ -373,53 +386,6 @@ class PayrollManager {
 
     // Employee-specific UI is now handled in the separate payroll-requests page
     // This file only handles manager/owner payroll functionality
-                }
-                
-                .requests-list, .payroll-history-list {
-                    margin-top: 15px;
-                }
-                
-                .request-item, .payroll-item {
-                    padding: 15px;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 5px;
-                    margin-bottom: 10px;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-                
-                .request-status {
-                    padding: 5px 10px;
-                    border-radius: 20px;
-                    font-size: 0.85rem;
-                    font-weight: bold;
-                }
-                
-                .status-pending {
-                    background: #fef3c7;
-                    color: #d97706;
-                }
-                
-                .status-approved {
-                    background: #d1fae5;
-                    color: #059669;
-                }
-                
-                .status-rejected {
-                    background: #fee2e2;
-                    color: #dc2626;
-                }
-            `;
-            document.head.appendChild(styles);
-        }
-        
-        // Clear existing content and add employee UI
-        const existingUI = payrollPage.querySelector('#employeePayrollUI');
-        if (existingUI) existingUI.remove();
-        
-        payrollPage.appendChild(employeeUI);
-    }
     
     // Load employee's own payroll data
     async loadEmployeePayrollData(user) {
@@ -650,36 +616,81 @@ class PayrollManager {
     
     // Load all requests for manager view
     async loadAllRequestsForManager(user) {
+        let allRequests = [];
+        
         try {
-            const token = this.getAuthToken();
-            if (!token) return;
-            
-            // Fetch all pending requests from server
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/payroll-requests?status=pending`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+            // Try to load from server first
+            if (navigator.onLine) {
+                const token = this.getAuthToken();
+                if (token) {
+                    try {
+                        const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/payroll-requests`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            allRequests = result.data || [];
+                            console.log(`✅ Manager view: Loaded ${allRequests.length} requests from server`);
+                        } else if (response.status === 404) {
+                            console.log('ℹ️ No requests endpoint available, using local data');
+                        }
+                    } catch (fetchError) {
+                        console.warn('⚠️ Failed to fetch from server:', fetchError.message);
+                    }
                 }
-            });
-            
-            if (response.ok) {
-                const result = await response.json();
-                const allRequests = result.data || [];
-                console.log(`Manager view: ${allRequests.length} pending requests`);
-                
-                // Display manager view if container exists
-                this.displayManagerRequestsView(allRequests);
             }
+            
+            // If no server data or offline, load from IndexedDB
+            if (allRequests.length === 0 && window.db && window.db.db) {
+                try {
+                    const localRequests = await window.db.getAll('payrollRequests') || [];
+                    // For managers, show all requests (not just their own)
+                    allRequests = localRequests;
+                    console.log(`💾 Manager view: Loaded ${allRequests.length} requests from local storage`);
+                } catch (dbError) {
+                    console.error('❌ Failed to load from IndexedDB:', dbError);
+                }
+            }
+            
+            // Filter for pending requests only for display
+            const pendingRequests = allRequests.filter(r => 
+                r.status === 'pending' || !r.status // Include requests without status
+            );
+            
+            console.log(`📊 Manager view: Displaying ${pendingRequests.length} pending requests`);
+            
+            // Display manager view
+            this.displayManagerRequestsView(pendingRequests);
+            
+            // Store all requests for later use
+            this.requests = allRequests;
+            
         } catch (error) {
-            console.error('Failed to load manager requests:', error);
+            console.error('❌ Failed to load manager requests:', error);
+            // Still try to display empty state
+            this.displayManagerRequestsView([]);
         }
     }
     
     // Display manager view of all employee requests
     displayManagerRequestsView(requests) {
-        // Check if we're on the payroll page
-        const payrollPage = document.getElementById('payrollPage');
-        if (!payrollPage) return;
+        // Check if we're on the payroll page or find appropriate container
+        let payrollPage = document.getElementById('payroll');
+        if (!payrollPage) {
+            payrollPage = document.getElementById('payrollPage');
+        }
+        if (!payrollPage) {
+            // Try to find the active page
+            payrollPage = document.querySelector('.page.active');
+        }
+        if (!payrollPage) {
+            console.warn('No suitable container found for manager requests view');
+            return;
+        }
         
         // Check if manager section already exists
         let managerSection = document.getElementById('managerRequestsSection');
@@ -688,17 +699,23 @@ class PayrollManager {
             managerSection = document.createElement('div');
             managerSection.id = 'managerRequestsSection';
             managerSection.className = 'card';
+            managerSection.style.marginBottom = '20px';
             managerSection.innerHTML = `
-                <div class="card-header">
-                    <h5>🔔 Employee Requests (Manager View)</h5>
+                <div class="card-header" style="background: #800020; color: white;">
+                    <h5 style="margin: 0;">🔔 Employee Payroll Requests</h5>
                 </div>
                 <div class="card-body">
                     <div id="allEmployeeRequests">Loading requests...</div>
                 </div>
             `;
             
-            // Insert at the top of the page
-            payrollPage.insertBefore(managerSection, payrollPage.firstChild);
+            // Insert at the top of the page content
+            const pageHeader = payrollPage.querySelector('.page-header');
+            if (pageHeader && pageHeader.nextSibling) {
+                payrollPage.insertBefore(managerSection, pageHeader.nextSibling);
+            } else {
+                payrollPage.insertBefore(managerSection, payrollPage.firstChild);
+            }
         }
         
         const container = document.getElementById('allEmployeeRequests');
@@ -3626,7 +3643,8 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                             </button>
                         </div>
                     </div>
-                `).join('')}
+                `;
+                }).join('')}
             </div>
         `;
     }
@@ -3985,5 +4003,46 @@ window.PayrollManager = PayrollManager;
 
 // Don't auto-create instance here - let index.html or app.js handle it
 console.log('✅ PayrollManager class defined and available');
+
+} catch (error) {
+    console.error('❌ Error in PayrollManager definition:', error);
+    console.error('Stack trace:', error.stack);
+    
+    // Create a minimal PayrollManager as fallback
+    window.PayrollManager = class {
+        constructor() {
+            this.isInitialized = false;
+            console.warn('⚠️ Using fallback PayrollManager due to errors');
+        }
+        async init() {
+            console.warn('⚠️ Fallback PayrollManager init - limited functionality');
+            this.isInitialized = true;
+        }
+        displayEmployeeRequests(requests) {
+            const container = document.getElementById('myRequestsList');
+            if (container) {
+                container.innerHTML = '<p>Payroll system error - please refresh the page</p>';
+            }
+        }
+        displayEmployeePayrollHistory() {
+            const container = document.getElementById('myPayrollHistory');
+            if (container) {
+                container.innerHTML = '<p>Unable to load history - please refresh</p>';
+            }
+        }
+        showLeaveRequestModal() { alert('Payroll system error - please refresh'); }
+        showOvertimeRequestModal() { alert('Payroll system error - please refresh'); }
+        showPayrollRequestModal() { alert('Payroll system error - please refresh'); }
+    };
+}
+
+})(); // End IIFE
+
+// Double-check class is exposed
+if (typeof window.PayrollManager === 'undefined') {
+    console.error('❌ CRITICAL: PayrollManager failed to expose to global scope');
+} else {
+    console.log('✅ PayrollManager successfully exposed to window');
+}
 
 // export default PayrollManager; // Commented out for compatibility

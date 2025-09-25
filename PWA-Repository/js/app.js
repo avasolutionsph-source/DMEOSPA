@@ -496,66 +496,33 @@ class App {
                 break;
             case 'payroll-requests':
                 // Initialize employee payroll requests page
-                let retryCount = 0;
-                const maxRetries = 50; // 5 seconds max wait
-                
                 const initPayrollRequests = async () => {
+                    // PayrollManager should already be created in index.html
                     if (!window.payrollManager) {
-                        retryCount++;
-                        if (retryCount > maxRetries) {
-                            console.warn('⚠️ PayrollManager not found after 5 seconds, attempting to create...');
-                            
-                            // Last attempt - try loading the script directly
-                            if (typeof PayrollManager === 'undefined' && !window.PayrollManagerLoadAttempted) {
-                                window.PayrollManagerLoadAttempted = true;
-                                console.log('🔄 Attempting emergency load of payroll.js...');
-                                const emergencyScript = document.createElement('script');
-                                emergencyScript.src = 'js/payroll.js';
-                                emergencyScript.onload = () => {
-                                    console.log('✅ Emergency load successful');
-                                    if (typeof PayrollManager !== 'undefined') {
-                                        window.payrollManager = new PayrollManager();
-                                        window.payrollManager.init().catch(console.error);
-                                    }
-                                };
-                                document.head.appendChild(emergencyScript);
-                                
-                                // Wait a bit more and retry
-                                setTimeout(initPayrollRequests, 1000);
-                                return;
-                            }
-                            
-                            // Try to create PayrollManager if class exists
-                            if (typeof PayrollManager !== 'undefined') {
-                                window.payrollManager = new PayrollManager();
-                                console.log('✅ Created new PayrollManager instance');
-                            } else {
-                                console.error('❌ PayrollManager class not found - payroll.js failed to load');
-                                // Show error to user
-                                const requestsList = document.getElementById('myRequestsList');
-                                const historyList = document.getElementById('myPayrollHistory');
-                                if (requestsList) {
-                                    requestsList.innerHTML = `
-                                        <div class="error-message" style="text-align: center; padding: 20px; color: #dc2626;">
-                                            <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 10px;"></i>
-                                            <p>Unable to load payroll system</p>
-                                            <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                                                Refresh Page
-                                            </button>
-                                        </div>`;
-                                }
-                                if (historyList) {
-                                    historyList.innerHTML = '';
-                                }
-                                return;
-                            }
-                        } else if (retryCount % 10 === 0) {
-                            console.log(`⏳ Waiting for payrollManager... (${retryCount}/${maxRetries})`);
-                        }
+                        console.warn('⚠️ PayrollManager not found, checking if class exists...');
                         
-                        // Only retry if PayrollManager doesn't exist
-                        if (!window.payrollManager) {
-                            setTimeout(initPayrollRequests, 100);
+                        // Try to create if class exists
+                        if (typeof PayrollManager !== 'undefined') {
+                            window.payrollManager = new PayrollManager();
+                            console.log('✅ Created new PayrollManager instance');
+                        } else {
+                            console.error('❌ PayrollManager class not found');
+                            // Show error to user
+                            const requestsList = document.getElementById('myRequestsList');
+                            const historyList = document.getElementById('myPayrollHistory');
+                            if (requestsList) {
+                                requestsList.innerHTML = `
+                                    <div class="error-message" style="text-align: center; padding: 20px; color: #dc2626;">
+                                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                                        <p>Unable to load payroll system</p>
+                                        <button onclick="location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                            Refresh Page
+                                        </button>
+                                    </div>`;
+                            }
+                            if (historyList) {
+                                historyList.innerHTML = '<p style="color:#dc2626;text-align:center">Unable to load payroll history</p>';
+                            }
                             return;
                         }
                     }
