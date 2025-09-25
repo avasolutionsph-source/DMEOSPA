@@ -46,9 +46,18 @@ export const authenticateJWT = (req, res, next) => {
       isEmployee: user.type === 'employee' // Set isEmployee flag for employee tokens
     };
     
-    // For employees, set userId to the branch owner's ID for data access
-    if (req.user.isEmployee) {
-      req.userId = user.userId; // Branch owner's ID for data queries
+    // MANAGER FIX: Give managers same access as owners
+    // For employees (including managers), use the branch owner's ID for data access
+    if (req.user.isEmployee || user.type === 'employee') {
+      req.userId = user.userId || user.branchOwnerId || req.user.id; // Use branch owner's ID
+      
+      // For managers specifically, treat them like owners
+      if (user.role === 'manager') {
+        req.user.id = user.userId || user.branchOwnerId || req.user.id;
+        req.userId = req.user.id;
+        // Don't set isEmployee flag for managers to give them full access
+        req.user.isEmployee = false;
+      }
     } else {
       req.userId = req.user.id;
     }
@@ -58,7 +67,8 @@ export const authenticateJWT = (req, res, next) => {
       role: req.user.role,
       email: req.user.email,
       isEmployee: req.user.isEmployee,
-      userId: req.userId
+      userId: req.userId,
+      isManager: req.user.role === 'manager'
     });
     next();
   });

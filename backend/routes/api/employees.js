@@ -127,8 +127,8 @@ router.get('/', withErrorHandling(async (req, res) => {
     let query = {};
     
     // Check if request is from employee or owner
-    if (req.user.isEmployee) {
-        // Employee viewing - use branch context
+    if (req.user.isEmployee && req.user.role !== 'manager') {
+        // Regular employee viewing - use branch context
         query.userId = req.userId; // Original branch owner ID
         
         // Therapists can only see themselves
@@ -136,8 +136,8 @@ router.get('/', withErrorHandling(async (req, res) => {
             query._id = req.user.id;
         }
     } else {
-        // Owner viewing their employees
-        query.userId = req.user.id || req.user._id;
+        // Owner or manager viewing their employees (managers get same access as owners)
+        query.userId = req.userId || req.user.id || req.user._id;
     }
     
     // Add filters

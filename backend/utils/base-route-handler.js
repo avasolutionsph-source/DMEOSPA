@@ -47,18 +47,6 @@ export class BaseRouteHandler {
                 // Use req.userId which is properly set for both owners and employees
                 const userIdForQuery = req.userId || req.user.id || req.user._id;
                 query[this.ownerField] = userIdForQuery;
-                
-                // Debug logging for manager access issues
-                if (req.user.role === 'manager' || req.user.type === 'employee') {
-                    console.log(`[${this.modelName}] Manager/Employee data access:`, {
-                        role: req.user.role,
-                        type: req.user.type,
-                        queryUserId: userIdForQuery,
-                        reqUserId: req.userId,
-                        reqUserId2: req.user.id,
-                        isEmployee: req.user.isEmployee
-                    });
-                }
             }
             
             // Add search functionality
