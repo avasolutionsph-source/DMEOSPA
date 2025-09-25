@@ -995,11 +995,7 @@
             <div id="employees" class="page">
                 <div class="page-header">
                     <h1>Employee Management</h1>
-                    <div class="header-actions">
-                        <button class="btn btn-primary" id="addEmployeeBtn">
-                            <i class="fas fa-user-plus"></i> Add Employee
-                        </button>
-                    </div>
+                    <!-- Add Employee button removed - employees should be added through marketing website -->
                 </div>
                 
                 <!-- Search Bar -->
@@ -2608,7 +2604,7 @@
     <div id="employeeModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="employeeModalTitle">Add Employee</h2>
+                <h2 id="employeeModalTitle">Edit Employee</h2>
                 <button class="modal-close" onclick="closeModal('employeeModal')">
                     <i class="fas fa-times"></i>
                 </button>
@@ -3868,23 +3864,7 @@
             }
         };
         
-        window.showAddEmployee = function() {
-            console.log('showAddEmployee called');
-            if (!window.employeeManager) {
-                console.error('Employee manager not available');
-                return;
-            }
-            window.employeeManager.editingEmployee = null;
-            const title = document.getElementById('employeeModalTitle');
-            if (title) title.textContent = 'Add Employee';
-            const form = document.getElementById('employeeForm');
-            if (form) form.reset();
-            if (typeof openModal === 'function') {
-                openModal('employeeModal');
-            } else {
-                console.error('openModal function not available');
-            }
-        };
+        // showAddEmployee function removed - employees must be added through marketing website
         
         window.showAddRoom = function() {
             console.log('showAddRoom called');
@@ -4080,42 +4060,7 @@
                     console.log('✅ Inventory button handler attached');
                 }
                 
-                // Add Employee Button
-                const addEmployeeBtn = document.getElementById('addEmployeeBtn');
-                if (addEmployeeBtn) {
-                    console.log('Found Add Employee button, attaching handler...');
-                    addEmployeeBtn.addEventListener('click', function() {
-                        console.log('Add Employee clicked!');
-                        if (window.employeeManager) {
-                            window.employeeManager.editingEmployee = null;
-                            const title = document.getElementById('employeeModalTitle');
-                            if (title) title.textContent = 'Add Employee';
-                            const form = document.getElementById('employeeForm');
-                            if (form) form.reset();
-                            if (typeof openModal === 'function') {
-                                openModal('employeeModal');
-                                // Fallback: Force modal to show if openModal doesn't work
-                                const modal = document.getElementById('employeeModal');
-                                if (modal && !modal.classList.contains('active')) {
-                                    console.log('Fallback: Forcing modal to show');
-                                    modal.style.display = 'flex';
-                                    modal.classList.add('active');
-                                }
-                            } else {
-                                console.error('openModal not found');
-                                // Direct fallback
-                                const modal = document.getElementById('employeeModal');
-                                if (modal) {
-                                    modal.style.display = 'flex';
-                                    modal.classList.add('active');
-                                }
-                            }
-                        } else {
-                            console.error('employeeManager not found');
-                        }
-                    });
-                    console.log('✅ Employee button handler attached');
-                }
+                // Add Employee Button removed - employees must be added through marketing website
                 
                 // Add Room Button
                 const addRoomBtn = document.getElementById('addRoomBtn');

@@ -120,52 +120,7 @@ class EmployeeManager {
         }
         
         this._listenersAttached = true;
-        // Add employee button
-        const addBtn = document.getElementById('addEmployeeBtn');
-        if (addBtn) {
-            addBtn.addEventListener('click', () => {
-                // Check if user can access employee feature
-                if (window.requiresUpgrade && window.requiresUpgrade('employees')) {
-                    window.showFeatureLockedMessage('employees', 'manage employees');
-                    return;
-                }
-                
-                // Check plan limits
-                if (window.checkPlanLimits) {
-                    window.checkPlanLimits('employees').then(limitReached => {
-                        if (limitReached) {
-                            window.showLimitReachedMessage('employees');
-                            return;
-                        }
-                        this.editingEmployee = null;
-                        document.getElementById('employeeModalTitle').textContent = 'Add Employee';
-                        document.getElementById('employeeForm').reset();
-                        // Set default values for new employee
-                        document.getElementById('employeeWageType').value = 'daily';
-                        document.getElementById('employeeOvertimeMultiplier').value = '1.25';
-                        openModal('employeeModal');
-                        
-                        // Setup salary calculation listeners after modal opens
-                        setTimeout(() => {
-                            window.setupEmployeeSalaryListeners();
-                        }, 100);
-                    });
-                } else {
-                    this.editingEmployee = null;
-                    document.getElementById('employeeModalTitle').textContent = 'Add Employee';
-                    document.getElementById('employeeForm').reset();
-                    // Set default values for new employee
-                    document.getElementById('employeeWageType').value = 'daily';
-                    document.getElementById('employeeOvertimeMultiplier').value = '1.25';
-                    openModal('employeeModal');
-                    
-                    // Setup salary calculation listeners after modal opens
-                    setTimeout(() => {
-                        window.setupEmployeeSalaryListeners();
-                    }, 100);
-                }
-            });
-        }
+        // Add employee button removed - employees must be added through marketing website
 
         // Employee form submission with double-click protection
         const form = document.getElementById('employeeForm');
