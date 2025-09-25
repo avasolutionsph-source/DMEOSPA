@@ -904,7 +904,7 @@ class EmployeeManager {
             return;
         }
 
-        console.log('🗑️ Deleting employee from MongoDB...');
+        console.log('🗑️ Attempting to delete employee:', id);
         
         const token = this.getAuthToken();
         if (!token) {
@@ -914,21 +914,88 @@ class EmployeeManager {
         }
 
         try {
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/employees/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            // First check if this is a local-only employee
+            const employee = this.employees.find(emp => emp.id === id || emp._id === id);
+            const isLocalOnly = employee && employee.localOnly;
             
-            if (response.ok) {
-                console.log('✅ Employee deleted from MongoDB');
-                showSuccess('Employee deleted successfully');
-                await this.loadEmployees();
-            } else {
-                console.error('❌ Failed to delete employee:', response.status);
-                showError('Failed to delete employee');
+            if (isLocalOnly) {
+                console.log('📦 Deleting local-only employee from IndexedDB...');
+                // Delete from IndexedDB for local-only employees
+                if (window.db && window.db.db) {
+                    await window.db.delete('employees', id);
+                    console.log('✅ Local employee deleted from IndexedDB');
+                    showSuccess('Employee deleted successfully');
+                    await this.loadEmployees();
+                    return;
+                }
+            }
+            
+            // Try multiple endpoints for backend deletion
+            const endpoints = [
+                `/api/employees/${id}`,
+                `/api/business/employees/${id}`
+            ];
+            
+            let deleteSuccessful = false;
+            let lastError = null;
+            
+            for (const endpoint of endpoints) {
+                try {
+                    console.log(`🗑️ Attempting DELETE at ${endpoint}...`);
+                    const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}${endpoint}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        console.log(`✅ Employee deleted via ${endpoint}`);
+                        deleteSuccessful = true;
+                        
+                        // Also remove from local IndexedDB
+                        if (window.db && window.db.db) {
+                            try {
+                                await window.db.delete('employees', id);
+                                console.log('✅ Also removed from local IndexedDB');
+                            } catch (dbError) {
+                                console.log('⚠️ Could not remove from IndexedDB:', dbError);
+                            }
+                        }
+                        
+                        showSuccess('Employee deleted successfully');
+                        await this.loadEmployees();
+                        break;
+                    } else if (response.status === 404) {
+                        console.log(`⚠️ Employee not found at ${endpoint}, trying next...`);
+                        lastError = 'Employee not found';
+                    } else {
+                        const errorText = await response.text();
+                        lastError = errorText || `HTTP ${response.status}`;
+                        console.error(`❌ Failed at ${endpoint}: ${response.status} - ${errorText}`);
+                    }
+                } catch (error) {
+                    lastError = error.message;
+                    console.error(`❌ Network error for ${endpoint}:`, error);
+                }
+            }
+            
+            if (!deleteSuccessful) {
+                // If backend deletion failed but employee exists locally, offer to remove locally
+                if (window.db && window.db.db) {
+                    const confirmLocal = confirm('Failed to delete from server. Delete from local database only?');
+                    if (confirmLocal) {
+                        await window.db.delete('employees', id);
+                        console.log('✅ Removed from local database');
+                        showSuccess('Employee removed from local database');
+                        await this.loadEmployees();
+                        return;
+                    }
+                }
+                
+                console.error('❌ All delete attempts failed:', lastError);
+                showError(`Failed to delete employee: ${lastError || 'Unknown error'}`);
             }
         } catch (error) {
             console.error('❌ Failed to delete employee from MongoDB:', error);
@@ -1055,31 +1122,100 @@ class EmployeeManager {
                 // Update existing employee via API
                 employeeData.id = this.editingEmployee.id;
                 employeeData.createdAt = this.editingEmployee.createdAt;
+                // Keep existing role if not changed
+                employeeData.role = role || this.editingEmployee.role || 'other_staff';
                 
-                const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/employees/${this.editingEmployee.id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(employeeData)
-                });
+                // Try multiple endpoints for update
+                const updateEndpoints = [
+                    `/api/employees/${this.editingEmployee.id}`,
+                    `/api/business/employees/${this.editingEmployee.id}`
+                ];
                 
-                if (response.ok) {
-                    console.log('✅ Employee updated in MongoDB');
+                let updateSuccessful = false;
+                let lastUpdateError = null;
+                
+                for (const updateEndpoint of updateEndpoints) {
+                    try {
+                        console.log(`📝 Attempting PUT at ${updateEndpoint}...`);
+                        const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}${updateEndpoint}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(employeeData)
+                        });
+                        
+                        if (response.ok) {
+                            console.log(`✅ Employee updated via ${updateEndpoint}`);
+                            updateSuccessful = true;
+                            
+                            // Update local IndexedDB too
+                            if (window.db && window.db.db) {
+                                try {
+                                    await window.db.put('employees', {
+                                        ...employeeData,
+                                        _id: this.editingEmployee.id,
+                                        syncStatus: 'synced',
+                                        lastSyncedAt: new Date().toISOString()
+                                    });
+                                    console.log('✅ Local IndexedDB updated');
+                                } catch (dbError) {
+                                    console.log('⚠️ Could not update IndexedDB:', dbError);
+                                }
+                            }
+                            
+                            hideLoading();
+                            saveBtn.classList.remove('loading');
+                            saveBtn.disabled = false;
+                            saveBtn.innerHTML = originalText;
+                            closeModal('employeeModal');
+                            showSuccess('Employee updated successfully');
+                            break;
+                        } else if (response.status === 404) {
+                            lastUpdateError = 'Employee not found';
+                            console.log(`⚠️ Employee not found at ${updateEndpoint}, trying next...`);
+                        } else {
+                            const errorText = await response.text();
+                            lastUpdateError = errorText || `HTTP ${response.status}`;
+                            console.error(`❌ Failed at ${updateEndpoint}: ${response.status} - ${errorText}`);
+                        }
+                    } catch (error) {
+                        lastUpdateError = error.message;
+                        console.error(`❌ Network error for ${updateEndpoint}:`, error);
+                    }
+                }
+                
+                if (!updateSuccessful) {
+                    console.error('❌ All update attempts failed:', lastUpdateError);
+                    
+                    // Offer to save locally if backend fails
+                    if (window.db && window.db.db) {
+                        const saveLocally = confirm('Failed to update on server. Save changes locally?');
+                        if (saveLocally) {
+                            await window.db.put('employees', {
+                                ...employeeData,
+                                _id: this.editingEmployee.id,
+                                localOnly: true,
+                                syncStatus: 'pending',
+                                lastModified: new Date().toISOString()
+                            });
+                            hideLoading();
+                            saveBtn.classList.remove('loading');
+                            saveBtn.disabled = false;
+                            saveBtn.innerHTML = originalText;
+                            closeModal('employeeModal');
+                            showSuccess('Changes saved locally (will sync when online)');
+                            await this.loadEmployees();
+                            return;
+                        }
+                    }
+                    
                     hideLoading();
                     saveBtn.classList.remove('loading');
                     saveBtn.disabled = false;
                     saveBtn.innerHTML = originalText;
-                    closeModal('employeeModal');
-                    showSuccess('Employee updated successfully');
-                } else {
-                    console.error('❌ Failed to update employee:', response.status);
-                    hideLoading();
-                    saveBtn.classList.remove('loading');
-                    saveBtn.disabled = false;
-                    saveBtn.innerHTML = originalText;
-                    showError('Failed to update employee');
+                    showError(`Failed to update employee: ${lastUpdateError || 'Unknown error'}`);
                     return;
                 }
             } else {
