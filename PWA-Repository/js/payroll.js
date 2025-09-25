@@ -3638,12 +3638,12 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                         </div>
                         
                         <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                            <button onclick="window.payrollManager.approveRequest('${request.id}')" 
+                            <button onclick="window.payrollManager.approveRequest('${request.id || request.localId || request._id}')" 
                                     class="btn btn-success"
                                     style="flex: 1; padding: 0.5rem 1rem; font-size: 0.875rem;">
                                 <i class="fas fa-check"></i> Approve
                             </button>
-                            <button onclick="window.payrollManager.rejectRequest('${request.id}')" 
+                            <button onclick="window.payrollManager.rejectRequest('${request.id || request.localId || request._id}')" 
                                     class="btn btn-danger"
                                     style="flex: 1; padding: 0.5rem 1rem; font-size: 0.875rem;">
                                 <i class="fas fa-times"></i> Reject
@@ -3658,10 +3658,20 @@ Net Pay: ₱${record.netPay.toFixed(2)}
 
     async approveRequest(requestId) {
         try {
+            console.log('Approving request:', requestId);
+            
             // Find the request and update its status
-            const requestIndex = this.requests.findIndex(r => r.id === requestId || r.localId === requestId);
+            const requestIndex = this.requests.findIndex(r => 
+                r.id === requestId || 
+                r.localId === requestId || 
+                r._id === requestId
+            );
+            
             if (requestIndex === -1) {
-                console.error('Request not found:', requestId);
+                console.error('Request not found:', requestId, 'Available requests:', this.requests);
+                if (window.showNotification) {
+                    window.showNotification('Request not found', 'error');
+                }
                 return;
             }
             
@@ -3689,10 +3699,20 @@ Net Pay: ₱${record.netPay.toFixed(2)}
 
     async rejectRequest(requestId) {
         try {
+            console.log('Rejecting request:', requestId);
+            
             // Find the request and update its status
-            const requestIndex = this.requests.findIndex(r => r.id === requestId || r.localId === requestId);
+            const requestIndex = this.requests.findIndex(r => 
+                r.id === requestId || 
+                r.localId === requestId || 
+                r._id === requestId
+            );
+            
             if (requestIndex === -1) {
-                console.error('Request not found:', requestId);
+                console.error('Request not found:', requestId, 'Available requests:', this.requests);
+                if (window.showNotification) {
+                    window.showNotification('Request not found', 'error');
+                }
                 return;
             }
             
