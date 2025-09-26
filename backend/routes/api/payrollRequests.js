@@ -263,23 +263,89 @@ router.put('/:id', async (req, res) => {
     // Get the correct business userId
     let businessUserId;
     if (isManager) {
-      businessUserId = user.userId; // Manager has branch owner ID in userId
+      // For managers, userId contains the branch owner ID (set in auth middleware)
+      businessUserId = user.userId || user.branchOwnerId;
+      
+      if (!businessUserId) {
+        logger.error('Manager missing branch owner ID', {
+          managerId: user.id,
+          user: user
+        });
+        return res.status(500).json({
+          success: false,
+          error: 'Manager configuration error - missing branch owner ID'
+        });
+      }
+      
+      logger.info('Manager attempting to update request', {
+        managerId: user.id,
+        managerEmail: user.email,
+        branchOwnerId: businessUserId,
+        requestId: id
+      });
     } else {
-      businessUserId = user.id; // Owner uses their own ID
+      businessUserId = user.userId || user.id; // Owner uses their own ID
+      logger.info('Owner attempting to update request', {
+        ownerId: businessUserId,
+        requestId: id
+      });
     }
     
-    // Find the request
-    const request = await PayrollRequest.findOne({
+    // First, try to find the request without userId filter to debug
+    const debugRequest = await PayrollRequest.findOne({
+      _id: id,
+      isDeleted: false
+    });
+    
+    if (debugRequest) {
+      logger.info('Debug: Request found in database', {
+        requestId: id,
+        requestUserId: debugRequest.userId,
+        lookingForUserId: businessUserId,
+        match: debugRequest.userId === businessUserId
+      });
+    } else {
+      logger.warn('Debug: Request not found at all', { requestId: id });
+    }
+    
+    // Find the request with proper userId
+    let request = await PayrollRequest.findOne({
       _id: id,
       userId: businessUserId,
       isDeleted: false
     });
     
     if (!request) {
-      return res.status(404).json({
-        success: false,
-        error: 'Request not found'
+      // If not found with exact userId match, try to find with string comparison
+      const alternativeRequest = await PayrollRequest.findOne({
+        _id: id,
+        isDeleted: false
       });
+      
+      if (alternativeRequest && alternativeRequest.userId.toString() === businessUserId.toString()) {
+        // Use the alternative request if userId matches after string conversion
+        logger.info('Found request with string comparison', {
+          requestId: id,
+          userId: alternativeRequest.userId
+        });
+        request = alternativeRequest; // Use this request
+      } else {
+        logger.error('Request not found or userId mismatch', {
+          requestId: id,
+          expectedUserId: businessUserId,
+          actualUserId: alternativeRequest ? alternativeRequest.userId : null
+        });
+        
+        return res.status(404).json({
+          success: false,
+          error: 'Request not found or access denied',
+          debug: {
+            requestExists: !!alternativeRequest,
+            expectedUserId: businessUserId,
+            actualUserId: alternativeRequest ? alternativeRequest.userId : null
+          }
+        });
+      }
     }
     
     // Only allow status updates to pending requests

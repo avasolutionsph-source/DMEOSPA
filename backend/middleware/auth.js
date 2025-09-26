@@ -49,17 +49,21 @@ export const authenticateJWT = (req, res, next) => {
     // MANAGER FIX: Give managers same access as owners
     // For employees (including managers), use the branch owner's ID for data access
     if (req.user.isEmployee || user.type === 'employee') {
-      req.userId = user.userId || user.branchOwnerId || req.user.id; // Use branch owner's ID
+      // Ensure userId is properly set for all employees
+      req.user.userId = user.userId || user.branchOwnerId || user.branchId;
+      req.userId = req.user.userId; // Use branch owner's ID
       
       // For managers specifically, treat them like owners
       if (user.role === 'manager') {
-        req.user.id = user.userId || user.branchOwnerId || req.user.id;
-        req.userId = req.user.id;
+        // Keep the original manager ID but ensure they have access to branch data
+        req.user.branchOwnerId = req.user.userId;
+        req.userId = req.user.userId;
         // Don't set isEmployee flag for managers to give them full access
         req.user.isEmployee = false;
       }
     } else {
       req.userId = req.user.id;
+      req.user.userId = req.user.id; // Ensure userId is set for owners too
     }
     
     logger.debug('[AUTH] JWT token verified, user:', {
