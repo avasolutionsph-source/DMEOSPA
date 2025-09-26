@@ -18,8 +18,8 @@ router.get('/', async (req, res) => {
     let query = { isDeleted: false };
     
     // Determine access level
-    if (user.type === 'employee') {
-      // Employees can only see their own requests
+    if (user.type === 'employee' && user.role !== 'manager') {
+      // Regular employees can only see their own requests (NOT managers)
       // Try multiple ways to find the employee record
       let employee = await Employee.findOne({ 
         email: user.email,
@@ -56,8 +56,34 @@ router.get('/', async (req, res) => {
       
       query.employeeId = employee._id;
     } else {
-      // Managers see all requests for their business
-      query.userId = user.userId || user.id;
+      // Managers and owners see all requests for their business
+      // For managers (who are employees with role='manager'), userId contains the branch owner ID
+      let businessUserId;
+      
+      if (user.type === 'employee' && user.role === 'manager') {
+        // Manager: userId is the branch owner's ID (set during employee login)
+        businessUserId = user.userId;
+        logger.info('Manager accessing requests with branch owner ID', {
+          managerId: user.id,
+          branchOwnerId: businessUserId,
+          role: user.role
+        });
+      } else {
+        // Owner: their own ID is the business ID
+        businessUserId = user.id;
+        logger.info('Owner accessing requests', {
+          ownerId: businessUserId
+        });
+      }
+      
+      query.userId = businessUserId;
+      
+      logger.info('Final query for requests', {
+        role: user.role,
+        type: user.type,
+        businessUserId: businessUserId,
+        queryUserId: query.userId
+      });
       
       // Allow filtering by employee for managers
       if (employeeId) {
