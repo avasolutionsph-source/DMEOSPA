@@ -3741,35 +3741,57 @@ Net Pay: ₱${record.netPay.toFixed(2)}
         try {
             console.log('Approving request:', requestId);
             
-            // Find the request and update its status
-            const requestIndex = this.requests.findIndex(r => 
-                r.id === requestId || 
-                r.localId === requestId || 
-                r._id === requestId ||
-                r.tempId === requestId
-            );
-            
-            if (requestIndex === -1) {
-                console.error('Request not found:', requestId, 'Available requests:', this.requests);
+            // Call the API to approve the request
+            const token = this.getAuthToken();
+            if (!token) {
                 if (window.showNotification) {
-                    window.showNotification('Request not found', 'error');
+                    window.showNotification('Authentication required', 'error');
                 }
                 return;
             }
             
-            // Update the request
-            this.requests[requestIndex].status = 'approved';
-            this.requests[requestIndex].approvedDate = new Date().toISOString();
+            const apiUrl = `${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/payroll-requests/${requestId}`;
+            console.log('📡 Calling API to approve:', apiUrl);
             
-            // Save the updated request to IndexedDB
-            await window.db.put('payrollRequests', this.requests[requestIndex]);
+            const response = await fetch(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: 'approved',
+                    managerNotes: 'Approved by manager'
+                })
+            });
             
-            // Refresh display
-            this.displayPendingRequests();
-            this.updateDashboardStats();
+            console.log('📡 Approve response status:', response.status);
             
-            if (window.showNotification) {
-                window.showNotification('Request approved successfully', 'success');
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Request approved:', result);
+                
+                // Update local request list
+                const requestIndex = this.requests.findIndex(r => 
+                    r.id === requestId || r._id === requestId
+                );
+                if (requestIndex !== -1) {
+                    this.requests[requestIndex].status = 'approved';
+                }
+                
+                // Refresh display
+                this.displayPendingRequests();
+                this.updateDashboardStats();
+                
+                if (window.showNotification) {
+                    window.showNotification('Request approved successfully', 'success');
+                }
+            } else {
+                const error = await response.json();
+                console.error('Failed to approve request:', error);
+                if (window.showNotification) {
+                    window.showNotification(`Failed to approve: ${error.error || 'Unknown error'}`, 'error');
+                }
             }
         } catch (error) {
             console.error('Failed to approve request:', error);
@@ -3783,47 +3805,57 @@ Net Pay: ₱${record.netPay.toFixed(2)}
         try {
             console.log('Rejecting request:', requestId);
             
-            // Find the request and update its status
-            const requestIndex = this.requests.findIndex(r => 
-                r.id === requestId || 
-                r.localId === requestId || 
-                r._id === requestId ||
-                r.tempId === requestId
-            );
-            
-            if (requestIndex === -1) {
-                console.error('Request not found:', requestId, 'Available requests:', this.requests);
+            // Call the API to reject the request
+            const token = this.getAuthToken();
+            if (!token) {
                 if (window.showNotification) {
-                    window.showNotification('Request not found', 'error');
+                    window.showNotification('Authentication required', 'error');
                 }
                 return;
             }
             
-            // Update the request
-            const request = this.requests[requestIndex];
-            request.status = 'rejected';
-            request.rejectedDate = new Date().toISOString();
+            const apiUrl = `${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/payroll-requests/${requestId}`;
+            console.log('📡 Calling API to reject:', apiUrl);
             
-            // Ensure request has an id for database operations
-            if (!request.id) {
-                request.id = request.localId || request._id || request.tempId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            }
+            const response = await fetch(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: 'rejected',
+                    managerNotes: 'Rejected by manager'
+                })
+            });
             
-            // Save the updated request to IndexedDB
-            if (window.db && window.db.db && window.db.db.objectStoreNames.contains('payrollRequests')) {
-                try {
-                    await window.db.put('payrollRequests', request);
-                } catch (error) {
-                    console.error('Failed to save rejection to database:', error);
+            console.log('📡 Reject response status:', response.status);
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Request rejected:', result);
+                
+                // Update local request list
+                const requestIndex = this.requests.findIndex(r => 
+                    r.id === requestId || r._id === requestId
+                );
+                if (requestIndex !== -1) {
+                    this.requests[requestIndex].status = 'rejected';
                 }
-            }
-            
-            // Refresh display
-            this.displayPendingRequests();
-            this.updateDashboardStats();
-            
-            if (window.showNotification) {
-                window.showNotification('Request rejected', 'success');
+                
+                // Refresh display
+                this.displayPendingRequests();
+                this.updateDashboardStats();
+                
+                if (window.showNotification) {
+                    window.showNotification('Request rejected successfully', 'success');
+                }
+            } else {
+                const error = await response.json();
+                console.error('Failed to reject request:', error);
+                if (window.showNotification) {
+                    window.showNotification(`Failed to reject: ${error.error || 'Unknown error'}`, 'error');
+                }
             }
         } catch (error) {
             console.error('Failed to reject request:', error);

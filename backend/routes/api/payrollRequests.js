@@ -242,17 +242,36 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update request (managers only for approval/rejection)
-router.put('/:id', requireBusinessUser, async (req, res) => {
+// Update request (managers and owners can approve/reject)
+router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { status, managerNotes } = req.body;
     const user = req.user;
     
+    // Check if user is manager or owner
+    const isManager = user.role === 'manager';
+    const isOwner = user.type !== 'employee';
+    
+    if (!isManager && !isOwner) {
+      return res.status(403).json({
+        success: false,
+        error: 'Only managers and owners can approve/reject requests'
+      });
+    }
+    
+    // Get the correct business userId
+    let businessUserId;
+    if (isManager) {
+      businessUserId = user.userId; // Manager has branch owner ID in userId
+    } else {
+      businessUserId = user.id; // Owner uses their own ID
+    }
+    
     // Find the request
     const request = await PayrollRequest.findOne({
       _id: id,
-      userId: user.userId || user.id,
+      userId: businessUserId,
       isDeleted: false
     });
     
