@@ -16,9 +16,11 @@ class PayrollManager {
         this.attendanceRecords = [];
         this.holidays = [];
         this.attendanceRules = null;
-        this.requests = [];
+        this.requests = []; // Initialize empty array for requests
         this.managerPassword = '1234'; // Default password, should be configurable
         this.isInitialized = false; // Track initialization state
+        
+        console.log('🔍 [PAYROLL] PayrollManager constructor - requests initialized as empty array');
     }
     
     // Get authentication token for API requests
@@ -82,10 +84,27 @@ class PayrollManager {
         try {
             // Check user role first to determine what to load
             const user = window.authSystem?.currentUser;
+            
+            // Debug: Log user details
+            console.log('🔍 [PAYROLL] Current user details:', {
+                user: user,
+                type: user?.type,
+                role: user?.role,
+                isEmployee: user?.isEmployee,
+                email: user?.email
+            });
+            
             // Include ALL employee roles EXCEPT managers (managers get full access)
             const isEmployee = user?.type === 'employee' && 
                 user?.role !== 'manager' &&
                 ['senior_therapist', 'junior_therapist', 'new_therapist', 'receptionist', 'other_staff'].includes(user?.role);
+            
+            // Debug: Log role check result
+            console.log('🔍 [PAYROLL] Role check:', {
+                isEmployee: isEmployee,
+                isManager: user?.role === 'manager',
+                willLoadManagerView: !isEmployee
+            });
             
             // Don't setup UI yet - wait until after database is ready
             
@@ -196,6 +215,11 @@ class PayrollManager {
             
             // MANAGER/OWNER SECTION - Only runs if NOT an employee
             console.log('👔 Manager/Owner payroll view - loading full management data');
+            console.log('🔍 [PAYROLL] Entering manager section with user:', {
+                user: user,
+                type: user?.type,
+                role: user?.role
+            });
             
             // Load manager-specific data
             console.log('📋 [PAYROLL] Step 1: Loading attendance rules...');
@@ -218,13 +242,16 @@ class PayrollManager {
             await this.loadPayrollRecords();
             console.log('✅ [PAYROLL] Payroll records loaded:', this.payrollRecords.length);
             
-            // Don't reload requests for managers - they were already loaded with loadAllRequestsForManager
-            if (!user || user.type === 'employee') {
+            // Don't reload requests for managers/owners - they were already loaded with loadAllRequestsForManager
+            // Only load requests if NOT a manager/owner (i.e., this should never run in manager section)
+            // This is a safeguard - in practice, this code shouldn't be reached for non-employees
+            if (false) { // Disabled - managers already loaded requests via loadAllRequestsForManager
                 console.log('📋 [PAYROLL] Step 5: Loading requests...');
                 await this.loadRequests();
                 console.log('✅ [PAYROLL] Requests loaded:', this.requests.length);
             } else {
-                console.log('📋 [PAYROLL] Step 5: Skipping request reload for manager (already loaded)');
+                console.log('📋 [PAYROLL] Step 5: Skipping request reload (already loaded via loadAllRequestsForManager)');
+                console.log('🔍 [PAYROLL] Current requests count:', this.requests.length);
             }
             
             console.log('📋 [PAYROLL] Step 6: Setting up event listeners...');
@@ -622,6 +649,13 @@ class PayrollManager {
     
     // Load all requests for manager view
     async loadAllRequestsForManager(user) {
+        console.log('🔍 [PAYROLL] loadAllRequestsForManager called with user:', {
+            user: user,
+            type: user?.type,
+            role: user?.role,
+            email: user?.email
+        });
+        
         let allRequests = [];
         
         try {
@@ -667,10 +701,23 @@ class PayrollManager {
                 r.status === 'pending' || !r.status // Include requests without status
             );
             
+            console.log('🔍 [PAYROLL] Filtered pending requests:', {
+                pendingCount: pendingRequests.length,
+                allCount: allRequests.length,
+                pendingRequests: pendingRequests
+            });
+            
             console.log(`📊 Manager view: Displaying ${pendingRequests.length} pending requests`);
             
             // Store all requests for later use (do this BEFORE display)
             this.requests = allRequests;
+            
+            // Debug: Log what we're storing
+            console.log('🔍 [PAYROLL] Manager requests stored:', {
+                totalRequests: allRequests.length,
+                pendingRequests: allRequests.filter(r => r.status === 'pending').length,
+                requests: allRequests
+            });
             
             // Don't call displayManagerRequestsView - let displayPendingRequests handle it
             console.log(`📊 Manager storing ${allRequests.length} total requests for display`);
@@ -3546,10 +3593,25 @@ Net Pay: ₱${record.netPay.toFixed(2)}
 
     displayPendingRequests() {
         const requestsList = document.getElementById('pendingRequestsList');
-        if (!requestsList) return;
+        
+        console.log('🔍 [PAYROLL] displayPendingRequests called:', {
+            hasRequestsList: !!requestsList,
+            totalRequests: this.requests?.length || 0,
+            requests: this.requests
+        });
+        
+        if (!requestsList) {
+            console.warn('⚠️ [PAYROLL] pendingRequestsList element not found in DOM');
+            return;
+        }
         
         // Filter pending requests
         const pendingRequests = this.requests.filter(r => r.status === 'pending');
+        
+        console.log('🔍 [PAYROLL] Filtered pending requests:', {
+            pendingCount: pendingRequests.length,
+            pendingRequests: pendingRequests
+        });
         
         // Update badge counts
         const badge = document.querySelector('.requests-section .badge');
