@@ -365,18 +365,38 @@ router.put('/:id', async (req, res) => {
       });
     }
     
+    // Get the approver/rejecter name with fallback
+    let approverName = 'Unknown';
+    if (user.firstName && user.lastName) {
+      approverName = `${user.firstName} ${user.lastName}`;
+    } else if (user.email) {
+      approverName = user.email;
+    } else if (user.role === 'manager') {
+      approverName = 'Manager';
+    } else {
+      approverName = 'Business Owner';
+    }
+    
+    logger.info('Approver/Rejecter details', {
+      userId: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      approverName: approverName
+    });
+    
     // Update based on status
     if (status === 'approved') {
       await request.approve(
         user.id,
-        `${user.firstName} ${user.lastName}`,
-        managerNotes
+        approverName,
+        managerNotes || 'Approved'
       );
     } else if (status === 'rejected') {
       await request.reject(
         user.id,
-        `${user.firstName} ${user.lastName}`,
-        managerNotes
+        approverName,
+        managerNotes || 'Rejected'
       );
     } else {
       return res.status(400).json({

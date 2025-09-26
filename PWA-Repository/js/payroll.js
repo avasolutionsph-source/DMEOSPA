@@ -3612,8 +3612,10 @@ Net Pay: ₱${record.netPay.toFixed(2)}
             return;
         }
         
-        // Filter pending requests
-        const pendingRequests = this.requests.filter(r => r.status === 'pending');
+        // Show all requests, not just pending ones
+        const allRequests = this.requests || [];
+        const pendingRequests = allRequests.filter(r => r.status === 'pending');
+        const processedRequests = allRequests.filter(r => r.status === 'approved' || r.status === 'rejected');
         
         console.log('🔍 [PAYROLL] Filtered pending requests:', {
             pendingCount: pendingRequests.length,
@@ -3635,13 +3637,17 @@ Net Pay: ₱${record.netPay.toFixed(2)}
             tabBadge.textContent = pendingRequests.length;
         }
         
-        if (pendingRequests.length === 0) {
-            requestsList.innerHTML = '<p style="color: #9ca3af; text-align: center; padding: 2rem;">No pending requests</p>';
+        if (allRequests.length === 0) {
+            requestsList.innerHTML = '<p style="color: #9ca3af; text-align: center; padding: 2rem;">No requests found</p>';
             return;
         }
         
+        // Display pending requests first, then processed ones
         requestsList.innerHTML = `
             <div class="requests-container">
+                ${pendingRequests.length > 0 ? `
+                    <h5 style="color: #6b7280; margin-bottom: 1rem;">Pending Requests (${pendingRequests.length})</h5>
+                ` : ''}
                 ${pendingRequests.map(request => {
                     // Debug log to see request structure
                     console.log('Processing request for display:', request);
@@ -3733,6 +3739,60 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                     </div>
                 `;
                 }).join('')}
+                
+                ${processedRequests.length > 0 ? `
+                    <h5 style="color: #6b7280; margin: 2rem 0 1rem;">Processed Requests (${processedRequests.length})</h5>
+                    ${processedRequests.map(request => {
+                        const requestId = request.id || request.localId || request._id || request.tempId;
+                        const isApproved = request.status === 'approved';
+                        const statusColor = isApproved ? '#10b981' : '#ef4444';
+                        const statusBgColor = isApproved ? '#d1fae5' : '#fee2e2';
+                        const statusText = isApproved ? 'Approved' : 'Rejected';
+                        
+                        // Get request type label
+                        let requestTypeLabel = 'Request';
+                        if (request.type === 'leave') requestTypeLabel = 'Leave Request';
+                        else if (request.type === 'overtime') requestTypeLabel = 'Overtime Request';
+                        else if (request.type === 'payroll') requestTypeLabel = 'Payroll Request';
+                        
+                        // Format approval/rejection date
+                        const processedDate = request.approvalDate ? new Date(request.approvalDate).toLocaleString() : 'Unknown date';
+                        
+                        return `
+                        <div class="request-card" style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; opacity: 0.9;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                                <div>
+                                    <h4 style="margin: 0; color: #1f2937;">${request.employeeName || 'Unknown Employee'}</h4>
+                                    <p style="margin: 0.25rem 0; color: #6b7280; font-size: 0.875rem;">
+                                        ${requestTypeLabel}
+                                    </p>
+                                </div>
+                                <span style="background: ${statusBgColor}; color: ${statusColor}; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500;">
+                                    ${statusText}
+                                </span>
+                            </div>
+                            
+                            <div style="background: #f9fafb; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.75rem;">
+                                <p style="margin: 0; font-size: 0.875rem; color: #374151;">
+                                    <strong>${isApproved ? 'Approved by' : 'Rejected by'}:</strong> ${request.approvedByName || request.approvedBy || 'System'}
+                                </p>
+                                <p style="margin: 0.25rem 0 0; font-size: 0.875rem; color: #6b7280;">
+                                    <strong>Date:</strong> ${processedDate}
+                                </p>
+                                ${request.managerNotes ? `
+                                    <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #374151;">
+                                        <strong>${isApproved ? 'Notes' : 'Reason'}:</strong> ${request.managerNotes}
+                                    </p>
+                                ` : ''}
+                            </div>
+                            
+                            <div style="color: #6b7280; font-size: 0.75rem;">
+                                Request submitted: ${new Date(request.createdAt || new Date()).toLocaleDateString()}
+                            </div>
+                        </div>
+                        `;
+                    }).join('')}
+                ` : ''}
             </div>
         `;
     }
@@ -3740,6 +3800,9 @@ Net Pay: ₱${record.netPay.toFixed(2)}
     async approveRequest(requestId) {
         try {
             console.log('Approving request:', requestId);
+            
+            // Ask for approval notes (optional)
+            const approvalNotes = prompt('Add approval notes (optional):') || 'Approved by manager';
             
             // Call the API to approve the request
             const token = this.getAuthToken();
@@ -3761,7 +3824,7 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                 },
                 body: JSON.stringify({
                     status: 'approved',
-                    managerNotes: 'Approved by manager'
+                    managerNotes: approvalNotes
                 })
             });
             
@@ -3771,12 +3834,24 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                 const result = await response.json();
                 console.log('✅ Request approved:', result);
                 
-                // Update local request list
+                // Update local request list with full data from response
                 const requestIndex = this.requests.findIndex(r => 
                     r.id === requestId || r._id === requestId
                 );
                 if (requestIndex !== -1) {
-                    this.requests[requestIndex].status = 'approved';
+                    // Update with the response data which includes approvedByName, approvalDate, etc.
+                    if (result.data) {
+                        this.requests[requestIndex] = {
+                            ...this.requests[requestIndex],
+                            ...result.data,
+                            status: 'approved'
+                        };
+                    } else {
+                        this.requests[requestIndex].status = 'approved';
+                        this.requests[requestIndex].approvedByName = 'Manager';
+                        this.requests[requestIndex].approvalDate = new Date().toISOString();
+                        this.requests[requestIndex].managerNotes = approvalNotes;
+                    }
                 }
                 
                 // Refresh display
@@ -3827,6 +3902,16 @@ Net Pay: ₱${record.netPay.toFixed(2)}
         try {
             console.log('Rejecting request:', requestId);
             
+            // Ask for rejection reason (required)
+            const rejectionReason = prompt('Please provide a reason for rejection (required):');
+            
+            if (!rejectionReason) {
+                if (window.showNotification) {
+                    window.showNotification('Rejection reason is required', 'warning');
+                }
+                return;
+            }
+            
             // Call the API to reject the request
             const token = this.getAuthToken();
             if (!token) {
@@ -3847,7 +3932,7 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                 },
                 body: JSON.stringify({
                     status: 'rejected',
-                    managerNotes: 'Rejected by manager'
+                    managerNotes: rejectionReason
                 })
             });
             
@@ -3857,12 +3942,24 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                 const result = await response.json();
                 console.log('✅ Request rejected:', result);
                 
-                // Update local request list
+                // Update local request list with full data from response
                 const requestIndex = this.requests.findIndex(r => 
                     r.id === requestId || r._id === requestId
                 );
                 if (requestIndex !== -1) {
-                    this.requests[requestIndex].status = 'rejected';
+                    // Update with the response data which includes approvedByName, approvalDate, etc.
+                    if (result.data) {
+                        this.requests[requestIndex] = {
+                            ...this.requests[requestIndex],
+                            ...result.data,
+                            status: 'rejected'
+                        };
+                    } else {
+                        this.requests[requestIndex].status = 'rejected';
+                        this.requests[requestIndex].approvedByName = 'Manager';
+                        this.requests[requestIndex].approvalDate = new Date().toISOString();
+                        this.requests[requestIndex].managerNotes = rejectionReason;
+                    }
                 }
                 
                 // Refresh display
