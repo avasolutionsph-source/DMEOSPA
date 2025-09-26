@@ -264,7 +264,7 @@ router.put('/:id', async (req, res) => {
     let businessUserId;
     if (isManager) {
       // For managers, userId contains the branch owner ID (set in auth middleware)
-      businessUserId = user.userId || user.branchOwnerId;
+      businessUserId = user.userId || user.branchOwnerId || user.branchId;
       
       if (!businessUserId) {
         logger.error('Manager missing branch owner ID', {
@@ -301,55 +301,64 @@ router.put('/:id', async (req, res) => {
       logger.info('Debug: Request found in database', {
         requestId: id,
         requestUserId: debugRequest.userId,
+        requestUserIdType: typeof debugRequest.userId,
         lookingForUserId: businessUserId,
-        match: debugRequest.userId === businessUserId
+        lookingForUserIdType: typeof businessUserId,
+        stringMatch: String(debugRequest.userId) === String(businessUserId)
       });
     } else {
       logger.warn('Debug: Request not found at all', { requestId: id });
     }
     
-    // Find the request with proper userId
-    let request = await PayrollRequest.findOne({
+    // Find the request - use string comparison for better matching
+    let request = null;
+    
+    // Try direct find first
+    request = await PayrollRequest.findOne({
       _id: id,
-      userId: businessUserId,
       isDeleted: false
     });
     
-    if (!request) {
-      // If not found with exact userId match, try to find with string comparison
-      const alternativeRequest = await PayrollRequest.findOne({
-        _id: id,
-        isDeleted: false
+    if (request) {
+      // Check if user has access to this request
+      const requestUserIdStr = String(request.userId);
+      const businessUserIdStr = String(businessUserId);
+      
+      logger.info('Comparing userIds for access', {
+        requestUserIdStr,
+        businessUserIdStr,
+        match: requestUserIdStr === businessUserIdStr
       });
       
-      if (alternativeRequest && alternativeRequest.userId.toString() === businessUserId.toString()) {
-        // Use the alternative request if userId matches after string conversion
-        logger.info('Found request with string comparison', {
+      if (requestUserIdStr !== businessUserIdStr) {
+        logger.error('Access denied - userId mismatch', {
           requestId: id,
-          userId: alternativeRequest.userId
-        });
-        request = alternativeRequest; // Use this request
-      } else {
-        logger.error('Request not found or userId mismatch', {
-          requestId: id,
-          expectedUserId: businessUserId,
-          actualUserId: alternativeRequest ? alternativeRequest.userId : null
+          expectedUserId: businessUserIdStr,
+          actualUserId: requestUserIdStr
         });
         
-        return res.status(404).json({
+        return res.status(403).json({
           success: false,
-          error: 'Request not found or access denied',
+          error: 'Access denied - request belongs to different business',
           debug: {
-            requestExists: !!alternativeRequest,
-            expectedUserId: businessUserId,
-            actualUserId: alternativeRequest ? alternativeRequest.userId : null
+            expectedUserId: businessUserIdStr,
+            actualUserId: requestUserIdStr
           }
         });
       }
+    } else {
+      logger.error('Request not found', {
+        requestId: id
+      });
+      
+      return res.status(404).json({
+        success: false,
+        error: 'Request not found'
+      });
     }
     
     // Only allow status updates to pending requests
-    if (request.status !== 'pending') {
+    if (request && request.status !== 'pending') {
       return res.status(400).json({
         success: false,
         error: 'Can only update pending requests'

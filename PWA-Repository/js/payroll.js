@@ -3787,10 +3787,32 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                     window.showNotification('Request approved successfully', 'success');
                 }
             } else {
-                const error = await response.json();
-                console.error('Failed to approve request:', error);
+                const errorText = await response.text();
+                let error;
+                try {
+                    error = JSON.parse(errorText);
+                } catch (e) {
+                    error = { error: errorText };
+                }
+                
+                console.error('Failed to approve request:', {
+                    status: response.status,
+                    error: error,
+                    requestId: requestId
+                });
+                
+                // Provide more specific error messages
+                let errorMessage = 'Failed to approve request';
+                if (response.status === 403) {
+                    errorMessage = 'Access denied - you may not have permission to approve this request';
+                } else if (response.status === 404) {
+                    errorMessage = 'Request not found or has been deleted';
+                } else if (error.error) {
+                    errorMessage = error.error;
+                }
+                
                 if (window.showNotification) {
-                    window.showNotification(`Failed to approve: ${error.error || 'Unknown error'}`, 'error');
+                    window.showNotification(errorMessage, 'error');
                 }
             }
         } catch (error) {
@@ -3851,10 +3873,32 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                     window.showNotification('Request rejected successfully', 'success');
                 }
             } else {
-                const error = await response.json();
-                console.error('Failed to reject request:', error);
+                const errorText = await response.text();
+                let error;
+                try {
+                    error = JSON.parse(errorText);
+                } catch (e) {
+                    error = { error: errorText };
+                }
+                
+                console.error('Failed to reject request:', {
+                    status: response.status,
+                    error: error,
+                    requestId: requestId
+                });
+                
+                // Provide more specific error messages
+                let errorMessage = 'Failed to reject request';
+                if (response.status === 403) {
+                    errorMessage = 'Access denied - you may not have permission to reject this request';
+                } else if (response.status === 404) {
+                    errorMessage = 'Request not found or has been deleted';
+                } else if (error.error) {
+                    errorMessage = error.error;
+                }
+                
                 if (window.showNotification) {
-                    window.showNotification(`Failed to reject: ${error.error || 'Unknown error'}`, 'error');
+                    window.showNotification(errorMessage, 'error');
                 }
             }
         } catch (error) {
