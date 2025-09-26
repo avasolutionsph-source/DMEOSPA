@@ -82,8 +82,9 @@ class PayrollManager {
         try {
             // Check user role first to determine what to load
             const user = window.authSystem?.currentUser;
-            // Include ALL employee roles: therapists, receptionist, and other staff
+            // Include ALL employee roles EXCEPT managers (managers get full access)
             const isEmployee = user?.type === 'employee' && 
+                user?.role !== 'manager' &&
                 ['senior_therapist', 'junior_therapist', 'new_therapist', 'receptionist', 'other_staff'].includes(user?.role);
             
             // Don't setup UI yet - wait until after database is ready
