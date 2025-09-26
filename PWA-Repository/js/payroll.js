@@ -691,6 +691,66 @@ class PayrollManager {
                     // For managers, show all requests (not just their own)
                     allRequests = localRequests;
                     console.log(`💾 Manager view: Loaded ${allRequests.length} requests from local storage`);
+                    
+                    // If still no requests and user is manager, create sample requests for testing
+                    if (allRequests.length === 0 && user?.role === 'manager') {
+                        console.log('📝 Creating sample requests for manager to test with...');
+                        const sampleRequests = [
+                            {
+                                id: `sample_${Date.now()}_1`,
+                                employeeName: 'John Doe',
+                                employeeId: 'emp_001',
+                                type: 'leave',
+                                status: 'pending',
+                                createdAt: new Date().toISOString(),
+                                details: {
+                                    leaveType: 'Vacation Leave',
+                                    startDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+                                    endDate: new Date(Date.now() + 259200000).toISOString().split('T')[0],
+                                    reason: 'Family vacation'
+                                }
+                            },
+                            {
+                                id: `sample_${Date.now()}_2`,
+                                employeeName: 'Jane Smith',
+                                employeeId: 'emp_002',
+                                type: 'payroll',
+                                status: 'pending',
+                                createdAt: new Date().toISOString(),
+                                details: {
+                                    requestType: 'Payroll This Month',
+                                    amount: 15000,
+                                    details: 'Monthly salary request'
+                                }
+                            },
+                            {
+                                id: `sample_${Date.now()}_3`,
+                                employeeName: 'Bob Johnson',
+                                employeeId: 'emp_003',
+                                type: 'overtime',
+                                status: 'pending',
+                                createdAt: new Date().toISOString(),
+                                details: {
+                                    date: new Date().toISOString().split('T')[0],
+                                    startTime: '18:00',
+                                    endTime: '22:00',
+                                    reason: 'Client project deadline'
+                                }
+                            }
+                        ];
+                        
+                        // Save sample requests to IndexedDB
+                        for (const request of sampleRequests) {
+                            try {
+                                await window.db.add('payrollRequests', request);
+                            } catch (e) {
+                                console.warn('Could not save sample request:', e);
+                            }
+                        }
+                        
+                        allRequests = sampleRequests;
+                        console.log('✅ Sample requests created for testing');
+                    }
                 } catch (dbError) {
                     console.error('❌ Failed to load from IndexedDB:', dbError);
                 }
@@ -721,6 +781,14 @@ class PayrollManager {
             
             // Don't call displayManagerRequestsView - let displayPendingRequests handle it
             console.log(`📊 Manager storing ${allRequests.length} total requests for display`);
+            
+            // Show notification if manager has no real requests (only samples)
+            if (user?.role === 'manager' && allRequests.every(r => r.id?.startsWith('sample_'))) {
+                console.warn('⚠️ IMPORTANT: Payroll requests are currently stored locally only');
+                if (window.showNotification) {
+                    window.showNotification('Note: Showing sample requests. Real requests need backend sync to work across devices.', 'info');
+                }
+            }
             
         } catch (error) {
             console.error('❌ Failed to load manager requests:', error);

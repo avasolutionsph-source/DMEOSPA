@@ -195,6 +195,23 @@ cd marketing-website && npm run dev
 - Server-side rendered
 - Session-based auth for admin
 
+## Known Limitations
+
+### Payroll Requests - No Cross-Device Sync (Critical)
+**Issue**: Payroll requests are stored only in browser's IndexedDB, not synced to backend
+**Impact**: 
+- Managers can't see requests created by employees on different devices
+- Requests are lost if browser data is cleared
+- No real collaboration between manager and employees
+
+**Current Workaround**: Sample requests are auto-created for managers to test functionality
+
+**Proper Fix Required**:
+1. Create backend API endpoint: `/api/payroll-requests`
+2. Sync requests to MongoDB when created
+3. Load requests from backend for managers
+4. Implement real-time sync with WebSockets or polling
+
 ## Recent Fixes (2025)
 
 ### Employee Stats Calculation (Sept 2025)
