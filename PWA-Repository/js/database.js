@@ -2,7 +2,7 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 14; // Incremented to add payrollRequests store
+        this.version = 15; // Incremented to add payrollSettings store
         this.db = null;
         this.userId = null;
         this.isInitializing = false;
@@ -391,6 +391,12 @@ class Database {
                 if (!this.db.objectStoreNames.contains('attendanceRules')) {
                     const rulesStore = this.db.createObjectStore('attendanceRules', { keyPath: 'id', autoIncrement: true });
                     // Will store single configuration object
+                }
+                
+                // Payroll Settings store
+                if (!this.db.objectStoreNames.contains('payrollSettings')) {
+                    const payrollSettingsStore = this.db.createObjectStore('payrollSettings', { keyPath: 'id', autoIncrement: true });
+                    // Will store single configuration object for payroll settings
                 }
                 
                 // Attendance records store

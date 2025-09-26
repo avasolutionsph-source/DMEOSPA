@@ -785,14 +785,14 @@ class PayrollManager {
         container.innerHTML = requestsHTML;
     }
     
-    // Approve request
-    async approveRequest(requestId) {
+    // Approve request via API (not used currently - using local approveRequest instead)
+    async approveRequestAPI(requestId) {
         const notes = prompt('Add approval notes (optional):');
         await this.updateRequestStatus(requestId, 'approved', notes);
     }
     
-    // Reject request
-    async rejectRequest(requestId) {
+    // Reject request via API (not used currently - using local rejectRequest instead)
+    async rejectRequestAPI(requestId) {
         const notes = prompt('Reason for rejection:');
         if (!notes) {
             alert('Please provide a reason for rejection');
@@ -1908,7 +1908,7 @@ class PayrollManager {
         return id;
     }
 
-    async approveRequest(requestId, managerId, password) {
+    async approveRequestWithPassword(requestId, managerId, password) {
         // Verify manager password
         if (password !== this.managerPassword) {
             throw new Error('Invalid manager password');
@@ -1929,7 +1929,7 @@ class PayrollManager {
         return request;
     }
 
-    async denyRequest(requestId, managerId, password, reason) {
+    async denyRequestWithPassword(requestId, managerId, password, reason) {
         // Verify manager password
         if (password !== this.managerPassword) {
             throw new Error('Invalid manager password');
@@ -3730,11 +3730,23 @@ Net Pay: ₱${record.netPay.toFixed(2)}
             }
             
             // Update the request
-            this.requests[requestIndex].status = 'rejected';
-            this.requests[requestIndex].rejectedDate = new Date().toISOString();
+            const request = this.requests[requestIndex];
+            request.status = 'rejected';
+            request.rejectedDate = new Date().toISOString();
+            
+            // Ensure request has an id for database operations
+            if (!request.id) {
+                request.id = request.localId || request._id || request.tempId || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            }
             
             // Save the updated request to IndexedDB
-            await window.db.put('payrollRequests', this.requests[requestIndex]);
+            if (window.db && window.db.db && window.db.db.objectStoreNames.contains('payrollRequests')) {
+                try {
+                    await window.db.put('payrollRequests', request);
+                } catch (error) {
+                    console.error('Failed to save rejection to database:', error);
+                }
+            }
             
             // Refresh display
             this.displayPendingRequests();
