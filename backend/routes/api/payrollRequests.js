@@ -260,11 +260,22 @@ router.put('/:id', async (req, res) => {
       });
     }
     
-    // Get the correct business userId
+    // Get the correct business userId - handle all possible field names
     let businessUserId;
     if (isManager) {
-      // For managers, userId contains the branch owner ID (set in auth middleware)
-      businessUserId = user.userId || user.branchOwnerId || user.branchId;
+      // For managers, check multiple possible field names
+      businessUserId = user.userId || user.branchOwnerId || user.branchId || user.id;
+      
+      logger.info('Manager businessUserId resolution', {
+        managerId: user.id,
+        resolved: businessUserId,
+        available: {
+          userId: user.userId,
+          branchOwnerId: user.branchOwnerId,
+          branchId: user.branchId,
+          id: user.id
+        }
+      });
       
       if (!businessUserId) {
         logger.error('Manager missing branch owner ID', {
@@ -284,7 +295,14 @@ router.put('/:id', async (req, res) => {
         requestId: id
       });
     } else {
-      businessUserId = user.userId || user.id; // Owner uses their own ID
+      // For owners, prioritize their direct ID
+      businessUserId = user.id || user.userId || user._id;
+      
+      logger.info('Owner businessUserId resolution', {
+        ownerId: user.id,
+        resolved: businessUserId
+      });
+      
       logger.info('Owner attempting to update request', {
         ownerId: businessUserId,
         requestId: id
@@ -320,21 +338,28 @@ router.put('/:id', async (req, res) => {
     });
     
     if (request) {
-      // Check if user has access to this request
-      const requestUserIdStr = String(request.userId);
+      // Check if user has access to this request - handle string/object comparison
+      const requestUserIdStr = String(request.userId || request.branchId || '');
       const businessUserIdStr = String(businessUserId);
+      
+      // Also check if the request employeeId matches for manager's own requests
+      const isOwnRequest = String(request.employeeId) === String(user.id);
       
       logger.info('Comparing userIds for access', {
         requestUserIdStr,
         businessUserIdStr,
-        match: requestUserIdStr === businessUserIdStr
+        match: requestUserIdStr === businessUserIdStr,
+        isOwnRequest: isOwnRequest,
+        employeeId: String(request.employeeId),
+        managerId: String(user.id)
       });
       
-      if (requestUserIdStr !== businessUserIdStr) {
+      if (requestUserIdStr !== businessUserIdStr && !isOwnRequest) {
         logger.error('Access denied - userId mismatch', {
           requestId: id,
           expectedUserId: businessUserIdStr,
-          actualUserId: requestUserIdStr
+          actualUserId: requestUserIdStr,
+          isOwnRequest: isOwnRequest
         });
         
         return res.status(403).json({
