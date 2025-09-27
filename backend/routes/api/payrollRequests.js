@@ -385,16 +385,26 @@ router.put('/:id', async (req, res) => {
       approverName: approverName
     });
     
+    // Get managerId with fallback
+    const managerId = user.id || user.employeeId || user._id || 'unknown';
+    
+    logger.info('Manager ID for approval/rejection', {
+      managerId: managerId,
+      userId: user.id,
+      employeeId: user.employeeId,
+      _id: user._id
+    });
+    
     // Update based on status
     if (status === 'approved') {
       await request.approve(
-        user.id,
+        managerId,
         approverName,
         managerNotes || 'Approved'
       );
     } else if (status === 'rejected') {
       await request.reject(
-        user.id,
+        managerId,
         approverName,
         managerNotes || 'Rejected'
       );

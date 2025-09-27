@@ -42,7 +42,7 @@ export const authenticateJWT = (req, res, next) => {
     // Normalize the user object to ensure consistency
     req.user = {
       ...user,
-      id: user.id || user.userId || user._id,
+      id: user.id || user.userId || user._id || user.employeeId,
       isEmployee: user.type === 'employee' // Set isEmployee flag for employee tokens
     };
     
