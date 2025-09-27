@@ -824,10 +824,10 @@ class PayrollManager {
                                 </div>
                             </div>
                             <div class="col-md-4 text-end">
-                                <button class="btn btn-success btn-sm" onclick="window.payrollManager.approveRequest('${request._id || request.id}')">
+                                <button class="btn btn-success btn-sm" onclick="window.payrollManager.approveRequest('${request._id || request.id || request.localId}')">
                                     ✅ Approve
                                 </button>
-                                <button class="btn btn-danger btn-sm ms-2" onclick="window.payrollManager.rejectRequest('${request._id || request.id}')">
+                                <button class="btn btn-danger btn-sm ms-2" onclick="window.payrollManager.rejectRequest('${request._id || request.id || request.localId}')">
                                     ❌ Reject
                                 </button>
                             </div>
@@ -3725,12 +3725,12 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                         </div>
                         
                         <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                            <button onclick="window.payrollManager.approveRequest('${requestId}')" 
+                            <button onclick="window.payrollManager.approveRequest('${request._id || request.id || request.localId || request.tempId}')" 
                                     class="btn btn-success"
                                     style="flex: 1; padding: 0.5rem 1rem; font-size: 0.875rem;">
                                 <i class="fas fa-check"></i> Approve
                             </button>
-                            <button onclick="window.payrollManager.rejectRequest('${requestId}')" 
+                            <button onclick="window.payrollManager.rejectRequest('${request._id || request.id || request.localId || request.tempId}')" 
                                     class="btn btn-danger"
                                     style="flex: 1; padding: 0.5rem 1rem; font-size: 0.875rem;">
                                 <i class="fas fa-times"></i> Reject
@@ -3800,6 +3800,15 @@ Net Pay: ₱${record.netPay.toFixed(2)}
     async approveRequest(requestId) {
         try {
             console.log('Approving request:', requestId);
+            
+            // Validate requestId
+            if (!requestId || requestId === 'undefined' || requestId === 'null') {
+                console.error('Invalid request ID:', requestId);
+                if (window.showNotification) {
+                    window.showNotification('Error: Invalid request ID', 'error');
+                }
+                return;
+            }
             
             // Ask for approval notes (optional)
             const approvalNotes = prompt('Add approval notes (optional):') || 'Approved by manager';
@@ -3901,6 +3910,15 @@ Net Pay: ₱${record.netPay.toFixed(2)}
     async rejectRequest(requestId) {
         try {
             console.log('Rejecting request:', requestId);
+            
+            // Validate requestId
+            if (!requestId || requestId === 'undefined' || requestId === 'null') {
+                console.error('Invalid request ID:', requestId);
+                if (window.showNotification) {
+                    window.showNotification('Error: Invalid request ID', 'error');
+                }
+                return;
+            }
             
             // Ask for rejection reason (required)
             const rejectionReason = prompt('Please provide a reason for rejection (required):');
