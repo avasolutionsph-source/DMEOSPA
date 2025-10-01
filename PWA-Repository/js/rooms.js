@@ -4,6 +4,7 @@ class RoomManager {
         this.rooms = [];
         this.activeServices = [];
         this.timers = {};
+        this.showHiddenRooms = false;
     }
 
     async init() {
@@ -38,11 +39,11 @@ class RoomManager {
             // If no rooms exist, create default rooms
             if (!rooms || rooms.length === 0) {
                 const defaultRooms = [
-                    { name: 'Room 1', type: 'massage', capacity: 1, status: 'available' },
-                    { name: 'Room 2', type: 'massage', capacity: 1, status: 'available' },
-                    { name: 'Room 3', type: 'facial', capacity: 1, status: 'available' },
-                    { name: 'Room 4', type: 'couple', capacity: 2, status: 'available' },
-                    { name: 'VIP Suite', type: 'vip', capacity: 4, status: 'available' }
+                    { name: 'Room 1', type: 'massage', capacity: 1, status: 'available', hidden: false },
+                    { name: 'Room 2', type: 'massage', capacity: 1, status: 'available', hidden: false },
+                    { name: 'Room 3', type: 'facial', capacity: 1, status: 'available', hidden: false },
+                    { name: 'Room 4', type: 'couple', capacity: 2, status: 'available', hidden: false },
+                    { name: 'VIP Suite', type: 'vip', capacity: 4, status: 'available', hidden: false }
                 ];
                 
                 for (const room of defaultRooms) {
@@ -52,7 +53,10 @@ class RoomManager {
                 rooms = await window.db.getAll('rooms');
             }
             
-            this.rooms = rooms;
+            this.rooms = rooms.map(room => ({
+                ...room,
+                hidden: room.hidden || false
+            }));
             this.displayRooms();
         } catch (error) {
             if (window.logger) {
@@ -103,7 +107,11 @@ class RoomManager {
         const container = document.getElementById('roomsGrid');
         if (!container) return;
 
-        if (this.rooms.length === 0) {
+        const visibleRooms = this.showHiddenRooms ? 
+            this.rooms : 
+            this.rooms.filter(room => !room.hidden);
+
+        if (visibleRooms.length === 0 && this.rooms.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-door-open" style="font-size: 3rem; color: #ddd;"></i>
@@ -117,7 +125,18 @@ class RoomManager {
             return;
         }
 
-        container.innerHTML = this.rooms.map(room => {
+        if (visibleRooms.length === 0 && this.rooms.length > 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-eye-slash" style="font-size: 3rem; color: #ddd;"></i>
+                    <h3>All Rooms Are Hidden</h3>
+                    <p>Toggle "Show Hidden Rooms" to see them</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = visibleRooms.map(room => {
             const isOccupied = room.status === 'occupied';
             const statusColor = isOccupied ? '#800020' : '#27ae60';
             const statusIcon = isOccupied ? 'clock' : 'lock-open';
@@ -147,10 +166,13 @@ class RoomManager {
             }
 
             return `
-                <div class="room-card ${isOccupied ? 'occupied' : 'available'}">
+                <div class="room-card ${isOccupied ? 'occupied' : 'available'} ${room.hidden ? 'hidden-room' : ''}" style="${room.hidden ? 'opacity: 0.6; border-style: dashed;' : ''}">
                     <div class="room-header ${isOccupied ? 'occupied' : 'available'}" style="padding: 10px; margin: -1px -1px 0 -1px;">
                         <h3 style="margin: 0; display: flex; justify-content: space-between; align-items: center;">
-                            <span><i class="fas fa-door-${isOccupied ? 'closed' : 'open'}"></i> ${room.name}</span>
+                            <span>
+                                <i class="fas fa-door-${isOccupied ? 'closed' : 'open'}"></i> ${room.name}
+                                ${room.hidden ? '<span style="color: #ff9800; font-size: 0.7rem; margin-left: 5px;">(Hidden)</span>' : ''}
+                            </span>
                             <span style="font-size: 0.8rem;">
                                 <i class="fas fa-${statusIcon}"></i> ${statusText}
                             </span>
@@ -181,6 +203,12 @@ class RoomManager {
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="roomManager.editRoom(${room.id})">
                                     <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-warning btn-sm" onclick="roomManager.toggleRoomVisibility(${room.id})" title="${room.hidden ? 'Show Room' : 'Hide Room'}">
+                                    <i class="fas fa-eye${room.hidden ? '' : '-slash'}"></i> ${room.hidden ? 'Show' : 'Hide'}
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="roomManager.confirmDeleteRoom(${room.id})" title="Delete Room">
+                                    <i class="fas fa-trash"></i> Delete
                                 </button>
                             `}
                         </div>
@@ -336,6 +364,7 @@ class RoomManager {
         document.getElementById('roomName').value = '';
         document.getElementById('roomType').value = 'general';
         document.getElementById('roomCapacity').value = '1';
+        document.getElementById('roomHidden').checked = false;
         
         openModal('roomModal');
     }
@@ -349,6 +378,7 @@ class RoomManager {
         document.getElementById('roomName').value = room.name;
         document.getElementById('roomType').value = room.type;
         document.getElementById('roomCapacity').value = room.capacity;
+        document.getElementById('roomHidden').checked = room.hidden || false;
         
         openModal('roomModal');
     }
@@ -359,7 +389,8 @@ class RoomManager {
             name: document.getElementById('roomName').value.trim(),
             type: document.getElementById('roomType').value,
             capacity: parseInt(document.getElementById('roomCapacity').value),
-            status: 'available'
+            status: 'available',
+            hidden: document.getElementById('roomHidden').checked
         };
 
         if (!roomData.name) {
@@ -369,8 +400,10 @@ class RoomManager {
 
         try {
             if (roomId) {
-                // Update existing room
+                // Update existing room (preserve current status)
+                const existingRoom = this.rooms.find(r => r.id === parseInt(roomId));
                 roomData.id = parseInt(roomId);
+                roomData.status = existingRoom ? existingRoom.status : 'available';
                 await window.db.update('rooms', roomData);
                 showNotification('Room updated successfully', 'success');
             } else {
@@ -395,9 +428,48 @@ class RoomManager {
         }
     }
 
-    async deleteRoom(roomId) {
-        if (!confirm('Are you sure you want to delete this room?')) return;
+    async toggleRoomVisibility(roomId) {
+        const room = this.rooms.find(r => r.id === roomId);
+        if (!room) return;
 
+        const action = room.hidden ? 'show' : 'hide';
+        if (!confirm(`Are you sure you want to ${action} "${room.name}"?`)) return;
+
+        try {
+            room.hidden = !room.hidden;
+            await window.db.update('rooms', room);
+            
+            showNotification(`Room "${room.name}" ${room.hidden ? 'hidden' : 'shown'} successfully`, 'success');
+            this.displayRooms();
+        } catch (error) {
+            if (window.logger) {
+                window.logger.error('Failed to toggle room visibility', {
+                    category: 'ROOMS',
+                    operation: 'toggle_visibility',
+                    error: error
+                });
+            } else {
+                console.error('Failed to toggle room visibility:', error);
+            }
+            showNotification('Failed to update room visibility', 'error');
+        }
+    }
+
+    async confirmDeleteRoom(roomId) {
+        const room = this.rooms.find(r => r.id === roomId);
+        if (!room) return;
+
+        if (room.status === 'occupied') {
+            showNotification('Cannot delete an occupied room. Please end the service first.', 'error');
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to PERMANENTLY delete "${room.name}"? This action cannot be undone.`)) return;
+
+        await this.deleteRoom(roomId);
+    }
+
+    async deleteRoom(roomId) {
         try {
             await window.db.delete('rooms', roomId);
             showNotification('Room deleted successfully', 'success');
@@ -416,9 +488,22 @@ class RoomManager {
         }
     }
 
+    toggleShowHidden() {
+        this.showHiddenRooms = !this.showHiddenRooms;
+        this.displayRooms();
+        
+        const toggleBtn = document.getElementById('toggleHiddenRoomsBtn');
+        if (toggleBtn) {
+            toggleBtn.innerHTML = `
+                <i class="fas fa-eye${this.showHiddenRooms ? '' : '-slash'}"></i> 
+                ${this.showHiddenRooms ? 'Hide' : 'Show'} Hidden Rooms
+            `;
+        }
+    }
+
     // Get available rooms for checkout
     getAvailableRooms() {
-        return this.rooms.filter(r => r.status === 'available');
+        return this.rooms.filter(r => r.status === 'available' && !r.hidden);
     }
 
     // Assign room to service (called from POS)
