@@ -2113,9 +2113,6 @@
                         2. Go to Settings → Click "Sync Now"<br>
                         3. Come back here and refresh this page
                     </p>
-                    <button onclick="testEmployeeSync()" class="btn btn-secondary" style="margin-top: 1rem; margin-right: 0.5rem;">
-                        🔧 Test Employee Data
-                    </button>
                     <button onclick="forceEmployeeSync()" class="btn btn-primary" style="margin-top: 1rem; margin-right: 0.5rem;">
                         🔄 Force Sync from PWA
                     </button>
@@ -2242,46 +2239,8 @@
 
 
 
-        // Test function to debug employee sync
-        async function testEmployeeSync() {
-            try {
-                const token = localStorage.getItem('userToken');
-                if (!token) {
-                    alert('Please login first');
-                    return;
-                }
-
-                console.log('🔧 Testing employee sync...');
-                
-                // First, let's see what the current user has in the database
-                console.log('🔍 Using API_BASE_URL:', window.API_BASE_URL);
-                const response = await fetch(`${window.API_BASE_URL}/api/business/employees`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('📊 Current employee data in database:', data);
-                    
-                    alert(`Employee Data Test Results:
-📊 Total Employees: ${data.totalEmployees}
-👥 Employee Records: ${data.employees?.length || 0}
-📅 Last Sync: ${data.lastSyncDate || 'Never'}
-
-${data.employees?.length > 0 ? 
-    'Employee found: ' + data.employees.map(emp => emp.name).join(', ') : 
-    'No employees found in database'}
-
-Check console for detailed data.`);
-                } else {
-                    console.error('Failed to fetch employee data:', response.status);
-                    alert('Failed to fetch employee data: ' + response.status);
-                }
-            } catch (error) {
-                console.error('Test error:', error);
-                alert('Test failed: ' + error.message);
-            }
-        }
+        // Test function removed - no longer needed
+        // async function testEmployeeSync() { /* removed */ }
 
         // Force sync by manually creating test employee data
         async function forceEmployeeSync() {
