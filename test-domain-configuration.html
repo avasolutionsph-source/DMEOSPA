@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domain Configuration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Domain Configuration Test</h1>
+    <p>This tool helps verify that your domain migration to <strong>daetmassage.com</strong> is working correctly.</p>
+
+    <div class="test-section">
+        <h2>🌐 Current Environment Detection</h2>
+        <div id="environment-info"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔗 API Configuration Test</h2>
+        <button onclick="testAPIConfig()">Test API Configuration</button>
+        <div id="api-config-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🚀 Backend Health Check</h2>
+        <button onclick="testBackendHealth()">Test Backend Health</button>
+        <div id="backend-health-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔒 CORS Test</h2>
+        <button onclick="testCORS()">Test CORS Configuration</button>
+        <div id="cors-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📝 Configuration Summary</h2>
+        <div id="config-summary"></div>
+    </div>
+
+    <script>
+        // Load API configuration
+        const isProduction = window.location.hostname !== 'localhost' && 
+                            window.location.hostname !== '127.0.0.1';
+        
+        const API_CONFIG = {
+            BASE_URL: isProduction 
+                ? 'https://daetspa-backend.onrender.com'
+                : 'http://localhost:4001'
+        };
+
+        function displayEnvironmentInfo() {
+            const info = document.getElementById('environment-info');
+            info.innerHTML = `
+                <div class="test-result info">
+                    <strong>Current Domain:</strong> ${window.location.hostname}<br>
+                    <strong>Full URL:</strong> ${window.location.href}<br>
+                    <strong>Protocol:</strong> ${window.location.protocol}<br>
+                    <strong>Environment:</strong> ${isProduction ? 'Production' : 'Development'}<br>
+                    <strong>API Base URL:</strong> ${API_CONFIG.BASE_URL}
+                </div>
+            `;
+        }
+
+        async function testAPIConfig() {
+            const result = document.getElementById('api-config-result');
+            result.innerHTML = '<div class="test-result info">Testing API configuration...</div>';
+
+            try {
+                const expectedDomains = [
+                    'app.daetmassage.com',
+                    'www.daetmassage.com', 
+                    'daetmassage.com'
+                ];
+
+                const currentDomain = window.location.hostname;
+                const isCustomDomain = expectedDomains.includes(currentDomain);
+                
+                if (isCustomDomain) {
+                    result.innerHTML = `
+                        <div class="test-result success">
+                            ✅ Domain configuration correct!<br>
+                            Current domain: <strong>${currentDomain}</strong><br>
+                            API will use: <strong>${API_CONFIG.BASE_URL}</strong>
+                        </div>
+                    `;
+                } else if (currentDomain === 'localhost' || currentDomain === '127.0.0.1') {
+                    result.innerHTML = `
+                        <div class="test-result info">
+                            🛠️ Development environment detected<br>
+                            Current domain: <strong>${currentDomain}</strong><br>
+                            API will use: <strong>${API_CONFIG.BASE_URL}</strong>
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = `
+                        <div class="test-result error">
+                            ⚠️ Unexpected domain: <strong>${currentDomain}</strong><br>
+                            Expected one of: ${expectedDomains.join(', ')}<br>
+                            API will use: <strong>${API_CONFIG.BASE_URL}</strong>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                result.innerHTML = `
+                    <div class="test-result error">
+                        ❌ API configuration test failed: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testBackendHealth() {
+            const result = document.getElementById('backend-health-result');
+            result.innerHTML = '<div class="test-result info">Testing backend health...</div>';
+
+            try {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    result.innerHTML = `
+                        <div class="test-result success">
+                            ✅ Backend is healthy!<br>
+                            <strong>Status:</strong> ${data.status}<br>
+                            <strong>Service:</strong> ${data.service}<br>
+                            <strong>Version:</strong> ${data.version}<br>
+                            <strong>Environment:</strong> ${data.environment}
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = `
+                        <div class="test-result error">
+                            ❌ Backend health check failed<br>
+                            Status: ${response.status} ${response.statusText}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                result.innerHTML = `
+                    <div class="test-result error">
+                        ❌ Backend health check failed: ${error.message}<br>
+                        This might be due to CORS or network issues.
+                    </div>
+                `;
+            }
+        }
+
+        async function testCORS() {
+            const result = document.getElementById('cors-result');
+            result.innerHTML = '<div class="test-result info">Testing CORS configuration...</div>';
+
+            try {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+
+                if (response.ok) {
+                    result.innerHTML = `
+                        <div class="test-result success">
+                            ✅ CORS configuration is working!<br>
+                            Cross-origin requests from <strong>${window.location.hostname}</strong> to <strong>${API_CONFIG.BASE_URL}</strong> are allowed.
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = `
+                        <div class="test-result error">
+                            ❌ CORS test failed<br>
+                            Response status: ${response.status}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                if (error.message.includes('CORS')) {
+                    result.innerHTML = `
+                        <div class="test-result error">
+                            ❌ CORS configuration issue detected!<br>
+                            Error: ${error.message}<br>
+                            <strong>Solution:</strong> Ensure your domain is added to ALLOWED_ORIGINS in backend/.env
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = `
+                        <div class="test-result error">
+                            ❌ CORS test failed: ${error.message}
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function displayConfigSummary() {
+            const summary = document.getElementById('config-summary');
+            summary.innerHTML = `
+                <div class="test-result info">
+                    <h3>🔧 Updated Configuration Files:</h3>
+                    <ul>
+                        <li><strong>backend/.env</strong> - Added new domains to ALLOWED_ORIGINS</li>
+                        <li><strong>marketing-website/.env</strong> - Added new domains to ALLOWED_ORIGINS</li>
+                        <li><strong>PWA-Repository/js/api-config.js</strong> - Verified (auto-detects production)</li>
+                        <li><strong>PWA-Repository/service-worker.js</strong> - Updated domain handling</li>
+                        <li><strong>PWA-Repository/index.html</strong> - Updated hardcoded API references</li>
+                    </ul>
+                    
+                    <h3>🌐 Domain Mapping:</h3>
+                    <ul>
+                        <li><strong>app.daetmassage.com</strong> → PWA (Netlify)</li>
+                        <li><strong>www.daetmassage.com</strong> → Marketing Site (Netlify)</li>
+                        <li><strong>daetmassage.com</strong> → Your server (needs SSL setup)</li>
+                        <li><strong>Backend API</strong> → daetspa-backend.onrender.com (unchanged)</li>
+                    </ul>
+
+                    <h3>📋 Next Steps:</h3>
+                    <ol>
+                        <li>Deploy updated code to Render backend</li>
+                        <li>Deploy updated PWA to Netlify</li>
+                        <li>Deploy updated marketing site to Netlify</li>
+                        <li>Configure SSL for daetmassage.com (your server)</li>
+                        <li>Test all functionality end-to-end</li>
+                    </ol>
+                </div>
+            `;
+        }
+
+        // Initialize tests
+        window.addEventListener('DOMContentLoaded', function() {
+            displayEnvironmentInfo();
+            displayConfigSummary();
+        });
+    </script>
+</body>
+</html>

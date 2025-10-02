@@ -110,12 +110,13 @@ self.addEventListener('fetch', (event) => {
     const isPWAPort = requestUrl.port === '8080' || requestUrl.port === '8082' || requestUrl.port === '5500' || requestUrl.protocol === 'file:';
     const isSameOriginDifferentPort = requestUrl.hostname === 'localhost' && !['8080', '8082', '5500'].includes(requestUrl.port);
     const isNetlify = /netlify\.app$/.test(requestUrl.hostname);
+    const isCustomDomain = requestUrl.hostname === 'app.daetmassage.com' || requestUrl.hostname === 'www.daetmassage.com' || requestUrl.hostname === 'daetmassage.com';
     
     if (isSameOriginDifferentPort) {
         return; // Don't handle requests for other localhost ports
     }
     
-    if (requestUrl.origin !== currentOrigin && !isPWAPort && !isNetlify) {
+    if (requestUrl.origin !== currentOrigin && !isPWAPort && !isNetlify && !isCustomDomain) {
         return; // Don't handle requests for other origins/ports
     }
 
