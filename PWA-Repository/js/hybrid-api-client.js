@@ -19,23 +19,51 @@ class HybridAPIClient {
             settings: 60 * 60 * 1000     // 1 hour
         };
         
+        // Store bound event handlers for cleanup
+        this.eventHandlers = {
+            online: null,
+            offline: null,
+            beforeunload: null,
+            visibilitychange: null
+        };
+        
+        this.isDestroyed = false;
         this.init();
     }
 
     init() {
-        // Listen for online/offline events
-        window.addEventListener('online', () => {
+        // Store bound event handlers for proper cleanup
+        this.eventHandlers.online = () => {
+            if (this.isDestroyed) return;
             this.isOnline = true;
             console.log('🌐 Connection restored - processing queued requests');
             this.updateOfflineIndicator();
             this.processRequestQueue();
-        });
+        };
 
-        window.addEventListener('offline', () => {
+        this.eventHandlers.offline = () => {
+            if (this.isDestroyed) return;
             this.isOnline = false;
             console.log('📱 Offline mode activated');
             this.updateOfflineIndicator();
-        });
+        };
+
+        this.eventHandlers.beforeunload = () => {
+            this.cleanup();
+        };
+
+        this.eventHandlers.visibilitychange = () => {
+            if (this.isDestroyed) return;
+            if (document.visibilityState === 'hidden') {
+                this.persistRequestQueue();
+            }
+        };
+
+        // Add event listeners
+        window.addEventListener('online', this.eventHandlers.online);
+        window.addEventListener('offline', this.eventHandlers.offline);
+        window.addEventListener('beforeunload', this.eventHandlers.beforeunload);
+        document.addEventListener('visibilitychange', this.eventHandlers.visibilitychange);
 
         // Initialize with current online status
         this.isOnline = navigator.onLine;
@@ -43,6 +71,50 @@ class HybridAPIClient {
         
         // Listen for token changes (login/logout events)
         this.setupTokenChangeListener();
+    }
+
+    /**
+     * Cleanup method to remove event listeners and prevent memory leaks
+     */
+    cleanup() {
+        if (this.isDestroyed) return;
+        
+        this.isDestroyed = true;
+        
+        // Remove all event listeners
+        if (this.eventHandlers.online) {
+            window.removeEventListener('online', this.eventHandlers.online);
+        }
+        if (this.eventHandlers.offline) {
+            window.removeEventListener('offline', this.eventHandlers.offline);
+        }
+        if (this.eventHandlers.beforeunload) {
+            window.removeEventListener('beforeunload', this.eventHandlers.beforeunload);
+        }
+        if (this.eventHandlers.visibilitychange) {
+            document.removeEventListener('visibilitychange', this.eventHandlers.visibilitychange);
+        }
+        
+        // Clear caches and queues
+        this.cache.clear();
+        this.requestQueue = [];
+        
+        // Clear any pending timeouts
+        if (this.queueProcessingTimer) {
+            clearTimeout(this.queueProcessingTimer);
+        }
+        if (this.cacheCleanupTimer) {
+            clearTimeout(this.cacheCleanupTimer);
+        }
+        
+        console.log('🧹 HybridAPIClient cleanup completed');
+    }
+
+    /**
+     * Destructor method for manual cleanup
+     */
+    destroy() {
+        this.cleanup();
     }
 
     /**
@@ -405,33 +477,64 @@ class HybridAPIClient {
             return;
         }
 
-        console.log(`🔄 Processing ${this.requestQueue.length} queued requests`);
+        console.log(`🔄 Processing ${this.requestQueue.length} queued requests in parallel batches`);
+        
+        // Process requests in parallel batches for better performance
+        const BATCH_SIZE = 5; // Process 5 requests simultaneously
         const processedRequests = [];
+        
+        // Group requests into batches
+        for (let i = 0; i < this.requestQueue.length; i += BATCH_SIZE) {
+            const batch = this.requestQueue.slice(i, i + BATCH_SIZE);
+            console.log(`📦 Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(this.requestQueue.length/BATCH_SIZE)} (${batch.length} requests)`);
+            
+            // Process all requests in current batch simultaneously
+            const batchResults = await Promise.allSettled(
+                batch.map(async (queueEntry) => {
+                    try {
+                        const result = await this.request(queueEntry.endpoint, {
+                            ...queueEntry.options,
+                            critical: true // Force online for queued requests
+                        });
 
-        for (const queueEntry of this.requestQueue) {
-            try {
-                const result = await this.request(queueEntry.endpoint, {
-                    ...queueEntry.options,
-                    critical: true // Force online for queued requests
-                });
-
-                if (result.success) {
-                    processedRequests.push(queueEntry);
-                    console.log(`✅ Processed queued request: ${queueEntry.endpoint}`);
-                } else {
-                    queueEntry.retries++;
-                    if (queueEntry.retries >= 3) {
-                        console.error(`❌ Failed to process queued request after 3 retries: ${queueEntry.endpoint}`);
-                        processedRequests.push(queueEntry); // Remove failed requests
+                        if (result.success) {
+                            console.log(`✅ Processed queued request: ${queueEntry.endpoint}`);
+                            return { success: true, queueEntry };
+                        } else {
+                            queueEntry.retries++;
+                            if (queueEntry.retries >= 3) {
+                                console.error(`❌ Failed to process queued request after 3 retries: ${queueEntry.endpoint}`);
+                                return { success: false, queueEntry, remove: true };
+                            }
+                            return { success: false, queueEntry, remove: false };
+                        }
+                    } catch (error) {
+                        queueEntry.retries++;
+                        console.error(`❌ Error processing queued request: ${queueEntry.endpoint}`, error);
+                        
+                        if (queueEntry.retries >= 3) {
+                            return { success: false, queueEntry, remove: true, error };
+                        }
+                        return { success: false, queueEntry, remove: false, error };
                     }
+                })
+            );
+
+            // Process batch results
+            batchResults.forEach((result) => {
+                if (result.status === 'fulfilled') {
+                    const { success, queueEntry, remove } = result.value;
+                    if (success || remove) {
+                        processedRequests.push(queueEntry);
+                    }
+                } else {
+                    console.error('Unexpected error in batch processing:', result.reason);
                 }
-            } catch (error) {
-                queueEntry.retries++;
-                console.error(`❌ Error processing queued request: ${queueEntry.endpoint}`, error);
-                
-                if (queueEntry.retries >= 3) {
-                    processedRequests.push(queueEntry); // Remove failed requests
-                }
+            });
+
+            // Add small delay between batches to prevent overwhelming the server
+            if (i + BATCH_SIZE < this.requestQueue.length) {
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
         }
 
@@ -441,6 +544,8 @@ class HybridAPIClient {
         );
 
         await this.persistRequestQueue();
+        
+        console.log(`✅ Batch processing complete. ${processedRequests.length} requests processed, ${this.requestQueue.length} remaining`);
         
         // If we processed any transaction requests, refresh UI data
         const processedTransactions = processedRequests.filter(req => 

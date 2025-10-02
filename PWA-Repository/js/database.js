@@ -8,6 +8,7 @@ class Database {
         this.isInitializing = false;
         this.initAttempts = 0;
         this.maxRetries = 3;
+        this.initializationPromise = null; // Track ongoing initialization
     }
 
     async checkForceUpgrade() {
@@ -42,15 +43,10 @@ class Database {
     }
 
     async init() {
-        if (this.isInitializing) {
-            console.log('💡 Database initialization already in progress, waiting...');
-            // Wait for current initialization to complete
-            while (this.isInitializing) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            if (this.db) {
-                return this.db;
-            }
+        // If initialization is in progress, wait for the existing promise
+        if (this.initializationPromise) {
+            console.log('💡 Database initialization already in progress, waiting for completion...');
+            return await this.initializationPromise;
         }
 
         if (this.db && this.db.objectStoreNames.length > 0) {
@@ -58,6 +54,19 @@ class Database {
             return this.db;
         }
 
+        // Create and store the initialization promise
+        this.initializationPromise = this._performInitialization();
+        
+        try {
+            const result = await this.initializationPromise;
+            return result;
+        } finally {
+            // Clear the promise when done (success or failure)
+            this.initializationPromise = null;
+        }
+    }
+
+    async _performInitialization() {
         this.isInitializing = true;
         this.initAttempts++;
 

@@ -324,50 +324,102 @@ app.get('/api/admin/stats', async (req, res) => {
     // Import User model
     const User = (await import('./models/User.js')).default;
     
-    // Get actual user statistics from database
-    const totalUsers = await User.countDocuments();
-    const activeUsers = await User.countDocuments({ 
-      subscriptionStatus: 'active'
-    });
-    
-    // Get plan distribution
-    const planDistribution = await User.aggregate([
+    // Single aggregation pipeline for all statistics - much more efficient
+    const statsResults = await User.aggregate([
       {
-        $group: {
-          _id: '$subscriptionPlan',
-          count: { $sum: 1 }
+        // Stage 1: Add computed fields for easier grouping
+        $addFields: {
+          isActive: { $eq: ['$subscriptionStatus', 'active'] },
+          revenue: { $ifNull: ['$businessMetrics.totalSales', 0] }
         }
       },
       {
+        // Stage 2: Group to calculate all stats in one pass
+        $group: {
+          _id: null,
+          totalUsers: { $sum: 1 },
+          activeUsers: { $sum: { $cond: ['$isActive', 1, 0] } },
+          totalRevenue: { $sum: '$revenue' },
+          planCounts: {
+            $push: {
+              plan: '$subscriptionPlan',
+              isActive: '$isActive'
+            }
+          }
+        }
+      },
+      {
+        // Stage 3: Process plan distribution
+        $addFields: {
+          planDistribution: {
+            $reduce: {
+              input: '$planCounts',
+              initialValue: {},
+              in: {
+                $mergeObjects: [
+                  '$$value',
+                  {
+                    $arrayToObject: [
+                      [{
+                        k: { $ifNull: ['$$this.plan', 'unknown'] },
+                        v: {
+                          $add: [
+                            { $ifNull: [{ $getField: { field: { $ifNull: ['$$this.plan', 'unknown'] }, input: '$$value' } }, 0] },
+                            1
+                          ]
+                        }
+                      }]
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        // Stage 4: Format final output
         $project: {
-          plan: '$_id',
-          count: 1,
-          _id: 0
+          _id: 0,
+          totalUsers: 1,
+          activeUsers: 1,
+          totalRevenue: 1,
+          planDistribution: {
+            $objectToArray: '$planDistribution'
+          }
+        }
+      },
+      {
+        // Stage 5: Transform plan distribution to expected format
+        $addFields: {
+          planDistribution: {
+            $map: {
+              input: '$planDistribution',
+              as: 'item',
+              in: {
+                plan: '$$item.k',
+                count: '$$item.v'
+              }
+            }
+          }
         }
       }
     ]);
     
-    // Calculate total revenue (mock calculation for now)
-    const totalRevenue = await User.aggregate([
-      {
-        $group: {
-          _id: null,
-          revenue: { $sum: '$businessMetrics.totalSales' }
-        }
-      }
-    ]);
+    // Extract results or provide defaults
+    const stats = statsResults[0] || {
+      totalUsers: 0,
+      activeUsers: 0,
+      totalRevenue: 0,
+      planDistribution: []
+    };
     
     res.json({
       success: true,
-      stats: {
-        totalUsers,
-        activeUsers,
-        totalRevenue: totalRevenue[0]?.revenue || 0,
-        planDistribution
-      }
+      stats
     });
   } catch (error) {
-    console.error('Admin stats error:', error);
+    logger.error('Admin stats error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch admin statistics'

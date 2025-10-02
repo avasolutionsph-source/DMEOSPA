@@ -475,41 +475,84 @@ class EmployeeManager {
             let avgSale = 0;
             let allTransactions = [];
 
-            // First try to get transactions from API
-            const token = this.getAuthToken();
-            if (token) {
-                try {
-                    const transResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/transactions`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (transResponse.ok) {
-                        const transResult = await transResponse.json();
-                        allTransactions = transResult.data || [];
-                    }
-                } catch (transError) {
-                    console.warn('Failed to load transaction data from API:', transError);
+            // Smart caching for employee stats to avoid duplicate API calls
+            const cacheKey = 'employee_stats_transactions';
+            const cachedTransactions = this.getCachedData(cacheKey);
+            const cacheExpiry = 2 * 60 * 1000; // 2 minutes cache for employee stats
+            
+            if (cachedTransactions && (Date.now() - cachedTransactions.timestamp) < cacheExpiry) {
+                console.log('📊 Using cached transaction data for employee stats');
+                allTransactions = cachedTransactions.data;
+            } else {
+                // Fetch fresh data only when cache is expired
+                const token = this.getAuthToken();
+                let apiTransactions = [];
+                let localTransactions = [];
+                
+                // Fetch from both sources in parallel for better performance
+                const fetchPromises = [];
+                
+                // API fetch promise
+                if (token) {
+                    fetchPromises.push(
+                        fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/transactions`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                        .then(response => response.ok ? response.json() : { data: [] })
+                        .then(result => {
+                            apiTransactions = result.data || [];
+                            console.log(`📡 Fetched ${apiTransactions.length} transactions from API`);
+                        })
+                        .catch(error => {
+                            console.warn('Failed to load transaction data from API:', error);
+                            apiTransactions = [];
+                        })
+                    );
                 }
-            }
-
-            // Also get transactions from IndexedDB
-            if (window.db && window.db.db) {
-                try {
-                    const localTransactions = await window.db.getAll('transactions');
-                    if (localTransactions && localTransactions.length > 0) {
-                        // Merge local transactions with API transactions (avoid duplicates)
-                        const apiTransIds = new Set(allTransactions.map(t => t.id || t._id));
-                        const uniqueLocalTrans = localTransactions.filter(t => 
-                            !apiTransIds.has(t.id) && !apiTransIds.has(t._id)
-                        );
-                        allTransactions = [...allTransactions, ...uniqueLocalTrans];
-                    }
-                } catch (dbError) {
-                    console.warn('Failed to load local transactions:', dbError);
+                
+                // IndexedDB fetch promise
+                if (window.db && window.db.db) {
+                    fetchPromises.push(
+                        window.db.getAll('transactions')
+                        .then(transactions => {
+                            localTransactions = transactions || [];
+                            console.log(`💾 Fetched ${localTransactions.length} transactions from IndexedDB`);
+                        })
+                        .catch(error => {
+                            console.warn('Failed to load transaction data from IndexedDB:', error);
+                            localTransactions = [];
+                        })
+                    );
                 }
+                
+                // Wait for both sources to complete
+                await Promise.allSettled(fetchPromises);
+                
+                // Merge transactions efficiently using Map for O(1) lookup
+                const transactionMap = new Map();
+                
+                // Add API transactions first (they take precedence)
+                apiTransactions.forEach(t => {
+                    const id = t.id || t._id;
+                    if (id) transactionMap.set(id, t);
+                });
+                
+                // Add local transactions only if not already present
+                localTransactions.forEach(t => {
+                    const id = t.id || t._id;
+                    if (id && !transactionMap.has(id)) {
+                        transactionMap.set(id, t);
+                    }
+                });
+                
+                allTransactions = Array.from(transactionMap.values());
+                
+                // Cache the merged results
+                this.setCachedData(cacheKey, allTransactions);
+                console.log(`📊 Merged ${allTransactions.length} unique transactions (${apiTransactions.length} from API, ${localTransactions.length} from local)`);
             }
 
             // Filter transactions for this employee
@@ -1740,6 +1783,50 @@ class EmployeeManager {
         this.searchTerm = '';
         this.filteredEmployees = this.employees;
         this.displayEmployees();
+    }
+
+    // Cache helper methods for performance optimization
+    getCachedData(key) {
+        try {
+            const cached = localStorage.getItem(`emp_cache_${key}`);
+            if (cached) {
+                const data = JSON.parse(cached);
+                return data;
+            }
+        } catch (error) {
+            console.warn('Failed to get cached data:', error);
+        }
+        return null;
+    }
+
+    setCachedData(key, data) {
+        try {
+            const cacheData = {
+                data: data,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(`emp_cache_${key}`, JSON.stringify(cacheData));
+        } catch (error) {
+            console.warn('Failed to cache data:', error);
+        }
+    }
+
+    clearCache(key) {
+        try {
+            if (key) {
+                localStorage.removeItem(`emp_cache_${key}`);
+            } else {
+                // Clear all employee cache entries
+                const keys = Object.keys(localStorage);
+                keys.forEach(k => {
+                    if (k.startsWith('emp_cache_')) {
+                        localStorage.removeItem(k);
+                    }
+                });
+            }
+        } catch (error) {
+            console.warn('Failed to clear cache:', error);
+        }
     }
 }
 
