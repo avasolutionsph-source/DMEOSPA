@@ -820,21 +820,17 @@ class EmployeeManager {
         try {
             let employee = null;
             
-            // First check if it's a local employee
-            const localEmployees = this.employees.filter(emp => (emp.id === id || emp._id === id));
-            if (localEmployees.length > 0) {
-                console.log('📦 Using local employee data for editing');
-                employee = localEmployees[0];
-            } else {
-                // Get employee from MongoDB API
-                // CRITICAL FIX: Use global window.getAuthToken() to avoid 'this' context issues in onclick handlers
-                const token = window.getAuthToken ? window.getAuthToken() : this.getAuthToken();
-                if (!token) {
-                    console.error('❌ No authentication token for editing employee');
-                    showError('Authentication required - please log in');
-                    return;
-                }
+            // CRITICAL FIX: Always fetch fresh data from API first to avoid stale cache issues
+            // Get employee from MongoDB API
+            const token = window.getAuthToken ? window.getAuthToken() : this.getAuthToken();
+            if (!token) {
+                console.error('❌ No authentication token for editing employee');
+                showError('Authentication required - please log in');
+                return;
+            }
 
+            console.log('🔄 Fetching fresh employee data from API for editing...');
+            try {
                 // Fetch employee from MongoDB
                 const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/employees/${id}`, {
                     headers: {
@@ -843,8 +839,24 @@ class EmployeeManager {
                     }
                 });
 
-                if (!response.ok) {
-                    // Try to get from IndexedDB as fallback
+                if (response.ok) {
+                    const result = await response.json();
+                    employee = result.data;
+                    console.log('✅ Got fresh employee data from API');
+                } else {
+                    console.warn('⚠️ API fetch failed, falling back to local data');
+                    throw new Error('API fetch failed');
+                }
+            } catch (apiError) {
+                console.warn('⚠️ API fetch error, trying local sources:', apiError.message);
+                
+                // Fallback to local employee data if API fails
+                const localEmployees = this.employees.filter(emp => (emp.id === id || emp._id === id));
+                if (localEmployees.length > 0) {
+                    console.log('📦 Using local employee data as fallback');
+                    employee = localEmployees[0];
+                } else {
+                    // Try to get from IndexedDB as final fallback
                     if (window.db && window.db.db) {
                         try {
                             employee = await window.db.get('employees', id);
@@ -853,19 +865,17 @@ class EmployeeManager {
                                 const allEmployees = await window.db.getAll('employees');
                                 employee = allEmployees.find(e => e._id === id || e.id === id);
                             }
+                            console.log('💾 Using IndexedDB employee data as final fallback');
                         } catch (dbError) {
                             console.error('❌ Failed to get employee from IndexedDB:', dbError);
                         }
                     }
                     
                     if (!employee) {
-                        console.error('❌ Failed to fetch employee for editing:', response.status);
+                        console.error('❌ Failed to fetch employee for editing from any source');
                         showError('Failed to load employee for editing');
                         return;
                     }
-                } else {
-                    const result = await response.json();
-                    employee = result.data;
                 }
             }
             
@@ -1231,16 +1241,30 @@ class EmployeeManager {
                             console.log(`✅ Employee updated via ${updateEndpoint}`);
                             updateSuccessful = true;
                             
-                            // Update local IndexedDB too
+                            // Update local IndexedDB and in-memory cache
                             if (window.db && window.db.db) {
                                 try {
-                                    await window.db.put('employees', {
+                                    const updatedEmployeeData = {
                                         ...employeeData,
                                         _id: this.editingEmployee.id,
                                         syncStatus: 'synced',
                                         lastSyncedAt: new Date().toISOString()
-                                    });
+                                    };
+                                    await window.db.put('employees', updatedEmployeeData);
                                     console.log('✅ Local IndexedDB updated');
+                                    
+                                    // CRITICAL FIX: Also update in-memory employees array to keep cache in sync
+                                    const employeeIndex = this.employees.findIndex(emp => 
+                                        emp.id === this.editingEmployee.id || emp._id === this.editingEmployee.id
+                                    );
+                                    if (employeeIndex !== -1) {
+                                        this.employees[employeeIndex] = {
+                                            ...this.employees[employeeIndex],
+                                            ...updatedEmployeeData,
+                                            id: this.editingEmployee.id // Ensure ID consistency
+                                        };
+                                        console.log('✅ In-memory employees array updated');
+                                    }
                                 } catch (dbError) {
                                     console.log('⚠️ Could not update IndexedDB:', dbError);
                                 }
@@ -1252,6 +1276,9 @@ class EmployeeManager {
                             saveBtn.innerHTML = originalText;
                             closeModal('employeeModal');
                             showSuccess('Employee updated successfully');
+                            
+                            // CRITICAL FIX: Refresh employee list to update cache with latest data
+                            await this.loadEmployees();
                             break;
                         } else if (response.status === 404) {
                             lastUpdateError = 'Employee not found';
