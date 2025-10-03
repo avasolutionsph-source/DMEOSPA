@@ -75,6 +75,20 @@ router.post('/', withErrorHandling(async (req, res) => {
         password = temporaryPassword || crypto.randomBytes(4).toString('hex');
     }
     
+    // 🔍 DEBUGGING: Log salary data received from frontend
+    logger.info('💰 [SALARY-DEBUG] Salary data received from frontend:', {
+        category: 'SALARY_DEBUG',
+        operation: 'create_employee_salary',
+        data: {
+            wageType,
+            dailyRate: parseFloat(dailyRate) || 0,
+            monthlyRate: parseFloat(monthlyRate) || 0,
+            hourlyRate: parseFloat(hourlyRate) || 0,
+            overtimeMultiplier: parseFloat(overtimeMultiplier) || 1.25,
+            mappedSalaryType: wageType || 'daily'
+        }
+    });
+    
     // Create employee
     const employee = new Employee({
         userId: req.user.id || req.user._id,
@@ -191,7 +205,9 @@ router.get('/', withErrorHandling(async (req, res) => {
             // Include viewable password for branch owners
             viewablePassword: viewablePassword || temporaryPassword || null,
             temporaryPassword: emp.isUsingTemporaryPassword ? temporaryPassword : null,
-            isUsingTemporaryPassword: emp.isUsingTemporaryPassword || false
+            isUsingTemporaryPassword: emp.isUsingTemporaryPassword || false,
+            // CRITICAL FIX: Map backend salaryType to frontend wageType for compatibility
+            wageType: emp.salaryType || emp.wageType || 'daily'
         };
     });
     
@@ -250,8 +266,25 @@ router.get('/:id', withErrorHandling(async (req, res) => {
         loginRole: employee.role || null,
         viewablePassword: employee.viewablePassword || employee.temporaryPassword || null,
         temporaryPassword: employee.isUsingTemporaryPassword ? employee.temporaryPassword : null,
-        isUsingTemporaryPassword: employee.isUsingTemporaryPassword || false
+        isUsingTemporaryPassword: employee.isUsingTemporaryPassword || false,
+        // CRITICAL FIX: Map backend salaryType to frontend wageType for compatibility
+        wageType: employee.salaryType || employee.wageType || 'daily'
     };
+    
+    // 🔍 DEBUGGING: Log salary data being returned to frontend
+    logger.info('💰 [SALARY-DEBUG] Employee salary data being returned to frontend:', {
+        category: 'SALARY_DEBUG',
+        operation: 'get_employee_salary',
+        data: {
+            employeeId: id,
+            originalSalaryType: employee.salaryType,
+            mappedWageType: responseData.wageType,
+            dailyRate: employee.dailyRate,
+            monthlyRate: employee.monthlyRate,
+            hourlyRate: employee.hourlyRate,
+            overtimeMultiplier: employee.overtimeMultiplier
+        }
+    });
     
     logger.info(`Retrieved employee details: ${id}`, {
         category: 'DATABASE',

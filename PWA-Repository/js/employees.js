@@ -473,6 +473,18 @@ class EmployeeManager {
                 name: employee.firstName ? `${employee.firstName} ${employee.lastName}`.trim() : employee.name,
                 wageType: employee.salaryType || employee.wageType || 'daily' // Map backend salaryType to frontend wageType
             };
+            
+            // 🔍 DEBUGGING: Log salary data received from backend
+            console.log('💰 [SALARY-DEBUG] Employee data received from backend:', {
+                id: employee.id,
+                name: employee.name,
+                wageType: employee.wageType,
+                salaryType: employee.salaryType, // Original backend field
+                dailyRate: employee.dailyRate,
+                monthlyRate: employee.monthlyRate,
+                hourlyRate: employee.hourlyRate,
+                overtimeMultiplier: employee.overtimeMultiplier
+            });
 
             // Get employee statistics from both API and local data
             let totalSales = 0;
@@ -1098,6 +1110,19 @@ class EmployeeManager {
                 return;
             }
             
+            // 🔍 DEBUGGING: Capture salary form values for debugging
+            const salaryDebugInfo = {
+                wageTypeElement: document.getElementById('employeeWageType'),
+                dailyRateElement: document.getElementById('employeeDailyRate'),
+                monthlyRateElement: document.getElementById('employeeMonthlyRate'),
+                hourlyRateElement: document.getElementById('employeeHourlyRate'),
+                wageTypeValue: document.getElementById('employeeWageType')?.value,
+                dailyRateValue: document.getElementById('employeeDailyRate')?.value,
+                monthlyRateValue: document.getElementById('employeeMonthlyRate')?.value,
+                hourlyRateValue: document.getElementById('employeeHourlyRate')?.value
+            };
+            console.log('💰 [SALARY-DEBUG] Form values captured:', salaryDebugInfo);
+            
             const employeeData = {
                 // Backend model fields (firstName/lastName) - REQUIRED
                 firstName: firstName || 'Unknown',
@@ -1146,6 +1171,14 @@ class EmployeeManager {
                 }
             }
             
+            // 🔍 DEBUGGING: Log salary data in the final object
+            console.log('💰 [SALARY-DEBUG] Final salary data being sent to backend:', {
+                wageType: employeeData.wageType,
+                dailyRate: employeeData.dailyRate,
+                monthlyRate: employeeData.monthlyRate,
+                hourlyRate: employeeData.hourlyRate,
+                overtimeMultiplier: employeeData.overtimeMultiplier
+            });
             console.log('📝 Employee data to save:', employeeData);
             console.log('🔐 Auth token available:', !!token);
             
