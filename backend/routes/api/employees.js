@@ -195,6 +195,43 @@ router.get('/', withErrorHandling(async (req, res) => {
         Employee.countDocuments(query)
     ]);
     
+    // DATA MIGRATION: Reset old schema defaults to 0 for all employees in list
+    const employeesToMigrate = employees.filter(emp => 
+        emp.dailyRate === 500 || emp.monthlyRate === 15000 || emp.hourlyRate === 62.50
+    );
+    
+    if (employeesToMigrate.length > 0) {
+        console.log(`🔄 [SCHEMA-MIGRATION] Migrating ${employeesToMigrate.length} employees from old schema defaults`);
+        
+        // Migrate employees in parallel for better performance
+        const migrationPromises = employeesToMigrate.map(emp => 
+            Employee.updateOne(
+                { _id: emp._id },
+                {
+                    $set: {
+                        dailyRate: emp.dailyRate === 500 ? 0 : emp.dailyRate,
+                        monthlyRate: emp.monthlyRate === 15000 ? 0 : emp.monthlyRate,
+                        hourlyRate: emp.hourlyRate === 62.50 ? 0 : emp.hourlyRate
+                    }
+                }
+            )
+        );
+        
+        await Promise.all(migrationPromises);
+        console.log(`✅ [SCHEMA-MIGRATION] Completed migration for ${employeesToMigrate.length} employees`);
+        
+        // Re-fetch employees with updated data
+        const migratedEmployees = await Employee.find(query)
+            .select('+temporaryPassword +viewablePassword')
+            .sort({ firstName: 1 })
+            .skip(skip)
+            .limit(parseInt(limit))
+            .lean();
+        
+        // Replace the original employees array with migrated data
+        employees.splice(0, employees.length, ...migratedEmployees);
+    }
+    
     // Add login status indicator and include viewable password for branch owners
     const employeesWithLoginStatus = employees.map(emp => {
         const { password, temporaryPassword, viewablePassword, ...employeeData } = emp;

@@ -209,15 +209,62 @@ class EmployeeManager {
                 console.log(`✅ [EMPLOYEE-MANAGER] Loaded ${employees.length} employees from ${result.source || 'API'}`);
                 console.log('👥 [EMPLOYEE-MANAGER] Raw employee data sample:', employees.slice(0, 2));
                 
+                // DEBUGGING: Track salary data before processing
+                if (employees.length > 0) {
+                    const sampleEmp = employees[0];
+                    console.log('💰 [SALARY-DEBUG] Raw salary data from backend:', {
+                        id: sampleEmp._id || sampleEmp.id,
+                        name: sampleEmp.firstName ? `${sampleEmp.firstName} ${sampleEmp.lastName}` : sampleEmp.name,
+                        dailyRate: sampleEmp.dailyRate,
+                        monthlyRate: sampleEmp.monthlyRate,
+                        hourlyRate: sampleEmp.hourlyRate,
+                        salaryType: sampleEmp.salaryType,
+                        wageType: sampleEmp.wageType,
+                        dataTypes: {
+                            dailyType: typeof sampleEmp.dailyRate,
+                            monthlyType: typeof sampleEmp.monthlyRate,
+                            hourlyType: typeof sampleEmp.hourlyRate
+                        }
+                    });
+                }
+                
                 // Convert MongoDB data for PWA compatibility
                 employees = employees.map(emp => ({
                     ...emp,
                     id: emp._id || emp.id, // Map MongoDB _id to frontend id field
                     name: emp.firstName ? `${emp.firstName} ${emp.lastName}`.trim() : emp.name,
-                    wageType: emp.salaryType || emp.wageType || 'daily' // Map backend salaryType to frontend wageType
+                    wageType: emp.salaryType || emp.wageType || 'daily', // Map backend salaryType to frontend wageType
+                    // CRITICAL FIX: Explicitly preserve salary fields to prevent data loss
+                    dailyRate: emp.dailyRate || 0,
+                    monthlyRate: emp.monthlyRate || 0,
+                    hourlyRate: emp.hourlyRate || 0,
+                    overtimeMultiplier: emp.overtimeMultiplier || 1.25
                 }));
                 
                 console.log('👥 [EMPLOYEE-MANAGER] Processed employee data sample:', employees.slice(0, 2));
+                
+                // DEBUGGING: Track salary data after processing
+                if (employees.length > 0) {
+                    const sampleEmp = employees[0];
+                    console.log('💰 [SALARY-DEBUG] Processed salary data for frontend:', {
+                        id: sampleEmp.id,
+                        name: sampleEmp.name,
+                        dailyRate: sampleEmp.dailyRate,
+                        monthlyRate: sampleEmp.monthlyRate,
+                        hourlyRate: sampleEmp.hourlyRate,
+                        wageType: sampleEmp.wageType,
+                        salaryConfigured: !!(
+                            (sampleEmp.dailyRate && sampleEmp.dailyRate > 0) ||
+                            (sampleEmp.monthlyRate && sampleEmp.monthlyRate > 0) ||
+                            (sampleEmp.hourlyRate && sampleEmp.hourlyRate > 0)
+                        ),
+                        dataTypes: {
+                            dailyType: typeof sampleEmp.dailyRate,
+                            monthlyType: typeof sampleEmp.monthlyRate,
+                            hourlyType: typeof sampleEmp.hourlyRate
+                        }
+                    });
+                }
                 
                 this.employees = employees;
                 this.filteredEmployees = employees; // Initialize filtered list
