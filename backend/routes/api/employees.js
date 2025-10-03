@@ -227,34 +227,57 @@ router.get('/', withErrorHandling(async (req, res) => {
 router.get('/:id', withErrorHandling(async (req, res) => {
     const { id } = req.params;
     
+    // CRITICAL FIX: Use proper userId context consistently with PUT endpoint
+    // req.userId is set by auth middleware to handle managers/employees correctly
+    const queryUserId = req.userId || req.user.id || req.user._id;
+    
+    console.log('💰 [SALARY-DEBUG] Employee GET query details:', {
+        employeeId: id,
+        authUserId: req.user.id,
+        authUserRole: req.user.role,
+        contextUserId: req.userId,
+        queryUserId: queryUserId,
+        isManager: req.user.role === 'manager',
+        isEmployee: req.user.isEmployee
+    });
+    
     // Find employee with proper user context
-    let query = {};
+    let query = { _id: id };
     
     // Check if request is from employee or owner
     if (req.user.isEmployee && req.user.role !== 'manager') {
         // Regular employee viewing - use branch context and only allow viewing themselves
-        query.userId = req.userId; // Original branch owner ID
+        query.userId = queryUserId; // Use consistent auth context
         
         // Therapists can only see themselves
         if (['senior_therapist', 'junior_therapist', 'new_therapist'].includes(req.user.role)) {
             query._id = req.user.id;
         }
     } else {
-        // Owner or manager viewing their employees
-        query.userId = req.userId || req.user.id || req.user._id;
+        // Owner or manager viewing their employees - use consistent auth context
+        query.userId = queryUserId;
     }
-    
-    // Add the specific employee ID to the query
-    query._id = id;
     
     const employee = await Employee.findOne(query)
         .select('+temporaryPassword +viewablePassword') // Include passwords for branch owners
         .lean();
     
     if (!employee) {
+        // ENHANCED ERROR: Log detailed information when employee not found during GET
+        console.error('❌ [SALARY-DEBUG] Employee not found for GET request:', {
+            employeeId: id,
+            queryUserId: queryUserId,
+            query: query,
+            authUser: {
+                id: req.user.id,
+                role: req.user.role,
+                email: req.user.email
+            }
+        });
+        
         return res.status(404).json({
             success: false,
-            error: 'Employee not found'
+            error: 'Employee not found or you do not have permission to view this employee'
         });
     }
     
@@ -271,25 +294,62 @@ router.get('/:id', withErrorHandling(async (req, res) => {
         wageType: employee.salaryType || employee.wageType || 'daily'
     };
     
-    // 🔍 DEBUGGING: Log salary data being returned to frontend
-    logger.info('💰 [SALARY-DEBUG] Employee salary data being returned to frontend:', {
-        category: 'SALARY_DEBUG',
-        operation: 'get_employee_salary',
-        data: {
-            employeeId: id,
-            originalSalaryType: employee.salaryType,
-            mappedWageType: responseData.wageType,
+    // ENHANCED DEBUGGING: Comprehensive salary data validation
+    console.log('💰 [SALARY-DEBUG] Employee salary data being returned to frontend (ENHANCED):', {
+        employeeId: id,
+        retrievalSuccessful: true,
+        rawEmployeeData: {
+            salaryType: employee.salaryType,
             dailyRate: employee.dailyRate,
             monthlyRate: employee.monthlyRate,
             hourlyRate: employee.hourlyRate,
             overtimeMultiplier: employee.overtimeMultiplier
-        }
+        },
+        responseData: {
+            wageType: responseData.wageType,
+            dailyRate: responseData.dailyRate,
+            monthlyRate: responseData.monthlyRate,
+            hourlyRate: responseData.hourlyRate,
+            overtimeMultiplier: responseData.overtimeMultiplier
+        },
+        salaryFieldsExist: {
+            hasDaily: !!(employee.dailyRate && employee.dailyRate > 0),
+            hasMonthly: !!(employee.monthlyRate && employee.monthlyRate > 0),
+            hasHourly: !!(employee.hourlyRate && employee.hourlyRate > 0)
+        },
+        frontendWillShowConfigured: !!(
+            (employee.dailyRate && employee.dailyRate > 0) ||
+            (employee.monthlyRate && employee.monthlyRate > 0) ||
+            (employee.hourlyRate && employee.hourlyRate > 0)
+        )
     });
+    
+    // CRITICAL CHECK: Ensure all salary fields are included in response
+    if (!responseData.hasOwnProperty('dailyRate')) {
+        console.error('❌ [SALARY-DEBUG] CRITICAL: dailyRate missing from response!');
+        responseData.dailyRate = employee.dailyRate || 0;
+    }
+    if (!responseData.hasOwnProperty('monthlyRate')) {
+        console.error('❌ [SALARY-DEBUG] CRITICAL: monthlyRate missing from response!');
+        responseData.monthlyRate = employee.monthlyRate || 0;
+    }
+    if (!responseData.hasOwnProperty('hourlyRate')) {
+        console.error('❌ [SALARY-DEBUG] CRITICAL: hourlyRate missing from response!');
+        responseData.hourlyRate = employee.hourlyRate || 0;
+    }
     
     logger.info(`Retrieved employee details: ${id}`, {
         category: 'DATABASE',
         operation: 'get_employee_details',
         data: { employeeId: id }
+    });
+    
+    // CACHE-BUSTING: Add headers to prevent stale data
+    res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Last-Modified': new Date().toISOString()
     });
     
     res.json({
