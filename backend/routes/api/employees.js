@@ -22,7 +22,9 @@ const employeeHandler = new BaseRouteHandler(Employee, {
 // Override create to handle employee login setup
 router.post('/', withErrorHandling(async (req, res) => {
     const { firstName, lastName, email, role, phone, position, department, 
-            commissionRate, assignedRooms, createLogin, temporaryPassword } = req.body;
+            commissionRate, assignedRooms, createLogin, temporaryPassword,
+            wageType, dailyRate, monthlyRate, hourlyRate, overtimeMultiplier,
+            hasSSS, hasPhilHealth, hasPagibig } = req.body;
     
     // Validate required fields
     if (!firstName || !lastName || !role) {
@@ -86,6 +88,16 @@ router.post('/', withErrorHandling(async (req, res) => {
         department: department || '',
         commissionRate: commissionRate || 0,
         assignedRooms: assignedRooms || [],
+        // Salary configuration fields
+        salaryType: wageType || 'daily', // Map frontend wageType to backend salaryType
+        dailyRate: parseFloat(dailyRate) || 0,
+        monthlyRate: parseFloat(monthlyRate) || 0,
+        hourlyRate: parseFloat(hourlyRate) || 0,
+        overtimeMultiplier: parseFloat(overtimeMultiplier) || 1.25,
+        // Government benefits
+        hasSSS: hasSSS || false,
+        hasPhilHealth: hasPhilHealth || false,
+        hasPagibig: hasPagibig || false,
         isActive: true
     });
     
@@ -199,6 +211,12 @@ router.put('/:id', withErrorHandling(async (req, res) => {
     delete updateData._id;
     delete updateData.userId;
     delete updateData.branchId;
+    
+    // Map frontend field to backend field for salary type
+    if (updateData.wageType) {
+        updateData.salaryType = updateData.wageType;
+        delete updateData.wageType;
+    }
     
     // Handle password reset or update
     let newPassword = null;

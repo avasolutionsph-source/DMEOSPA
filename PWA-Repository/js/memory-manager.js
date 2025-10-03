@@ -104,7 +104,12 @@ class MemoryManager {
                 this.emergencyCleanup();
             } else if (usagePercent > 0.70) {  // Changed from 0.5 to 0.70
                 console.warn(`⚠️ High memory usage: ${used}MB (${Math.round(usagePercent * 100)}%) - consider closing other tabs`);
-                // Don't delete data, just warn the user
+                
+                // Auto-enable performance mode for high memory usage
+                if (window.performanceSettings && !window.performanceSettings.settings.enabled) {
+                    console.warn('🐢 Auto-enabling performance mode due to high memory usage');
+                    window.performanceSettings.enablePerformanceMode();
+                }
             } else if (usagePercent > 0.5) {
                 console.log(`💾 Memory: ${used}MB (${Math.round(usagePercent * 100)}%)`);
             }
@@ -144,6 +149,15 @@ class MemoryManager {
     // Emergency cleanup when memory is critically high
     emergencyCleanup() {
         console.warn('🚨 Emergency memory cleanup initiated');
+        
+        // Clear expired auth tokens first (fixes cascading auth failures)
+        if (window.authSystem && typeof window.authSystem.isTokenExpired === 'function') {
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            if (token && window.authSystem.isTokenExpired(token)) {
+                console.warn('🔐 Clearing expired token during emergency cleanup');
+                window.authSystem.logout();
+            }
+        }
         
         // Clear all caches
         if ('caches' in window) {

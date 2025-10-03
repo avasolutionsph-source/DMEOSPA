@@ -1,10 +1,34 @@
 // Authentication and User Management System
 
-// Simple utility functions to replace missing imports
-function logDebug(msg, data) { console.log('[DEBUG]', msg, data); }
-function logInfo(msg, data) { console.log('[INFO]', msg, data); }
-function logError(msg, data) { console.error('[ERROR]', msg, data); }
-function logWarn(msg, data) { console.warn('[WARN]', msg, data); }
+// Simple utility functions with conditional logging
+function logDebug(msg, data) { 
+    if (window.API_CONFIG?.log) {
+        window.API_CONFIG.log('debug', msg, { category: 'AUTH', ...data });
+    } else {
+        console.log('[DEBUG]', msg, data);
+    }
+}
+function logInfo(msg, data) { 
+    if (window.API_CONFIG?.log) {
+        window.API_CONFIG.log('info', msg, { category: 'AUTH', ...data });
+    } else {
+        console.log('[INFO]', msg, data);
+    }
+}
+function logError(msg, data) { 
+    if (window.API_CONFIG?.log) {
+        window.API_CONFIG.log('error', msg, { category: 'AUTH', ...data });
+    } else {
+        console.error('[ERROR]', msg, data);
+    }
+}
+function logWarn(msg, data) { 
+    if (window.API_CONFIG?.log) {
+        window.API_CONFIG.log('warn', msg, { category: 'AUTH', ...data });
+    } else {
+        console.warn('[WARN]', msg, data);
+    }
+}
 function showSuccess(msg) { alert('✅ ' + msg); }
 function showError(msg) { alert('❌ ' + msg); }
 function showWarning(msg) { alert('⚠️ ' + msg); }
@@ -14,7 +38,7 @@ function withErrorHandling(fn, config) {
     try { 
         return Promise.resolve(fn()); 
     } catch(e) { 
-        console.error(config.operation, e); 
+        logError(config.operation, { error: e.message, stack: e.stack }); 
         throw e; 
     } 
 }
@@ -208,7 +232,7 @@ class AuthSystem {
 
         try {
             // Use unified backend URL from API_CONFIG
-            const serverUrl = window.API_CONFIG ? window.API_CONFIG.BASE_URL : 'https://daetspa-backend.onrender.com';
+            const serverUrl = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
             
             // Auto-detection: Try owner login first, then employee if it fails
             console.log('🔐 Attempting auto-detection login for:', email);
@@ -366,7 +390,7 @@ class AuthSystem {
 
         try {
             // Use unified backend URL from API_CONFIG
-            const serverUrl = window.API_CONFIG ? window.API_CONFIG.BASE_URL : 'https://daetspa-backend.onrender.com';
+            const serverUrl = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
             
             const response = await fetch(`${serverUrl}/api/auth/register`, {
                 method: 'POST',
@@ -444,7 +468,7 @@ class AuthSystem {
 
         try {
             // Use unified backend URL from API_CONFIG
-            const serverUrl = window.API_CONFIG ? window.API_CONFIG.BASE_URL : 'https://daetspa-backend.onrender.com';
+            const serverUrl = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
             
             const response = await fetch(`${serverUrl}/api/auth/verify`, {
                 method: 'POST',
@@ -490,7 +514,7 @@ class AuthSystem {
         try {
             // Call logout endpoint if available
             if (this.authToken) {
-                const serverUrl = window.API_CONFIG ? window.API_CONFIG.BASE_URL : 'https://daetspa-backend.onrender.com';
+                const serverUrl = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
                 await fetch(`${serverUrl}/api/auth/logout`, {
                     method: 'POST',
                     headers: {
@@ -570,6 +594,13 @@ class AuthSystem {
         
         if (authToken && currentUser && isLoggedIn === 'true') {
             try {
+                // Check if token is expired before using it
+                if (this.isTokenExpired(authToken)) {
+                    console.log('🔐 Token expired, clearing auth state');
+                    this.logout();
+                    return;
+                }
+                
                 this.authToken = authToken;
                 // PERFORMANCE: Cache parsed user to avoid repeated JSON.parse
                 if (!this._cachedUser || this._cachedUserString !== currentUser) {
@@ -610,6 +641,28 @@ class AuthSystem {
             }
         } else {
             console.log('ℹ️ No valid auth state found');
+        }
+    }
+
+    // Check if JWT token is expired
+    isTokenExpired(token) {
+        if (!token) return true;
+        
+        try {
+            // Decode JWT payload (second part after split by '.')
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            
+            // Check if token has expiry time and if it's expired
+            if (payload.exp) {
+                const currentTime = Date.now() / 1000; // Convert to seconds
+                return payload.exp < currentTime;
+            }
+            
+            // If no expiry time, consider it valid
+            return false;
+        } catch (error) {
+            console.warn('🔐 Invalid token format, treating as expired:', error);
+            return true; // If can't decode, treat as expired
         }
     }
 
@@ -784,7 +837,7 @@ class AuthSystem {
         }
 
         // Default to production unified backend URL
-        this.serverUrl = 'https://daetspa-backend.onrender.com';
+        this.serverUrl = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
         return this.serverUrl;
     }
 

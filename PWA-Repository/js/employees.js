@@ -213,7 +213,8 @@ class EmployeeManager {
                 employees = employees.map(emp => ({
                     ...emp,
                     id: emp._id || emp.id, // Map MongoDB _id to frontend id field
-                    name: emp.firstName ? `${emp.firstName} ${emp.lastName}`.trim() : emp.name
+                    name: emp.firstName ? `${emp.firstName} ${emp.lastName}`.trim() : emp.name,
+                    wageType: emp.salaryType || emp.wageType || 'daily' // Map backend salaryType to frontend wageType
                 }));
                 
                 console.log('👥 [EMPLOYEE-MANAGER] Processed employee data sample:', employees.slice(0, 2));
@@ -467,6 +468,7 @@ class EmployeeManager {
             // Convert MongoDB data for frontend compatibility  
             employee.id = employee._id || employee.id; // Map MongoDB _id to frontend id field
             employee.name = employee.firstName ? `${employee.firstName} ${employee.lastName}`.trim() : employee.name;
+            employee.wageType = employee.salaryType || employee.wageType || 'daily'; // Map backend salaryType to frontend wageType
 
             // Get employee statistics from both API and local data
             let totalSales = 0;
@@ -854,6 +856,7 @@ class EmployeeManager {
             // Convert MongoDB data for form compatibility
             employee.id = employee._id || employee.id; // Map MongoDB _id to frontend id field
             employee.name = employee.firstName ? `${employee.firstName} ${employee.lastName}`.trim() : employee.name;
+            employee.wageType = employee.salaryType || employee.wageType || 'daily'; // Map backend salaryType to frontend wageType
 
             this.editingEmployee = employee;
             document.getElementById('employeeModalTitle').textContent = 'Edit Employee';
