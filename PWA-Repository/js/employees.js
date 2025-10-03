@@ -450,8 +450,9 @@ class EmployeeManager {
                     }
                     
                     if (!employee) {
-                        console.error('❌ Failed to fetch employee details:', empResult.error);
-                        showError('Failed to load employee details');
+                        const errorMsg = empResult.error || 'Unknown error occurred';
+                        console.error('❌ Failed to fetch employee details:', errorMsg);
+                        showError(`Failed to load employee details: ${errorMsg}`);
                         return;
                     }
                 } else {
@@ -466,9 +467,12 @@ class EmployeeManager {
             }
 
             // Convert MongoDB data for frontend compatibility  
-            employee.id = employee._id || employee.id; // Map MongoDB _id to frontend id field
-            employee.name = employee.firstName ? `${employee.firstName} ${employee.lastName}`.trim() : employee.name;
-            employee.wageType = employee.salaryType || employee.wageType || 'daily'; // Map backend salaryType to frontend wageType
+            employee = {
+                ...employee,
+                id: employee._id || employee.id, // Map MongoDB _id to frontend id field
+                name: employee.firstName ? `${employee.firstName} ${employee.lastName}`.trim() : employee.name,
+                wageType: employee.salaryType || employee.wageType || 'daily' // Map backend salaryType to frontend wageType
+            };
 
             // Get employee statistics from both API and local data
             let totalSales = 0;
@@ -791,7 +795,8 @@ class EmployeeManager {
             } else {
                 console.error('Failed to view employee:', error);
             }
-            showError('Failed to load employee details');
+            const errorMsg = error.message || error || 'An unexpected error occurred';
+            showError(`Failed to load employee details: ${errorMsg}`);
         }
     }
 
@@ -854,9 +859,12 @@ class EmployeeManager {
             }
 
             // Convert MongoDB data for form compatibility
-            employee.id = employee._id || employee.id; // Map MongoDB _id to frontend id field
-            employee.name = employee.firstName ? `${employee.firstName} ${employee.lastName}`.trim() : employee.name;
-            employee.wageType = employee.salaryType || employee.wageType || 'daily'; // Map backend salaryType to frontend wageType
+            employee = {
+                ...employee,
+                id: employee._id || employee.id, // Map MongoDB _id to frontend id field
+                name: employee.firstName ? `${employee.firstName} ${employee.lastName}`.trim() : employee.name,
+                wageType: employee.salaryType || employee.wageType || 'daily' // Map backend salaryType to frontend wageType
+            };
 
             this.editingEmployee = employee;
             document.getElementById('employeeModalTitle').textContent = 'Edit Employee';

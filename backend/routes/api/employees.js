@@ -207,6 +207,64 @@ router.get('/', withErrorHandling(async (req, res) => {
     });
 }));
 
+// Get single employee by ID
+router.get('/:id', withErrorHandling(async (req, res) => {
+    const { id } = req.params;
+    
+    // Find employee with proper user context
+    let query = {};
+    
+    // Check if request is from employee or owner
+    if (req.user.isEmployee && req.user.role !== 'manager') {
+        // Regular employee viewing - use branch context and only allow viewing themselves
+        query.userId = req.userId; // Original branch owner ID
+        
+        // Therapists can only see themselves
+        if (['senior_therapist', 'junior_therapist', 'new_therapist'].includes(req.user.role)) {
+            query._id = req.user.id;
+        }
+    } else {
+        // Owner or manager viewing their employees
+        query.userId = req.userId || req.user.id || req.user._id;
+    }
+    
+    // Add the specific employee ID to the query
+    query._id = id;
+    
+    const employee = await Employee.findOne(query)
+        .select('+temporaryPassword +viewablePassword') // Include passwords for branch owners
+        .lean();
+    
+    if (!employee) {
+        return res.status(404).json({
+            success: false,
+            error: 'Employee not found'
+        });
+    }
+    
+    // Remove password hash but keep viewable password for branch owners
+    const { password, ...employeeData } = employee;
+    const responseData = {
+        ...employeeData,
+        hasLogin: !!password,
+        loginRole: employee.role || null,
+        viewablePassword: employee.viewablePassword || employee.temporaryPassword || null,
+        temporaryPassword: employee.isUsingTemporaryPassword ? employee.temporaryPassword : null,
+        isUsingTemporaryPassword: employee.isUsingTemporaryPassword || false
+    };
+    
+    logger.info(`Retrieved employee details: ${id}`, {
+        category: 'DATABASE',
+        operation: 'get_employee_details',
+        data: { employeeId: id }
+    });
+    
+    res.json({
+        success: true,
+        data: responseData
+    });
+}));
+
 // Update employee (including password reset)
 router.put('/:id', withErrorHandling(async (req, res) => {
     const { id } = req.params;
