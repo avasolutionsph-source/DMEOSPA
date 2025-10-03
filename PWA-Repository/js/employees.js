@@ -880,6 +880,20 @@ class EmployeeManager {
             document.getElementById('employeeHasSSS').checked = employee.hasSSS || false;
             document.getElementById('employeeHasPhilHealth').checked = employee.hasPhilHealth || false;
             document.getElementById('employeeHasPagibig').checked = employee.hasPagibig || false;
+            
+            // Fill detailed government deduction configuration
+            document.getElementById('employeeSssMethod').value = employee.sssContributionMethod || 'table-based';
+            document.getElementById('employeeSssRate').value = employee.sssEmployeeShareRate || '4.5';
+            document.getElementById('employeePhilHealthRate').value = employee.philHealthRate || '2';
+            document.getElementById('employeePhilHealthShare').value = employee.philHealthEmployeeShareRate || '50';
+            document.getElementById('employeePagibigRate').value = employee.pagIbigRate || '2';
+            document.getElementById('employeePagibigContribution').value = employee.pagIbigEmployeeContributionRate || '1';
+            document.getElementById('employeeTaxMethod').value = employee.taxCalculationMethod || 'bir-train-law';
+            
+            // Show configuration sections if benefits are enabled
+            document.getElementById('sssConfiguration').style.display = employee.hasSSS ? 'block' : 'none';
+            document.getElementById('philHealthConfiguration').style.display = employee.hasPhilHealth ? 'block' : 'none';
+            document.getElementById('pagibigConfiguration').style.display = employee.hasPagibig ? 'block' : 'none';
 
             openModal('employeeModal');
             
@@ -1100,6 +1114,14 @@ class EmployeeManager {
                 hasSSS: document.getElementById('employeeHasSSS')?.checked || false,
                 hasPhilHealth: document.getElementById('employeeHasPhilHealth')?.checked || false,
                 hasPagibig: document.getElementById('employeeHasPagibig')?.checked || false,
+                // Detailed Government Deduction Configuration
+                sssContributionMethod: document.getElementById('employeeSssMethod')?.value || 'table-based',
+                sssEmployeeShareRate: parseFloat(document.getElementById('employeeSssRate')?.value || '4.5') || 4.5,
+                philHealthRate: parseFloat(document.getElementById('employeePhilHealthRate')?.value || '2') || 2,
+                philHealthEmployeeShareRate: parseFloat(document.getElementById('employeePhilHealthShare')?.value || '50') || 50,
+                pagIbigRate: parseFloat(document.getElementById('employeePagibigRate')?.value || '2') || 2,
+                pagIbigEmployeeContributionRate: parseFloat(document.getElementById('employeePagibigContribution')?.value || '1') || 1,
+                taxCalculationMethod: document.getElementById('employeeTaxMethod')?.value || 'bir-train-law',
                 // Backend compatibility
                 isActive: true,
                 syncStatus: 'synced', // Direct MongoDB save

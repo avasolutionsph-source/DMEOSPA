@@ -2707,20 +2707,87 @@
                                 <small style="color: #666; font-size: 0.85em;">Used for overtime and deduction calculations</small>
                             </div>
                             <div class="form-group">
-                                <label>Government Benefits</label>
-                                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                    <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
-                                        <input type="checkbox" id="employeeHasSSS" style="margin: 0;">
-                                        <span>SSS Contributions</span>
-                                    </label>
-                                    <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
-                                        <input type="checkbox" id="employeeHasPhilHealth" style="margin: 0;">
-                                        <span>PhilHealth</span>
-                                    </label>
-                                    <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
-                                        <input type="checkbox" id="employeeHasPagibig" style="margin: 0;">
-                                        <span>Pag-IBIG</span>
-                                    </label>
+                                <label>Government Deductions</label>
+                                <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; background: #f9fafb;">
+                                    
+                                    <!-- SSS Configuration -->
+                                    <div style="margin-bottom: 1rem;">
+                                        <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">
+                                            <input type="checkbox" id="employeeHasSSS" style="margin: 0;">
+                                            <span>SSS Contributions</span>
+                                        </label>
+                                        <div id="sssConfiguration" style="margin-left: 1.5rem; display: none;">
+                                            <div style="display: flex; gap: 1rem; margin-bottom: 0.5rem;">
+                                                <div style="flex: 1;">
+                                                    <label style="font-size: 0.8rem; color: #666;">SSS Contribution</label>
+                                                    <select id="employeeSssMethod" class="form-input" style="font-size: 0.85rem;">
+                                                        <option value="table-based">Table-based (Philippine SSS Table)</option>
+                                                        <option value="percentage">Percentage-based</option>
+                                                    </select>
+                                                </div>
+                                                <div style="flex: 1;">
+                                                    <label style="font-size: 0.8rem; color: #666;">Employee Share (%)</label>
+                                                    <input type="number" id="employeeSssRate" class="form-input" step="0.1" min="0" max="100" value="4.5" placeholder="4.5" style="font-size: 0.85rem;">
+                                                    <small style="color: #666; font-size: 0.75em;">Employee share percentage (employer matches)</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- PhilHealth Configuration -->
+                                    <div style="margin-bottom: 1rem;">
+                                        <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">
+                                            <input type="checkbox" id="employeeHasPhilHealth" style="margin: 0;">
+                                            <span>PhilHealth</span>
+                                        </label>
+                                        <div id="philHealthConfiguration" style="margin-left: 1.5rem; display: none;">
+                                            <div style="display: flex; gap: 1rem; margin-bottom: 0.5rem;">
+                                                <div style="flex: 1;">
+                                                    <label style="font-size: 0.8rem; color: #666;">PhilHealth Rate (%)</label>
+                                                    <input type="number" id="employeePhilHealthRate" class="form-input" step="0.1" min="0" max="100" value="2" placeholder="2" style="font-size: 0.85rem;">
+                                                    <small style="color: #666; font-size: 0.75em;">Total PhilHealth rate</small>
+                                                </div>
+                                                <div style="flex: 1;">
+                                                    <label style="font-size: 0.8rem; color: #666;">Employee Share (%)</label>
+                                                    <input type="number" id="employeePhilHealthShare" class="form-input" step="0.1" min="0" max="100" value="50" placeholder="50" style="font-size: 0.85rem;">
+                                                    <small style="color: #666; font-size: 0.75em;">Employee share percentage (employer matches)</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Pag-IBIG Configuration -->
+                                    <div style="margin-bottom: 1rem;">
+                                        <label class="checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">
+                                            <input type="checkbox" id="employeeHasPagibig" style="margin: 0;">
+                                            <span>Pag-IBIG</span>
+                                        </label>
+                                        <div id="pagibigConfiguration" style="margin-left: 1.5rem; display: none;">
+                                            <div style="display: flex; gap: 1rem; margin-bottom: 0.5rem;">
+                                                <div style="flex: 1;">
+                                                    <label style="font-size: 0.8rem; color: #666;">Pag-IBIG Rate (%)</label>
+                                                    <input type="number" id="employeePagibigRate" class="form-input" step="0.1" min="0" max="100" value="2" placeholder="2" style="font-size: 0.85rem;">
+                                                    <small style="color: #666; font-size: 0.75em;">Total Pag-IBIG rate</small>
+                                                </div>
+                                                <div style="flex: 1;">
+                                                    <label style="font-size: 0.8rem; color: #666;">Employee Contribution (%)</label>
+                                                    <input type="number" id="employeePagibigContribution" class="form-input" step="0.1" min="0" max="100" value="1" placeholder="1" style="font-size: 0.85rem;">
+                                                    <small style="color: #666; font-size: 0.75em;">Employee contribution percentage</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Tax Calculation -->
+                                    <div>
+                                        <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display: block;">Tax Calculation</label>
+                                        <select id="employeeTaxMethod" class="form-input" style="font-size: 0.85rem;">
+                                            <option value="bir-train-law">BIR Tax Table (Train Law)</option>
+                                            <option value="bir-old-law">BIR Tax Table (Old Law)</option>
+                                            <option value="custom">Custom Tax Configuration</option>
+                                        </select>
+                                    </div>
+                                    
                                 </div>
                             </div>
                         </div>
@@ -2734,6 +2801,42 @@
             </div>
         </div>
     </div>
+    
+    <!-- Government Deductions Toggle Script -->
+    <script>
+    // Toggle government deduction configuration sections
+    function toggleGovernmentDeductionSections() {
+        // SSS Configuration Toggle
+        const sssCheckbox = document.getElementById('employeeHasSSS');
+        const sssConfig = document.getElementById('sssConfiguration');
+        if (sssCheckbox && sssConfig) {
+            sssCheckbox.addEventListener('change', function() {
+                sssConfig.style.display = this.checked ? 'block' : 'none';
+            });
+        }
+        
+        // PhilHealth Configuration Toggle
+        const philHealthCheckbox = document.getElementById('employeeHasPhilHealth');
+        const philHealthConfig = document.getElementById('philHealthConfiguration');
+        if (philHealthCheckbox && philHealthConfig) {
+            philHealthCheckbox.addEventListener('change', function() {
+                philHealthConfig.style.display = this.checked ? 'block' : 'none';
+            });
+        }
+        
+        // Pag-IBIG Configuration Toggle
+        const pagibigCheckbox = document.getElementById('employeeHasPagibig');
+        const pagibigConfig = document.getElementById('pagibigConfiguration');
+        if (pagibigCheckbox && pagibigConfig) {
+            pagibigCheckbox.addEventListener('change', function() {
+                pagibigConfig.style.display = this.checked ? 'block' : 'none';
+            });
+        }
+    }
+    
+    // Initialize toggles when DOM is ready
+    document.addEventListener('DOMContentLoaded', toggleGovernmentDeductionSections);
+    </script>
 
     <!-- Employee View Modal -->
     <div id="employeeViewModal" class="modal">

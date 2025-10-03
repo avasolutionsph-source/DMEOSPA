@@ -186,6 +186,54 @@ const employeeSchema = new mongoose.Schema({
     default: false
   },
   
+  // SSS Detailed Configuration
+  sssContributionMethod: {
+    type: String,
+    enum: ['table-based', 'percentage'],
+    default: 'table-based'
+  },
+  sssEmployeeShareRate: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 4.5 // Standard employee share percentage
+  },
+  
+  // PhilHealth Detailed Configuration
+  philHealthRate: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 2 // Standard 2% of salary
+  },
+  philHealthEmployeeShareRate: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 50 // Employee pays 50%, employer pays 50%
+  },
+  
+  // Pag-IBIG Detailed Configuration
+  pagIbigRate: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 2 // Standard 2% of salary
+  },
+  pagIbigEmployeeContributionRate: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 1 // Standard 1% employee contribution
+  },
+  
+  // Tax Calculation Configuration
+  taxCalculationMethod: {
+    type: String,
+    enum: ['bir-train-law', 'bir-old-law', 'custom'],
+    default: 'bir-train-law'
+  },
+  
   // Government identification numbers
   sssNumber: {
     type: String,

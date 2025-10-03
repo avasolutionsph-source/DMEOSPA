@@ -24,7 +24,11 @@ router.post('/', withErrorHandling(async (req, res) => {
     const { firstName, lastName, email, role, phone, position, department, 
             commissionRate, assignedRooms, createLogin, temporaryPassword,
             wageType, dailyRate, monthlyRate, hourlyRate, overtimeMultiplier,
-            hasSSS, hasPhilHealth, hasPagibig } = req.body;
+            hasSSS, hasPhilHealth, hasPagibig,
+            sssContributionMethod, sssEmployeeShareRate,
+            philHealthRate, philHealthEmployeeShareRate,
+            pagIbigRate, pagIbigEmployeeContributionRate,
+            taxCalculationMethod } = req.body;
     
     // Validate required fields
     if (!firstName || !lastName || !role) {
@@ -98,6 +102,14 @@ router.post('/', withErrorHandling(async (req, res) => {
         hasSSS: hasSSS || false,
         hasPhilHealth: hasPhilHealth || false,
         hasPagibig: hasPagibig || false,
+        // Detailed government deduction configuration
+        sssContributionMethod: sssContributionMethod || 'table-based',
+        sssEmployeeShareRate: parseFloat(sssEmployeeShareRate) || 4.5,
+        philHealthRate: parseFloat(philHealthRate) || 2,
+        philHealthEmployeeShareRate: parseFloat(philHealthEmployeeShareRate) || 50,
+        pagIbigRate: parseFloat(pagIbigRate) || 2,
+        pagIbigEmployeeContributionRate: parseFloat(pagIbigEmployeeContributionRate) || 1,
+        taxCalculationMethod: taxCalculationMethod || 'bir-train-law',
         isActive: true
     });
     
