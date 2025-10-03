@@ -1031,7 +1031,17 @@ class EmployeeManager {
             document.getElementById('employeeDailyRate').value = (employee.dailyRate && employee.dailyRate > 0) ? employee.dailyRate : '';
             document.getElementById('employeeMonthlyRate').value = (employee.monthlyRate && employee.monthlyRate > 0) ? employee.monthlyRate : '';
             document.getElementById('employeeHourlyRate').value = (employee.hourlyRate && employee.hourlyRate > 0) ? employee.hourlyRate : '';
+            
+            // Handle overtime pay configuration
+            const hasOvertime = employee.overtimeMultiplier && employee.overtimeMultiplier > 1;
+            document.getElementById('employeeHasOvertime').checked = hasOvertime;
             document.getElementById('employeeOvertimeMultiplier').value = employee.overtimeMultiplier || '1.25';
+            
+            // Show/hide overtime multiplier section based on checkbox
+            const overtimeSection = document.getElementById('overtimeMultiplierSection');
+            if (overtimeSection) {
+                overtimeSection.style.display = hasOvertime ? 'block' : 'none';
+            }
             
             // Fill government benefits checkboxes
             document.getElementById('employeeHasSSS').checked = employee.hasSSS || false;
@@ -1275,7 +1285,9 @@ class EmployeeManager {
                 dailyRate: parseFloat(document.getElementById('employeeDailyRate')?.value || '0') || 0,
                 monthlyRate: parseFloat(document.getElementById('employeeMonthlyRate')?.value || '0') || 0,
                 hourlyRate: parseFloat(document.getElementById('employeeHourlyRate')?.value || '0') || 0,
-                overtimeMultiplier: parseFloat(document.getElementById('employeeOvertimeMultiplier')?.value || '1.25') || 1.25,
+                overtimeMultiplier: document.getElementById('employeeHasOvertime')?.checked ? 
+                    (parseFloat(document.getElementById('employeeOvertimeMultiplier')?.value || '1.25') || 1.25) : 
+                    1.0, // Set to 1.0 if overtime is disabled
                 // Government Benefits
                 hasSSS: document.getElementById('employeeHasSSS')?.checked || false,
                 hasPhilHealth: document.getElementById('employeeHasPhilHealth')?.checked || false,
@@ -2085,6 +2097,25 @@ window.setMonthlyRateZero = function() {
         monthlyRateField.focus();
         window.calculateEmployeeRatesFromMonthly();
         console.log('✅ Monthly rate set to ₱0');
+    }
+};
+
+// Overtime toggle function
+window.toggleOvertimeMultiplier = function() {
+    const checkbox = document.getElementById('employeeHasOvertime');
+    const section = document.getElementById('overtimeMultiplierSection');
+    const multiplierInput = document.getElementById('employeeOvertimeMultiplier');
+    
+    if (checkbox && section && multiplierInput) {
+        if (checkbox.checked) {
+            section.style.display = 'block';
+            multiplierInput.value = multiplierInput.value || '1.25'; // Set default if empty
+            console.log('✅ Overtime pay enabled with multiplier:', multiplierInput.value);
+        } else {
+            section.style.display = 'none';
+            multiplierInput.value = ''; // Clear value when disabled
+            console.log('✅ Overtime pay disabled');
+        }
     }
 };
 
