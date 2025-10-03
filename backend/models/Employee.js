@@ -154,6 +154,14 @@ const employeeSchema = new mongoose.Schema({
     default: 62.50 // Current PHP minimum wage per hour
   },
   
+  // Overtime multiplier for payroll calculations
+  overtimeMultiplier: {
+    type: Number,
+    min: 1.0,
+    max: 3.0,
+    default: 1.25 // Standard overtime rate (125%)
+  },
+  
   // Additional compensation
   allowances: {
     type: Number,

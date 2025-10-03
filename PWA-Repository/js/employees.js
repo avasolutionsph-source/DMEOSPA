@@ -494,6 +494,9 @@ class EmployeeManager {
             let avgSale = 0;
             let allTransactions = [];
 
+            // CRITICAL FIX: Declare token in proper scope for later use in attendance fetch
+            const token = this.getAuthToken();
+
             // Smart caching for employee stats to avoid duplicate API calls
             const cacheKey = 'employee_stats_transactions';
             const cachedTransactions = this.getCachedData(cacheKey);
@@ -504,7 +507,7 @@ class EmployeeManager {
                 allTransactions = cachedTransactions.data;
             } else {
                 // Fetch fresh data only when cache is expired
-                const token = this.getAuthToken();
+                // Token already declared above
                 let apiTransactions = [];
                 let localTransactions = [];
                 
