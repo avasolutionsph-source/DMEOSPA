@@ -21,7 +21,7 @@ class StateHelpers {
                 );
             } else {
                 // Fallback to direct fetch
-                const serverUrl = window.API_CONFIG ? window.API_CONFIG.BASE_URL : 'https://daetspa-backend.onrender.com';
+                const serverUrl = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
                 const response = await fetch(`${serverUrl}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

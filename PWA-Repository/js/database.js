@@ -321,7 +321,8 @@ class Database {
                     const settingsStore = this.db.createObjectStore('settings', { keyPath: 'key' });
                     // Add default settings
                     settingsStore.add({ key: 'businessName', value: 'Business' });
-                    settingsStore.add({ key: 'apiUrl', value: 'https://daetspa-backend.onrender.com' }); // Unified Backend URL
+                    const defaultUrl = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
+                    settingsStore.add({ key: 'apiUrl', value: defaultUrl }); // Unified Backend URL
                     settingsStore.add({ key: 'lastSync', value: null });
                     settingsStore.add({ key: 'currency', value: 'PHP' });
                     settingsStore.add({ key: 'currencySymbol', value: '₱' });

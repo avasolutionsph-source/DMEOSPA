@@ -22,7 +22,7 @@ class ConfigurationService {
         this.schema = {
             // API Configuration
             apiUrl: {
-                default: 'https://daetspa-backend.onrender.com',
+                default: () => window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com',
                 sources: ['indexedDB:settings:apiUrl:value', 'hardcoded', 'localStorage:API_URL'],
                 type: 'string',
                 category: 'api'
@@ -787,7 +787,7 @@ class IndexedDBAdapter {
 class HardcodedAdapter {
     constructor() {
         this.hardcodedValues = {
-            apiUrl: 'https://daetspa-backend.onrender.com',
+            apiUrl: () => window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com',
             businessName: 'Ava Solutions',
             theme: 'auto',
             performanceMode: 'auto',

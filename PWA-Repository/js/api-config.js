@@ -34,6 +34,78 @@
         // Cache settings
         CACHE_DURATION: 5 * 60 * 1000, // 5 minutes
         
+        // Database Configuration
+        DB_NAME: 'AvaSolutionsDB',
+        DB_VERSION: 15,
+        MAX_INIT_RETRIES: 3,
+        INIT_RETRY_DELAY: 100,
+        
+        // Cache TTL Values (in milliseconds)
+        CACHE_TTL: {
+            EMPLOYEES: 5 * 60 * 1000,    // 5 minutes
+            PRODUCTS: 10 * 60 * 1000,    // 10 minutes
+            INVENTORY: 2 * 60 * 1000,    // 2 minutes
+            TRANSACTIONS: 30 * 1000,     // 30 seconds
+            CUSTOMERS: 15 * 60 * 1000,   // 15 minutes
+            SETTINGS: 60 * 60 * 1000     // 1 hour
+        },
+        
+        // UI/UX Constants
+        UI: {
+            BUTTON_LOADING_DELAY: 100,
+            DEFAULT_PAGE_SIZE: 50,
+            MAX_PAGE_SIZE: 100,
+            FADE_DURATION: 300,
+            DEBOUNCE_DELAY: 300,
+            CLEANUP_INTERVAL: 4 * 60 * 60 * 1000,  // 4 hours
+            LOW_MEMORY_THRESHOLD: 50 * 1024 * 1024 // 50MB
+        },
+        
+        // Performance Constants
+        PERFORMANCE: {
+            BATCH_SIZE: 10,
+            QUEUE_PROCESSING_INTERVAL: 1000,
+            MAX_CACHE_SIZE: 100,
+            MEMORY_CHECK_INTERVAL: 30000,
+            SYNC_BATCH_SIZE: 25,
+            MAX_SYNC_RETRIES: 5
+        },
+        
+        // Logging Constants
+        LOGGING: {
+            ENABLE_CONSOLE_IN_PRODUCTION: false,
+            MAX_LOG_ENTRIES: 1000,
+            LEVELS: {
+                ERROR: 'error',
+                WARN: 'warn', 
+                INFO: 'info',
+                DEBUG: 'debug'
+            },
+            CATEGORIES: {
+                API: 'API',
+                AUTH: 'AUTH',
+                DATABASE: 'DATABASE', 
+                SYNC: 'SYNC',
+                UI: 'UI',
+                PERFORMANCE: 'PERFORMANCE'
+            }
+        },
+        
+        // Validation Constants
+        VALIDATION: {
+            MAX_STRING_LENGTH: 255,
+            MAX_TEXT_LENGTH: 1000,
+            MAX_EMAIL_LENGTH: 100,
+            MAX_PHONE_LENGTH: 20,
+            MAX_PRICE: 999999.99,
+            MIN_PRICE: 0.01,
+            MAX_QUANTITY: 9999,
+            MIN_QUANTITY: 0,
+            EMAIL_PATTERN: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+            PHONE_PATTERN: /^[\+]?[1-9][\d]{0,15}$/,
+            PASSWORD_MIN_LENGTH: 8
+        },
+        
         // Feature flags
         ENABLE_WEBSOCKETS: false, // Disabled until backend supports it
         ENABLE_OFFLINE_SYNC: true,
@@ -373,6 +445,29 @@
                 });
             }
             return null;
+        }
+    };
+    
+    // Conditional logging helper
+    API_CONFIG.log = function(level, message, data = {}) {
+        const isProduction = window.location.hostname !== 'localhost' && 
+                           window.location.hostname !== '127.0.0.1';
+        
+        // Skip console logging in production unless explicitly enabled
+        if (isProduction && !this.LOGGING.ENABLE_CONSOLE_IN_PRODUCTION) {
+            return;
+        }
+        
+        // Use existing logger if available
+        if (window.logger && typeof window.logger[level] === 'function') {
+            window.logger[level](message, data);
+            return;
+        }
+        
+        // Fallback to console with level check
+        const logLevel = this.LOGGING.LEVELS[level.toUpperCase()] || level;
+        if (console[logLevel]) {
+            console[logLevel](`[${data.category || 'APP'}] ${message}`, data);
         }
     };
     

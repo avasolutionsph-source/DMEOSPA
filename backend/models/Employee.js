@@ -186,72 +186,23 @@ const employeeSchema = new mongoose.Schema({
     default: false
   },
   
-  // SSS Detailed Configuration
-  sssContributionMethod: {
-    type: String,
-    enum: ['table-based', 'percentage', 'fixed-amount'],
-    default: 'table-based'
-  },
-  sssEmployeeShareRate: {
+  // Government Deductions (Simplified - Fixed PHP Amounts Only)
+  sssDeductionAmount: {
     type: Number,
     min: 0,
-    default: 4.5 // Standard employee share percentage or fixed amount
-  },
-  sssDeductionType: {
-    type: String,
-    enum: ['percentage', 'fixed-amount'],
-    default: 'percentage'
+    default: 0 // Fixed amount in PHP for SSS deduction
   },
   
-  // PhilHealth Detailed Configuration
-  philHealthRate: {
+  philHealthDeductionAmount: {
     type: Number,
     min: 0,
-    default: 2 // Standard 2% of salary or fixed amount
-  },
-  philHealthEmployeeShareRate: {
-    type: Number,
-    min: 0,
-    default: 50 // Employee pays 50%, employer pays 50% or fixed amount
-  },
-  philHealthDeductionType: {
-    type: String,
-    enum: ['percentage', 'fixed-amount'],
-    default: 'percentage'
-  },
-  philHealthEmployeeDeductionType: {
-    type: String,
-    enum: ['percentage', 'fixed-amount'],
-    default: 'percentage'
+    default: 0 // Fixed amount in PHP for PhilHealth deduction
   },
   
-  // Pag-IBIG Detailed Configuration
-  pagIbigRate: {
+  pagIbigDeductionAmount: {
     type: Number,
     min: 0,
-    default: 2 // Standard 2% of salary or fixed amount
-  },
-  pagIbigEmployeeContributionRate: {
-    type: Number,
-    min: 0,
-    default: 1 // Standard 1% employee contribution or fixed amount
-  },
-  pagIbigDeductionType: {
-    type: String,
-    enum: ['percentage', 'fixed-amount'],
-    default: 'percentage'
-  },
-  pagIbigEmployeeDeductionType: {
-    type: String,
-    enum: ['percentage', 'fixed-amount'],
-    default: 'percentage'
-  },
-  
-  // Tax Calculation Configuration
-  taxCalculationMethod: {
-    type: String,
-    enum: ['bir-train-law', 'bir-old-law', 'custom'],
-    default: 'bir-train-law'
+    default: 0 // Fixed amount in PHP for Pag-IBIG deduction
   },
   
   // Government identification numbers

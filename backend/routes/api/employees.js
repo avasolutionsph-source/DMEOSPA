@@ -25,10 +25,7 @@ router.post('/', withErrorHandling(async (req, res) => {
             commissionRate, assignedRooms, createLogin, temporaryPassword,
             wageType, dailyRate, monthlyRate, hourlyRate, overtimeMultiplier,
             hasSSS, hasPhilHealth, hasPagibig,
-            sssContributionMethod, sssEmployeeShareRate, sssDeductionType,
-            philHealthRate, philHealthEmployeeShareRate, philHealthDeductionType, philHealthEmployeeDeductionType,
-            pagIbigRate, pagIbigEmployeeContributionRate, pagIbigDeductionType, pagIbigEmployeeDeductionType,
-            taxCalculationMethod } = req.body;
+            sssDeductionAmount, philHealthDeductionAmount, pagIbigDeductionAmount } = req.body;
     
     // Validate required fields
     if (!firstName || !lastName || !role) {
@@ -102,19 +99,10 @@ router.post('/', withErrorHandling(async (req, res) => {
         hasSSS: hasSSS || false,
         hasPhilHealth: hasPhilHealth || false,
         hasPagibig: hasPagibig || false,
-        // Detailed government deduction configuration
-        sssContributionMethod: sssContributionMethod || 'table-based',
-        sssEmployeeShareRate: parseFloat(sssEmployeeShareRate) || 4.5,
-        sssDeductionType: sssDeductionType || 'percentage',
-        philHealthRate: parseFloat(philHealthRate) || 2,
-        philHealthEmployeeShareRate: parseFloat(philHealthEmployeeShareRate) || 50,
-        philHealthDeductionType: philHealthDeductionType || 'percentage',
-        philHealthEmployeeDeductionType: philHealthEmployeeDeductionType || 'percentage',
-        pagIbigRate: parseFloat(pagIbigRate) || 2,
-        pagIbigEmployeeContributionRate: parseFloat(pagIbigEmployeeContributionRate) || 1,
-        pagIbigDeductionType: pagIbigDeductionType || 'percentage',
-        pagIbigEmployeeDeductionType: pagIbigEmployeeDeductionType || 'percentage',
-        taxCalculationMethod: taxCalculationMethod || 'bir-train-law',
+        // Government deduction amounts (simplified)
+        sssDeductionAmount: parseFloat(sssDeductionAmount) || 0,
+        philHealthDeductionAmount: parseFloat(philHealthDeductionAmount) || 0,
+        pagIbigDeductionAmount: parseFloat(pagIbigDeductionAmount) || 0,
         isActive: true
     });
     
