@@ -7,10 +7,18 @@ class ShiftScheduleManager {
         this.employees = [];
         this.currentSchedule = null;
         this.initialized = false;
+        this.buttonAttached = false;
+        this.retryCount = 0;
+        this.maxRetries = 10;
         
-        // Initialize when DOM is ready
+        console.log('🗓️ Shift Schedule Manager constructor called');
+        
+        // Initialize when DOM is ready with better timing control
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.init());
+        } else if (document.readyState === 'interactive' || document.readyState === 'complete') {
+            // DOM is already ready, but wait a bit for all scripts to load
+            setTimeout(() => this.init(), 100);
         } else {
             this.init();
         }
@@ -25,10 +33,32 @@ class ShiftScheduleManager {
             return;
         }
         
+        // Wait for utilities to be available
+        await this.waitForUtilities();
+        
         this.setupEventListeners();
+        this.setupOtherEventListeners();
         this.initialized = true;
         
         console.log('✅ Shift Schedule Manager initialized');
+    }
+    
+    async waitForUtilities(maxWait = 5000) {
+        const startTime = Date.now();
+        
+        while (!window.openModal || !window.closeModal) {
+            if (Date.now() - startTime > maxWait) {
+                console.warn('⚠️ Modal utilities not available after timeout, will use fallback');
+                break;
+            }
+            
+            console.log('⏳ Waiting for modal utilities to load...');
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        if (window.openModal && window.closeModal) {
+            console.log('✅ Modal utilities are available');
+        }
     }
     
     hasPermission() {
@@ -36,30 +66,85 @@ class ShiftScheduleManager {
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
         const userRole = userData.role || (window.authSystem?.currentUser?.role);
         
+        console.log('🔐 Permission check:', {
+            userData,
+            userRole,
+            authSystemUser: window.authSystem?.currentUser,
+            hasPermission: ['owner', 'manager'].includes(userRole)
+        });
+        
         return ['owner', 'manager'].includes(userRole);
     }
     
+    // Debug method to help identify authentication issues
+    debugAuthStatus() {
+        console.log('🔍 Authentication Debug Status:');
+        console.log('- API URL:', this.getApiUrl());
+        console.log('- Auth Token:', this.getAuthToken() ? 'Present' : 'Missing');
+        console.log('- Token preview:', this.getAuthToken()?.substring(0, 30) + '...');
+        console.log('- User Data:', JSON.parse(localStorage.getItem('userData') || '{}'));
+        console.log('- Auth System:', window.authSystem?.currentUser);
+        console.log('- Has Permission:', this.hasPermission());
+        console.log('- API_CONFIG:', window.API_CONFIG ? 'Available' : 'Missing');
+        console.log('- Location:', window.location.hostname);
+    }
+    
     setupEventListeners() {
-        // Add Schedule button - use event delegation for reliability
+        console.log('🗓️ Setting up event listeners...');
+        
+        // Global event delegation for maximum reliability
         document.addEventListener('click', (e) => {
-            if (e.target && e.target.id === 'addShiftScheduleBtn') {
-                console.log('🗓️ Create Schedule button clicked');
+            if (e.target && (e.target.id === 'addShiftScheduleBtn' || e.target.closest('#addShiftScheduleBtn'))) {
+                console.log('🗓️ Create Schedule button clicked via delegation');
+                e.preventDefault();
+                e.stopPropagation();
                 this.showCreateScheduleModal();
+                return false;
             }
         });
         
-        // Also try direct attachment for immediate availability
-        const addScheduleBtn = document.getElementById('addShiftScheduleBtn');
-        if (addScheduleBtn) {
-            console.log('✅ Found addShiftScheduleBtn, attaching event listener');
-            addScheduleBtn.addEventListener('click', () => {
-                console.log('🗓️ Create Schedule button clicked (direct)');
-                this.showCreateScheduleModal();
-            });
-        } else {
-            console.warn('⚠️ addShiftScheduleBtn not found during initialization');
-        }
+        // Try to attach directly to button with retry mechanism
+        this.attachButtonListener();
         
+        // Set up a periodic check to ensure button is attached
+        this.buttonCheckInterval = setInterval(() => {
+            if (!this.buttonAttached && this.retryCount < this.maxRetries) {
+                this.attachButtonListener();
+            } else if (this.retryCount >= this.maxRetries) {
+                console.warn('⚠️ Max retries reached for button attachment');
+                clearInterval(this.buttonCheckInterval);
+            }
+        }, 500);
+    }
+    
+    attachButtonListener() {
+        const addScheduleBtn = document.getElementById('addShiftScheduleBtn');
+        if (addScheduleBtn && !this.buttonAttached) {
+            console.log('✅ Found addShiftScheduleBtn, attaching direct event listener');
+            
+            // Remove any existing listeners to avoid duplicates
+            addScheduleBtn.removeEventListener('click', this.boundClickHandler);
+            
+            // Create bound handler for removal later
+            this.boundClickHandler = (e) => {
+                console.log('🗓️ Create Schedule button clicked (direct)');
+                e.preventDefault();
+                e.stopPropagation();
+                this.showCreateScheduleModal();
+                return false;
+            };
+            
+            addScheduleBtn.addEventListener('click', this.boundClickHandler);
+            this.buttonAttached = true;
+            clearInterval(this.buttonCheckInterval);
+            console.log('✅ Button listener attached successfully');
+        } else if (!addScheduleBtn) {
+            this.retryCount++;
+            console.warn(`⚠️ addShiftScheduleBtn not found (attempt ${this.retryCount}/${this.maxRetries})`);
+        }
+    }
+    
+    setupOtherEventListeners() {
         // Search functionality
         const searchInput = document.getElementById('scheduleSearchInput');
         if (searchInput) {
@@ -109,64 +194,101 @@ class ShiftScheduleManager {
     
     async loadSchedules() {
         try {
+            console.log('📅 Loading shift schedules...');
+            
             const token = this.getAuthToken();
             if (!token) {
-                throw new Error('No authentication token found');
+                console.error('❌ No authentication token found');
+                this.showError('Authentication required. Please log in again.');
+                return;
             }
             
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/shift-schedules`, {
+            const apiUrl = this.getApiUrl();
+            const url = `${apiUrl}/api/shift-schedules`;
+            
+            console.log('🌐 Making API request to:', url);
+            console.log('🔑 Using token:', token.substring(0, 20) + '...');
+            
+            const response = await fetch(url, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
             
+            console.log('📡 Response status:', response.status);
+            
             if (!response.ok) {
-                throw new Error(`Failed to load schedules: ${response.status}`);
+                const errorText = await response.text();
+                console.error('❌ API Error:', response.status, errorText);
+                throw new Error(`Failed to load schedules: ${response.status} - ${errorText}`);
             }
             
             const result = await response.json();
             this.schedules = result.data || [];
             
-            console.log(`📅 Loaded ${this.schedules.length} shift schedules`);
+            console.log(`✅ Loaded ${this.schedules.length} shift schedules`);
             
             this.updateAnalytics();
             this.renderScheduleGrid();
             
         } catch (error) {
             console.error('❌ Error loading shift schedules:', error);
-            this.showError('Failed to load shift schedules');
+            this.showError(`Failed to load shift schedules: ${error.message}`);
         }
     }
     
     async loadEmployees() {
         try {
+            console.log('👥 Loading employees...');
+            
             const token = this.getAuthToken();
             if (!token) {
-                throw new Error('No authentication token found');
+                console.error('❌ No authentication token found for employees');
+                this.showError('Authentication required. Please log in again.');
+                return;
             }
             
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/employees`, {
+            const apiUrl = this.getApiUrl();
+            const url = `${apiUrl}/api/employees`;
+            
+            console.log('🌐 Making employees API request to:', url);
+            console.log('🔑 Using token for employees:', token.substring(0, 20) + '...');
+            
+            const response = await fetch(url, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
             
+            console.log('📡 Employees response status:', response.status);
+            
             if (!response.ok) {
-                throw new Error(`Failed to load employees: ${response.status}`);
+                const errorText = await response.text();
+                console.error('❌ Employees API Error:', response.status, errorText);
+                
+                if (response.status === 401) {
+                    this.showError('Authentication expired. Please log in again.');
+                    return;
+                } else if (response.status === 403) {
+                    this.showError('Access denied. Manager or owner role required.');
+                    return;
+                }
+                
+                throw new Error(`Failed to load employees: ${response.status} - ${errorText}`);
             }
             
             const result = await response.json();
             this.employees = result.data || [];
             
-            console.log(`👥 Loaded ${this.employees.length} employees`);
+            console.log(`✅ Loaded ${this.employees.length} employees`);
             
             this.populateEmployeeDropdown();
             
         } catch (error) {
             console.error('❌ Error loading employees:', error);
-            this.showError('Failed to load employees');
+            this.showError(`Failed to load employees: ${error.message}`);
         }
     }
     
@@ -379,50 +501,148 @@ class ShiftScheduleManager {
     showCreateScheduleModal() {
         console.log('🗓️ Opening Create Shift Schedule Modal...');
         
-        // Ensure modal elements exist
-        const form = document.getElementById('shiftScheduleForm');
+        try {
+            // Ensure modal elements exist
+            const form = document.getElementById('shiftScheduleForm');
+            const modal = document.getElementById('shiftScheduleModal');
+            
+            if (!form) {
+                console.error('❌ Shift schedule form not found');
+                alert('Error: Schedule form not found. Please refresh the page.');
+                return;
+            }
+            
+            if (!modal) {
+                console.error('❌ Shift schedule modal not found');
+                alert('Error: Schedule modal not found. Please refresh the page.');
+                return;
+            }
+            
+            console.log('✅ Modal and form elements found');
+            
+            // Reset form
+            form.reset();
+            const scheduleIdInput = document.getElementById('scheduleId');
+            const modalTitle = document.getElementById('shiftScheduleModalTitle');
+            
+            if (scheduleIdInput) scheduleIdInput.value = '';
+            if (modalTitle) modalTitle.textContent = 'Create Shift Schedule';
+            
+            // Set default effective date to today
+            const today = new Date().toISOString().split('T')[0];
+            const effectiveDateInput = document.getElementById('scheduleEffectiveDate');
+            if (effectiveDateInput) {
+                effectiveDateInput.value = today;
+                console.log('✅ Set effective date to:', today);
+            }
+            
+            // Reset all shift selects to 'off'
+            const shiftSelects = document.querySelectorAll('.day-shift-select');
+            console.log(`🔄 Resetting ${shiftSelects.length} shift selects`);
+            shiftSelects.forEach(select => {
+                select.value = 'off';
+            });
+            
+            // Disable time inputs initially
+            this.updateTimeInputStates();
+            
+            // Load employees if not already loaded
+            if (this.employees.length === 0) {
+                console.log('📥 Loading employees for dropdown...');
+                this.loadEmployees();
+            } else {
+                console.log(`✅ ${this.employees.length} employees already loaded`);
+            }
+            
+            // Show modal with multiple fallback methods
+            this.openModalWithFallback(modal);
+            
+        } catch (error) {
+            console.error('❌ Error in showCreateScheduleModal:', error);
+            alert('Error opening schedule modal. Please try again or refresh the page.');
+        }
+    }
+    
+    openModalWithFallback(modal) {
+        console.log('🚀 Attempting to open modal...');
+        
+        let modalOpened = false;
+        
+        // Method 1: Use global openModal function
+        if (typeof window.openModal === 'function') {
+            console.log('✅ Using global openModal function');
+            try {
+                window.openModal('shiftScheduleModal');
+                modalOpened = true;
+                console.log('✅ Modal opened successfully with openModal');
+            } catch (error) {
+                console.warn('⚠️ openModal failed:', error);
+            }
+        }
+        
+        // Method 2: Direct DOM manipulation if openModal failed
+        if (!modalOpened) {
+            console.log('🔄 Fallback: Using direct DOM manipulation');
+            try {
+                // Remove any conflicting styles
+                modal.style.removeProperty('display');
+                modal.style.removeProperty('position');
+                modal.style.removeProperty('align-items');
+                modal.style.removeProperty('justify-content');
+                
+                // Apply modal styles
+                modal.style.display = 'flex';
+                modal.style.position = 'fixed';
+                modal.style.top = '0';
+                modal.style.left = '0';
+                modal.style.width = '100%';
+                modal.style.height = '100%';
+                modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                modal.style.alignItems = 'center';
+                modal.style.justifyContent = 'center';
+                modal.style.zIndex = '1000';
+                
+                modal.classList.add('active');
+                modalOpened = true;
+                console.log('✅ Modal opened successfully with fallback');
+            } catch (error) {
+                console.error('❌ Fallback modal opening failed:', error);
+            }
+        }
+        
+        // Method 3: Last resort - force show
+        if (!modalOpened) {
+            console.log('🆘 Last resort: Force showing modal');
+            modal.style.display = 'block !important';
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+            console.log('⚠️ Modal forced to show - may not be perfectly styled');
+        }
+        
+        // Add escape key listener
+        this.addEscapeListener();
+    }
+    
+    addEscapeListener() {
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                console.log('🔑 Escape key pressed, closing modal');
+                this.closeModal();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+    }
+    
+    closeModal() {
         const modal = document.getElementById('shiftScheduleModal');
-        
-        if (!form || !modal) {
-            console.error('❌ Shift schedule modal or form not found');
-            return;
-        }
-        
-        // Reset form
-        form.reset();
-        document.getElementById('scheduleId').value = '';
-        document.getElementById('shiftScheduleModalTitle').textContent = 'Create Shift Schedule';
-        
-        // Set default effective date to today
-        const today = new Date().toISOString().split('T')[0];
-        const effectiveDateInput = document.getElementById('scheduleEffectiveDate');
-        if (effectiveDateInput) {
-            effectiveDateInput.value = today;
-        }
-        
-        // Reset all shift selects to 'off'
-        document.querySelectorAll('.day-shift-select').forEach(select => {
-            select.value = 'off';
-        });
-        
-        // Disable time inputs initially
-        this.updateTimeInputStates();
-        
-        // Load employees if not already loaded
-        if (this.employees.length === 0) {
-            console.log('📥 Loading employees for dropdown...');
-            this.loadEmployees();
-        }
-        
-        // Show modal
-        if (typeof openModal === 'function') {
-            console.log('✅ Opening modal...');
-            openModal('shiftScheduleModal');
-        } else {
-            console.error('❌ openModal function not available');
-            // Fallback: show modal directly
-            modal.style.display = 'flex';
-            modal.classList.add('active');
+        if (modal) {
+            if (typeof window.closeModal === 'function') {
+                window.closeModal('shiftScheduleModal');
+            } else {
+                modal.style.display = 'none';
+                modal.classList.remove('active');
+            }
         }
     }
     
@@ -474,7 +694,13 @@ class ShiftScheduleManager {
         
         try {
             const token = this.getAuthToken();
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/shift-schedules/${scheduleId}`, {
+            if (!token) {
+                this.showError('Authentication required. Please log in again.');
+                return;
+            }
+            
+            const apiUrl = this.getApiUrl();
+            const response = await fetch(`${apiUrl}/api/shift-schedules/${scheduleId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -507,9 +733,15 @@ class ShiftScheduleManager {
             const scheduleId = document.getElementById('scheduleId').value;
             
             const token = this.getAuthToken();
+            if (!token) {
+                this.showError('Authentication required. Please log in again.');
+                return;
+            }
+            
+            const apiUrl = this.getApiUrl();
             const url = scheduleId 
-                ? `${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/shift-schedules/${scheduleId}`
-                : `${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/shift-schedules`;
+                ? `${apiUrl}/api/shift-schedules/${scheduleId}`
+                : `${apiUrl}/api/shift-schedules`;
             
             const method = scheduleId ? 'PUT' : 'POST';
             
@@ -703,8 +935,59 @@ class ShiftScheduleManager {
         console.log('Applying template:', template);
     }
     
+    getApiUrl() {
+        // Use API_CONFIG if available for consistent URL handling
+        if (window.API_CONFIG && window.API_CONFIG.BASE_URL) {
+            console.log('🌐 Using API_CONFIG BASE_URL:', window.API_CONFIG.BASE_URL);
+            return window.API_CONFIG.BASE_URL;
+        }
+        
+        // Fallback to environment detection
+        const isLocalhost = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1';
+        
+        const apiUrl = isLocalhost ? 'http://localhost:4001' : 'https://daetspa-backend.onrender.com';
+        console.log('🌐 Using fallback API URL:', apiUrl, '(localhost:', isLocalhost, ')');
+        
+        return apiUrl;
+    }
+    
     getAuthToken() {
-        return localStorage.getItem('authToken') || window.authSystem?.authToken;
+        // Try multiple sources for auth token
+        let token = null;
+        
+        // 1. Try API_CONFIG method
+        if (window.API_CONFIG && typeof window.API_CONFIG.getToken === 'function') {
+            token = window.API_CONFIG.getToken();
+            if (token) {
+                console.log('🔑 Got token from API_CONFIG');
+                return token;
+            }
+        }
+        
+        // 2. Try localStorage
+        token = localStorage.getItem('authToken');
+        if (token) {
+            console.log('🔑 Got token from localStorage');
+            return token;
+        }
+        
+        // 3. Try authSystem
+        if (window.authSystem && window.authSystem.authToken) {
+            token = window.authSystem.authToken;
+            console.log('🔑 Got token from authSystem');
+            return token;
+        }
+        
+        // 4. Try alternative localStorage keys
+        token = localStorage.getItem('userToken') || sessionStorage.getItem('authToken');
+        if (token) {
+            console.log('🔑 Got token from alternative storage');
+            return token;
+        }
+        
+        console.warn('⚠️ No authentication token found in any location');
+        return null;
     }
     
     showSuccess(message) {
@@ -725,37 +1008,71 @@ class ShiftScheduleManager {
     
     // Load data when shift schedule page is shown
     async onPageShow() {
+        console.log('🗓️ Shift Schedule page shown, initializing...');
+        
+        // Debug authentication status
+        this.debugAuthStatus();
+        
         if (!this.hasPermission()) {
+            console.warn('⚠️ User does not have permission to access shift schedules');
+            this.showError('Access denied. Manager or owner role required.');
             return;
         }
-        
-        console.log('🗓️ Shift Schedule page shown, initializing...');
         
         // Re-setup event listeners to ensure they work
         this.ensureEventListeners();
         
-        await Promise.all([
-            this.loadSchedules(),
-            this.loadEmployees()
-        ]);
+        try {
+            await Promise.all([
+                this.loadSchedules(),
+                this.loadEmployees()
+            ]);
+        } catch (error) {
+            console.error('❌ Error during page initialization:', error);
+            this.showError('Failed to initialize shift schedule page. Please refresh and try again.');
+        }
     }
     
     // Ensure event listeners are attached
     ensureEventListeners() {
-        const addScheduleBtn = document.getElementById('addShiftScheduleBtn');
-        if (addScheduleBtn && !addScheduleBtn.hasAttribute('data-listener-attached')) {
-            console.log('✅ Attaching event listener to Create Schedule button');
-            addScheduleBtn.addEventListener('click', () => {
-                console.log('🗓️ Create Schedule button clicked (page show)');
-                this.showCreateScheduleModal();
-            });
-            addScheduleBtn.setAttribute('data-listener-attached', 'true');
+        console.log('🔧 Ensuring event listeners are attached...');
+        
+        // Reset button state and try to attach again
+        this.buttonAttached = false;
+        this.retryCount = 0;
+        
+        // Clear any existing interval
+        if (this.buttonCheckInterval) {
+            clearInterval(this.buttonCheckInterval);
+        }
+        
+        // Try to attach the button listener
+        this.attachButtonListener();
+        
+        // Set up the retry mechanism again if needed
+        if (!this.buttonAttached) {
+            this.buttonCheckInterval = setInterval(() => {
+                if (!this.buttonAttached && this.retryCount < this.maxRetries) {
+                    this.attachButtonListener();
+                } else {
+                    clearInterval(this.buttonCheckInterval);
+                }
+            }, 500);
         }
     }
 }
 
 // Initialize the shift schedule manager
 window.shiftScheduleManager = new ShiftScheduleManager();
+
+// Add global debug function for testing
+window.debugShiftSchedule = function() {
+    if (window.shiftScheduleManager) {
+        window.shiftScheduleManager.debugAuthStatus();
+    } else {
+        console.error('❌ Shift Schedule Manager not initialized');
+    }
+};
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
