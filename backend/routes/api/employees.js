@@ -233,12 +233,15 @@ router.get('/:id', withErrorHandling(async (req, res) => {
     
     console.log('💰 [SALARY-DEBUG] Employee GET query details:', {
         employeeId: id,
+        employeeIdType: typeof id,
         authUserId: req.user.id,
         authUserRole: req.user.role,
         contextUserId: req.userId,
         queryUserId: queryUserId,
+        queryUserIdType: typeof queryUserId,
         isManager: req.user.role === 'manager',
-        isEmployee: req.user.isEmployee
+        isEmployee: req.user.isEmployee,
+        requestURL: req.originalUrl
     });
     
     // Find employee with proper user context
@@ -257,6 +260,23 @@ router.get('/:id', withErrorHandling(async (req, res) => {
         // Owner or manager viewing their employees - use consistent auth context
         query.userId = queryUserId;
     }
+    
+    // CRITICAL DEBUG: Check if employee exists before retrieval
+    const existingEmployee = await Employee.findOne({ _id: id }).lean();
+    console.log('💰 [SALARY-DEBUG] Employee GET existence check:', {
+        employeeId: id,
+        foundEmployee: !!existingEmployee,
+        employeeUserId: existingEmployee?.userId,
+        expectedUserId: queryUserId,
+        userIdMatch: existingEmployee?.userId === queryUserId,
+        queryBeingUsed: query,
+        currentSalaryData: existingEmployee ? {
+            salaryType: existingEmployee.salaryType,
+            dailyRate: existingEmployee.dailyRate,
+            monthlyRate: existingEmployee.monthlyRate,
+            hourlyRate: existingEmployee.hourlyRate
+        } : null
+    });
     
     const employee = await Employee.findOne(query)
         .select('+temporaryPassword +viewablePassword') // Include passwords for branch owners
@@ -281,22 +301,56 @@ router.get('/:id', withErrorHandling(async (req, res) => {
         });
     }
     
-    // Remove password hash but keep viewable password for branch owners
-    const { password, ...employeeData } = employee;
+    // SIMPLIFIED RESPONSE: Build response explicitly without spread operator complexity
     const responseData = {
-        ...employeeData,
-        hasLogin: !!password,
+        // Core identification
+        _id: employee._id,
+        id: employee._id.toString(),
+        userId: employee.userId,
+        branchId: employee.branchId,
+        
+        // Personal information
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        email: employee.email,
+        phone: employee.phone,
+        position: employee.position,
+        department: employee.department,
+        role: employee.role,
+        hireDate: employee.hireDate,
+        
+        // Authentication info
+        hasLogin: !!employee.password,
         loginRole: employee.role || null,
         viewablePassword: employee.viewablePassword || employee.temporaryPassword || null,
         temporaryPassword: employee.isUsingTemporaryPassword ? employee.temporaryPassword : null,
         isUsingTemporaryPassword: employee.isUsingTemporaryPassword || false,
-        // CRITICAL FIX: Map backend salaryType to frontend wageType for compatibility
-        wageType: employee.salaryType || employee.wageType || 'daily',
-        // CRITICAL FIX: Explicitly ensure salary fields are included (override spread if needed)
+        
+        // Commission settings
+        commissionRate: employee.commissionRate || 0,
+        commissionType: employee.commissionType || 'percentage',
+        
+        // CRITICAL: Salary configuration - explicitly defined
+        wageType: employee.salaryType || 'daily', // Map backend salaryType to frontend wageType
+        salaryType: employee.salaryType || 'daily', // Also keep backend field
         dailyRate: employee.dailyRate || 0,
         monthlyRate: employee.monthlyRate || 0,
         hourlyRate: employee.hourlyRate || 0,
-        overtimeMultiplier: employee.overtimeMultiplier || 1.25
+        overtimeMultiplier: employee.overtimeMultiplier || 1.25,
+        
+        // Government benefits
+        hasSSS: employee.hasSSS || false,
+        hasPhilHealth: employee.hasPhilHealth || false,
+        hasPagibig: employee.hasPagibig || false,
+        sssDeductionAmount: employee.sssDeductionAmount || 0,
+        philHealthDeductionAmount: employee.philHealthDeductionAmount || 0,
+        pagIbigDeductionAmount: employee.pagIbigDeductionAmount || 0,
+        
+        // Status and metadata
+        isActive: employee.isActive !== false,
+        syncStatus: employee.syncStatus || 'synced',
+        createdAt: employee.createdAt,
+        updatedAt: employee.updatedAt
     };
     
     // ENHANCED DEBUGGING: Comprehensive salary data validation
@@ -325,15 +379,20 @@ router.get('/:id', withErrorHandling(async (req, res) => {
             overtimeMultiplier: responseData.overtimeMultiplier
         },
         salaryFieldsExist: {
-            hasDaily: !!(employee.dailyRate && employee.dailyRate > 0),
-            hasMonthly: !!(employee.monthlyRate && employee.monthlyRate > 0),
-            hasHourly: !!(employee.hourlyRate && employee.hourlyRate > 0)
+            hasDaily: !!(employee.dailyRate && employee.dailyRate > 0 && employee.dailyRate !== 500),
+            hasMonthly: !!(employee.monthlyRate && employee.monthlyRate > 0 && employee.monthlyRate !== 15000),
+            hasHourly: !!(employee.hourlyRate && employee.hourlyRate > 0 && employee.hourlyRate !== 62.50)
         },
         frontendWillShowConfigured: !!(
-            (responseData.dailyRate && responseData.dailyRate > 0) ||
-            (responseData.monthlyRate && responseData.monthlyRate > 0) ||
-            (responseData.hourlyRate && responseData.hourlyRate > 0)
-        )
+            (responseData.dailyRate && responseData.dailyRate > 0 && responseData.dailyRate !== 500) ||
+            (responseData.monthlyRate && responseData.monthlyRate > 0 && responseData.monthlyRate !== 15000) ||
+            (responseData.hourlyRate && responseData.hourlyRate > 0 && responseData.hourlyRate !== 62.50)
+        ),
+        schemaDefaults: {
+            dailyDefault: 500,
+            monthlyDefault: 15000,
+            hourlyDefault: 62.50
+        }
     });
     
     // CRITICAL CHECK: Ensure all salary fields are included in response
@@ -431,11 +490,31 @@ router.put('/:id', withErrorHandling(async (req, res) => {
     
     console.log('💰 [SALARY-DEBUG] Employee update query details:', {
         employeeId: id,
+        employeeIdType: typeof id,
         authUserId: req.user.id,
         authUserRole: req.user.role,
         contextUserId: req.userId,
         queryUserId: queryUserId,
-        isManager: req.user.role === 'manager'
+        queryUserIdType: typeof queryUserId,
+        isManager: req.user.role === 'manager',
+        requestURL: req.originalUrl,
+        requestMethod: req.method
+    });
+    
+    // CRITICAL DEBUG: Check if employee exists before update
+    const existingEmployee = await Employee.findOne({ _id: id }).lean();
+    console.log('💰 [SALARY-DEBUG] Employee existence check:', {
+        employeeId: id,
+        foundEmployee: !!existingEmployee,
+        employeeUserId: existingEmployee?.userId,
+        expectedUserId: queryUserId,
+        userIdMatch: existingEmployee?.userId === queryUserId,
+        currentSalaryData: existingEmployee ? {
+            salaryType: existingEmployee.salaryType,
+            dailyRate: existingEmployee.dailyRate,
+            monthlyRate: existingEmployee.monthlyRate,
+            hourlyRate: existingEmployee.hourlyRate
+        } : null
     });
     
     // Find and update employee
