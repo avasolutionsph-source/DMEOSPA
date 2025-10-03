@@ -20,6 +20,7 @@ import entitlementsRoutes from './entitlements.js';
 import chatbotRoutes from './chatbot.js';
 import dataValidationRoutes from './dataValidation.js';
 import bookingsRoutes from './bookings.js';
+import shiftSchedulesRoutes from './shift-schedules.js';
 import { authenticateJWT, optionalAuth, requireBusinessUser } from '../../middleware/auth.js';
 import { apiRequestLogger } from '../../middleware/requestLogger.js';
 import logger from '../../utils/logger.js';
@@ -245,6 +246,7 @@ router.use('/customers', authenticateJWT, requireBusinessUser, customersRoutes);
 router.use('/attendance', authenticateJWT, requireBusinessUser, attendanceRoutes);
 router.use('/payroll', payrollRoutes); // Payroll with built-in auth middleware
 router.use('/payroll-requests', payrollRequestsRoutes); // Payroll requests with auth
+router.use('/shift-schedules', authenticateJWT, requireBusinessUser, shiftSchedulesRoutes); // Shift schedules for managers/owners
 router.use('/settings', authenticateJWT, requireBusinessUser, settingsRoutes);
 router.use('/entitlements', optionalAuth, entitlementsRoutes);
 router.use('/data-validation', authenticateJWT, requireBusinessUser, dataValidationRoutes);

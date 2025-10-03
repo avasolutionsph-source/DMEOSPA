@@ -463,6 +463,14 @@ class App {
                     window.loadEmployees().catch(e => console.warn('Employees load failed:', e));
                 }
                 break;
+            case 'shift-schedule':
+                if (window.shiftScheduleManager && window.shiftScheduleManager.onPageShow) {
+                    // Load shift schedules asynchronously without blocking
+                    setTimeout(() => {
+                        window.shiftScheduleManager.onPageShow().catch(e => console.warn('Shift Schedule load failed:', e));
+                    }, 100);
+                }
+                break;
             case 'attendance':
                 if (window.attendanceManager) {
                     // Load asynchronously without blocking

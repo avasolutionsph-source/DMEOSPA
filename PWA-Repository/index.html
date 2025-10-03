@@ -487,6 +487,7 @@
                 <li><a href="#" data-page="products" class="nav-link"><i class="fas fa-hands"></i> Services</a></li>
                 <li><a href="#" data-page="inventory" class="nav-link"><i class="fas fa-boxes"></i> Inventory</a></li>
                 <li><a href="#" data-page="employees" class="nav-link"><i class="fas fa-user-md"></i> Employees</a></li>
+                <li><a href="#" data-page="shift-schedule" class="nav-link" data-roles="owner,manager"><i class="fas fa-calendar-week"></i> Shift Schedule</a></li>
                 <li><a href="#" data-page="customers" class="nav-link"><i class="fas fa-users"></i> Customers</a></li>
                 <li><a href="#" data-page="appointments" class="nav-link"><i class="fas fa-calendar-alt"></i> Appointments</a></li>
                 <li><a href="#" data-page="attendance" class="nav-link"><i class="fas fa-clock"></i> Attendance</a></li>
@@ -1017,6 +1018,107 @@
                 </div>
                 
                 <div class="employees-grid" id="employeesGrid"></div>
+            </div>
+
+            <!-- Shift Schedule Page -->
+            <div id="shift-schedule" class="page">
+                <div class="page-header">
+                    <h1>Shift Schedule Management</h1>
+                    <button class="btn btn-primary" id="addShiftScheduleBtn">
+                        <i class="fas fa-plus"></i> Create Schedule
+                    </button>
+                </div>
+                
+                <!-- Schedule Analytics Dashboard -->
+                <div class="dashboard-grid" style="margin-bottom: 2rem;">
+                    <div class="dashboard-card">
+                        <div class="card-icon" style="background: #EBF5FF;">
+                            <i class="fas fa-users" style="color: #3B82F6;"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3 id="totalScheduledEmployees">0</h3>
+                            <p>Scheduled Employees</p>
+                        </div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="card-icon" style="background: #FEF3E2;">
+                            <i class="fas fa-sun" style="color: #F59E0B;"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3 id="dayShiftCount">0</h3>
+                            <p>Day Shifts</p>
+                        </div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="card-icon" style="background: #F3E8FF;">
+                            <i class="fas fa-moon" style="color: #8B5CF6;"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3 id="nightShiftCount">0</h3>
+                            <p>Night Shifts</p>
+                        </div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="card-icon" style="background: #F0FDF4;">
+                            <i class="fas fa-calendar-check" style="color: #10B981;"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3 id="activeSchedulesCount">0</h3>
+                            <p>Active Schedules</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Search and Filters -->
+                <div class="search-container" style="margin-bottom: 1.5rem;">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input 
+                            type="text" 
+                            id="scheduleSearchInput" 
+                            class="search-input" 
+                            placeholder="Search employees by name or position..."
+                            autocomplete="off"
+                        >
+                        <button class="clear-search-btn" id="clearScheduleSearch" style="display: none;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="filter-group">
+                        <select id="shiftTypeFilter" class="form-input" style="margin-left: 1rem;">
+                            <option value="">All Shifts</option>
+                            <option value="day">Day Shift</option>
+                            <option value="night">Night Shift</option>
+                            <option value="off">Off Days</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Schedule Grid -->
+                <div class="schedule-grid-container">
+                    <div class="schedule-grid" id="scheduleGrid">
+                        <!-- Schedule grid will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Quick Schedule Templates -->
+                <div class="template-section" style="margin-top: 2rem;">
+                    <h3>Quick Templates</h3>
+                    <div class="template-buttons">
+                        <button class="btn btn-secondary template-btn" data-template="weekday-day">
+                            <i class="fas fa-sun"></i> Weekday Day Shift
+                        </button>
+                        <button class="btn btn-secondary template-btn" data-template="weekday-night">
+                            <i class="fas fa-moon"></i> Weekday Night Shift
+                        </button>
+                        <button class="btn btn-secondary template-btn" data-template="weekend-only">
+                            <i class="fas fa-calendar-weekend"></i> Weekend Only
+                        </button>
+                        <button class="btn btn-secondary template-btn" data-template="full-week">
+                            <i class="fas fa-calendar"></i> Full Week
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Customers Page -->
@@ -2780,6 +2882,196 @@
         </div>
     </div>
 
+    <!-- Shift Schedule Modal -->
+    <div id="shiftScheduleModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2 id="shiftScheduleModalTitle">Create Shift Schedule</h2>
+                <button class="modal-close" onclick="closeModal('shiftScheduleModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="shiftScheduleForm">
+                    <input type="hidden" id="scheduleId">
+                    
+                    <!-- Employee Selection -->
+                    <div class="form-group">
+                        <label>Employee <span style="color: red;">*</span></label>
+                        <select id="scheduleEmployeeId" class="form-input" required>
+                            <option value="">Select Employee</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Effective Date -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Effective Date</label>
+                            <input type="date" id="scheduleEffectiveDate" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Notes <span style="font-size: 0.85em; color: #666; font-weight: normal;">(optional)</span></label>
+                            <input type="text" id="scheduleNotes" class="form-input" placeholder="Schedule notes or comments">
+                        </div>
+                    </div>
+                    
+                    <!-- Weekly Schedule Grid -->
+                    <div class="form-section" style="margin-top: 1.5rem;">
+                        <h3 style="margin: 0 0 1rem 0; color: #374151; font-size: 1.1rem; font-weight: 600;">Weekly Schedule</h3>
+                        
+                        <div class="schedule-table">
+                            <table style="width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb;">
+                                <thead>
+                                    <tr style="background: #f9fafb;">
+                                        <th style="padding: 0.75rem; border: 1px solid #e5e7eb; text-align: left; font-weight: 600;">Day</th>
+                                        <th style="padding: 0.75rem; border: 1px solid #e5e7eb; text-align: left; font-weight: 600;">Shift Type</th>
+                                        <th style="padding: 0.75rem; border: 1px solid #e5e7eb; text-align: left; font-weight: 600;">Start Time</th>
+                                        <th style="padding: 0.75rem; border: 1px solid #e5e7eb; text-align: left; font-weight: 600;">End Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb; font-weight: 600;">Monday</td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <select class="form-input day-shift-select" data-day="monday" style="margin: 0; width: 100%;">
+                                                <option value="off">Off</option>
+                                                <option value="day">Day Shift</option>
+                                                <option value="night">Night Shift</option>
+                                            </select>
+                                        </td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <input type="time" class="form-input day-start-time" data-day="monday" value="09:00" style="margin: 0; width: 100%;">
+                                        </td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <input type="time" class="form-input day-end-time" data-day="monday" value="17:00" style="margin: 0; width: 100%;">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb; font-weight: 600;">Tuesday</td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <select class="form-input day-shift-select" data-day="tuesday" style="margin: 0; width: 100%;">
+                                                <option value="off">Off</option>
+                                                <option value="day">Day Shift</option>
+                                                <option value="night">Night Shift</option>
+                                            </select>
+                                        </td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <input type="time" class="form-input day-start-time" data-day="tuesday" value="09:00" style="margin: 0; width: 100%;">
+                                        </td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <input type="time" class="form-input day-end-time" data-day="tuesday" value="17:00" style="margin: 0; width: 100%;">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb; font-weight: 600;">Wednesday</td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <select class="form-input day-shift-select" data-day="wednesday" style="margin: 0; width: 100%;">
+                                                <option value="off">Off</option>
+                                                <option value="day">Day Shift</option>
+                                                <option value="night">Night Shift</option>
+                                            </select>
+                                        </td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <input type="time" class="form-input day-start-time" data-day="wednesday" value="09:00" style="margin: 0; width: 100%;">
+                                        </td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <input type="time" class="form-input day-end-time" data-day="wednesday" value="17:00" style="margin: 0; width: 100%;">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb; font-weight: 600;">Thursday</td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <select class="form-input day-shift-select" data-day="thursday" style="margin: 0; width: 100%;">
+                                                <option value="off">Off</option>
+                                                <option value="day">Day Shift</option>
+                                                <option value="night">Night Shift</option>
+                                            </select>
+                                        </td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <input type="time" class="form-input day-start-time" data-day="thursday" value="09:00" style="margin: 0; width: 100%;">
+                                        </td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <input type="time" class="form-input day-end-time" data-day="thursday" value="17:00" style="margin: 0; width: 100%;">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb; font-weight: 600;">Friday</td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <select class="form-input day-shift-select" data-day="friday" style="margin: 0; width: 100%;">
+                                                <option value="off">Off</option>
+                                                <option value="day">Day Shift</option>
+                                                <option value="night">Night Shift</option>
+                                            </select>
+                                        </td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <input type="time" class="form-input day-start-time" data-day="friday" value="09:00" style="margin: 0; width: 100%;">
+                                        </td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <input type="time" class="form-input day-end-time" data-day="friday" value="17:00" style="margin: 0; width: 100%;">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb; font-weight: 600;">Saturday</td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <select class="form-input day-shift-select" data-day="saturday" style="margin: 0; width: 100%;">
+                                                <option value="off">Off</option>
+                                                <option value="day">Day Shift</option>
+                                                <option value="night">Night Shift</option>
+                                            </select>
+                                        </td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <input type="time" class="form-input day-start-time" data-day="saturday" value="09:00" style="margin: 0; width: 100%;">
+                                        </td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <input type="time" class="form-input day-end-time" data-day="saturday" value="17:00" style="margin: 0; width: 100%;">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb; font-weight: 600;">Sunday</td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <select class="form-input day-shift-select" data-day="sunday" style="margin: 0; width: 100%;">
+                                                <option value="off">Off</option>
+                                                <option value="day">Day Shift</option>
+                                                <option value="night">Night Shift</option>
+                                            </select>
+                                        </td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <input type="time" class="form-input day-start-time" data-day="sunday" value="09:00" style="margin: 0; width: 100%;">
+                                        </td>
+                                        <td style="padding: 0.75rem; border: 1px solid #e5e7eb;">
+                                            <input type="time" class="form-input day-end-time" data-day="sunday" value="17:00" style="margin: 0; width: 100%;">
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Quick Template Buttons -->
+                        <div class="template-buttons" style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button type="button" class="btn btn-sm btn-secondary quick-template-btn" data-template="weekday-day">
+                                Weekday Day
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary quick-template-btn" data-template="weekday-night">
+                                Weekday Night
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary quick-template-btn" data-template="weekend">
+                                Weekend Only
+                            </button>
+                            <button type="button" class="btn btn-sm btn-secondary quick-template-btn" data-template="clear">
+                                Clear All
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('shiftScheduleModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="saveShiftScheduleBtn">Save Schedule</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Room Modal -->
     <div id="roomModal" class="modal">
         <div class="modal-content">
@@ -3779,6 +4071,7 @@
     <script src="js/products.js"></script>
     <script src="js/inventory.js"></script>
     <script src="js/employees.js"></script>
+    <script src="js/shift-schedule-manager.js"></script>
     <script src="js/customers.js"></script>
     <script src="js/settings.js"></script>
     <script src="js/performance-settings.js"></script>
@@ -4026,6 +4319,164 @@
         
         /* Note: Navigation item visibility is controlled by JavaScript based on user role.
            Do not force display with !important as it will override role-based filtering. */
+        
+        /* Shift Schedule Specific Styles */
+        .schedule-grid-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .schedule-grid {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .schedule-grid th,
+        .schedule-grid td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .schedule-grid th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+        
+        .shift-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .shift-badge.day {
+            background: #EBF5FF;
+            color: #3B82F6;
+        }
+        
+        .shift-badge.night {
+            background: #F3E8FF;
+            color: #8B5CF6;
+        }
+        
+        .shift-badge.off {
+            background: #F3F4F6;
+            color: #6B7280;
+        }
+        
+        .template-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .template-buttons {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        
+        .template-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: white;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        
+        .template-btn:hover {
+            background: #f9fafb;
+            border-color: #800020;
+            color: #800020;
+        }
+        
+        .schedule-row:hover {
+            background: #f9fafb;
+        }
+        
+        .employee-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .employee-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #800020;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        
+        .employee-details h4 {
+            margin: 0;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #111827;
+        }
+        
+        .employee-details p {
+            margin: 0;
+            font-size: 0.75rem;
+            color: #6B7280;
+        }
+        
+        .schedule-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn-schedule-edit {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+            background: #F3F4F6;
+            color: #374151;
+            border: 1px solid #D1D5DB;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        
+        .btn-schedule-edit:hover {
+            background: #800020;
+            color: white;
+            border-color: #800020;
+        }
+        
+        .btn-schedule-delete {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+            background: #FEF2F2;
+            color: #DC2626;
+            border: 1px solid #FECACA;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        
+        .btn-schedule-delete:hover {
+            background: #DC2626;
+            color: white;
+            border-color: #DC2626;
+        }
     </style>
     
     <!-- FINAL FIX - Attach Event Listeners After Everything Loads -->
