@@ -273,6 +273,18 @@ class EmployeeManager {
                     filteredCount: this.filteredEmployees.length
                 });
                 
+                // CRITICAL FIX: Force UI refresh after potential backend migration
+                // This ensures that employee cards and view components show updated salary data
+                if (employees.length > 0) {
+                    console.log('🔄 [MIGRATION-REFRESH] Forcing UI refresh to display migrated salary data...');
+                    
+                    // Force immediate re-render of employee list to show updated data
+                    setTimeout(() => {
+                        this.renderEmployees();
+                        console.log('✅ [MIGRATION-REFRESH] Employee UI refreshed with migrated data');
+                    }, 100);
+                }
+                
                 // 🔧 CRITICAL FIX: Store employees in IndexedDB for sync to work
                 console.log('💾 [EMPLOYEE-MANAGER] IndexedDB storage check:', {
                     dbAvailable: !!window.db,
@@ -464,26 +476,37 @@ class EmployeeManager {
         try {
             let employee = null;
             
-            // First check if it's a local employee
-            const localEmployees = this.employees.filter(emp => (emp.id === id || emp._id === id));
-            if (localEmployees.length > 0) {
-                console.log('📦 Using local employee data for viewing');
-                employee = localEmployees[0];
-            } else {
-                // Get employee from MongoDB API
-                // CRITICAL FIX: Use global window.getAuthToken() to avoid 'this' context issues in onclick handlers
-                const token = window.getAuthToken ? window.getAuthToken() : this.getAuthToken();
-                if (!token) {
-                    console.error('❌ No authentication token for viewing employee');
-                    showError('Authentication required - please log in');
-                    return;
-                }
+            // CRITICAL FIX: Always fetch fresh data from API first to avoid stale cache issues (same as editEmployee)
+            // Get employee from MongoDB API
+            const token = window.getAuthToken ? window.getAuthToken() : this.getAuthToken();
+            if (!token) {
+                console.error('❌ No authentication token for viewing employee');
+                showError('Authentication required - please log in');
+                return;
+            }
 
-                // Fetch employee using HybridAPIClient
+            console.log('🔄 Fetching fresh employee data from API for viewing...');
+            try {
+                // Fetch fresh employee data using HybridAPIClient
                 const empResult = await window.HybridAPIClient.get(`/api/employees/${id}`, `employee_${id}`);
                 
-                if (!empResult.success) {
-                    // Try to get from IndexedDB as fallback
+                if (empResult.success) {
+                    employee = empResult.data;
+                    console.log('✅ Got fresh employee data from API for viewing');
+                } else {
+                    console.warn('⚠️ API fetch failed for view, falling back to local data');
+                    throw new Error('API fetch failed');
+                }
+            } catch (apiError) {
+                console.warn('⚠️ API fetch error for view, trying local sources:', apiError.message);
+                
+                // Fallback to local employee data if API fails
+                const localEmployees = this.employees.filter(emp => (emp.id === id || emp._id === id));
+                if (localEmployees.length > 0) {
+                    console.log('📦 Using local employee data as fallback for viewing');
+                    employee = localEmployees[0];
+                } else {
+                    // Try to get from IndexedDB as final fallback
                     if (window.db && window.db.db) {
                         try {
                             employee = await window.db.get('employees', id);
@@ -492,19 +515,17 @@ class EmployeeManager {
                                 const allEmployees = await window.db.getAll('employees');
                                 employee = allEmployees.find(e => e._id === id || e.id === id);
                             }
+                            console.log('💾 Using IndexedDB employee data as final fallback for viewing');
                         } catch (dbError) {
                             console.error('❌ Failed to get employee from IndexedDB:', dbError);
                         }
                     }
                     
                     if (!employee) {
-                        const errorMsg = empResult.error || 'Unknown error occurred';
-                        console.error('❌ Failed to fetch employee details:', errorMsg);
-                        showError(`Failed to load employee details: ${errorMsg}`);
+                        console.error('❌ Failed to fetch employee for viewing from any source');
+                        showError('Failed to load employee details');
                         return;
                     }
-                } else {
-                    employee = empResult.data;
                 }
             }
             
