@@ -412,6 +412,25 @@ class EmployeeManager {
             };
         });
 
+        // DEBUG: Log employee salary data for card rendering
+        employeesWithStats.forEach(emp => {
+            console.log(`💰 [CARD-RENDER-DEBUG] Employee: ${emp.name}`, {
+                dailyRate: emp.dailyRate,
+                monthlyRate: emp.monthlyRate,
+                hourlyRate: emp.hourlyRate,
+                dailyRateType: typeof emp.dailyRate,
+                monthlyRateType: typeof emp.monthlyRate,
+                hourlyRateType: typeof emp.hourlyRate,
+                dailyRateParsed: parseFloat(emp.dailyRate),
+                monthlyRateParsed: parseFloat(emp.monthlyRate),
+                hourlyRateParsed: parseFloat(emp.hourlyRate),
+                dailyRateCheck: emp.dailyRate && parseFloat(emp.dailyRate) > 0,
+                monthlyRateCheck: emp.monthlyRate && parseFloat(emp.monthlyRate) > 0,
+                hourlyRateCheck: emp.hourlyRate && parseFloat(emp.hourlyRate) > 0,
+                shouldShowNoSalary: (!emp.dailyRate || parseFloat(emp.dailyRate) <= 0) && (!emp.monthlyRate || parseFloat(emp.monthlyRate) <= 0) && (!emp.hourlyRate || parseFloat(emp.hourlyRate) <= 0)
+            });
+        });
+
         grid.innerHTML = employeesWithStats.map(emp => `
             <div class="employee-card">
                 <div class="employee-header">
