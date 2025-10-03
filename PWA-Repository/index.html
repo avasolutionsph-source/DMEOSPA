@@ -460,17 +460,88 @@
     <!-- Immediate authentication check before any content loads -->
     <script>
         (function() {
+            // 🔍 DEBUG: Check for redirect loop detection
+            const redirectCount = parseInt(sessionStorage.getItem('redirectCount') || '0');
+            const lastRedirect = sessionStorage.getItem('lastRedirect');
+            const now = Date.now();
+            
+            console.log('🔍 [AUTH-DEBUG] Redirect loop detection:', {
+                redirectCount,
+                lastRedirect,
+                timeSinceLastRedirect: lastRedirect ? now - parseInt(lastRedirect) : 'N/A'
+            });
+            
+            // Detect redirect loop (more than 3 redirects in 10 seconds)
+            if (redirectCount > 3 && lastRedirect && (now - parseInt(lastRedirect)) < 10000) {
+                console.error('🚨 [AUTH-DEBUG] REDIRECT LOOP DETECTED! Clearing auth state to break loop.');
+                // Clear all auth data to break the loop
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('currentUser');
+                sessionStorage.removeItem('authToken');
+                sessionStorage.removeItem('currentUser');
+                sessionStorage.removeItem('redirectCount');
+                sessionStorage.removeItem('lastRedirect');
+                // Force fresh start
+                alert('Authentication loop detected. Please login again.');
+                window.location.replace('login.html');
+                return;
+            }
+            
             // Check authentication immediately on page load
             const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
             const user = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
             
-            if (!token || !user) {
+            // 🔍 DEBUG: Log exact auth state
+            console.log('🔍 [AUTH-DEBUG] Current auth state on index.html:', {
+                hasToken: !!token,
+                tokenLength: token ? token.length : 0,
+                tokenPreview: token ? token.substring(0, 20) + '...' : 'null',
+                hasUser: !!user,
+                userPreview: user ? user.substring(0, 50) + '...' : 'null',
+                localStorage_authToken: !!localStorage.getItem('authToken'),
+                localStorage_currentUser: !!localStorage.getItem('currentUser'),
+                sessionStorage_authToken: !!sessionStorage.getItem('authToken'),
+                sessionStorage_currentUser: !!sessionStorage.getItem('currentUser')
+            });
+            
+            // Validate user data if present
+            let userObj = null;
+            if (user) {
+                try {
+                    userObj = JSON.parse(user);
+                    console.log('🔍 [AUTH-DEBUG] Parsed user object:', {
+                        id: userObj.id,
+                        email: userObj.email,
+                        role: userObj.role,
+                        type: userObj.type
+                    });
+                } catch (e) {
+                    console.error('🔍 [AUTH-DEBUG] Invalid user data - cannot parse JSON:', e);
+                    userObj = null;
+                }
+            }
+            
+            if (!token || !user || !userObj) {
+                // Update redirect tracking
+                sessionStorage.setItem('redirectCount', (redirectCount + 1).toString());
+                sessionStorage.setItem('lastRedirect', now.toString());
+                
                 // Not authenticated - redirect to login immediately
-                console.log('🚫 No authentication found - redirecting to login.html');
+                console.log('🚫 [AUTH-DEBUG] Authentication invalid - redirecting to login.html');
+                console.log('🚫 [AUTH-DEBUG] Reasons:', {
+                    noToken: !token,
+                    noUser: !user,
+                    invalidUserJson: !userObj
+                });
                 window.location.replace('login.html');
                 // Stop all execution
                 throw new Error('Redirecting to login');
             }
+            
+            // Clear redirect tracking on successful auth
+            sessionStorage.removeItem('redirectCount');
+            sessionStorage.removeItem('lastRedirect');
+            console.log('✅ [AUTH-DEBUG] Authentication valid - proceeding to load application');
         })();
     </script>
     
