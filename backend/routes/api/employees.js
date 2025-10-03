@@ -308,20 +308,37 @@ router.put('/:id', withErrorHandling(async (req, res) => {
     delete updateData.userId;
     delete updateData.branchId;
     
-    // Map frontend field to backend field for salary type
+    // ENHANCED FIELD MAPPING: Map frontend field to backend field for salary type
     if (updateData.wageType) {
         updateData.salaryType = updateData.wageType;
         delete updateData.wageType;
+        console.log('💰 [SALARY-DEBUG] Mapped wageType to salaryType:', updateData.salaryType);
     }
+    
+    // ENHANCED VALIDATION: Ensure salary rate fields are properly processed
+    // Convert string values to numbers and validate
+    const salaryFields = ['dailyRate', 'monthlyRate', 'hourlyRate', 'overtimeMultiplier'];
+    salaryFields.forEach(field => {
+        if (updateData[field] !== undefined) {
+            const numValue = parseFloat(updateData[field]);
+            updateData[field] = isNaN(numValue) ? 0 : numValue;
+        }
+    });
     
     // CRITICAL FIX: Ensure salary rate fields are properly saved
     // Frontend sends: dailyRate, monthlyRate, hourlyRate, overtimeMultiplier
-    console.log('💰 [SALARY-DEBUG] Backend received salary update data:', {
+    console.log('💰 [SALARY-DEBUG] Backend received salary update data (after validation):', {
         salaryType: updateData.salaryType,
         dailyRate: updateData.dailyRate,
         monthlyRate: updateData.monthlyRate,
         hourlyRate: updateData.hourlyRate,
-        overtimeMultiplier: updateData.overtimeMultiplier
+        overtimeMultiplier: updateData.overtimeMultiplier,
+        rawBody: {
+            wageType: req.body.wageType,
+            dailyRate: req.body.dailyRate,
+            monthlyRate: req.body.monthlyRate,
+            hourlyRate: req.body.hourlyRate
+        }
     });
     
     // Handle password reset or update
@@ -336,39 +353,97 @@ router.put('/:id', withErrorHandling(async (req, res) => {
         delete updateData.temporaryPassword;
     }
     
+    // CRITICAL FIX: Use proper userId context from auth middleware
+    // req.userId is set by auth middleware to handle managers/employees correctly
+    const queryUserId = req.userId || req.user.id || req.user._id;
+    
+    console.log('💰 [SALARY-DEBUG] Employee update query details:', {
+        employeeId: id,
+        authUserId: req.user.id,
+        authUserRole: req.user.role,
+        contextUserId: req.userId,
+        queryUserId: queryUserId,
+        isManager: req.user.role === 'manager'
+    });
+    
     // Find and update employee
     const employee = await Employee.findOneAndUpdate(
-        { _id: id, userId: req.user.id || req.user._id },
+        { _id: id, userId: queryUserId },
         updateData,
         { new: true, runValidators: true }
     ).select('-password');
     
     if (!employee) {
+        // ENHANCED ERROR: Log detailed information when employee not found
+        console.error('❌ [SALARY-DEBUG] Employee not found for update:', {
+            employeeId: id,
+            queryUserId: queryUserId,
+            authUser: {
+                id: req.user.id,
+                role: req.user.role,
+                email: req.user.email
+            },
+            updateData: {
+                salaryType: updateData.salaryType,
+                dailyRate: updateData.dailyRate,
+                monthlyRate: updateData.monthlyRate,
+                hourlyRate: updateData.hourlyRate
+            }
+        });
+        
         return res.status(404).json({
             success: false,
-            error: 'Employee not found'
+            error: 'Employee not found or you do not have permission to update this employee'
         });
     }
     
+    // ENHANCED SUCCESS LOGGING: Verify and log the actual update results
     logger.info(`Updated employee: ${id}`, {
         category: 'DATABASE',
         operation: 'update_employee',
         data: { 
             employeeId: id,
-            hadPasswordReset: !!req.body.resetPassword
+            hadPasswordReset: !!req.body.resetPassword,
+            salaryUpdated: !!(updateData.dailyRate || updateData.monthlyRate || updateData.hourlyRate),
+            updatedFields: Object.keys(updateData)
         }
     });
     
     // CRITICAL FIX: Debug salary data after save to verify persistence
-    console.log('💰 [SALARY-DEBUG] Employee data after MongoDB save:', {
+    console.log('💰 [SALARY-DEBUG] Employee data after MongoDB save (VERIFICATION):', {
         id: employee._id,
         name: `${employee.firstName} ${employee.lastName}`,
         salaryType: employee.salaryType,
         dailyRate: employee.dailyRate,
         monthlyRate: employee.monthlyRate,
         hourlyRate: employee.hourlyRate,
-        overtimeMultiplier: employee.overtimeMultiplier
+        overtimeMultiplier: employee.overtimeMultiplier,
+        updateSuccessful: true,
+        matchedDocument: true
     });
+    
+    // ADDITIONAL VERIFICATION: Check if salary fields were actually saved
+    if (updateData.dailyRate !== undefined || updateData.monthlyRate !== undefined || updateData.hourlyRate !== undefined) {
+        const savedCorrectly = (
+            (updateData.dailyRate === undefined || employee.dailyRate === updateData.dailyRate) &&
+            (updateData.monthlyRate === undefined || employee.monthlyRate === updateData.monthlyRate) &&
+            (updateData.hourlyRate === undefined || employee.hourlyRate === updateData.hourlyRate)
+        );
+        
+        console.log('💰 [SALARY-DEBUG] Salary persistence verification:', {
+            savedCorrectly,
+            expectedDaily: updateData.dailyRate,
+            actualDaily: employee.dailyRate,
+            expectedMonthly: updateData.monthlyRate,
+            actualMonthly: employee.monthlyRate,
+            expectedHourly: updateData.hourlyRate,
+            actualHourly: employee.hourlyRate
+        });
+        
+        if (!savedCorrectly) {
+            console.error('❌ [SALARY-DEBUG] CRITICAL: Salary data not saved correctly!');
+        }
+    }
     
     const response = {
         success: true,
