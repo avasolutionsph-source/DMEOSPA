@@ -238,7 +238,14 @@ class EmployeeManager {
                     dailyRate: emp.dailyRate || 0,
                     monthlyRate: emp.monthlyRate || 0,
                     hourlyRate: emp.hourlyRate || 0,
-                    overtimeMultiplier: emp.overtimeMultiplier || 1.25
+                    overtimeMultiplier: emp.overtimeMultiplier || 1.25,
+                    // CRITICAL FIX: Explicitly preserve government benefits fields
+                    hasSSS: emp.hasSSS || false,
+                    hasPhilHealth: emp.hasPhilHealth || false,
+                    hasPagibig: emp.hasPagibig || false,
+                    sssDeductionAmount: emp.sssDeductionAmount || 0,
+                    philHealthDeductionAmount: emp.philHealthDeductionAmount || 0,
+                    pagIbigDeductionAmount: emp.pagIbigDeductionAmount || 0
                 }));
                 
                 console.log('👥 [EMPLOYEE-MANAGER] Processed employee data sample:', employees.slice(0, 2));
@@ -540,7 +547,19 @@ class EmployeeManager {
                 ...employee,
                 id: employee._id || employee.id, // Map MongoDB _id to frontend id field
                 name: employee.firstName ? `${employee.firstName} ${employee.lastName}`.trim() : employee.name,
-                wageType: employee.salaryType || employee.wageType || 'daily' // Map backend salaryType to frontend wageType
+                wageType: employee.salaryType || employee.wageType || 'daily', // Map backend salaryType to frontend wageType
+                // CRITICAL FIX: Explicitly preserve salary fields to prevent data loss (same as loadEmployees)
+                dailyRate: employee.dailyRate || 0,
+                monthlyRate: employee.monthlyRate || 0,
+                hourlyRate: employee.hourlyRate || 0,
+                overtimeMultiplier: employee.overtimeMultiplier || 1.25,
+                // CRITICAL FIX: Explicitly preserve government benefits fields
+                hasSSS: employee.hasSSS || false,
+                hasPhilHealth: employee.hasPhilHealth || false,
+                hasPagibig: employee.hasPagibig || false,
+                sssDeductionAmount: employee.sssDeductionAmount || 0,
+                philHealthDeductionAmount: employee.philHealthDeductionAmount || 0,
+                pagIbigDeductionAmount: employee.pagIbigDeductionAmount || 0
             };
             
             // 🔍 DEBUGGING: Log salary data received from backend
@@ -982,7 +1001,19 @@ class EmployeeManager {
                 ...employee,
                 id: employee._id || employee.id, // Map MongoDB _id to frontend id field
                 name: employee.firstName ? `${employee.firstName} ${employee.lastName}`.trim() : employee.name,
-                wageType: employee.salaryType || employee.wageType || 'daily' // Map backend salaryType to frontend wageType
+                wageType: employee.salaryType || employee.wageType || 'daily', // Map backend salaryType to frontend wageType
+                // CRITICAL FIX: Explicitly preserve salary fields to prevent data loss (same as loadEmployees)
+                dailyRate: employee.dailyRate || 0,
+                monthlyRate: employee.monthlyRate || 0,
+                hourlyRate: employee.hourlyRate || 0,
+                overtimeMultiplier: employee.overtimeMultiplier || 1.25,
+                // CRITICAL FIX: Explicitly preserve government benefits fields
+                hasSSS: employee.hasSSS || false,
+                hasPhilHealth: employee.hasPhilHealth || false,
+                hasPagibig: employee.hasPagibig || false,
+                sssDeductionAmount: employee.sssDeductionAmount || 0,
+                philHealthDeductionAmount: employee.philHealthDeductionAmount || 0,
+                pagIbigDeductionAmount: employee.pagIbigDeductionAmount || 0
             };
 
             this.editingEmployee = employee;
