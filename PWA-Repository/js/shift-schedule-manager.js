@@ -40,10 +40,24 @@ class ShiftScheduleManager {
     }
     
     setupEventListeners() {
-        // Add Schedule button
+        // Add Schedule button - use event delegation for reliability
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'addShiftScheduleBtn') {
+                console.log('🗓️ Create Schedule button clicked');
+                this.showCreateScheduleModal();
+            }
+        });
+        
+        // Also try direct attachment for immediate availability
         const addScheduleBtn = document.getElementById('addShiftScheduleBtn');
         if (addScheduleBtn) {
-            addScheduleBtn.addEventListener('click', () => this.showCreateScheduleModal());
+            console.log('✅ Found addShiftScheduleBtn, attaching event listener');
+            addScheduleBtn.addEventListener('click', () => {
+                console.log('🗓️ Create Schedule button clicked (direct)');
+                this.showCreateScheduleModal();
+            });
+        } else {
+            console.warn('⚠️ addShiftScheduleBtn not found during initialization');
         }
         
         // Search functionality
@@ -209,12 +223,72 @@ class ShiftScheduleManager {
         
         if (this.schedules.length === 0) {
             gridContainer.innerHTML = `
-                <div style="text-align: center; padding: 3rem; color: #6B7280;">
-                    <i class="fas fa-calendar-week" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                    <h3>No Shift Schedules Yet</h3>
-                    <p>Create your first employee shift schedule to get started.</p>
-                    <button class="btn btn-primary" onclick="window.shiftScheduleManager.showCreateScheduleModal()">
-                        <i class="fas fa-plus"></i> Create Schedule
+                <div class="schedule-empty-state" style="
+                    text-align: center;
+                    padding: 4rem 2rem;
+                    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+                    border-radius: 16px;
+                    border: 2px dashed #e2e8f0;
+                    margin: 2rem 0;
+                ">
+                    <div style="
+                        width: 80px;
+                        height: 80px;
+                        margin: 0 auto 2rem auto;
+                        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+                    ">
+                        <i class="fas fa-calendar-week" style="
+                            font-size: 2rem;
+                            color: #64748b;
+                        "></i>
+                    </div>
+                    <h3 style="
+                        font-size: 1.5rem;
+                        font-weight: 700;
+                        color: #1f2937;
+                        margin: 0 0 1rem 0;
+                    ">No Shift Schedules Yet</h3>
+                    <p style="
+                        color: #6b7280;
+                        font-size: 1.1rem;
+                        line-height: 1.6;
+                        margin: 0 0 2rem 0;
+                        max-width: 500px;
+                        margin-left: auto;
+                        margin-right: auto;
+                    ">Create your first employee shift schedule to get started.<br>Assign day shifts, night shifts, and days off for each employee.</p>
+                    <button 
+                        onclick="window.shiftScheduleManager.showCreateScheduleModal()" 
+                        style="
+                            background: linear-gradient(135deg, #800020 0%, #600015 100%);
+                            border: none;
+                            padding: 1rem 2.5rem;
+                            font-weight: 600;
+                            font-size: 1.1rem;
+                            color: white;
+                            border-radius: 12px;
+                            box-shadow: 0 10px 25px -5px rgba(128, 0, 32, 0.3), 0 10px 10px -5px rgba(128, 0, 32, 0.1);
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 0.75rem;
+                        "
+                        onmouseover="
+                            this.style.transform='translateY(-2px)';
+                            this.style.boxShadow='0 20px 25px -5px rgba(128, 0, 32, 0.4), 0 10px 10px -5px rgba(128, 0, 32, 0.2)';
+                        "
+                        onmouseout="
+                            this.style.transform='translateY(0)';
+                            this.style.boxShadow='0 10px 25px -5px rgba(128, 0, 32, 0.3), 0 10px 10px -5px rgba(128, 0, 32, 0.1)';
+                        "
+                    >
+                        <i class="fas fa-plus"></i> Create First Schedule
                     </button>
                 </div>
             `;
@@ -303,14 +377,28 @@ class ShiftScheduleManager {
     }
     
     showCreateScheduleModal() {
+        console.log('🗓️ Opening Create Shift Schedule Modal...');
+        
+        // Ensure modal elements exist
+        const form = document.getElementById('shiftScheduleForm');
+        const modal = document.getElementById('shiftScheduleModal');
+        
+        if (!form || !modal) {
+            console.error('❌ Shift schedule modal or form not found');
+            return;
+        }
+        
         // Reset form
-        document.getElementById('shiftScheduleForm').reset();
+        form.reset();
         document.getElementById('scheduleId').value = '';
         document.getElementById('shiftScheduleModalTitle').textContent = 'Create Shift Schedule';
         
         // Set default effective date to today
         const today = new Date().toISOString().split('T')[0];
-        document.getElementById('scheduleEffectiveDate').value = today;
+        const effectiveDateInput = document.getElementById('scheduleEffectiveDate');
+        if (effectiveDateInput) {
+            effectiveDateInput.value = today;
+        }
         
         // Reset all shift selects to 'off'
         document.querySelectorAll('.day-shift-select').forEach(select => {
@@ -322,12 +410,19 @@ class ShiftScheduleManager {
         
         // Load employees if not already loaded
         if (this.employees.length === 0) {
+            console.log('📥 Loading employees for dropdown...');
             this.loadEmployees();
         }
         
         // Show modal
         if (typeof openModal === 'function') {
+            console.log('✅ Opening modal...');
             openModal('shiftScheduleModal');
+        } else {
+            console.error('❌ openModal function not available');
+            // Fallback: show modal directly
+            modal.style.display = 'flex';
+            modal.classList.add('active');
         }
     }
     
@@ -634,10 +729,28 @@ class ShiftScheduleManager {
             return;
         }
         
+        console.log('🗓️ Shift Schedule page shown, initializing...');
+        
+        // Re-setup event listeners to ensure they work
+        this.ensureEventListeners();
+        
         await Promise.all([
             this.loadSchedules(),
             this.loadEmployees()
         ]);
+    }
+    
+    // Ensure event listeners are attached
+    ensureEventListeners() {
+        const addScheduleBtn = document.getElementById('addShiftScheduleBtn');
+        if (addScheduleBtn && !addScheduleBtn.hasAttribute('data-listener-attached')) {
+            console.log('✅ Attaching event listener to Create Schedule button');
+            addScheduleBtn.addEventListener('click', () => {
+                console.log('🗓️ Create Schedule button clicked (page show)');
+                this.showCreateScheduleModal();
+            });
+            addScheduleBtn.setAttribute('data-listener-attached', 'true');
+        }
     }
 }
 

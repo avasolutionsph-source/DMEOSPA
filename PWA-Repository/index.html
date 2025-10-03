@@ -1022,49 +1022,210 @@
 
             <!-- Shift Schedule Page -->
             <div id="shift-schedule" class="page">
-                <div class="page-header">
-                    <h1>Shift Schedule Management</h1>
-                    <button class="btn btn-primary" id="addShiftScheduleBtn">
+                <div class="page-header" style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 2rem;
+                    padding: 1.5rem 0;
+                ">
+                    <div>
+                        <h1 style="
+                            font-size: 2.25rem;
+                            font-weight: 800;
+                            color: #1f2937;
+                            margin: 0;
+                            line-height: 1.2;
+                        ">Shift Schedule Management</h1>
+                        <p style="
+                            color: #6b7280;
+                            margin: 0.5rem 0 0 0;
+                            font-size: 1.1rem;
+                            font-weight: 400;
+                        ">Manage employee work schedules and assignments</p>
+                    </div>
+                    <button class="btn btn-primary" id="addShiftScheduleBtn" style="
+                        background: linear-gradient(135deg, #800020 0%, #600015 100%);
+                        border: none;
+                        padding: 0.875rem 1.75rem;
+                        border-radius: 12px;
+                        font-weight: 600;
+                        font-size: 1rem;
+                        color: white;
+                        box-shadow: 0 10px 15px -3px rgba(128, 0, 32, 0.3), 0 4px 6px -2px rgba(128, 0, 32, 0.1);
+                        transition: all 0.3s ease;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        gap: 0.5rem;
+                    " onmouseover="
+                        this.style.transform='translateY(-2px)';
+                        this.style.boxShadow='0 20px 25px -5px rgba(128, 0, 32, 0.3), 0 10px 10px -5px rgba(128, 0, 32, 0.1)';
+                    " onmouseout="
+                        this.style.transform='translateY(0)';
+                        this.style.boxShadow='0 10px 15px -3px rgba(128, 0, 32, 0.3), 0 4px 6px -2px rgba(128, 0, 32, 0.1)';
+                    ">
                         <i class="fas fa-plus"></i> Create Schedule
                     </button>
                 </div>
                 
                 <!-- Schedule Analytics Dashboard -->
-                <div class="dashboard-grid" style="margin-bottom: 2rem;">
-                    <div class="dashboard-card">
-                        <div class="card-icon" style="background: #EBF5FF;">
-                            <i class="fas fa-users" style="color: #3B82F6;"></i>
+                <div class="dashboard-grid" style="
+                    margin-bottom: 2rem;
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+                    gap: 1.5rem;
+                ">
+                    <div class="dashboard-card" style="
+                        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+                        border-radius: 16px;
+                        padding: 1.5rem;
+                        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                        border: 1px solid #e2e8f0;
+                        transition: all 0.3s ease;
+                        cursor: pointer;
+                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';">
+                        <div class="card-icon" style="
+                            background: linear-gradient(135deg, #EBF5FF 0%, #DBEAFE 100%);
+                            width: 60px;
+                            height: 60px;
+                            border-radius: 16px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            margin-bottom: 1rem;
+                            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
+                        ">
+                            <i class="fas fa-users" style="color: #3B82F6; font-size: 1.5rem;"></i>
                         </div>
                         <div class="card-content">
-                            <h3 id="totalScheduledEmployees">0</h3>
-                            <p>Scheduled Employees</p>
+                            <h3 id="totalScheduledEmployees" style="
+                                font-size: 2rem;
+                                font-weight: 700;
+                                color: #1f2937;
+                                margin: 0 0 0.5rem 0;
+                                line-height: 1;
+                            ">0</h3>
+                            <p style="
+                                color: #6b7280;
+                                margin: 0;
+                                font-weight: 500;
+                                font-size: 0.95rem;
+                            ">Scheduled Employees</p>
                         </div>
                     </div>
-                    <div class="dashboard-card">
-                        <div class="card-icon" style="background: #FEF3E2;">
-                            <i class="fas fa-sun" style="color: #F59E0B;"></i>
+                    <div class="dashboard-card" style="
+                        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+                        border-radius: 16px;
+                        padding: 1.5rem;
+                        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                        border: 1px solid #e2e8f0;
+                        transition: all 0.3s ease;
+                        cursor: pointer;
+                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';">
+                        <div class="card-icon" style="
+                            background: linear-gradient(135deg, #FEF3E2 0%, #FED7AA 100%);
+                            width: 60px;
+                            height: 60px;
+                            border-radius: 16px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            margin-bottom: 1rem;
+                            box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.1);
+                        ">
+                            <i class="fas fa-sun" style="color: #F59E0B; font-size: 1.5rem;"></i>
                         </div>
                         <div class="card-content">
-                            <h3 id="dayShiftCount">0</h3>
-                            <p>Day Shifts</p>
+                            <h3 id="dayShiftCount" style="
+                                font-size: 2rem;
+                                font-weight: 700;
+                                color: #1f2937;
+                                margin: 0 0 0.5rem 0;
+                                line-height: 1;
+                            ">0</h3>
+                            <p style="
+                                color: #6b7280;
+                                margin: 0;
+                                font-weight: 500;
+                                font-size: 0.95rem;
+                            ">Day Shifts</p>
                         </div>
                     </div>
-                    <div class="dashboard-card">
-                        <div class="card-icon" style="background: #F3E8FF;">
-                            <i class="fas fa-moon" style="color: #8B5CF6;"></i>
+                    <div class="dashboard-card" style="
+                        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+                        border-radius: 16px;
+                        padding: 1.5rem;
+                        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                        border: 1px solid #e2e8f0;
+                        transition: all 0.3s ease;
+                        cursor: pointer;
+                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';">
+                        <div class="card-icon" style="
+                            background: linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%);
+                            width: 60px;
+                            height: 60px;
+                            border-radius: 16px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            margin-bottom: 1rem;
+                            box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.1);
+                        ">
+                            <i class="fas fa-moon" style="color: #8B5CF6; font-size: 1.5rem;"></i>
                         </div>
                         <div class="card-content">
-                            <h3 id="nightShiftCount">0</h3>
-                            <p>Night Shifts</p>
+                            <h3 id="nightShiftCount" style="
+                                font-size: 2rem;
+                                font-weight: 700;
+                                color: #1f2937;
+                                margin: 0 0 0.5rem 0;
+                                line-height: 1;
+                            ">0</h3>
+                            <p style="
+                                color: #6b7280;
+                                margin: 0;
+                                font-weight: 500;
+                                font-size: 0.95rem;
+                            ">Night Shifts</p>
                         </div>
                     </div>
-                    <div class="dashboard-card">
-                        <div class="card-icon" style="background: #F0FDF4;">
-                            <i class="fas fa-calendar-check" style="color: #10B981;"></i>
+                    <div class="dashboard-card" style="
+                        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+                        border-radius: 16px;
+                        padding: 1.5rem;
+                        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                        border: 1px solid #e2e8f0;
+                        transition: all 0.3s ease;
+                        cursor: pointer;
+                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';">
+                        <div class="card-icon" style="
+                            background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
+                            width: 60px;
+                            height: 60px;
+                            border-radius: 16px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            margin-bottom: 1rem;
+                            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.1);
+                        ">
+                            <i class="fas fa-calendar-check" style="color: #10B981; font-size: 1.5rem;"></i>
                         </div>
                         <div class="card-content">
-                            <h3 id="activeSchedulesCount">0</h3>
-                            <p>Active Schedules</p>
+                            <h3 id="activeSchedulesCount" style="
+                                font-size: 2rem;
+                                font-weight: 700;
+                                color: #1f2937;
+                                margin: 0 0 0.5rem 0;
+                                line-height: 1;
+                            ">0</h3>
+                            <p style="
+                                color: #6b7280;
+                                margin: 0;
+                                font-weight: 500;
+                                font-size: 0.95rem;
+                            ">Active Schedules</p>
                         </div>
                     </div>
                 </div>
@@ -1095,8 +1256,18 @@
                 </div>
                 
                 <!-- Schedule Grid -->
-                <div class="schedule-grid-container">
-                    <div class="schedule-grid" id="scheduleGrid">
+                <div class="schedule-grid-container" style="
+                    background: #ffffff;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                    border: 1px solid #e5e7eb;
+                    overflow: hidden;
+                    margin-bottom: 2rem;
+                ">
+                    <div class="schedule-grid" id="scheduleGrid" style="
+                        min-height: 200px;
+                        padding: 1.5rem;
+                    ">
                         <!-- Schedule grid will be populated by JavaScript -->
                     </div>
                 </div>
@@ -4323,28 +4494,75 @@
         /* Shift Schedule Specific Styles */
         .schedule-grid-container {
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             overflow: hidden;
+            border: 1px solid #e5e7eb;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .schedule-grid {
             width: 100%;
             border-collapse: collapse;
-        }
-        
-        .schedule-grid th,
-        .schedule-grid td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
+            margin: 0;
         }
         
         .schedule-grid th {
-            background: #f9fafb;
+            background: linear-gradient(135deg, #800020 0%, #600015 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+            padding: 1rem 0.75rem;
+            text-align: left;
+            border: none;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .schedule-grid th:first-child {
+            border-top-left-radius: 8px;
+        }
+        
+        .schedule-grid th:last-child {
+            border-top-right-radius: 8px;
+        }
+        
+        .schedule-grid td {
+            padding: 1rem 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #f1f5f9;
+            background: white;
+            vertical-align: middle;
+        }
+        
+        .schedule-empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6B7280;
+        }
+        
+        .schedule-empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.3;
+            color: #800020;
+        }
+        
+        .schedule-empty-state h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.5rem;
             font-weight: 600;
             color: #374151;
-            font-size: 0.875rem;
+        }
+        
+        .schedule-empty-state p {
+            margin: 0 0 2rem 0;
+            font-size: 1rem;
+            line-height: 1.5;
         }
         
         .shift-badge {
