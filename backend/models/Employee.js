@@ -189,42 +189,62 @@ const employeeSchema = new mongoose.Schema({
   // SSS Detailed Configuration
   sssContributionMethod: {
     type: String,
-    enum: ['table-based', 'percentage'],
+    enum: ['table-based', 'percentage', 'fixed-amount'],
     default: 'table-based'
   },
   sssEmployeeShareRate: {
     type: Number,
     min: 0,
-    max: 100,
-    default: 4.5 // Standard employee share percentage
+    default: 4.5 // Standard employee share percentage or fixed amount
+  },
+  sssDeductionType: {
+    type: String,
+    enum: ['percentage', 'fixed-amount'],
+    default: 'percentage'
   },
   
   // PhilHealth Detailed Configuration
   philHealthRate: {
     type: Number,
     min: 0,
-    max: 100,
-    default: 2 // Standard 2% of salary
+    default: 2 // Standard 2% of salary or fixed amount
   },
   philHealthEmployeeShareRate: {
     type: Number,
     min: 0,
-    max: 100,
-    default: 50 // Employee pays 50%, employer pays 50%
+    default: 50 // Employee pays 50%, employer pays 50% or fixed amount
+  },
+  philHealthDeductionType: {
+    type: String,
+    enum: ['percentage', 'fixed-amount'],
+    default: 'percentage'
+  },
+  philHealthEmployeeDeductionType: {
+    type: String,
+    enum: ['percentage', 'fixed-amount'],
+    default: 'percentage'
   },
   
   // Pag-IBIG Detailed Configuration
   pagIbigRate: {
     type: Number,
     min: 0,
-    max: 100,
-    default: 2 // Standard 2% of salary
+    default: 2 // Standard 2% of salary or fixed amount
   },
   pagIbigEmployeeContributionRate: {
     type: Number,
     min: 0,
-    max: 100,
-    default: 1 // Standard 1% employee contribution
+    default: 1 // Standard 1% employee contribution or fixed amount
+  },
+  pagIbigDeductionType: {
+    type: String,
+    enum: ['percentage', 'fixed-amount'],
+    default: 'percentage'
+  },
+  pagIbigEmployeeDeductionType: {
+    type: String,
+    enum: ['percentage', 'fixed-amount'],
+    default: 'percentage'
   },
   
   // Tax Calculation Configuration

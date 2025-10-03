@@ -884,10 +884,15 @@ class EmployeeManager {
             // Fill detailed government deduction configuration
             document.getElementById('employeeSssMethod').value = employee.sssContributionMethod || 'table-based';
             document.getElementById('employeeSssRate').value = employee.sssEmployeeShareRate || '4.5';
+            document.getElementById('employeeSssDeductionType').value = employee.sssDeductionType || 'percentage';
             document.getElementById('employeePhilHealthRate').value = employee.philHealthRate || '2';
             document.getElementById('employeePhilHealthShare').value = employee.philHealthEmployeeShareRate || '50';
+            document.getElementById('employeePhilHealthType').value = employee.philHealthDeductionType || 'percentage';
+            document.getElementById('employeePhilHealthShareType').value = employee.philHealthEmployeeDeductionType || 'percentage';
             document.getElementById('employeePagibigRate').value = employee.pagIbigRate || '2';
             document.getElementById('employeePagibigContribution').value = employee.pagIbigEmployeeContributionRate || '1';
+            document.getElementById('employeePagibigType').value = employee.pagIbigDeductionType || 'percentage';
+            document.getElementById('employeePagibigContributionType').value = employee.pagIbigEmployeeDeductionType || 'percentage';
             document.getElementById('employeeTaxMethod').value = employee.taxCalculationMethod || 'bir-train-law';
             
             // Show configuration sections if benefits are enabled
@@ -1117,10 +1122,15 @@ class EmployeeManager {
                 // Detailed Government Deduction Configuration
                 sssContributionMethod: document.getElementById('employeeSssMethod')?.value || 'table-based',
                 sssEmployeeShareRate: parseFloat(document.getElementById('employeeSssRate')?.value || '4.5') || 4.5,
+                sssDeductionType: document.getElementById('employeeSssDeductionType')?.value || 'percentage',
                 philHealthRate: parseFloat(document.getElementById('employeePhilHealthRate')?.value || '2') || 2,
                 philHealthEmployeeShareRate: parseFloat(document.getElementById('employeePhilHealthShare')?.value || '50') || 50,
+                philHealthDeductionType: document.getElementById('employeePhilHealthType')?.value || 'percentage',
+                philHealthEmployeeDeductionType: document.getElementById('employeePhilHealthShareType')?.value || 'percentage',
                 pagIbigRate: parseFloat(document.getElementById('employeePagibigRate')?.value || '2') || 2,
                 pagIbigEmployeeContributionRate: parseFloat(document.getElementById('employeePagibigContribution')?.value || '1') || 1,
+                pagIbigDeductionType: document.getElementById('employeePagibigType')?.value || 'percentage',
+                pagIbigEmployeeDeductionType: document.getElementById('employeePagibigContributionType')?.value || 'percentage',
                 taxCalculationMethod: document.getElementById('employeeTaxMethod')?.value || 'bir-train-law',
                 // Backend compatibility
                 isActive: true,

@@ -2723,12 +2723,20 @@
                                                     <select id="employeeSssMethod" class="form-input" style="font-size: 0.85rem;">
                                                         <option value="table-based">Table-based (Philippine SSS Table)</option>
                                                         <option value="percentage">Percentage-based</option>
+                                                        <option value="fixed-amount">Fixed Amount (PHP)</option>
                                                     </select>
                                                 </div>
                                                 <div style="flex: 1;">
-                                                    <label style="font-size: 0.8rem; color: #666;">Employee Share (%)</label>
-                                                    <input type="number" id="employeeSssRate" class="form-input" step="0.1" min="0" max="100" value="4.5" placeholder="4.5" style="font-size: 0.85rem;">
-                                                    <small style="color: #666; font-size: 0.75em;">Employee share percentage (employer matches)</small>
+                                                    <label style="font-size: 0.8rem; color: #666;">Deduction Type</label>
+                                                    <select id="employeeSssDeductionType" class="form-input" style="font-size: 0.85rem;">
+                                                        <option value="percentage">Percentage (%)</option>
+                                                        <option value="fixed-amount">Fixed Amount (PHP)</option>
+                                                    </select>
+                                                </div>
+                                                <div style="flex: 1;">
+                                                    <label style="font-size: 0.8rem; color: #666;">Employee Share</label>
+                                                    <input type="number" id="employeeSssRate" class="form-input" step="0.1" min="0" value="4.5" placeholder="4.5" style="font-size: 0.85rem;">
+                                                    <small id="sssRateHint" style="color: #666; font-size: 0.75em;">Employee share percentage (employer matches)</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -2743,14 +2751,28 @@
                                         <div id="philHealthConfiguration" style="margin-left: 1.5rem; display: none;">
                                             <div style="display: flex; gap: 1rem; margin-bottom: 0.5rem;">
                                                 <div style="flex: 1;">
-                                                    <label style="font-size: 0.8rem; color: #666;">PhilHealth Rate (%)</label>
-                                                    <input type="number" id="employeePhilHealthRate" class="form-input" step="0.1" min="0" max="100" value="2" placeholder="2" style="font-size: 0.85rem;">
-                                                    <small style="color: #666; font-size: 0.75em;">Total PhilHealth rate</small>
+                                                    <label style="font-size: 0.8rem; color: #666;">Rate Type</label>
+                                                    <select id="employeePhilHealthType" class="form-input" style="font-size: 0.85rem;">
+                                                        <option value="percentage">Percentage (%)</option>
+                                                        <option value="fixed-amount">Fixed Amount (PHP)</option>
+                                                    </select>
                                                 </div>
                                                 <div style="flex: 1;">
-                                                    <label style="font-size: 0.8rem; color: #666;">Employee Share (%)</label>
-                                                    <input type="number" id="employeePhilHealthShare" class="form-input" step="0.1" min="0" max="100" value="50" placeholder="50" style="font-size: 0.85rem;">
-                                                    <small style="color: #666; font-size: 0.75em;">Employee share percentage (employer matches)</small>
+                                                    <label style="font-size: 0.8rem; color: #666;">PhilHealth Rate</label>
+                                                    <input type="number" id="employeePhilHealthRate" class="form-input" step="0.1" min="0" value="2" placeholder="2" style="font-size: 0.85rem;">
+                                                    <small id="philHealthRateHint" style="color: #666; font-size: 0.75em;">Total PhilHealth rate</small>
+                                                </div>
+                                                <div style="flex: 1;">
+                                                    <label style="font-size: 0.8rem; color: #666;">Employee Share Type</label>
+                                                    <select id="employeePhilHealthShareType" class="form-input" style="font-size: 0.85rem;">
+                                                        <option value="percentage">Percentage (%)</option>
+                                                        <option value="fixed-amount">Fixed Amount (PHP)</option>
+                                                    </select>
+                                                </div>
+                                                <div style="flex: 1;">
+                                                    <label style="font-size: 0.8rem; color: #666;">Employee Share</label>
+                                                    <input type="number" id="employeePhilHealthShare" class="form-input" step="0.1" min="0" value="50" placeholder="50" style="font-size: 0.85rem;">
+                                                    <small id="philHealthShareHint" style="color: #666; font-size: 0.75em;">Employee share (employer matches)</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -2765,14 +2787,28 @@
                                         <div id="pagibigConfiguration" style="margin-left: 1.5rem; display: none;">
                                             <div style="display: flex; gap: 1rem; margin-bottom: 0.5rem;">
                                                 <div style="flex: 1;">
-                                                    <label style="font-size: 0.8rem; color: #666;">Pag-IBIG Rate (%)</label>
-                                                    <input type="number" id="employeePagibigRate" class="form-input" step="0.1" min="0" max="100" value="2" placeholder="2" style="font-size: 0.85rem;">
-                                                    <small style="color: #666; font-size: 0.75em;">Total Pag-IBIG rate</small>
+                                                    <label style="font-size: 0.8rem; color: #666;">Rate Type</label>
+                                                    <select id="employeePagibigType" class="form-input" style="font-size: 0.85rem;">
+                                                        <option value="percentage">Percentage (%)</option>
+                                                        <option value="fixed-amount">Fixed Amount (PHP)</option>
+                                                    </select>
                                                 </div>
                                                 <div style="flex: 1;">
-                                                    <label style="font-size: 0.8rem; color: #666;">Employee Contribution (%)</label>
-                                                    <input type="number" id="employeePagibigContribution" class="form-input" step="0.1" min="0" max="100" value="1" placeholder="1" style="font-size: 0.85rem;">
-                                                    <small style="color: #666; font-size: 0.75em;">Employee contribution percentage</small>
+                                                    <label style="font-size: 0.8rem; color: #666;">Pag-IBIG Rate</label>
+                                                    <input type="number" id="employeePagibigRate" class="form-input" step="0.1" min="0" value="2" placeholder="2" style="font-size: 0.85rem;">
+                                                    <small id="pagibigRateHint" style="color: #666; font-size: 0.75em;">Total Pag-IBIG rate</small>
+                                                </div>
+                                                <div style="flex: 1;">
+                                                    <label style="font-size: 0.8rem; color: #666;">Employee Type</label>
+                                                    <select id="employeePagibigContributionType" class="form-input" style="font-size: 0.85rem;">
+                                                        <option value="percentage">Percentage (%)</option>
+                                                        <option value="fixed-amount">Fixed Amount (PHP)</option>
+                                                    </select>
+                                                </div>
+                                                <div style="flex: 1;">
+                                                    <label style="font-size: 0.8rem; color: #666;">Employee Contribution</label>
+                                                    <input type="number" id="employeePagibigContribution" class="form-input" step="0.1" min="0" value="1" placeholder="1" style="font-size: 0.85rem;">
+                                                    <small id="pagibigContributionHint" style="color: #666; font-size: 0.75em;">Employee contribution</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -2830,6 +2866,64 @@
         if (pagibigCheckbox && pagibigConfig) {
             pagibigCheckbox.addEventListener('change', function() {
                 pagibigConfig.style.display = this.checked ? 'block' : 'none';
+            });
+        }
+        
+        // Update hint text based on deduction type selection
+        updateDeductionHints();
+    }
+    
+    function updateDeductionHints() {
+        // SSS Deduction Type Change
+        const sssTypeSelect = document.getElementById('employeeSssDeductionType');
+        const sssHint = document.getElementById('sssRateHint');
+        if (sssTypeSelect && sssHint) {
+            sssTypeSelect.addEventListener('change', function() {
+                sssHint.textContent = this.value === 'fixed-amount' ? 
+                    'Fixed amount in PHP (e.g., 300 PHP)' : 
+                    'Employee share percentage (employer matches)';
+            });
+        }
+        
+        // PhilHealth Type Changes
+        const philHealthTypeSelect = document.getElementById('employeePhilHealthType');
+        const philHealthHint = document.getElementById('philHealthRateHint');
+        if (philHealthTypeSelect && philHealthHint) {
+            philHealthTypeSelect.addEventListener('change', function() {
+                philHealthHint.textContent = this.value === 'fixed-amount' ? 
+                    'Fixed amount in PHP (e.g., 150 PHP)' : 
+                    'Total PhilHealth rate percentage';
+            });
+        }
+        
+        const philHealthShareTypeSelect = document.getElementById('employeePhilHealthShareType');
+        const philHealthShareHint = document.getElementById('philHealthShareHint');
+        if (philHealthShareTypeSelect && philHealthShareHint) {
+            philHealthShareTypeSelect.addEventListener('change', function() {
+                philHealthShareHint.textContent = this.value === 'fixed-amount' ? 
+                    'Fixed employee share in PHP (e.g., 75 PHP)' : 
+                    'Employee share percentage (employer matches)';
+            });
+        }
+        
+        // Pag-IBIG Type Changes
+        const pagibigTypeSelect = document.getElementById('employeePagibigType');
+        const pagibigHint = document.getElementById('pagibigRateHint');
+        if (pagibigTypeSelect && pagibigHint) {
+            pagibigTypeSelect.addEventListener('change', function() {
+                pagibigHint.textContent = this.value === 'fixed-amount' ? 
+                    'Fixed amount in PHP (e.g., 200 PHP)' : 
+                    'Total Pag-IBIG rate percentage';
+            });
+        }
+        
+        const pagibigContribTypeSelect = document.getElementById('employeePagibigContributionType');
+        const pagibigContribHint = document.getElementById('pagibigContributionHint');
+        if (pagibigContribTypeSelect && pagibigContribHint) {
+            pagibigContribTypeSelect.addEventListener('change', function() {
+                pagibigContribHint.textContent = this.value === 'fixed-amount' ? 
+                    'Fixed employee contribution in PHP (e.g., 100 PHP)' : 
+                    'Employee contribution percentage';
             });
         }
     }

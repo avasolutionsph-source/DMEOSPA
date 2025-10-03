@@ -25,9 +25,9 @@ router.post('/', withErrorHandling(async (req, res) => {
             commissionRate, assignedRooms, createLogin, temporaryPassword,
             wageType, dailyRate, monthlyRate, hourlyRate, overtimeMultiplier,
             hasSSS, hasPhilHealth, hasPagibig,
-            sssContributionMethod, sssEmployeeShareRate,
-            philHealthRate, philHealthEmployeeShareRate,
-            pagIbigRate, pagIbigEmployeeContributionRate,
+            sssContributionMethod, sssEmployeeShareRate, sssDeductionType,
+            philHealthRate, philHealthEmployeeShareRate, philHealthDeductionType, philHealthEmployeeDeductionType,
+            pagIbigRate, pagIbigEmployeeContributionRate, pagIbigDeductionType, pagIbigEmployeeDeductionType,
             taxCalculationMethod } = req.body;
     
     // Validate required fields
@@ -105,10 +105,15 @@ router.post('/', withErrorHandling(async (req, res) => {
         // Detailed government deduction configuration
         sssContributionMethod: sssContributionMethod || 'table-based',
         sssEmployeeShareRate: parseFloat(sssEmployeeShareRate) || 4.5,
+        sssDeductionType: sssDeductionType || 'percentage',
         philHealthRate: parseFloat(philHealthRate) || 2,
         philHealthEmployeeShareRate: parseFloat(philHealthEmployeeShareRate) || 50,
+        philHealthDeductionType: philHealthDeductionType || 'percentage',
+        philHealthEmployeeDeductionType: philHealthEmployeeDeductionType || 'percentage',
         pagIbigRate: parseFloat(pagIbigRate) || 2,
         pagIbigEmployeeContributionRate: parseFloat(pagIbigEmployeeContributionRate) || 1,
+        pagIbigDeductionType: pagIbigDeductionType || 'percentage',
+        pagIbigEmployeeDeductionType: pagIbigEmployeeDeductionType || 'percentage',
         taxCalculationMethod: taxCalculationMethod || 'bir-train-law',
         isActive: true
     });
