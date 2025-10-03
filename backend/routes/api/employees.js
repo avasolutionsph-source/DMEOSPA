@@ -314,6 +314,16 @@ router.put('/:id', withErrorHandling(async (req, res) => {
         delete updateData.wageType;
     }
     
+    // CRITICAL FIX: Ensure salary rate fields are properly saved
+    // Frontend sends: dailyRate, monthlyRate, hourlyRate, overtimeMultiplier
+    console.log('💰 [SALARY-DEBUG] Backend received salary update data:', {
+        salaryType: updateData.salaryType,
+        dailyRate: updateData.dailyRate,
+        monthlyRate: updateData.monthlyRate,
+        hourlyRate: updateData.hourlyRate,
+        overtimeMultiplier: updateData.overtimeMultiplier
+    });
+    
     // Handle password reset or update
     let newPassword = null;
     if (updateData.resetPassword || updateData.password) {
@@ -347,6 +357,17 @@ router.put('/:id', withErrorHandling(async (req, res) => {
             employeeId: id,
             hadPasswordReset: !!req.body.resetPassword
         }
+    });
+    
+    // CRITICAL FIX: Debug salary data after save to verify persistence
+    console.log('💰 [SALARY-DEBUG] Employee data after MongoDB save:', {
+        id: employee._id,
+        name: `${employee.firstName} ${employee.lastName}`,
+        salaryType: employee.salaryType,
+        dailyRate: employee.dailyRate,
+        monthlyRate: employee.monthlyRate,
+        hourlyRate: employee.hourlyRate,
+        overtimeMultiplier: employee.overtimeMultiplier
     });
     
     const response = {

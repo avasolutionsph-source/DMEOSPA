@@ -424,7 +424,8 @@ class EmployeeManager {
                 employee = localEmployees[0];
             } else {
                 // Get employee from MongoDB API
-                const token = this.getAuthToken();
+                // CRITICAL FIX: Use global window.getAuthToken() to avoid 'this' context issues in onclick handlers
+                const token = window.getAuthToken ? window.getAuthToken() : this.getAuthToken();
                 if (!token) {
                     console.error('❌ No authentication token for viewing employee');
                     showError('Authentication required - please log in');
@@ -823,7 +824,8 @@ class EmployeeManager {
                 employee = localEmployees[0];
             } else {
                 // Get employee from MongoDB API
-                const token = this.getAuthToken();
+                // CRITICAL FIX: Use global window.getAuthToken() to avoid 'this' context issues in onclick handlers
+                const token = window.getAuthToken ? window.getAuthToken() : this.getAuthToken();
                 if (!token) {
                     console.error('❌ No authentication token for editing employee');
                     showError('Authentication required - please log in');
