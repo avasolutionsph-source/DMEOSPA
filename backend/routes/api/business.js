@@ -208,6 +208,13 @@ router.get('/employees', async (req, res) => {
         email: emp.email,
         phone: emp.phone,
         hiredDate: emp.hireDate || emp.hiredDate,
+        // Add salary configuration fields
+        dailyRate: emp.dailyRate || emp.salary?.daily || 0,
+        monthlyRate: emp.monthlyRate || emp.salary?.monthly || 0,
+        hourlyRate: emp.hourlyRate || emp.salary?.hourly || 0,
+        wageType: emp.salaryType || emp.wageType || 'daily',
+        overtimeMultiplier: emp.overtimeMultiplier || 1.25,
+        commissionRate: commissionRate,
         totalSales: totalSales,
         commission: commissionRate,
         totalCommission: totalCommission,
