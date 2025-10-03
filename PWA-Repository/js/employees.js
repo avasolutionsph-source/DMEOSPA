@@ -1206,10 +1206,10 @@ class EmployeeManager {
                 // Keep existing role if not changed
                 employeeData.role = role || this.editingEmployee.role || 'other_staff';
                 
-                // Try multiple endpoints for update
+                // CRITICAL FIX: Use only the working endpoint
+                // Removed non-existent /api/business/employees endpoint that was causing confusion
                 const updateEndpoints = [
-                    `/api/employees/${this.editingEmployee.id}`,
-                    `/api/business/employees/${this.editingEmployee.id}`
+                    `/api/employees/${this.editingEmployee.id}`
                 ];
                 
                 let updateSuccessful = false;

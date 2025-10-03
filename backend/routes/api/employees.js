@@ -517,36 +517,82 @@ router.put('/:id', withErrorHandling(async (req, res) => {
         } : null
     });
     
-    // Find and update employee
-    const employee = await Employee.findOneAndUpdate(
-        { _id: id, userId: queryUserId },
-        updateData,
-        { new: true, runValidators: true }
-    ).select('-password');
-    
-    if (!employee) {
-        // ENHANCED ERROR: Log detailed information when employee not found
-        console.error('❌ [SALARY-DEBUG] Employee not found for update:', {
+    // CRITICAL FIX: First verify employee exists with correct auth context
+    // Try finding without userId filter first to debug auth context
+    const employeeByIdOnly = await Employee.findById(id).lean();
+    if (!employeeByIdOnly) {
+        console.error('❌ [SALARY-DEBUG] Employee ID does not exist in database:', {
             employeeId: id,
-            queryUserId: queryUserId,
+            employeeIdType: typeof id
+        });
+        return res.status(404).json({
+            success: false,
+            error: 'Employee ID not found in database'
+        });
+    }
+    
+    // Check if userId mismatch is the issue
+    if (employeeByIdOnly.userId !== queryUserId) {
+        console.error('❌ [SALARY-DEBUG] CRITICAL: Authentication context mismatch:', {
+            employeeId: id,
+            employeeActualUserId: employeeByIdOnly.userId,
+            authContextUserId: queryUserId,
+            userIdType: typeof employeeByIdOnly.userId,
+            contextType: typeof queryUserId,
             authUser: {
                 id: req.user.id,
                 role: req.user.role,
                 email: req.user.email
-            },
-            updateData: {
-                salaryType: updateData.salaryType,
-                dailyRate: updateData.dailyRate,
-                monthlyRate: updateData.monthlyRate,
-                hourlyRate: updateData.hourlyRate
             }
         });
         
-        return res.status(404).json({
-            success: false,
-            error: 'Employee not found or you do not have permission to update this employee'
-        });
+        // Try update with the actual userId from the employee record
+        console.log('🔄 [SALARY-DEBUG] Attempting update with employee\'s actual userId...');
+        const employee = await Employee.findOneAndUpdate(
+            { _id: id, userId: employeeByIdOnly.userId },
+            updateData,
+            { new: true, runValidators: true }
+        ).select('-password');
+        
+        if (!employee) {
+            return res.status(403).json({
+                success: false,
+                error: 'Authentication context mismatch - cannot update this employee'
+            });
+        }
+        
+        console.log('✅ [SALARY-DEBUG] Update succeeded with employee\'s actual userId');
+        // Continue to success logging with this employee
+    } else {
+        // Normal update path
+        const employee = await Employee.findOneAndUpdate(
+            { _id: id, userId: queryUserId },
+            updateData,
+            { new: true, runValidators: true }
+        ).select('-password');
+        
+        if (!employee) {
+            console.error('❌ [SALARY-DEBUG] Employee update failed despite matching userId:', {
+                employeeId: id,
+                queryUserId: queryUserId,
+                updateData: {
+                    salaryType: updateData.salaryType,
+                    dailyRate: updateData.dailyRate,
+                    monthlyRate: updateData.monthlyRate,
+                    hourlyRate: updateData.hourlyRate
+                }
+            });
+            
+            return res.status(500).json({
+                success: false,
+                error: 'Employee update failed for unknown reason'
+            });
+        }
+        // Continue to success logging with this employee
     }
+    
+    // Get the updated employee for response (re-fetch to ensure we have latest data)
+    const employee = await Employee.findById(id).select('-password').lean();
     
     // ENHANCED SUCCESS LOGGING: Verify and log the actual update results
     logger.info(`Updated employee: ${id}`, {
@@ -587,7 +633,7 @@ router.put('/:id', withErrorHandling(async (req, res) => {
         }
     });
     
-    // ADDITIONAL VERIFICATION: Check if salary fields were actually saved
+    // CRITICAL VERIFICATION: Ensure salary fields were actually saved
     if (updateData.dailyRate !== undefined || updateData.monthlyRate !== undefined || updateData.hourlyRate !== undefined) {
         const savedCorrectly = (
             (updateData.dailyRate === undefined || employee.dailyRate === updateData.dailyRate) &&
@@ -602,11 +648,33 @@ router.put('/:id', withErrorHandling(async (req, res) => {
             expectedMonthly: updateData.monthlyRate,
             actualMonthly: employee.monthlyRate,
             expectedHourly: updateData.hourlyRate,
-            actualHourly: employee.hourlyRate
+            actualHourly: employee.hourlyRate,
+            salaryFieldsInResponse: {
+                dailyRate: employee.dailyRate,
+                monthlyRate: employee.monthlyRate,
+                hourlyRate: employee.hourlyRate,
+                overtimeMultiplier: employee.overtimeMultiplier
+            }
         });
         
         if (!savedCorrectly) {
             console.error('❌ [SALARY-DEBUG] CRITICAL: Salary data not saved correctly!');
+            return res.status(500).json({
+                success: false,
+                error: 'Salary data was not saved correctly to database',
+                debug: {
+                    expected: {
+                        dailyRate: updateData.dailyRate,
+                        monthlyRate: updateData.monthlyRate,
+                        hourlyRate: updateData.hourlyRate
+                    },
+                    actual: {
+                        dailyRate: employee.dailyRate,
+                        monthlyRate: employee.monthlyRate,
+                        hourlyRate: employee.hourlyRate
+                    }
+                }
+            });
         }
     }
     
