@@ -62,18 +62,55 @@ class ShiftScheduleManager {
     }
     
     hasPermission() {
-        // Check user role from localStorage or authSystem
+        // Check user role from multiple sources
         const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-        const userRole = userData.role || (window.authSystem?.currentUser?.role);
+        const authSystemRole = window.authSystem?.currentUser?.role;
+        const userDataRole = userData.role;
         
-        console.log('🔐 Permission check:', {
+        // Try to get role from various sources
+        const possibleRoles = [
+            userDataRole,
+            authSystemRole,
+            userData.userRole,
+            userData.type,
+            window.authSystem?.currentUser?.type,
+            localStorage.getItem('userRole'),
+            sessionStorage.getItem('userRole')
+        ].filter(Boolean); // Remove null/undefined values
+        
+        // Enhanced logging
+        console.log('🔐 Enhanced Permission Check:', {
             userData,
-            userRole,
             authSystemUser: window.authSystem?.currentUser,
-            hasPermission: ['owner', 'manager'].includes(userRole)
+            possibleRoles,
+            localStorage_keys: Object.keys(localStorage),
+            sessionStorage_keys: Object.keys(sessionStorage)
         });
         
-        return ['owner', 'manager'].includes(userRole);
+        // Expanded list of allowed roles for shift schedule management
+        const allowedRoles = [
+            'owner',           // Business owner
+            'manager',         // Store manager  
+            'admin',           // Admin user
+            'branch',          // Branch user
+            'business_owner',  // Alternative owner format
+            'store_manager',   // Alternative manager format
+            'administrator'    // Alternative admin format
+        ];
+        
+        // Check if any of the possible roles match allowed roles
+        const hasPermission = possibleRoles.some(role => 
+            allowedRoles.includes(role?.toLowerCase())
+        );
+        
+        console.log('🔐 Permission Result:', {
+            allowedRoles,
+            foundRoles: possibleRoles,
+            hasPermission,
+            failureReason: hasPermission ? null : 'No matching role found in: ' + possibleRoles.join(', ')
+        });
+        
+        return hasPermission;
     }
     
     // Debug method to help identify authentication issues
@@ -1015,7 +1052,20 @@ class ShiftScheduleManager {
         
         if (!this.hasPermission()) {
             console.warn('⚠️ User does not have permission to access shift schedules');
-            this.showError('Access denied. Manager or owner role required.');
+            
+            // Get current user info for better error message
+            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+            const currentRole = userData.role || window.authSystem?.currentUser?.role || 'unknown';
+            
+            const errorMessage = `Access denied. Shift schedules require manager/owner/admin role.\n\nCurrent role: ${currentRole}\n\nAllowed roles: owner, manager, admin, branch`;
+            
+            this.showError(errorMessage);
+            console.error('🚫 Permission denied details:', {
+                currentRole,
+                requiredRoles: ['owner', 'manager', 'admin', 'branch'],
+                userData,
+                authSystem: window.authSystem?.currentUser
+            });
             return;
         }
         
@@ -1065,12 +1115,69 @@ class ShiftScheduleManager {
 // Initialize the shift schedule manager
 window.shiftScheduleManager = new ShiftScheduleManager();
 
-// Add global debug function for testing
+// Add global debug functions for testing
 window.debugShiftSchedule = function() {
     if (window.shiftScheduleManager) {
         window.shiftScheduleManager.debugAuthStatus();
     } else {
         console.error('❌ Shift Schedule Manager not initialized');
+    }
+};
+
+// Check current user role and permission status
+window.checkUserRole = function() {
+    console.log('👤 Current User Role Check:');
+    
+    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+    const authUser = window.authSystem?.currentUser;
+    
+    console.log('📋 User Data Sources:', {
+        localStorage_userData: userData,
+        authSystem_currentUser: authUser,
+        localStorage_userRole: localStorage.getItem('userRole'),
+        sessionStorage_userRole: sessionStorage.getItem('userRole')
+    });
+    
+    if (window.shiftScheduleManager) {
+        const hasPermission = window.shiftScheduleManager.hasPermission();
+        console.log('✅ Permission Status:', hasPermission ? 'ALLOWED' : 'DENIED');
+        return hasPermission;
+    } else {
+        console.error('❌ Shift Schedule Manager not available');
+        return false;
+    }
+};
+
+// Temporary permission bypass for testing (REMOVE IN PRODUCTION)
+window.bypassPermissionCheck = function() {
+    console.warn('⚠️ BYPASSING PERMISSION CHECK FOR TESTING');
+    
+    if (window.shiftScheduleManager) {
+        // Temporarily override the hasPermission method
+        window.shiftScheduleManager.originalHasPermission = window.shiftScheduleManager.hasPermission;
+        window.shiftScheduleManager.hasPermission = function() {
+            console.log('🔓 Permission check bypassed - returning true');
+            return true;
+        };
+        
+        console.log('✅ Permission bypass activated. Try accessing shift schedules now.');
+        return true;
+    } else {
+        console.error('❌ Shift Schedule Manager not available');
+        return false;
+    }
+};
+
+// Restore original permission checking
+window.restorePermissionCheck = function() {
+    if (window.shiftScheduleManager && window.shiftScheduleManager.originalHasPermission) {
+        window.shiftScheduleManager.hasPermission = window.shiftScheduleManager.originalHasPermission;
+        delete window.shiftScheduleManager.originalHasPermission;
+        console.log('🔒 Original permission checking restored');
+        return true;
+    } else {
+        console.warn('⚠️ No bypass to restore or manager not available');
+        return false;
     }
 };
 
