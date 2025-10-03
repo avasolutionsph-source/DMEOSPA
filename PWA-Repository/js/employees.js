@@ -669,14 +669,38 @@ class EmployeeManager {
                             <div class="info-item">
                                 <strong>Commission Rate:</strong> ${employee.commissionRate || 0}%
                             </div>
-                            ${(!employee.dailyRate || employee.dailyRate === 0) && (!employee.monthlyRate || employee.monthlyRate === 0) && (!employee.hourlyRate || employee.hourlyRate === 0) ? 
-                                `<div class="info-item" style="color: #dc2626; background-color: #fef2f2; padding: 0.75rem; border-radius: 6px; border: 1px solid #fecaca;">
-                                    <strong><i class="fas fa-exclamation-triangle"></i> No Salary Configured:</strong> This employee has no daily, monthly, or hourly rate set. Please edit the employee to configure their salary.
-                                </div>` : 
-                                `<div class="info-item" style="color: #059669; background-color: #ecfdf5; padding: 0.75rem; border-radius: 6px; border: 1px solid #a7f3d0;">
-                                    <strong><i class="fas fa-check-circle"></i> Salary Configured:</strong> Employee has salary rates properly configured.
-                                </div>`
-                            }
+                            ${(() => {
+                                // DEBUGGING: Log salary detection logic for view modal
+                                const hasDaily = employee.dailyRate && employee.dailyRate > 0;
+                                const hasMonthly = employee.monthlyRate && employee.monthlyRate > 0;
+                                const hasHourly = employee.hourlyRate && employee.hourlyRate > 0;
+                                const isConfigured = hasDaily || hasMonthly || hasHourly;
+                                
+                                console.log('💰 [SALARY-DEBUG] View modal salary detection:', {
+                                    employee: employee.name,
+                                    dailyRate: employee.dailyRate,
+                                    monthlyRate: employee.monthlyRate,
+                                    hourlyRate: employee.hourlyRate,
+                                    hasDaily,
+                                    hasMonthly,
+                                    hasHourly,
+                                    isConfigured,
+                                    dataTypes: {
+                                        dailyType: typeof employee.dailyRate,
+                                        monthlyType: typeof employee.monthlyRate,
+                                        hourlyType: typeof employee.hourlyRate
+                                    }
+                                });
+                                
+                                return !isConfigured ? 
+                                    `<div class="info-item" style="color: #dc2626; background-color: #fef2f2; padding: 0.75rem; border-radius: 6px; border: 1px solid #fecaca;">
+                                        <strong><i class="fas fa-exclamation-triangle"></i> No Salary Configured:</strong> This employee has no daily, monthly, or hourly rate set. Please edit the employee to configure their salary.
+                                    </div>` : 
+                                    `<div class="info-item" style="color: #059669; background-color: #ecfdf5; padding: 0.75rem; border-radius: 6px; border: 1px solid #a7f3d0;">
+                                        <strong><i class="fas fa-check-circle"></i> Salary Configured:</strong> Employee has salary rates properly configured.
+                                        <br><small>Daily: ₱${employee.dailyRate || 0} | Monthly: ₱${employee.monthlyRate || 0} | Hourly: ₱${employee.hourlyRate || 0}</small>
+                                    </div>`;
+                            })()}
                         </div>
                     </div>
 
