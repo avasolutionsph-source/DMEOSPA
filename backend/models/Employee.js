@@ -141,17 +141,17 @@ const employeeSchema = new mongoose.Schema({
   dailyRate: {
     type: Number,
     min: 0,
-    default: 500 // PHP 500 default daily rate
+    default: 0 // No default - 0 means unconfigured
   },
   monthlyRate: {
     type: Number,
     min: 0,
-    default: 15000 // PHP 15,000 default monthly rate
+    default: 0 // No default - 0 means unconfigured
   },
   hourlyRate: {
     type: Number,
     min: 0,
-    default: 62.50 // Current PHP minimum wage per hour
+    default: 0 // No default - 0 means unconfigured
   },
   
   // Overtime multiplier for payroll calculations

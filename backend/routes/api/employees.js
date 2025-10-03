@@ -263,6 +263,26 @@ router.get('/:id', withErrorHandling(async (req, res) => {
     
     // CRITICAL DEBUG: Check if employee exists before retrieval
     const existingEmployee = await Employee.findOne({ _id: id }).lean();
+    
+    // DATA MIGRATION: Reset old schema defaults to 0 for proper detection
+    if (existingEmployee && (
+        existingEmployee.dailyRate === 500 || 
+        existingEmployee.monthlyRate === 15000 || 
+        existingEmployee.hourlyRate === 62.50
+    )) {
+        console.log('🔄 [SCHEMA-MIGRATION] Resetting old schema defaults to 0 for employee:', id);
+        await Employee.updateOne(
+            { _id: id },
+            {
+                $set: {
+                    dailyRate: existingEmployee.dailyRate === 500 ? 0 : existingEmployee.dailyRate,
+                    monthlyRate: existingEmployee.monthlyRate === 15000 ? 0 : existingEmployee.monthlyRate,
+                    hourlyRate: existingEmployee.hourlyRate === 62.50 ? 0 : existingEmployee.hourlyRate
+                }
+            }
+        );
+    }
+    
     console.log('💰 [SALARY-DEBUG] Employee GET existence check:', {
         employeeId: id,
         foundEmployee: !!existingEmployee,
@@ -379,19 +399,17 @@ router.get('/:id', withErrorHandling(async (req, res) => {
             overtimeMultiplier: responseData.overtimeMultiplier
         },
         salaryFieldsExist: {
-            hasDaily: !!(employee.dailyRate && employee.dailyRate > 0 && employee.dailyRate !== 500),
-            hasMonthly: !!(employee.monthlyRate && employee.monthlyRate > 0 && employee.monthlyRate !== 15000),
-            hasHourly: !!(employee.hourlyRate && employee.hourlyRate > 0 && employee.hourlyRate !== 62.50)
+            hasDaily: !!(employee.dailyRate && employee.dailyRate > 0),
+            hasMonthly: !!(employee.monthlyRate && employee.monthlyRate > 0),
+            hasHourly: !!(employee.hourlyRate && employee.hourlyRate > 0)
         },
         frontendWillShowConfigured: !!(
-            (responseData.dailyRate && responseData.dailyRate > 0 && responseData.dailyRate !== 500) ||
-            (responseData.monthlyRate && responseData.monthlyRate > 0 && responseData.monthlyRate !== 15000) ||
-            (responseData.hourlyRate && responseData.hourlyRate > 0 && responseData.hourlyRate !== 62.50)
+            (responseData.dailyRate && responseData.dailyRate > 0) ||
+            (responseData.monthlyRate && responseData.monthlyRate > 0) ||
+            (responseData.hourlyRate && responseData.hourlyRate > 0)
         ),
         schemaDefaults: {
-            dailyDefault: 500,
-            monthlyDefault: 15000,
-            hourlyDefault: 62.50
+            note: "Schema defaults changed to 0 - no more fixed defaults"
         }
     });
     

@@ -370,7 +370,7 @@ class EmployeeManager {
                         ${emp.monthlyRate && emp.monthlyRate > 0 ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-calendar-alt"></i> Monthly: ₱${emp.monthlyRate.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : ''}
                         ${emp.hourlyRate && emp.hourlyRate > 0 ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-clock"></i> Hourly: ₱${emp.hourlyRate.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : ''}
                         ${emp.overtimeMultiplier ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-clock"></i> OT Rate: ${emp.overtimeMultiplier}x</p>` : ''}
-                        ${(!emp.dailyRate || emp.dailyRate === 0) && (!emp.monthlyRate || emp.monthlyRate === 0) ? `<p style="margin-left: 1rem; font-size: 0.9rem; color: #dc2626;"><i class="fas fa-exclamation-triangle"></i> No salary configured</p>` : ''}
+                        ${(!emp.dailyRate || emp.dailyRate <= 0) && (!emp.monthlyRate || emp.monthlyRate <= 0) && (!emp.hourlyRate || emp.hourlyRate <= 0) ? `<p style="margin-left: 1rem; font-size: 0.9rem; color: #dc2626;"><i class="fas fa-exclamation-triangle"></i> No salary configured</p>` : ''}
                     </div>
                     
                     ${emp.commissionRate ? `<p><i class="fas fa-percentage"></i> Commission: ${emp.commissionRate}%</p>` : ''}
@@ -894,11 +894,11 @@ class EmployeeManager {
             document.getElementById('employeeCommission').value = employee.commissionRate || '';
             document.getElementById('employeeHireDate').value = employee.hireDate || '';
             
-            // Fill salary fields with defaults for backward compatibility
+            // Fill salary fields - show actual values or empty if 0 (unconfigured)
             document.getElementById('employeeWageType').value = employee.wageType || 'daily';
-            document.getElementById('employeeDailyRate').value = employee.dailyRate || '';
-            document.getElementById('employeeMonthlyRate').value = employee.monthlyRate || '';
-            document.getElementById('employeeHourlyRate').value = employee.hourlyRate || '';
+            document.getElementById('employeeDailyRate').value = (employee.dailyRate && employee.dailyRate > 0) ? employee.dailyRate : '';
+            document.getElementById('employeeMonthlyRate').value = (employee.monthlyRate && employee.monthlyRate > 0) ? employee.monthlyRate : '';
+            document.getElementById('employeeHourlyRate').value = (employee.hourlyRate && employee.hourlyRate > 0) ? employee.hourlyRate : '';
             document.getElementById('employeeOvertimeMultiplier').value = employee.overtimeMultiplier || '1.25';
             
             // Fill government benefits checkboxes
@@ -2001,7 +2001,7 @@ window.handleWageTypeChange = function() {
         dailyRateInput.disabled = false;
         dailyRateInput.readOnly = false;
         dailyRateInput.style.backgroundColor = '';
-        dailyRateInput.placeholder = 'e.g. 500.00';
+        dailyRateInput.placeholder = 'e.g. 600.00';
         dailyRateInput.focus();
         
         monthlyRateInput.disabled = true;
@@ -2027,7 +2027,7 @@ window.handleWageTypeChange = function() {
         monthlyRateInput.disabled = false;
         monthlyRateInput.readOnly = false;
         monthlyRateInput.style.backgroundColor = '';
-        monthlyRateInput.placeholder = 'e.g. 15000.00';
+        monthlyRateInput.placeholder = 'e.g. 18000.00';
         monthlyRateInput.focus();
         
         dailyRateInput.disabled = true;
