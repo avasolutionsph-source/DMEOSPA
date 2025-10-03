@@ -234,10 +234,10 @@ class EmployeeManager {
                     id: emp._id || emp.id, // Map MongoDB _id to frontend id field
                     name: emp.firstName ? `${emp.firstName} ${emp.lastName}`.trim() : emp.name,
                     wageType: emp.salaryType || emp.wageType || 'daily', // Map backend salaryType to frontend wageType
-                    // CRITICAL FIX: Explicitly preserve salary fields to prevent data loss
-                    dailyRate: emp.dailyRate || 0,
-                    monthlyRate: emp.monthlyRate || 0,
-                    hourlyRate: emp.hourlyRate || 0,
+                    // CRITICAL FIX: Explicitly preserve salary fields with proper number conversion
+                    dailyRate: emp.dailyRate ? parseFloat(emp.dailyRate) : 0,
+                    monthlyRate: emp.monthlyRate ? parseFloat(emp.monthlyRate) : 0,
+                    hourlyRate: emp.hourlyRate ? parseFloat(emp.hourlyRate) : 0,
                     overtimeMultiplier: emp.overtimeMultiplier || 1.25,
                     // CRITICAL FIX: Explicitly preserve government benefits fields
                     hasSSS: emp.hasSSS || false,
@@ -412,24 +412,6 @@ class EmployeeManager {
             };
         });
 
-        // DEBUG: Log employee salary data for card rendering
-        employeesWithStats.forEach(emp => {
-            console.log(`💰 [CARD-RENDER-DEBUG] Employee: ${emp.name}`, {
-                dailyRate: emp.dailyRate,
-                monthlyRate: emp.monthlyRate,
-                hourlyRate: emp.hourlyRate,
-                dailyRateType: typeof emp.dailyRate,
-                monthlyRateType: typeof emp.monthlyRate,
-                hourlyRateType: typeof emp.hourlyRate,
-                dailyRateParsed: parseFloat(emp.dailyRate),
-                monthlyRateParsed: parseFloat(emp.monthlyRate),
-                hourlyRateParsed: parseFloat(emp.hourlyRate),
-                dailyRateCheck: emp.dailyRate && parseFloat(emp.dailyRate) > 0,
-                monthlyRateCheck: emp.monthlyRate && parseFloat(emp.monthlyRate) > 0,
-                hourlyRateCheck: emp.hourlyRate && parseFloat(emp.hourlyRate) > 0,
-                shouldShowNoSalary: (!emp.dailyRate || parseFloat(emp.dailyRate) <= 0) && (!emp.monthlyRate || parseFloat(emp.monthlyRate) <= 0) && (!emp.hourlyRate || parseFloat(emp.hourlyRate) <= 0)
-            });
-        });
 
         grid.innerHTML = employeesWithStats.map(emp => `
             <div class="employee-card">
@@ -567,10 +549,10 @@ class EmployeeManager {
                 id: employee._id || employee.id, // Map MongoDB _id to frontend id field
                 name: employee.firstName ? `${employee.firstName} ${employee.lastName}`.trim() : employee.name,
                 wageType: employee.salaryType || employee.wageType || 'daily', // Map backend salaryType to frontend wageType
-                // CRITICAL FIX: Explicitly preserve salary fields to prevent data loss (same as loadEmployees)
-                dailyRate: employee.dailyRate || 0,
-                monthlyRate: employee.monthlyRate || 0,
-                hourlyRate: employee.hourlyRate || 0,
+                // CRITICAL FIX: Explicitly preserve salary fields with proper number conversion (same as loadEmployees)
+                dailyRate: employee.dailyRate ? parseFloat(employee.dailyRate) : 0,
+                monthlyRate: employee.monthlyRate ? parseFloat(employee.monthlyRate) : 0,
+                hourlyRate: employee.hourlyRate ? parseFloat(employee.hourlyRate) : 0,
                 overtimeMultiplier: employee.overtimeMultiplier || 1.25,
                 // CRITICAL FIX: Explicitly preserve government benefits fields
                 hasSSS: employee.hasSSS || false,
