@@ -373,8 +373,17 @@ router.get('/profile', async (req, res) => {
 // POST /api/auth/verify
 router.post('/verify', async (req, res) => {
   try {
+    console.log('🔍 [AUTH-VERIFY-DEBUG] Token verification request received');
+    
     const authHeader = req.headers.authorization;
+    console.log('🔍 [AUTH-VERIFY-DEBUG] Auth header:', {
+      hasHeader: !!authHeader,
+      headerPreview: authHeader ? authHeader.substring(0, 30) + '...' : 'null',
+      startsWithBearer: authHeader ? authHeader.startsWith('Bearer ') : false
+    });
+    
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('❌ [AUTH-VERIFY-DEBUG] No valid auth header, returning 401');
       return res.status(401).json({
         success: false,
         error: 'No token provided'
@@ -382,9 +391,20 @@ router.post('/verify', async (req, res) => {
     }
     
     const token = authHeader.substring(7);
+    console.log('🔍 [AUTH-VERIFY-DEBUG] Extracted token:', {
+      tokenLength: token.length,
+      tokenPreview: token.substring(0, 20) + '...'
+    });
+    
     const decoded = verifyToken(token);
+    console.log('🔍 [AUTH-VERIFY-DEBUG] Token verification result:', {
+      decoded: !!decoded,
+      userId: decoded?.id,
+      decodedData: decoded ? { id: decoded.id, email: decoded.email } : null
+    });
     
     if (!decoded) {
+      console.log('❌ [AUTH-VERIFY-DEBUG] Token verification failed, returning 401');
       return res.status(401).json({
         success: false,
         error: 'Invalid token'
@@ -392,14 +412,23 @@ router.post('/verify', async (req, res) => {
     }
     
     // Get fresh user data from database
+    console.log('🔍 [AUTH-VERIFY-DEBUG] Looking up user in database:', decoded.id);
     const user = await User.findById(decoded.id).select('-password');
+    console.log('🔍 [AUTH-VERIFY-DEBUG] Database lookup result:', {
+      userFound: !!user,
+      userId: user?._id,
+      userEmail: user?.email
+    });
+    
     if (!user) {
+      console.log('❌ [AUTH-VERIFY-DEBUG] User not found in database, returning 404');
       return res.status(404).json({
         success: false,
         error: 'User not found'
       });
     }
     
+    console.log('✅ [AUTH-VERIFY-DEBUG] Token verification successful, returning user data');
     res.json({
       success: true,
       user: {

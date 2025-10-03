@@ -70,12 +70,13 @@ class AuthSystem {
                 this.isLoggedIn = true;
                 
                 // Validate session in background without blocking PWA startup
+                // INCREASED DELAY: Give more time for login process to complete fully
                 setTimeout(() => {
-                    this.validateSession().catch(() => {
+                    this.validateSessionWithRetry().catch(() => {
                         // Keep user logged in even if validation fails  
-                        console.log('Background session validation failed, keeping user logged in');
+                        console.log('Background session validation failed after retries, keeping user logged in');
                     });
-                }, 1000); // Delay validation to allow PWA to start quickly
+                }, 3000); // Increased from 1000ms to 3000ms for better stability
             }
             
             this.setupEventListeners();
@@ -464,12 +465,27 @@ class AuthSystem {
 
     // Validate current session
     async validateSession() {
-        if (!this.authToken) return false;
+        console.log('🔍 [SESSION-DEBUG] Starting session validation...');
+        
+        if (!this.authToken) {
+            console.log('🔍 [SESSION-DEBUG] No auth token found, skipping validation');
+            return false;
+        }
 
         try {
             // Use unified backend URL from API_CONFIG
             const serverUrl = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
             
+            console.log('🔍 [SESSION-DEBUG] Validation request details:', {
+                serverUrl,
+                endpoint: `${serverUrl}/api/auth/verify`,
+                tokenLength: this.authToken.length,
+                tokenPreview: this.authToken.substring(0, 20) + '...',
+                hasCurrentUser: !!this.currentUser,
+                userEmail: this.currentUser?.email
+            });
+            
+            const requestStart = Date.now();
             const response = await fetch(`${serverUrl}/api/auth/verify`, {
                 method: 'POST',
                 headers: {
@@ -477,31 +493,60 @@ class AuthSystem {
                     'Content-Type': 'application/json'
                 }
             });
+            const requestTime = Date.now() - requestStart;
+
+            console.log('🔍 [SESSION-DEBUG] Validation response received:', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok,
+                requestTime: `${requestTime}ms`,
+                headers: Object.fromEntries(response.headers.entries())
+            });
 
             if (response.ok) {
                 const data = await response.json();
+                console.log('🔍 [SESSION-DEBUG] Validation response data:', {
+                    success: data.success,
+                    hasUser: !!data.user,
+                    userEmail: data.user?.email,
+                    userId: data.user?.id
+                });
+                
                 if (data.success) {
+                    console.log('✅ [SESSION-DEBUG] Session validation successful');
                     this.currentUser = data.user;
                     this.isLoggedIn = true;
                     return true;
                 }
             }
 
+            // Get response text for debugging
+            let responseText = '';
+            try {
+                responseText = await response.text();
+            } catch (e) {
+                responseText = 'Could not read response text';
+            }
+            
+            console.log('🔍 [SESSION-DEBUG] Validation failed, response text:', responseText);
+
             // Only logout if we get a clear authentication error (401/403)
             // Don't logout for server errors (404, 500) which might be temporary
             if (response.status === 401 || response.status === 403) {
-                console.warn('Session expired or invalid, logging out');
+                console.warn('⚠️ [SESSION-DEBUG] Session expired or invalid (401/403), logging out');
+                console.log('🔍 [SESSION-DEBUG] About to trigger logout due to auth failure');
                 await this.logout();
                 return false;
             } else {
                 // For other errors (404, 500), keep user logged in but warn
-                console.warn(`Session validation failed with status ${response.status}, keeping user logged in`);
+                console.warn(`⚠️ [SESSION-DEBUG] Session validation failed with status ${response.status}, keeping user logged in`);
+                console.log('🔍 [SESSION-DEBUG] Non-auth error - preserving login state');
                 // Keep existing user data, just mark as validated for this session
                 this.isLoggedIn = true;
                 return true;
             }
         } catch (error) {
-            console.error('Session validation error:', error);
+            console.error('❌ [SESSION-DEBUG] Session validation error:', error);
             // For network errors, keep user logged in
             console.warn('Network error during session validation, keeping user logged in');
             this.isLoggedIn = true;
@@ -558,6 +603,47 @@ class AuthSystem {
             console.log('🔄 Redirecting to login page...');
             window.location.href = '/login.html';
         }
+    }
+
+    // Validate session with retry logic for better reliability
+    async validateSessionWithRetry(maxRetries = 2) {
+        console.log('🔍 [SESSION-DEBUG] Starting session validation with retry logic');
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            console.log(`🔍 [SESSION-DEBUG] Validation attempt ${attempt}/${maxRetries}`);
+            
+            try {
+                const result = await this.validateSession();
+                if (result) {
+                    console.log('✅ [SESSION-DEBUG] Session validation successful on attempt', attempt);
+                    return true;
+                }
+                
+                // If validation failed, check if we should retry
+                if (attempt < maxRetries) {
+                    console.log(`🔍 [SESSION-DEBUG] Validation failed, retrying in 2 seconds... (attempt ${attempt}/${maxRetries})`);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                } else {
+                    console.log('⚠️ [SESSION-DEBUG] All validation attempts failed, but keeping user logged in');
+                    // Don't logout on validation failure - keep user logged in
+                    this.isLoggedIn = true;
+                    return false;
+                }
+            } catch (error) {
+                console.error(`❌ [SESSION-DEBUG] Validation attempt ${attempt} error:`, error);
+                if (attempt < maxRetries) {
+                    console.log(`🔍 [SESSION-DEBUG] Retrying due to error... (attempt ${attempt}/${maxRetries})`);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                } else {
+                    console.log('⚠️ [SESSION-DEBUG] All validation attempts failed with errors, keeping user logged in');
+                    // Don't logout on network errors - keep user logged in
+                    this.isLoggedIn = true;
+                    return false;
+                }
+            }
+        }
+        
+        return false;
     }
 
     // Save authentication state
