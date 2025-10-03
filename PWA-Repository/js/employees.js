@@ -432,11 +432,11 @@ class EmployeeManager {
                     <div style="border-top: 1px solid #e5e7eb; padding-top: 0.75rem; margin-top: 0.75rem;">
                         <p style="font-weight: 600; color: #374151; margin-bottom: 0.5rem;">₱ Salary Configuration</p>
                         <p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-briefcase"></i> Type: ${emp.wageType === 'monthly' ? 'Monthly Salary' : 'Daily Wage'}</p>
-                        ${emp.dailyRate && emp.dailyRate > 0 ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-calendar-day"></i> Daily: ₱${emp.dailyRate.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : ''}
-                        ${emp.monthlyRate && emp.monthlyRate > 0 ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-calendar-alt"></i> Monthly: ₱${emp.monthlyRate.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : ''}
-                        ${emp.hourlyRate && emp.hourlyRate > 0 ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-clock"></i> Hourly: ₱${emp.hourlyRate.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : ''}
+                        ${emp.dailyRate && parseFloat(emp.dailyRate) > 0 ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-calendar-day"></i> Daily: ₱${parseFloat(emp.dailyRate).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : ''}
+                        ${emp.monthlyRate && parseFloat(emp.monthlyRate) > 0 ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-calendar-alt"></i> Monthly: ₱${parseFloat(emp.monthlyRate).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : ''}
+                        ${emp.hourlyRate && parseFloat(emp.hourlyRate) > 0 ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-clock"></i> Hourly: ₱${parseFloat(emp.hourlyRate).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : ''}
                         ${emp.overtimeMultiplier ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-clock"></i> OT Rate: ${emp.overtimeMultiplier}x</p>` : ''}
-                        ${(!emp.dailyRate || emp.dailyRate <= 0) && (!emp.monthlyRate || emp.monthlyRate <= 0) && (!emp.hourlyRate || emp.hourlyRate <= 0) ? `<p style="margin-left: 1rem; font-size: 0.9rem; color: #dc2626;"><i class="fas fa-exclamation-triangle"></i> No salary configured</p>` : ''}
+                        ${(!emp.dailyRate || parseFloat(emp.dailyRate) <= 0) && (!emp.monthlyRate || parseFloat(emp.monthlyRate) <= 0) && (!emp.hourlyRate || parseFloat(emp.hourlyRate) <= 0) ? `<p style="margin-left: 1rem; font-size: 0.9rem; color: #dc2626;"><i class="fas fa-exclamation-triangle"></i> No salary configured</p>` : ''}
                     </div>
                     
                     ${emp.commissionRate ? `<p><i class="fas fa-percentage"></i> Commission: ${emp.commissionRate}%</p>` : ''}
