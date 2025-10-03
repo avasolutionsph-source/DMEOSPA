@@ -291,21 +291,33 @@ router.get('/:id', withErrorHandling(async (req, res) => {
         temporaryPassword: employee.isUsingTemporaryPassword ? employee.temporaryPassword : null,
         isUsingTemporaryPassword: employee.isUsingTemporaryPassword || false,
         // CRITICAL FIX: Map backend salaryType to frontend wageType for compatibility
-        wageType: employee.salaryType || employee.wageType || 'daily'
+        wageType: employee.salaryType || employee.wageType || 'daily',
+        // CRITICAL FIX: Explicitly ensure salary fields are included (override spread if needed)
+        dailyRate: employee.dailyRate || 0,
+        monthlyRate: employee.monthlyRate || 0,
+        hourlyRate: employee.hourlyRate || 0,
+        overtimeMultiplier: employee.overtimeMultiplier || 1.25
     };
     
     // ENHANCED DEBUGGING: Comprehensive salary data validation
     console.log('💰 [SALARY-DEBUG] Employee salary data being returned to frontend (ENHANCED):', {
         employeeId: id,
         retrievalSuccessful: true,
-        rawEmployeeData: {
+        mongoQueryUsed: query,
+        rawEmployeeFromDB: {
+            _id: employee._id,
             salaryType: employee.salaryType,
             dailyRate: employee.dailyRate,
             monthlyRate: employee.monthlyRate,
             hourlyRate: employee.hourlyRate,
-            overtimeMultiplier: employee.overtimeMultiplier
+            overtimeMultiplier: employee.overtimeMultiplier,
+            dataTypes: {
+                dailyRateType: typeof employee.dailyRate,
+                monthlyRateType: typeof employee.monthlyRate,
+                hourlyRateType: typeof employee.hourlyRate
+            }
         },
-        responseData: {
+        finalResponseData: {
             wageType: responseData.wageType,
             dailyRate: responseData.dailyRate,
             monthlyRate: responseData.monthlyRate,
@@ -318,9 +330,9 @@ router.get('/:id', withErrorHandling(async (req, res) => {
             hasHourly: !!(employee.hourlyRate && employee.hourlyRate > 0)
         },
         frontendWillShowConfigured: !!(
-            (employee.dailyRate && employee.dailyRate > 0) ||
-            (employee.monthlyRate && employee.monthlyRate > 0) ||
-            (employee.hourlyRate && employee.hourlyRate > 0)
+            (responseData.dailyRate && responseData.dailyRate > 0) ||
+            (responseData.monthlyRate && responseData.monthlyRate > 0) ||
+            (responseData.hourlyRate && responseData.hourlyRate > 0)
         )
     });
     
@@ -479,7 +491,21 @@ router.put('/:id', withErrorHandling(async (req, res) => {
         hourlyRate: employee.hourlyRate,
         overtimeMultiplier: employee.overtimeMultiplier,
         updateSuccessful: true,
-        matchedDocument: true
+        matchedDocument: true,
+        originalUpdateData: {
+            salaryType: updateData.salaryType,
+            dailyRate: updateData.dailyRate,
+            monthlyRate: updateData.monthlyRate,
+            hourlyRate: updateData.hourlyRate
+        },
+        dataTypeCheck: {
+            dailyRateType: typeof employee.dailyRate,
+            monthlyRateType: typeof employee.monthlyRate,
+            hourlyRateType: typeof employee.hourlyRate,
+            dailyRateValue: employee.dailyRate,
+            monthlyRateValue: employee.monthlyRate,
+            hourlyRateValue: employee.hourlyRate
+        }
     });
     
     // ADDITIONAL VERIFICATION: Check if salary fields were actually saved
