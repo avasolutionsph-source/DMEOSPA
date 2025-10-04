@@ -279,13 +279,21 @@ class CashDrawerHistoryManager {
             clearTimeout(this.refreshDebounceTimeout);
         }
 
+        // For automatic refreshes triggered by state changes, add extra delay
+        // to allow sync operations to complete
+        const debounceDelay = showSuccessMessage ? 500 : 2000; // 2s for automatic, 0.5s for manual
+        
         // Set new timeout for debounced refresh
         this.refreshDebounceTimeout = setTimeout(() => {
             if (this.isInitialized) {
-                console.log('🔄 Executing smart refresh...', { showSuccessMessage });
+                console.log('🔄 Executing smart refresh...', { 
+                    showSuccessMessage,
+                    delayMs: debounceDelay,
+                    reason: showSuccessMessage ? 'manual' : 'automatic'
+                });
                 this.performRefresh(showSuccessMessage);
             }
-        }, 1000); // 1 second debounce delay (increased for better stability)
+        }, debounceDelay);
     }
 
     // Legacy method for backward compatibility
@@ -324,32 +332,8 @@ class CashDrawerHistoryManager {
             // Check current authentication state
             this.validateAuthenticationState();
             
-            // Load from IndexedDB first (for offline support)
-            if (window.db) {
-                try {
-                    this.sessions = await window.db.getAll('cashDrawerSessions') || [];
-                    console.log(`📝 Loaded ${this.sessions.length} sessions from IndexedDB`);
-                    
-                    // Debug: Check user data in existing sessions
-                    this.debugSessionUserData();
-                } catch (e) {
-                    console.warn('⚠️ Could not load from IndexedDB:', e);
-                    this.sessions = [];
-                }
-            }
-
-            // Load from API if online
-            if (navigator.onLine && window.HybridAPIClient) {
-                try {
-                    const response = await window.HybridAPIClient.get('/api/cash-drawer/sessions?limit=100');
-                    if (response.success && response.data) {
-                        this.sessions = response.data;
-                        console.log(`🌐 Loaded ${this.sessions.length} sessions from API`);
-                    }
-                } catch (e) {
-                    console.warn('⚠️ Could not load from API:', e);
-                }
-            }
+            // Load data using intelligent offline-first strategy
+            await this.loadSessionsWithMerging();
 
             // Sort sessions by date (newest first)
             this.sessions.sort((a, b) => new Date(b.createdAt || b.openedAt) - new Date(a.createdAt || a.openedAt));
@@ -873,6 +857,144 @@ class CashDrawerHistoryManager {
         return resolvedName;
     }
 
+    async loadSessionsWithMerging() {
+        console.log('💾 [DATA MERGE] Starting intelligent data loading with offline-first strategy...');
+        
+        let localSessions = [];
+        let apiSessions = [];
+        
+        // Step 1: Load from IndexedDB (local data)
+        if (window.db) {
+            try {
+                localSessions = await window.db.getAll('cashDrawerSessions') || [];
+                console.log(`📱 [DATA MERGE] Loaded ${localSessions.length} sessions from IndexedDB`, {
+                    sessionIds: localSessions.map(s => ({ id: s.id, status: s.status, syncStatus: s.syncStatus }))
+                });
+                
+                // Debug: Check user data in existing sessions
+                if (localSessions.length > 0) {
+                    this.debugSessionUserData();
+                }
+            } catch (e) {
+                console.warn('⚠️ [DATA MERGE] Could not load from IndexedDB:', e);
+                localSessions = [];
+            }
+        }
+
+        // Step 2: Load from API if online (but don't overwrite!)
+        if (navigator.onLine && window.HybridAPIClient) {
+            try {
+                console.log('🌐 [DATA MERGE] Fetching sessions from API...');
+                const response = await window.HybridAPIClient.get('/api/cash-drawer/sessions?limit=100');
+                if (response.success && response.data) {
+                    apiSessions = response.data;
+                    console.log(`🌐 [DATA MERGE] Loaded ${apiSessions.length} sessions from API`, {
+                        sessionIds: apiSessions.map(s => ({ id: s.sessionId || s.id, status: s.status }))
+                    });
+                }
+            } catch (e) {
+                console.warn('⚠️ [DATA MERGE] Could not load from API:', e);
+                apiSessions = [];
+            }
+        }
+
+        // Step 3: Intelligent data merging
+        this.sessions = this.mergeSessionData(localSessions, apiSessions);
+        
+        console.log(`✅ [DATA MERGE] Final merged data: ${this.sessions.length} sessions`, {
+            local: localSessions.length,
+            api: apiSessions.length,
+            merged: this.sessions.length
+        });
+    }
+
+    mergeSessionData(localSessions, apiSessions) {
+        console.log('🔄 [DATA MERGE] Merging session data with offline-first priority...');
+        
+        // Create a map for efficient lookups
+        const sessionMap = new Map();
+        const currentTime = Date.now();
+        const recentThreshold = 5 * 60 * 1000; // 5 minutes
+        
+        // Step 1: Add API sessions first (as base data)
+        apiSessions.forEach(apiSession => {
+            const sessionKey = apiSession.sessionId || apiSession.id || apiSession._id;
+            if (sessionKey) {
+                sessionMap.set(sessionKey, {
+                    ...apiSession,
+                    dataSource: 'api',
+                    id: sessionKey // Normalize id field
+                });
+            }
+        });
+
+        // Step 2: Add/override with local sessions (giving priority to local data)
+        localSessions.forEach(localSession => {
+            const sessionKey = localSession.id;
+            if (!sessionKey) return;
+
+            const sessionAge = currentTime - new Date(localSession.createdAt || localSession.openedAt).getTime();
+            const isRecent = sessionAge < recentThreshold;
+            const isPending = localSession.syncStatus === 'pending';
+            const existingApiSession = sessionMap.get(sessionKey);
+
+            // Prioritize local data for:
+            // 1. Recent sessions (within 5 minutes)
+            // 2. Pending sync sessions
+            // 3. Sessions not found in API
+            if (isRecent || isPending || !existingApiSession) {
+                console.log(`🏠 [DATA MERGE] Using local data for session ${sessionKey}`, {
+                    reason: isRecent ? 'recent' : isPending ? 'pending-sync' : 'not-in-api',
+                    age: Math.round(sessionAge / 1000) + 's',
+                    syncStatus: localSession.syncStatus,
+                    status: localSession.status
+                });
+                
+                sessionMap.set(sessionKey, {
+                    ...localSession,
+                    dataSource: 'local',
+                    id: sessionKey
+                });
+            } else {
+                // For older, synced sessions, merge carefully
+                const mergedSession = {
+                    ...existingApiSession,
+                    ...localSession,
+                    dataSource: 'merged',
+                    id: sessionKey,
+                    // Preserve important local fields that might be more up-to-date
+                    syncStatus: localSession.syncStatus || existingApiSession.syncStatus,
+                    notes: localSession.notes || existingApiSession.notes
+                };
+                
+                console.log(`🔀 [DATA MERGE] Merged data for session ${sessionKey}`, {
+                    localStatus: localSession.status,
+                    apiStatus: existingApiSession.status,
+                    finalStatus: mergedSession.status
+                });
+                
+                sessionMap.set(sessionKey, mergedSession);
+            }
+        });
+
+        // Step 3: Convert map back to array and sort
+        const mergedSessions = Array.from(sessionMap.values());
+        
+        console.log('✅ [DATA MERGE] Merge complete', {
+            totalSessions: mergedSessions.length,
+            sources: {
+                local: mergedSessions.filter(s => s.dataSource === 'local').length,
+                api: mergedSessions.filter(s => s.dataSource === 'api').length,
+                merged: mergedSessions.filter(s => s.dataSource === 'merged').length
+            },
+            pending: mergedSessions.filter(s => s.syncStatus === 'pending').length,
+            open: mergedSessions.filter(s => s.status === 'open').length,
+            closed: mergedSessions.filter(s => s.status === 'closed').length
+        });
+
+        return mergedSessions;
+    }
+
     async performRefresh(showSuccessMessage = true) {
         try {
             this.lastRefreshTime = Date.now();
@@ -883,17 +1005,29 @@ class CashDrawerHistoryManager {
                 refreshBtn.disabled = true;
             }
 
-            await this.loadHistory();
+            console.log('🔄 [REFRESH] Starting refresh with intelligent data merging...');
+            
+            // Use the new intelligent data loading instead of loadHistory
+            await this.loadSessionsWithMerging();
+            
+            // Sort sessions by date (newest first)
+            this.sessions.sort((a, b) => new Date(b.createdAt || b.openedAt) - new Date(a.createdAt || a.openedAt));
+            
+            // Apply current filters
+            this.applyFilters();
+            
+            // Update display
+            this.updateDisplay();
             
             // Only show success message for manual refreshes
             if (showSuccessMessage) {
                 this.showSuccess('History refreshed successfully');
             } else {
-                console.log('✅ History refreshed automatically (no notification)');
+                console.log('✅ History refreshed automatically with intelligent data merging');
             }
 
         } catch (error) {
-            console.error('Error refreshing history:', error);
+            console.error('❌ [REFRESH] Error refreshing history:', error);
             if (showSuccessMessage) {
                 this.showError('Failed to refresh history');
             }

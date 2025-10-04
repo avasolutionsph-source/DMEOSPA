@@ -172,20 +172,7 @@ class CashDrawerManager {
             }
 
             // Sync to backend if online
-            if (this.isOnline && window.HybridAPIClient) {
-                try {
-                    const result = await window.HybridAPIClient.post('/api/cash-drawer/sessions', newSession);
-                    if (result.success && result.data) {
-                        // Update with server ID
-                        newSession.serverId = result.data._id;
-                        newSession.syncStatus = 'synced';
-                        await window.db.put('cashDrawerSessions', newSession);
-                    }
-                } catch (syncError) {
-                    console.warn('⚠️ Failed to sync drawer session to server:', syncError);
-                    // Continue with local operation
-                }
-            }
+            await this.syncSessionToBackend(newSession, 'create');
 
             // Update UI
             this.updateUI();
@@ -334,36 +321,7 @@ class CashDrawerManager {
 
             // Step 8: Sync to backend if online
             console.log('🔒 [CLOSE DEBUG] Step 8: Syncing to backend...');
-            if (this.isOnline && window.HybridAPIClient) {
-                try {
-                    const syncStartTime = Date.now();
-                    const result = await window.HybridAPIClient.put(`/api/cash-drawer/sessions/${this.currentSession.serverId || this.currentSession.id}`, this.currentSession);
-                    const syncTime = Date.now() - syncStartTime;
-                    
-                    if (result.success) {
-                        this.currentSession.syncStatus = 'synced';
-                        await window.db.put('cashDrawerSessions', this.currentSession);
-                        console.log('✅ [CLOSE DEBUG] Backend sync successful', {
-                            sessionId: this.currentSession.id,
-                            syncTimeMs: syncTime,
-                            syncStatus: 'synced'
-                        });
-                    } else {
-                        console.warn('⚠️ [CLOSE DEBUG] Backend sync failed but continuing', {
-                            sessionId: this.currentSession.id,
-                            result
-                        });
-                    }
-                } catch (syncError) {
-                    console.warn('⚠️ [CLOSE DEBUG] Backend sync error but continuing', {
-                        sessionId: this.currentSession.id,
-                        error: syncError.message,
-                        syncStatus: 'pending'
-                    });
-                }
-            } else {
-                console.log('🔒 [CLOSE DEBUG] Skipping backend sync - offline or API client not available');
-            }
+            await this.syncSessionToBackend(this.currentSession, 'close');
 
             // Step 9: Verify the session was saved correctly
             console.log('🔒 [CLOSE DEBUG] Step 9: Verifying session save...');
@@ -743,6 +701,155 @@ class CashDrawerManager {
         }
 
         return status;
+    }
+
+    async syncSessionToBackend(session, operation = 'update') {
+        if (!this.isOnline || !window.HybridAPIClient) {
+            console.log(`🔒 [SYNC ${operation.toUpperCase()}] Skipping backend sync - offline or API client not available`);
+            return { success: false, reason: 'offline' };
+        }
+
+        const startTime = Date.now();
+        console.log(`🔒 [SYNC ${operation.toUpperCase()}] Starting backend sync for session ${session.id}...`);
+
+        try {
+            let result;
+            let apiEndpoint;
+            let requestMethod;
+
+            if (operation === 'create') {
+                // For creating new sessions
+                apiEndpoint = '/api/cash-drawer/sessions';
+                requestMethod = 'post';
+                
+                console.log(`🔒 [SYNC CREATE] Creating new session via POST ${apiEndpoint}`);
+                result = await window.HybridAPIClient.post(apiEndpoint, session);
+                
+            } else if (operation === 'close' || operation === 'update') {
+                // For updating/closing existing sessions
+                // Try multiple possible identifiers for backend compatibility
+                const possibleIds = [
+                    session.serverId,    // Server-assigned ID from creation
+                    session.sessionId,   // Custom session ID
+                    session.id,          // Local ID
+                    session._id          // MongoDB ID
+                ].filter(id => id && id.toString().trim() !== '');
+
+                console.log(`🔒 [SYNC ${operation.toUpperCase()}] Attempting sync with possible IDs:`, possibleIds);
+
+                let lastError = null;
+                let syncSuccess = false;
+
+                // Try each possible ID until one works
+                for (const tryId of possibleIds) {
+                    try {
+                        apiEndpoint = `/api/cash-drawer/sessions/${tryId}`;
+                        console.log(`🔒 [SYNC ${operation.toUpperCase()}] Trying PUT ${apiEndpoint}...`);
+                        
+                        result = await window.HybridAPIClient.put(apiEndpoint, session);
+                        
+                        if (result.success) {
+                            console.log(`✅ [SYNC ${operation.toUpperCase()}] Success with ID: ${tryId}`);
+                            syncSuccess = true;
+                            break;
+                        } else {
+                            console.warn(`⚠️ [SYNC ${operation.toUpperCase()}] Failed with ID ${tryId}:`, result);
+                            lastError = result;
+                        }
+                        
+                    } catch (error) {
+                        console.warn(`⚠️ [SYNC ${operation.toUpperCase()}] Error with ID ${tryId}:`, error.message);
+                        lastError = error;
+                        
+                        // If it's a 404, try the next ID
+                        if (error.status === 404) {
+                            continue;
+                        } else {
+                            // For other errors, break and handle
+                            break;
+                        }
+                    }
+                }
+
+                if (!syncSuccess) {
+                    // If all PUT attempts failed, try creating as a new session
+                    console.log(`🔒 [SYNC ${operation.toUpperCase()}] All PUT attempts failed, trying POST as new session...`);
+                    try {
+                        result = await window.HybridAPIClient.post('/api/cash-drawer/sessions', session);
+                        if (result.success) {
+                            console.log(`✅ [SYNC ${operation.toUpperCase()}] Success via POST (created as new session)`);
+                            syncSuccess = true;
+                        }
+                    } catch (createError) {
+                        console.error(`❌ [SYNC ${operation.toUpperCase()}] POST fallback also failed:`, createError);
+                        throw lastError || createError;
+                    }
+                }
+
+                if (!syncSuccess) {
+                    throw lastError || new Error('All sync attempts failed');
+                }
+            }
+
+            const syncTime = Date.now() - startTime;
+
+            if (result.success) {
+                // Update session with server data
+                if (result.data) {
+                    session.serverId = result.data._id || result.data.id;
+                    session.syncStatus = 'synced';
+                    session.lastSyncAt = new Date().toISOString();
+                }
+
+                // Save updated session to IndexedDB
+                await window.db.put('cashDrawerSessions', session);
+
+                console.log(`✅ [SYNC ${operation.toUpperCase()}] Backend sync successful`, {
+                    sessionId: session.id,
+                    serverId: session.serverId,
+                    syncTimeMs: syncTime,
+                    operation: operation
+                });
+
+                return { success: true, data: result.data, syncTime };
+
+            } else {
+                console.warn(`⚠️ [SYNC ${operation.toUpperCase()}] Backend returned failure`, {
+                    sessionId: session.id,
+                    result: result
+                });
+
+                // Mark as pending for retry later
+                session.syncStatus = 'pending';
+                session.lastSyncError = result.error || 'Unknown error';
+                await window.db.put('cashDrawerSessions', session);
+
+                return { success: false, error: result.error };
+            }
+
+        } catch (error) {
+            const syncTime = Date.now() - startTime;
+            
+            console.error(`❌ [SYNC ${operation.toUpperCase()}] Backend sync failed`, {
+                sessionId: session.id,
+                error: error.message,
+                syncTimeMs: syncTime,
+                status: error.status
+            });
+
+            // Mark as pending for retry later
+            session.syncStatus = 'pending';
+            session.lastSyncError = error.message;
+            session.lastSyncAttempt = new Date().toISOString();
+            
+            try {
+                await window.db.put('cashDrawerSessions', session);
+            } catch (dbError) {
+                console.error('❌ [SYNC] Failed to update session with error status:', dbError);
+            }
+
+            return { success: false, error: error.message, status: error.status };
+        }
     }
 
     formatCurrency(amount) {
