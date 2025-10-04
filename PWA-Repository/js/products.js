@@ -512,7 +512,7 @@ class ProductsManager {
                     <td style="text-align: center; cursor: grab;" class="drag-handle">
                         <i class="fas fa-grip-vertical" style="color: #ccc; font-size: 14px;"></i>
                     </td>
-                ` : ''}`
+                ` : ''}
                 <td>
                     <strong>${product.name}</strong>
                     ${product.description ? `<br><small>${product.description}</small>` : ''}
