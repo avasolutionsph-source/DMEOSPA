@@ -630,6 +630,10 @@ class App {
                     }
                 }, 50);
                 break;
+            case 'cash-drawer-history':
+                // Initialize and load cash drawer history
+                this.initializeCashDrawerHistoryManager();
+                break;
             case 'chatbot':
                 // Chatbot is loaded on demand
                 break;
@@ -677,6 +681,45 @@ class App {
             }
         } catch (error) {
             console.error('❌ [APP] Error in initializeCashDrawerManager:', error);
+        }
+    }
+
+    // Initialize Cash Drawer History Manager with proper error handling
+    initializeCashDrawerHistoryManager() {
+        console.log('📊 [APP] Attempting to initialize Cash Drawer History Manager...');
+        console.log('📊 [APP] CashDrawerHistoryManager class available:', typeof CashDrawerHistoryManager !== 'undefined');
+        console.log('📊 [APP] cashDrawerHistoryManager instance exists:', !!window.cashDrawerHistoryManager);
+        
+        try {
+            if (!window.cashDrawerHistoryManager) {
+                if (typeof CashDrawerHistoryManager !== 'undefined') {
+                    console.log('📊 [APP] Creating new CashDrawerHistoryManager instance...');
+                    window.cashDrawerHistoryManager = new CashDrawerHistoryManager();
+                    
+                    // Initialize asynchronously without blocking UI
+                    window.cashDrawerHistoryManager.init()
+                        .then(() => {
+                            console.log('✅ [APP] Cash Drawer History Manager initialized successfully');
+                        })
+                        .catch(e => {
+                            console.warn('⚠️ [APP] Cash Drawer History Manager init failed:', e);
+                            // Don't throw - allow the app to continue functioning
+                        });
+                } else {
+                    console.warn('⚠️ [APP] CashDrawerHistoryManager class not available - script may not be loaded');
+                }
+            } else {
+                console.log('✅ [APP] Cash Drawer History Manager already exists');
+                // Make sure it's initialized
+                if (!window.cashDrawerHistoryManager.isInitialized) {
+                    console.log('📊 [APP] Existing history manager not initialized, initializing now...');
+                    window.cashDrawerHistoryManager.init().catch(e => 
+                        console.warn('⚠️ [APP] Cash Drawer History Manager re-init failed:', e)
+                    );
+                }
+            }
+        } catch (error) {
+            console.error('❌ [APP] Error in initializeCashDrawerHistoryManager:', error);
         }
     }
 

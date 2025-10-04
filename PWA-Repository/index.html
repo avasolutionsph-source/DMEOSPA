@@ -566,6 +566,7 @@
                 <li><a href="#" data-page="rooms" class="nav-link"><i class="fas fa-door-open"></i> Rooms</a></li>
                 <li><a href="#" data-page="gift-certificates" class="nav-link"><i class="fas fa-gift"></i> Gift Certificates</a></li>
                 <li><a href="#" data-page="expenses" class="nav-link"><i class="fas fa-receipt"></i> Expenses</a></li>
+                <li><a href="#" data-page="cash-drawer-history" class="nav-link"><i class="fas fa-history"></i> Cash Drawer History</a></li>
                 <li><a href="#" data-page="chatbot" class="nav-link"><i class="fas fa-robot"></i> AI Assistant</a></li>
                 <li><a href="#" data-page="settings" class="nav-link"><i class="fas fa-cog"></i> Settings</a></li>
             </ul>
@@ -1726,6 +1727,175 @@
                             <h3 style="color: #333; margin-bottom: 0.5rem;">No Expenses Recorded</h3>
                             <p style="color: #666;">Start tracking your business expenses by adding your first expense record</p>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cash Drawer History Page -->
+            <div id="cash-drawer-history" class="page">
+                <div class="page-header">
+                    <h1><i class="fas fa-history"></i> Cash Drawer History</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" id="export-history-btn" onclick="if(window.cashDrawerHistoryManager) window.cashDrawerHistoryManager.exportHistory(); else console.error('Cash drawer history manager not loaded');">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <button class="btn btn-primary" id="refresh-history-btn" onclick="if(window.cashDrawerHistoryManager) window.cashDrawerHistoryManager.refreshHistory(); else console.error('Cash drawer history manager not loaded');">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Summary Statistics -->
+                <div class="dashboard-grid" style="margin-bottom: 2rem;">
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="fas fa-cash-register"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="total-sessions">0</div>
+                            <div class="stat-label">Total Sessions</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="total-cash-handled">₱0.00</div>
+                            <div class="stat-label">Cash Handled</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="avg-session-duration">0h 0m</div>
+                            <div class="stat-label">Avg Duration</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="total-variance">₱0.00</div>
+                            <div class="stat-label">Total Variance</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters and Search -->
+                <div class="history-filters" style="background: white; padding: 1.5rem; border-radius: 0.75rem; border: 1px solid #e5e7eb; margin-bottom: 2rem;">
+                    <div class="filter-row" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                        <div class="filter-group">
+                            <label for="dateRange">Date Range:</label>
+                            <select id="dateRange" class="form-input" style="min-width: 150px;">
+                                <option value="7">Last 7 days</option>
+                                <option value="30" selected>Last 30 days</option>
+                                <option value="90">Last 90 days</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                        </div>
+                        <div class="filter-group" id="customDateRange" style="display: none;">
+                            <input type="date" id="startDate" class="form-input">
+                            <span>to</span>
+                            <input type="date" id="endDate" class="form-input">
+                        </div>
+                        <div class="filter-group">
+                            <label for="statusFilter">Status:</label>
+                            <select id="statusFilter" class="form-input">
+                                <option value="all">All Sessions</option>
+                                <option value="open">Open</option>
+                                <option value="closed">Closed</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="userFilter">User:</label>
+                            <select id="userFilter" class="form-input">
+                                <option value="all">All Users</option>
+                                <!-- Users will be populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <input type="text" id="searchInput" class="form-input" placeholder="Search sessions..." style="min-width: 200px;">
+                        </div>
+                        <button class="btn btn-primary" onclick="if(window.cashDrawerHistoryManager) window.cashDrawerHistoryManager.applyFilters();">
+                            <i class="fas fa-search"></i> Filter
+                        </button>
+                        <button class="btn btn-secondary" onclick="if(window.cashDrawerHistoryManager) window.cashDrawerHistoryManager.clearFilters();">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
+                </div>
+
+                <!-- History Table -->
+                <div class="history-table-container" style="background: white; border-radius: 0.75rem; border: 1px solid #e5e7eb; overflow: hidden;">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+                                <tr>
+                                    <th style="width: 12%;">Session ID</th>
+                                    <th style="width: 15%;">Date & Time</th>
+                                    <th style="width: 15%;">Opened By</th>
+                                    <th style="width: 15%;">Closed By</th>
+                                    <th style="width: 12%;">Opening Float</th>
+                                    <th style="width: 12%;">Closing Balance</th>
+                                    <th style="width: 10%;">Variance</th>
+                                    <th style="width: 9%;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <tr>
+                                    <td colspan="8" style="text-align: center; padding: 3rem; color: #9ca3af;">
+                                        <i class="fas fa-history" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                                        <div style="font-size: 1.1rem; margin-bottom: 0.5rem;">Loading history...</div>
+                                        <div style="font-size: 0.9rem;">Cash drawer session history will appear here</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination-container" style="display: flex; justify-content: between; align-items: center; margin-top: 1.5rem;">
+                    <div class="pagination-info" style="color: #6b7280;">
+                        <span id="paginationInfo">Showing 0 of 0 sessions</span>
+                    </div>
+                    <div class="pagination-controls" style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-secondary btn-sm" id="prevPageBtn" disabled>
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <span id="pageNumbers" style="display: flex; gap: 0.25rem;">
+                            <!-- Page numbers will be populated dynamically -->
+                        </span>
+                        <button class="btn btn-secondary btn-sm" id="nextPageBtn" disabled>
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session Details Modal -->
+            <div id="sessionDetailsModal" class="modal">
+                <div class="modal-content" style="max-width: 800px;">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-info-circle"></i> Session Details</h3>
+                        <button class="modal-close" onclick="closeModal('sessionDetailsModal')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="sessionDetailsContent">
+                            <!-- Session details will be populated here -->
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('sessionDetailsModal')">Close</button>
+                        <button type="button" class="btn btn-primary" id="printSessionBtn">
+                            <i class="fas fa-print"></i> Print
+                        </button>
                     </div>
                 </div>
             </div>
@@ -4536,13 +4706,14 @@
     <script src="js/employees.js"></script>
     <script src="js/shift-schedule-manager.js"></script>
     <script src="js/cash-drawer.js"></script>
+    <script src="js/cash-drawer-history.js"></script>
     <script src="js/customers.js"></script>
     <script src="js/settings.js"></script>
     <script src="js/performance-settings.js"></script>
     
     <!-- Module Lazy Loader for Heavy Features -->
     <script>
-    window.loadedModules = new Set(['utilities', 'api', 'entitlements', 'auth', 'sync', 'app', 'component-loader', 'dashboard', 'pos', 'products', 'inventory', 'employees', 'settings', 'gift-certificates', 'rooms', 'expense-manager', 'attendance', 'attendance-history', 'payroll', 'auto-updater', 'chatbot', 'cash-drawer']);
+    window.loadedModules = new Set(['utilities', 'api', 'entitlements', 'auth', 'sync', 'app', 'component-loader', 'dashboard', 'pos', 'products', 'inventory', 'employees', 'settings', 'gift-certificates', 'rooms', 'expense-manager', 'attendance', 'attendance-history', 'payroll', 'auto-updater', 'chatbot', 'cash-drawer', 'cash-drawer-history']);
     window.loadModule = function(moduleName) {
         return new Promise((resolve, reject) => {
             if (window.loadedModules.has(moduleName)) {
