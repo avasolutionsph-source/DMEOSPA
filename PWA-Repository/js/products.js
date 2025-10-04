@@ -11,6 +11,10 @@ class ProductsManager {
         this.currentPage = 1;
         this.totalPages = 1;
         this.isReorderMode = false;
+        
+        // Service inventory items
+        this.serviceItems = [];
+        this.availableInventory = [];
     }
 
     async init() {
@@ -45,6 +49,8 @@ class ProductsManager {
                         document.getElementById('productForm').reset();
                         // Set default category for new products
                         document.getElementById('productCategory').value = 'massage';
+                        // Clear service items for new service
+                        this.clearServiceItems();
                         // Type is always 'service' for spa, no need to set productType field
                         openModal('productModal');
                     });
@@ -54,6 +60,8 @@ class ProductsManager {
                     document.getElementById('productForm').reset();
                     // Set default category for new products
                     document.getElementById('productCategory').value = 'massage';
+                    // Clear service items for new service
+                    this.clearServiceItems();
                     // Type is always 'service' for spa, no need to set productType field
                     openModal('productModal');
                 }
@@ -76,6 +84,14 @@ class ProductsManager {
                 const submitBtn = e.target.querySelector('button[type="submit"]');
                 if (submitBtn && submitBtn.disabled) return; // Already processing
                 await this.saveProduct();
+            });
+        }
+
+        // Add Item button for service inventory items
+        const addItemBtn = document.getElementById('addItemUsedBtn');
+        if (addItemBtn) {
+            addItemBtn.addEventListener('click', () => {
+                this.showItemSelectionModal();
             });
         }
     }
@@ -689,6 +705,10 @@ class ProductsManager {
             document.getElementById('productNotes').value = product.notes || '';
             document.getElementById('productShowInPOS').checked = product.showInPOS;
 
+            // Load existing service items
+            this.serviceItems = product.itemsUsed ? [...product.itemsUsed] : [];
+            this.displayServiceItems();
+
             openModal('productModal');
         } catch (error) {
             if (window.logger) {
@@ -788,6 +808,7 @@ class ProductsManager {
                 description: document.getElementById('productDescription').value,
                 notes: document.getElementById('productNotes').value,
                 showInPOS: document.getElementById('productShowInPOS') ? document.getElementById('productShowInPOS').checked : true,
+                itemsUsed: [...this.serviceItems], // Include items used in this service
                 syncStatus: 'pending',
                 modifiedAt: new Date().toISOString()
             };
@@ -823,6 +844,7 @@ class ProductsManager {
                 
                 if (response.ok) {
                     console.log('✅ [PRODUCTS] Product updated successfully');
+                    this.clearServiceItems(); // Clear items after successful save
                     closeModal('productModal');
                     showSuccess('Service updated successfully');
                 } else {
@@ -888,6 +910,7 @@ class ProductsManager {
                 
                 if (response.ok) {
                     console.log('✅ [PRODUCTS] Product added successfully');
+                    this.clearServiceItems(); // Clear items after successful save
                     closeModal('productModal');
                     showSuccess('Service added successfully');
                 } else {
@@ -977,6 +1000,221 @@ class ProductsManager {
         a.href = url;
         a.download = `products_${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
+    }
+
+    // Service Items Management Methods
+    async showItemSelectionModal() {
+        try {
+            console.log('📦 [PRODUCTS] Loading inventory for item selection...');
+            
+            // Load available inventory items
+            await this.loadAvailableInventory();
+            
+            if (this.availableInventory.length === 0) {
+                showError('No inventory items found. Please add inventory items first.');
+                return;
+            }
+
+            // Create and show item selection modal
+            this.createItemSelectionModal();
+        } catch (error) {
+            console.error('❌ [PRODUCTS] Error showing item selection modal:', error);
+            showError('Failed to load inventory items');
+        }
+    }
+
+    async loadAvailableInventory() {
+        try {
+            // Use HybridAPIClient to get inventory (same as inventory.js)
+            const result = await window.HybridAPIClient.getInventory();
+            
+            if (result.success) {
+                this.availableInventory = result.data || [];
+                console.log(`✅ [PRODUCTS] Loaded ${this.availableInventory.length} inventory items`);
+            } else {
+                console.error('❌ [PRODUCTS] Failed to load inventory:', result.error);
+                this.availableInventory = [];
+            }
+        } catch (error) {
+            console.error('❌ [PRODUCTS] Error loading inventory:', error);
+            this.availableInventory = [];
+        }
+    }
+
+    createItemSelectionModal() {
+        // Remove existing modal if present
+        const existingModal = document.getElementById('itemSelectionModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Create modal HTML
+        const modalHTML = `
+            <div class="modal" id="itemSelectionModal">
+                <div class="modal-content" style="max-width: 600px;">
+                    <div class="modal-header">
+                        <h3>Select Inventory Items</h3>
+                        <button type="button" class="modal-close" onclick="closeModal('itemSelectionModal')">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <input type="text" id="itemSearchInput" class="form-input" placeholder="Search items..." style="margin-bottom: 1rem;">
+                        </div>
+                        <div class="inventory-items-list" id="inventoryItemsList" style="max-height: 300px; overflow-y: auto;">
+                            ${this.renderInventoryItems()}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('itemSelectionModal')">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        // Setup search functionality
+        const searchInput = document.getElementById('itemSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.filterInventoryItems(e.target.value);
+            });
+        }
+
+        // Show modal
+        openModal('itemSelectionModal');
+    }
+
+    renderInventoryItems() {
+        if (this.availableInventory.length === 0) {
+            return '<p style="text-align: center; color: #666; padding: 2rem;">No inventory items available</p>';
+        }
+
+        return this.availableInventory.map(item => {
+            const itemId = item._id || item.id;
+            const isAlreadyAdded = this.serviceItems.some(si => si.itemId === itemId);
+            
+            return `
+                <div class="inventory-item-row" data-id="${itemId}" style="display: flex; align-items: center; padding: 0.75rem; border: 1px solid #ddd; margin-bottom: 0.5rem; border-radius: 4px; ${isAlreadyAdded ? 'opacity: 0.5;' : ''}">
+                    <div style="flex: 1;">
+                        <strong>${item.name}</strong>
+                        <br>
+                        <small>Stock: ${item.quantity || 0} ${item.unit || 'units'}</small>
+                        ${item.category ? `<br><small>Category: ${item.category}</small>` : ''}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="number" class="form-input" placeholder="Qty" min="0.1" step="0.1" style="width: 80px;" id="qty_${itemId}" ${isAlreadyAdded ? 'disabled' : ''}>
+                        <button class="btn btn-sm btn-primary" onclick="productsManager.addItemToService('${itemId}')" ${isAlreadyAdded ? 'disabled' : ''}>
+                            ${isAlreadyAdded ? 'Added' : 'Add'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    filterInventoryItems(searchTerm) {
+        const itemsList = document.getElementById('inventoryItemsList');
+        if (!itemsList) return;
+
+        const filteredItems = this.availableInventory.filter(item => 
+            item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+
+        // Temporarily store the filtered items for rendering
+        const originalItems = this.availableInventory;
+        this.availableInventory = filteredItems;
+        itemsList.innerHTML = this.renderInventoryItems();
+        this.availableInventory = originalItems;
+    }
+
+    addItemToService(itemId) {
+        const qtyInput = document.getElementById(`qty_${itemId}`);
+        const quantity = parseFloat(qtyInput?.value || 1);
+
+        if (quantity <= 0) {
+            showError('Please enter a valid quantity');
+            return;
+        }
+
+        // Find the inventory item
+        const inventoryItem = this.availableInventory.find(item => (item._id || item.id) === itemId);
+        if (!inventoryItem) {
+            showError('Inventory item not found');
+            return;
+        }
+
+        // Check if item is already added
+        if (this.serviceItems.some(si => si.itemId === itemId)) {
+            showError('Item already added to this service');
+            return;
+        }
+
+        // Add to service items
+        const serviceItem = {
+            itemId: itemId,
+            name: inventoryItem.name,
+            quantity: quantity,
+            unit: inventoryItem.unit || 'units',
+            category: inventoryItem.category
+        };
+
+        this.serviceItems.push(serviceItem);
+        
+        // Update displays
+        this.displayServiceItems();
+        this.refreshItemSelectionModal();
+        
+        console.log('✅ [PRODUCTS] Added item to service:', serviceItem);
+    }
+
+    removeItemFromService(itemId) {
+        this.serviceItems = this.serviceItems.filter(item => item.itemId !== itemId);
+        this.displayServiceItems();
+        
+        // Refresh selection modal if it's open
+        const modal = document.getElementById('itemSelectionModal');
+        if (modal && modal.style.display !== 'none') {
+            this.refreshItemSelectionModal();
+        }
+        
+        console.log('✅ [PRODUCTS] Removed item from service:', itemId);
+    }
+
+    refreshItemSelectionModal() {
+        const itemsList = document.getElementById('inventoryItemsList');
+        if (itemsList) {
+            itemsList.innerHTML = this.renderInventoryItems();
+        }
+    }
+
+    displayServiceItems() {
+        const itemsList = document.getElementById('itemsUsedList');
+        if (!itemsList) return;
+
+        if (this.serviceItems.length === 0) {
+            itemsList.innerHTML = '<p style="color: #666; font-style: italic;">No items selected</p>';
+            return;
+        }
+
+        itemsList.innerHTML = this.serviceItems.map(item => `
+            <div class="service-item" style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; background: #f8f9fa; border-radius: 4px; margin-bottom: 0.5rem;">
+                <div>
+                    <strong>${item.name}</strong>
+                    <span style="color: #666; margin-left: 0.5rem;">${item.quantity} ${item.unit}</span>
+                </div>
+                <button type="button" class="btn-icon" onclick="productsManager.removeItemFromService('${item.itemId}')" title="Remove item">
+                    <i class="fas fa-times" style="color: var(--danger-color);"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    clearServiceItems() {
+        this.serviceItems = [];
+        this.displayServiceItems();
     }
 
     // Get authentication token from localStorage
