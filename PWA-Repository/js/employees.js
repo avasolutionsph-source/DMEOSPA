@@ -1062,6 +1062,7 @@ class EmployeeManager {
             };
 
             this.editingEmployee = employee;
+            window.isEditingEmployee = true; // Flag to prevent auto-calculations during form initialization
             document.getElementById('employeeModalTitle').textContent = 'Edit Employee';
             
             // Fill basic form fields
@@ -1115,6 +1116,10 @@ class EmployeeManager {
             // Setup salary calculation listeners after modal opens
             setTimeout(() => {
                 window.setupEmployeeSalaryListeners();
+                // Clear the editing flag after form initialization is complete
+                setTimeout(() => {
+                    window.isEditingEmployee = false;
+                }, 200);
             }, 100);
         } catch (error) {
             if (window.logger) {
@@ -1478,6 +1483,8 @@ class EmployeeManager {
                             saveBtn.disabled = false;
                             saveBtn.innerHTML = originalText;
                             closeModal('employeeModal');
+                            this.editingEmployee = null;
+                            window.isEditingEmployee = false;
                             showSuccess('Employee updated successfully');
                             
                             // CRITICAL FIX: Refresh employee list to update cache with latest data
@@ -2250,6 +2257,15 @@ window.handleWageTypeChange = function() {
     const currentMonthlyValue = monthlyRateInput.value;
     const currentHourlyValue = hourlyRateInput.value;
     
+    // CRITICAL FIX: Check if this is form initialization (multiple fields have values)
+    // vs user interaction (only one field typically has a value)
+    const hasMultipleValues = (currentDailyValue && currentDailyValue !== '0') + 
+                             (currentMonthlyValue && currentMonthlyValue !== '0') + 
+                             (currentHourlyValue && currentHourlyValue !== '0') > 1;
+    
+    // Flag to indicate if we should skip automatic calculations (during form initialization)
+    const isFormInitialization = hasMultipleValues || window.isEditingEmployee;
+    
     if (selectedType === 'daily') {
         // Enable daily rate input, disable monthly rate input
         dailyRateInput.disabled = false;
@@ -2270,9 +2286,13 @@ window.handleWageTypeChange = function() {
         
         console.log('💼 Wage type changed to Daily - Daily rate input enabled');
         
-        // CRITICAL FIX: Only trigger calculation if we don't have preserved values
-        if (currentDailyValue && !currentMonthlyValue && !currentHourlyValue) {
+        // CRITICAL FIX: Only auto-calculate if this is a genuine user interaction
+        // NOT during form initialization with existing employee data
+        if (currentDailyValue && !isFormInitialization) {
+            console.log('🔄 Auto-calculating from daily rate (user interaction)');
             window.calculateEmployeeRatesFromDaily();
+        } else if (isFormInitialization) {
+            console.log('⏸️ Skipping auto-calculation during form initialization');
         }
         
     } else if (selectedType === 'monthly') {
@@ -2295,10 +2315,13 @@ window.handleWageTypeChange = function() {
         
         console.log('💼 Wage type changed to Monthly - Monthly rate input enabled');
         
-        // CRITICAL FIX: Only trigger calculation if we don't have preserved values
-        // This prevents overwriting existing data when form is being initialized
-        if (currentMonthlyValue && !currentDailyValue && !currentHourlyValue) {
+        // CRITICAL FIX: Only auto-calculate if this is a genuine user interaction
+        // NOT during form initialization with existing employee data
+        if (currentMonthlyValue && !isFormInitialization) {
+            console.log('🔄 Auto-calculating from monthly rate (user interaction)');
             window.calculateEmployeeRatesFromMonthly();
+        } else if (isFormInitialization) {
+            console.log('⏸️ Skipping auto-calculation during form initialization');
         }
     }
 };
