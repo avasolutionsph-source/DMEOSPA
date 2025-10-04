@@ -1,11 +1,11 @@
 import express from 'express';
 import CashDrawerSession from '../../models/CashDrawerSession.js';
-import { authenticateToken } from '../../middleware/auth.js';
+import { authenticateJWT } from '../../middleware/auth.js';
 
 const router = express.Router();
 
 // Middleware to ensure user is authenticated
-router.use(authenticateToken);
+router.use(authenticateJWT);
 
 // Get current active session
 router.get('/current', async (req, res) => {
@@ -343,7 +343,7 @@ router.post('/sessions/:sessionId/force-close', async (req, res) => {
   try {
     const userId = req.user.userId;
     const { sessionId } = req.params;
-    const { notes, managerCode } = req.body;
+    const { notes } = req.body;
 
     // TODO: Add manager authorization check
     // For now, allow any authenticated user to force close
