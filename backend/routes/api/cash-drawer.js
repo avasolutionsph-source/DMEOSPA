@@ -396,4 +396,145 @@ router.post('/sessions/:sessionId/force-close', async (req, res) => {
   }
 });
 
+// Transfer cash drawer between employees
+router.post('/transfers', async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { 
+      fromSessionId,
+      fromEmployee,
+      toEmployee,
+      handoverAmount,
+      expectedAmount,
+      variance,
+      handoverNotes,
+      sessionSummary,
+      toSessionId,
+      fromSessionClosed
+    } = req.body;
+
+    // Validate required fields
+    if (!fromEmployee || !toEmployee || handoverAmount === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'From employee, to employee, and handover amount are required'
+      });
+    }
+
+    if (handoverAmount < 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Handover amount cannot be negative'
+      });
+    }
+
+    // Verify the from session exists and belongs to this user
+    let fromSession = null;
+    if (fromSessionId) {
+      fromSession = await CashDrawerSession.findOne({
+        $or: [
+          { sessionId: fromSessionId },
+          { _id: fromSessionId }
+        ],
+        userId
+      });
+    }
+
+    // Create transfer record
+    const transferRecord = {
+      userId,
+      fromSessionId,
+      fromEmployee,
+      toEmployee,
+      transferredAt: new Date(),
+      handoverAmount: parseFloat(handoverAmount),
+      expectedAmount: parseFloat(expectedAmount || 0),
+      variance: parseFloat(variance || 0),
+      handoverNotes: handoverNotes || '',
+      sessionSummary: sessionSummary || {},
+      toSessionId,
+      fromSessionClosed,
+      ipAddress: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('User-Agent')
+    };
+
+    // For now, we'll just log the transfer since we don't have a Transfer model yet
+    // In a real implementation, you would save this to a transfers collection
+    console.log('💰 Cash drawer transfer recorded:', {
+      from: fromEmployee.name,
+      to: toEmployee.name,
+      amount: handoverAmount,
+      variance: variance,
+      timestamp: new Date().toISOString()
+    });
+
+    // Update session metadata if sessions exist
+    if (fromSession) {
+      fromSession.transferType = 'outgoing';
+      fromSession.transferredTo = toEmployee.id;
+      fromSession.transferredAt = new Date();
+      await fromSession.save();
+    }
+
+    // If we have the toSessionId, find and update that session too
+    if (toSessionId) {
+      const toSession = await CashDrawerSession.findOne({
+        $or: [
+          { sessionId: toSessionId },
+          { _id: toSessionId }
+        ],
+        userId
+      });
+      
+      if (toSession) {
+        toSession.transferType = 'incoming';
+        toSession.transferredFrom = fromEmployee.id;
+        toSession.transferredAt = new Date();
+        await toSession.save();
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      data: transferRecord,
+      message: `Cash drawer transferred from ${fromEmployee.name} to ${toEmployee.name}`
+    });
+
+  } catch (error) {
+    console.error('Error recording cash drawer transfer:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to record transfer',
+      details: error.message
+    });
+  }
+});
+
+// Get transfer history
+router.get('/transfers', async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const limit = parseInt(req.query.limit) || 20;
+
+    // For now, return empty array since we don't have transfer model yet
+    // In real implementation, you would query the transfers collection
+    const transfers = [];
+
+    res.json({
+      success: true,
+      data: transfers,
+      count: transfers.length,
+      message: 'Transfer history feature coming soon'
+    });
+
+  } catch (error) {
+    console.error('Error getting transfer history:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get transfer history',
+      details: error.message
+    });
+  }
+});
+
 export default router;

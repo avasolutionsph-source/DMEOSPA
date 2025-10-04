@@ -458,6 +458,21 @@ class Database {
                     console.log('✅ cashDrawerSessions store already exists');
                 }
 
+                // Cash drawer transfers store (v16)
+                if (!this.db.objectStoreNames.contains('cashDrawerTransfers')) {
+                    console.log('🔄 Creating cashDrawerTransfers object store...');
+                    const transfersStore = this.db.createObjectStore('cashDrawerTransfers', { keyPath: 'id' });
+                    transfersStore.createIndex('fromSessionId', 'fromSessionId', { unique: false });
+                    transfersStore.createIndex('toSessionId', 'toSessionId', { unique: false });
+                    transfersStore.createIndex('transferredAt', 'transferredAt', { unique: false });
+                    transfersStore.createIndex('fromEmployeeId', 'fromEmployee.id', { unique: false });
+                    transfersStore.createIndex('toEmployeeId', 'toEmployee.id', { unique: false });
+                    transfersStore.createIndex('syncStatus', 'syncStatus', { unique: false });
+                    console.log('✅ cashDrawerTransfers store created successfully');
+                } else {
+                    console.log('✅ cashDrawerTransfers store already exists');
+                }
+
                 if (window.logger && window.logger.info) {
                     window.logger.info('Database setup complete', { category: 'DATABASE', context: { dbName: this.dbName, version: this.version, stores: this.db.objectStoreNames.length } });
                 } else {

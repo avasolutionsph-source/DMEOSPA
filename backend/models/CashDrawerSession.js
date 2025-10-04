@@ -128,6 +128,25 @@ const cashDrawerSessionSchema = new mongoose.Schema({
   localId: {
     type: String,
     sparse: true
+  },
+
+  // Transfer tracking fields
+  transferType: {
+    type: String,
+    enum: ['incoming', 'outgoing', null],
+    default: null
+  },
+  transferredFrom: {
+    type: String,
+    required: false
+  },
+  transferredTo: {
+    type: String,
+    required: false
+  },
+  transferredAt: {
+    type: Date,
+    required: false
   }
 }, {
   timestamps: true

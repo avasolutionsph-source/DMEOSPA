@@ -3804,6 +3804,92 @@
         </div>
     </div>
 
+    <!-- Shift Transfer Modal -->
+    <div id="transferDrawerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-exchange-alt"></i> Transfer Cash Drawer</h3>
+                <button class="modal-close" onclick="closeModal('transferDrawerModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="transfer-summary">
+                    <h4>Current Session Summary</h4>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <span class="label">Current Responsible:</span>
+                            <span class="value" id="currentResponsible">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Session Started:</span>
+                            <span class="value" id="sessionStartTime">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Opening Float:</span>
+                            <span class="value" id="transferOpeningFloat">₱0.00</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Current Expected Balance:</span>
+                            <span class="value" id="transferExpectedBalance">₱0.00</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Transactions Processed:</span>
+                            <span class="value" id="transferTransactionCount">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="transfer-details">
+                    <h4>Transfer Details</h4>
+                    
+                    <div class="form-group">
+                        <label for="transferToEmployee">Transfer To Employee</label>
+                        <select id="transferToEmployee" class="form-input" required>
+                            <option value="">Select incoming employee...</option>
+                        </select>
+                        <small class="form-hint">Select the employee who will take over the cash drawer</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="transferCashCount">Actual Cash Count (Optional)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₱</span>
+                            <input type="number" id="transferCashCount" class="form-input" placeholder="Leave blank to use expected balance" min="0" step="0.01" oninput="window.cashDrawerManager?.calculateTransferVariance()">
+                        </div>
+                        <small class="form-hint">Count cash if verification is needed during transfer</small>
+                    </div>
+
+                    <div class="transfer-variance-display" id="transferVarianceDisplay" style="display: none;">
+                        <i class="fas fa-calculator text-muted"></i>
+                        <span class="text-muted">No variance calculation</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="transferNotes">Handover Notes</label>
+                        <textarea id="transferNotes" class="form-input" rows="3" placeholder="Important information for the incoming employee (drawer condition, special notes, etc.)"></textarea>
+                    </div>
+                </div>
+
+                <div class="transfer-confirmation">
+                    <div class="info-box">
+                        <i class="fas fa-info-circle text-primary"></i>
+                        <div>
+                            <strong>Transfer Process</strong>
+                            <p>This will close your current session and immediately open a new session for the selected employee with the current balance as their opening float.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('transferDrawerModal')">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="window.cashDrawerManager?.handleTransferDrawerForm()">
+                    <i class="fas fa-exchange-alt"></i> Transfer Drawer
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Auth modal completely removed - using login.html for authentication -->
 
 

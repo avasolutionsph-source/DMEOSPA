@@ -412,6 +412,9 @@ class CashDrawerManager {
                     </div>
                 </div>
                 <div class="drawer-actions">
+                    <button class="btn btn-primary btn-sm" onclick="window.cashDrawerManager.showTransferModal()">
+                        <i class="fas fa-exchange-alt"></i> Transfer
+                    </button>
                     <button class="btn btn-danger btn-sm" onclick="window.cashDrawerManager.showCloseDrawerModal()">
                         <i class="fas fa-lock"></i> Close Drawer
                     </button>
@@ -497,6 +500,352 @@ class CashDrawerManager {
             }
             window.openModal('closeDrawerModal');
         }
+    }
+
+    showTransferModal() {
+        if (window.openModal) {
+            // Pre-populate transfer modal with current session data
+            this.populateTransferModal();
+            window.openModal('transferDrawerModal');
+        }
+    }
+
+    populateTransferModal() {
+        const session = this.currentSession;
+        if (!session) return;
+
+        // Current session summary
+        const currentSessionElement = document.getElementById('currentSessionSummary');
+        if (currentSessionElement) {
+            currentSessionElement.innerHTML = `
+                <div class="session-summary">
+                    <div class="summary-row">
+                        <span class="label">Opened By:</span>
+                        <span class="value">${session.openedByName}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label">Opening Float:</span>
+                        <span class="value">₱${this.formatCurrency(session.openingFloat)}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label">Current Expected:</span>
+                        <span class="value">₱${this.formatCurrency(session.expectedBalance)}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label">Transactions:</span>
+                        <span class="value">${session.transactionCount}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label">Total Sales:</span>
+                        <span class="value">₱${this.formatCurrency(session.totalCashSales)}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Pre-populate cash count with expected balance
+        const cashCountInput = document.getElementById('transferCashCount');
+        if (cashCountInput) {
+            cashCountInput.value = session.expectedBalance.toFixed(2);
+        }
+
+        // Populate employee dropdown
+        this.populateEmployeeDropdown();
+    }
+
+    async populateEmployeeDropdown() {
+        const selectElement = document.getElementById('transferToEmployee');
+        if (!selectElement) return;
+
+        try {
+            // Clear existing options
+            selectElement.innerHTML = '<option value="">Select employee...</option>';
+
+            // Try to get employees from various sources
+            let employees = [];
+
+            // Check if employees are available in state manager
+            if (window.StateManager) {
+                employees = window.StateManager.getState('employees.list') || [];
+            }
+
+            // If no employees in state, try to fetch from database
+            if (employees.length === 0 && window.db) {
+                try {
+                    employees = await window.db.getAll('employees') || [];
+                } catch (e) {
+                    console.warn('Could not fetch employees from IndexedDB:', e);
+                }
+            }
+
+            // If still no employees, try to fetch from API
+            if (employees.length === 0 && window.HybridAPIClient) {
+                try {
+                    const response = await window.HybridAPIClient.get('/api/business/employees');
+                    if (response.success && response.data) {
+                        employees = response.data;
+                    }
+                } catch (e) {
+                    console.warn('Could not fetch employees from API:', e);
+                }
+            }
+
+            // Filter out current user if possible
+            const currentUser = this.getCurrentUser();
+            if (currentUser) {
+                employees = employees.filter(emp => 
+                    emp.email !== currentUser.email && 
+                    emp.id !== currentUser.id &&
+                    emp._id !== currentUser.id
+                );
+            }
+
+            // Populate dropdown
+            employees.forEach(employee => {
+                const option = document.createElement('option');
+                option.value = employee.id || employee._id;
+                option.textContent = `${employee.name} (${employee.position || 'Staff'})`;
+                selectElement.appendChild(option);
+            });
+
+            if (employees.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No employees available';
+                option.disabled = true;
+                selectElement.appendChild(option);
+            }
+
+        } catch (error) {
+            console.error('Error populating employee dropdown:', error);
+            selectElement.innerHTML = '<option value="">Error loading employees</option>';
+        }
+    }
+
+    async transferDrawer(toEmployeeId, toEmployeeName, actualCashCount, handoverNotes = '') {
+        try {
+            if (!this.currentSession || this.currentSession.status !== 'open') {
+                throw new Error('No active cash drawer session to transfer');
+            }
+
+            if (!toEmployeeId || !toEmployeeName) {
+                throw new Error('Target employee is required for transfer');
+            }
+
+            const currentUser = this.getCurrentUser();
+            if (!currentUser) {
+                throw new Error('User not authenticated');
+            }
+
+            // Validate cash count
+            const cashCount = parseFloat(actualCashCount);
+            if (isNaN(cashCount) || cashCount < 0) {
+                throw new Error('Valid cash count is required');
+            }
+
+            // Calculate variance from expected balance
+            const variance = cashCount - this.currentSession.expectedBalance;
+            
+            // Create transfer record
+            const transferData = {
+                fromSessionId: this.currentSession.id,
+                fromEmployee: {
+                    id: currentUser.email || currentUser.userId,
+                    name: currentUser.name || currentUser.email
+                },
+                toEmployee: {
+                    id: toEmployeeId,
+                    name: toEmployeeName
+                },
+                transferredAt: new Date().toISOString(),
+                handoverAmount: cashCount,
+                expectedAmount: this.currentSession.expectedBalance,
+                variance: variance,
+                handoverNotes: handoverNotes,
+                sessionSummary: {
+                    openingFloat: this.currentSession.openingFloat,
+                    totalSales: this.currentSession.totalCashSales,
+                    transactionCount: this.currentSession.transactionCount,
+                    sessionDuration: new Date() - new Date(this.currentSession.openedAt)
+                }
+            };
+
+            // Close current session with actual cash count
+            const closedSession = await this.closeDrawerForTransfer(cashCount, variance, `Transfer to ${toEmployeeName}. ${handoverNotes}`);
+            
+            // Create new session for receiving employee
+            const newSession = await this.openDrawerForTransfer(toEmployeeId, toEmployeeName, cashCount, `Received from ${currentUser.name || currentUser.email}. ${handoverNotes}`);
+
+            // Record the transfer relationship
+            transferData.toSessionId = newSession.id;
+            transferData.fromSessionClosed = closedSession.id;
+
+            // Save transfer record to IndexedDB
+            if (window.db) {
+                try {
+                    await window.db.add('cashDrawerTransfers', {
+                        id: this.generateTransferId(),
+                        ...transferData,
+                        createdAt: new Date().toISOString(),
+                        syncStatus: 'pending'
+                    });
+                } catch (e) {
+                    console.warn('Failed to save transfer record to IndexedDB:', e);
+                }
+            }
+
+            // Sync transfer to backend if online
+            if (this.isOnline && window.HybridAPIClient) {
+                try {
+                    await window.HybridAPIClient.post('/api/cash-drawer/transfers', transferData);
+                } catch (syncError) {
+                    console.warn('⚠️ Failed to sync transfer to server:', syncError);
+                }
+            }
+
+            console.log('✅ Cash drawer transferred successfully');
+            
+            if (window.showSuccess) {
+                const varianceText = variance !== 0 ? ` (Variance: ₱${this.formatCurrency(Math.abs(variance))})` : '';
+                window.showSuccess(`Cash drawer transferred to ${toEmployeeName} with ₱${this.formatCurrency(cashCount)}${varianceText}`);
+            }
+
+            return {
+                closedSession,
+                newSession,
+                transferData
+            };
+
+        } catch (error) {
+            console.error('❌ Error transferring cash drawer:', error);
+            if (window.showError) {
+                window.showError(error.message);
+            }
+            throw error;
+        }
+    }
+
+    async closeDrawerForTransfer(actualAmount, variance, notes) {
+        // Close current session without UI updates (internal transfer)
+        this.currentSession.closedBy = this.currentSession.openedBy;
+        this.currentSession.closedByName = this.currentSession.openedByName;
+        this.currentSession.closedAt = new Date().toISOString();
+        this.currentSession.closingBalance = parseFloat(actualAmount);
+        this.currentSession.variance = parseFloat(variance);
+        this.currentSession.status = 'closed';
+        this.currentSession.notes = notes;
+        this.currentSession.syncStatus = 'pending';
+        this.currentSession.transferType = 'outgoing';
+
+        // Save to local database
+        await window.db.put('cashDrawerSessions', this.currentSession);
+
+        // Sync to backend if online
+        if (this.isOnline && window.HybridAPIClient) {
+            try {
+                await window.HybridAPIClient.put(`/api/cash-drawer/sessions/${this.currentSession.serverId || this.currentSession.id}`, this.currentSession);
+            } catch (syncError) {
+                console.warn('⚠️ Failed to sync closed transfer session to server:', syncError);
+            }
+        }
+
+        const closedSession = { ...this.currentSession };
+        this.currentSession = null;
+        return closedSession;
+    }
+
+    async openDrawerForTransfer(employeeId, employeeName, openingFloat, notes) {
+        // Create new session for receiving employee
+        const newSession = {
+            id: this.generateSessionId(),
+            openedBy: employeeId,
+            openedByName: employeeName,
+            openedAt: new Date().toISOString(),
+            openingFloat: parseFloat(openingFloat),
+            expectedBalance: parseFloat(openingFloat),
+            transactionCount: 0,
+            totalCashSales: 0,
+            status: 'open',
+            notes: notes,
+            syncStatus: 'pending',
+            transferType: 'incoming',
+            createdAt: new Date().toISOString()
+        };
+
+        // Save to local database
+        await window.db.add('cashDrawerSessions', newSession);
+        
+        this.currentSession = newSession;
+
+        // Update state manager
+        if (window.StateManager) {
+            window.StateManager.setState('cashDrawer.currentSession', newSession);
+            window.StateManager.setState('cashDrawer.isDrawerOpen', true);
+            window.StateManager.setState('cashDrawer.openingFloat', parseFloat(openingFloat));
+        }
+
+        // Sync to backend if online
+        if (this.isOnline && window.HybridAPIClient) {
+            try {
+                const result = await window.HybridAPIClient.post('/api/cash-drawer/sessions', newSession);
+                if (result.success && result.data) {
+                    newSession.serverId = result.data._id;
+                    newSession.syncStatus = 'synced';
+                    await window.db.put('cashDrawerSessions', newSession);
+                }
+            } catch (syncError) {
+                console.warn('⚠️ Failed to sync new transfer session to server:', syncError);
+            }
+        }
+
+        return newSession;
+    }
+
+    async handleTransferForm() {
+        try {
+            const toEmployeeId = document.getElementById('transferToEmployee').value;
+            const actualCashCount = document.getElementById('transferCashCount').value;
+            const handoverNotes = document.getElementById('transferNotes').value;
+
+            if (!toEmployeeId) {
+                throw new Error('Please select an employee to transfer to');
+            }
+
+            if (!actualCashCount) {
+                throw new Error('Cash count is required');
+            }
+
+            // Get employee name from dropdown
+            const employeeSelect = document.getElementById('transferToEmployee');
+            const selectedOption = employeeSelect.options[employeeSelect.selectedIndex];
+            const toEmployeeName = selectedOption.textContent.split(' (')[0]; // Extract name without position
+
+            await this.transferDrawer(toEmployeeId, toEmployeeName, parseFloat(actualCashCount), handoverNotes);
+            
+            if (window.closeModal) {
+                window.closeModal('transferDrawerModal');
+            }
+
+            // Clear form
+            document.getElementById('transferToEmployee').value = '';
+            document.getElementById('transferCashCount').value = '';
+            document.getElementById('transferNotes').value = '';
+
+            // Update UI to reflect new session
+            this.updateUI();
+
+        } catch (error) {
+            console.error('❌ Error in transfer form:', error);
+            if (window.showError) {
+                window.showError(error.message);
+            }
+        }
+    }
+
+    generateTransferId() {
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substr(2, 5);
+        return `transfer_${timestamp}_${random}`;
     }
 
     async handleOpenDrawerForm() {
