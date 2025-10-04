@@ -19,10 +19,7 @@ const productHandler = new BaseRouteHandler(Product, {
     ownerField: 'userId'
 });
 
-// Standard CRUD routes using base handler
-productHandler.createRoutes(router);
-
-// Additional product-specific routes
+// Additional product-specific routes (BEFORE base handler to avoid conflicts)
 
 // Bulk reorder products
 router.put('/reorder', withErrorHandling(async (req, res) => {
@@ -186,6 +183,10 @@ router.put('/reorder', withErrorHandling(async (req, res) => {
         });
     }
 }));
+
+// Standard CRUD routes using base handler (AFTER custom routes)
+productHandler.createRoutes(router);
+
 router.get('/category/:category', withErrorHandling(async (req, res) => {
     const { category } = req.params;
     const { page = 1, limit = 50 } = req.query;
