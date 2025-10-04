@@ -1071,19 +1071,38 @@ class EmployeeManager {
             document.getElementById('employeeEmail').value = employee.email || '';
             document.getElementById('employeePhone').value = employee.phone || '';
             document.getElementById('employeeCommission').value = employee.commissionRate || '';
-            document.getElementById('employeeHireDate').value = employee.hireDate || '';
+            // CRITICAL FIX: Preserve hire date if it exists, format it properly for date input
+            const hireDateValue = employee.hireDate;
+            if (hireDateValue) {
+                // Handle different date formats - ensure proper YYYY-MM-DD format for date input
+                let formattedDate = hireDateValue;
+                if (hireDateValue.includes('T')) {
+                    // ISO date string - extract date part
+                    formattedDate = hireDateValue.split('T')[0];
+                } else if (hireDateValue.includes('/')) {
+                    // MM/DD/YYYY format - convert to YYYY-MM-DD
+                    const dateParts = hireDateValue.split('/');
+                    if (dateParts.length === 3) {
+                        formattedDate = `${dateParts[2]}-${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
+                    }
+                }
+                document.getElementById('employeeHireDate').value = formattedDate;
+            } else {
+                document.getElementById('employeeHireDate').value = '';
+            }
             
-            // Fill salary fields - show actual values or empty if 0 (unconfigured)
+            // Fill salary fields - show actual values, including 0 if explicitly set
             document.getElementById('employeeWageType').value = employee.wageType || 'daily';
             
-            // CRITICAL FIX: Properly handle numeric strings for salary fields
-            const dailyRateValue = parseFloat(employee.dailyRate) || 0;
-            const monthlyRateValue = parseFloat(employee.monthlyRate) || 0;
-            const hourlyRateValue = parseFloat(employee.hourlyRate) || 0;
+            // CRITICAL FIX: Show actual salary values including 0, only hide if undefined/null
+            const dailyRateValue = parseFloat(employee.dailyRate);
+            const monthlyRateValue = parseFloat(employee.monthlyRate);
+            const hourlyRateValue = parseFloat(employee.hourlyRate);
             
-            document.getElementById('employeeDailyRate').value = dailyRateValue > 0 ? dailyRateValue : '';
-            document.getElementById('employeeMonthlyRate').value = monthlyRateValue > 0 ? monthlyRateValue : '';
-            document.getElementById('employeeHourlyRate').value = hourlyRateValue > 0 ? hourlyRateValue : '';
+            // Show the actual values if they exist, even if 0
+            document.getElementById('employeeDailyRate').value = (employee.dailyRate !== undefined && employee.dailyRate !== null) ? (isNaN(dailyRateValue) ? '' : dailyRateValue) : '';
+            document.getElementById('employeeMonthlyRate').value = (employee.monthlyRate !== undefined && employee.monthlyRate !== null) ? (isNaN(monthlyRateValue) ? '' : monthlyRateValue) : '';
+            document.getElementById('employeeHourlyRate').value = (employee.hourlyRate !== undefined && employee.hourlyRate !== null) ? (isNaN(hourlyRateValue) ? '' : hourlyRateValue) : '';
             
             // Handle overtime pay configuration
             const hasOvertime = employee.overtimeMultiplier && employee.overtimeMultiplier > 1;
