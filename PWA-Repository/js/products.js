@@ -15,6 +15,7 @@ class ProductsManager {
     async init() {
         await this.loadProducts();
         this.setupEventListeners();
+        this.initDragAndDrop();
     }
 
     setupEventListeners() {
@@ -68,6 +69,99 @@ class ProductsManager {
                 if (submitBtn && submitBtn.disabled) return; // Already processing
                 await this.saveProduct();
             });
+        }
+    }
+
+    initDragAndDrop() {
+        const tbody = document.getElementById('productsTableBody');
+        if (!tbody || !window.Sortable) {
+            console.log('🔍 [PRODUCTS] Sortable.js not available or tbody not found');
+            return;
+        }
+
+        // Destroy existing sortable instance if it exists
+        if (this.sortable) {
+            this.sortable.destroy();
+        }
+
+        // Initialize sortable with drag handle
+        this.sortable = Sortable.create(tbody, {
+            handle: '.drag-handle',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-drag',
+            onStart: (evt) => {
+                console.log('🔄 [PRODUCTS] Started dragging item:', evt.oldIndex);
+                document.body.classList.add('is-dragging');
+            },
+            onEnd: async (evt) => {
+                console.log('🔄 [PRODUCTS] Finished dragging item:', evt.oldIndex, '->', evt.newIndex);
+                document.body.classList.remove('is-dragging');
+                
+                if (evt.oldIndex !== evt.newIndex) {
+                    await this.handleReorder(evt.oldIndex, evt.newIndex);
+                }
+            }
+        });
+    }
+
+    async handleReorder(oldIndex, newIndex) {
+        try {
+            console.log('🔄 [PRODUCTS] Reordering services...');
+            showLoading('Reordering services...');
+
+            // Calculate new order values for all products
+            const reorderedProducts = [...this.products];
+            const [movedItem] = reorderedProducts.splice(oldIndex, 1);
+            reorderedProducts.splice(newIndex, 0, movedItem);
+
+            // Assign new sort orders
+            const updateData = reorderedProducts.map((product, index) => ({
+                id: product._id || product.id,
+                sortOrder: index
+            }));
+
+            // Send reorder request via HybridAPIClient for offline support
+            const result = await window.HybridAPIClient.reorderProducts(updateData);
+            
+            hideLoading();
+
+            if (result.success) {
+                // Update local products array with new order
+                this.products = reorderedProducts.map((product, index) => ({
+                    ...product,
+                    sortOrder: index
+                }));
+                
+                console.log('✅ [PRODUCTS] Services reordered successfully');
+                
+                if (result.source === 'offline_queue') {
+                    showSuccess('Services reordered (will sync when online)');
+                } else {
+                    showSuccess('Services reordered successfully');
+                }
+                
+                // Force refresh to ensure consistency
+                setTimeout(() => this.loadProducts(), 500);
+            } else {
+                console.error('❌ [PRODUCTS] Failed to reorder services:', result.error);
+                showError(result.error?.message || 'Failed to reorder services');
+                this.displayProducts(); // Revert display
+            }
+        } catch (error) {
+            console.error('❌ [PRODUCTS] Error reordering services:', error);
+            hideLoading();
+            showError('Failed to reorder services');
+            this.displayProducts(); // Revert display
+            
+            if (window.logger) {
+                window.logger.error('Failed to reorder services', {
+                    category: 'PRODUCTS',
+                    operation: 'reorder_services',
+                    error: error
+                });
+            }
         }
     }
 
@@ -137,7 +231,10 @@ class ProductsManager {
         const pageProducts = this.products.slice(startIndex, endIndex);
 
         tbody.innerHTML = pageProducts.map(product => `
-            <tr>
+            <tr data-id="${product._id || product.id}">
+                <td style="text-align: center; cursor: grab;" class="drag-handle">
+                    <i class="fas fa-grip-vertical" style="color: #ccc; font-size: 14px;"></i>
+                </td>
                 <td>
                     <strong>${product.name}</strong>
                     ${product.description ? `<br><small>${product.description}</small>` : ''}
@@ -177,6 +274,11 @@ class ProductsManager {
         
         // Update pagination controls
         this.updatePaginationControls();
+        
+        // Re-initialize drag and drop after content update
+        if (this.products.length > 0) {
+            setTimeout(() => this.initDragAndDrop(), 100);
+        }
     }
     
     updatePaginationControls() {

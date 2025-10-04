@@ -9126,3 +9126,65 @@ button.btn-primary:hover {
     font-size: 0.9rem;
     line-height: 1.4;
 }
+
+
+/* Drag and Drop Styles for Services Table */
+.drag-handle {
+    cursor: grab !important;
+    user-select: none;
+    transition: color 0.2s ease;
+}
+
+.drag-handle:hover {
+    color: var(--primary-color) !important;
+}
+
+.drag-handle:active {
+    cursor: grabbing !important;
+}
+
+/* Sortable states */
+.sortable-ghost {
+    opacity: 0.3;
+    background-color: var(--primary-ultra-light) !important;
+    border: 2px dashed var(--primary-color);
+}
+
+.sortable-chosen {
+    background-color: var(--primary-ultra-light) !important;
+    transform: scale(1.01);
+    box-shadow: 0 4px 8px rgba(128, 0, 32, 0.2);
+}
+
+.sortable-drag {
+    background-color: white !important;
+    box-shadow: 0 8px 16px rgba(128, 0, 32, 0.3);
+    transform: rotate(2deg);
+    border: 1px solid var(--primary-color);
+}
+
+/* Visual feedback during dragging */
+.is-dragging {
+    cursor: grabbing !important;
+}
+
+.is-dragging * {
+    cursor: grabbing !important;
+}
+
+/* Enhance table row hover when draggable */
+.data-table tbody tr:hover .drag-handle {
+    color: var(--primary-color) !important;
+    background-color: var(--primary-ultra-light);
+    border-radius: 4px;
+}
+
+/* Smooth transitions for reordering */
+.data-table tbody tr {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}

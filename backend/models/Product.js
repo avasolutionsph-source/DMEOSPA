@@ -74,6 +74,12 @@ const productSchema = new mongoose.Schema({
     default: true
   },
   
+  // Sort order for user preferences
+  sortOrder: {
+    type: Number,
+    default: 0
+  },
+  
   // Sync metadata
   syncStatus: {
     type: String,
@@ -92,6 +98,7 @@ const productSchema = new mongoose.Schema({
 productSchema.index({ userId: 1, name: 1 });
 productSchema.index({ userId: 1, category: 1 });
 productSchema.index({ userId: 1, isActive: 1 });
+productSchema.index({ userId: 1, sortOrder: 1 });
 productSchema.index({ userId: 1, localId: 1 }, { unique: true, sparse: true });
 productSchema.index({ syncStatus: 1 });
 

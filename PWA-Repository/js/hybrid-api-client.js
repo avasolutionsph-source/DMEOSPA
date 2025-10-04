@@ -981,6 +981,77 @@ class HybridAPIClient {
         return result;
     }
 
+    async reorderProducts(productsOrder) {
+        console.log('🔄 [API] Reordering products...');
+        
+        if (!this.isOnline) {
+            // Queue the reorder operation for when online
+            const queuedRequest = {
+                type: 'reorder_products',
+                endpoint: '/api/products/reorder',
+                method: 'PUT',
+                data: { products: productsOrder },
+                timestamp: Date.now(),
+                retries: 0
+            };
+            
+            this.requestQueue.push(queuedRequest);
+            await this.saveRequestQueue();
+            
+            console.log('📱 [API] Reorder queued for when online');
+            return {
+                success: true,
+                source: 'offline_queue',
+                message: 'Reorder queued for when online'
+            };
+        }
+
+        try {
+            const token = localStorage.getItem('authToken');
+            const response = await fetch(`${this.baseURL}/api/products/reorder`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ products: productsOrder })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ [API] Products reordered successfully');
+                
+                // Clear products cache to force refresh
+                this.cache.delete('products');
+                if (window.db) {
+                    await window.db.delete('cache', 'products');
+                }
+                
+                return {
+                    success: true,
+                    data: result.data,
+                    source: 'api',
+                    message: result.message
+                };
+            } else {
+                const errorData = await response.json();
+                console.error('❌ [API] Failed to reorder products:', errorData);
+                return {
+                    success: false,
+                    error: errorData.error || { message: 'Failed to reorder products' },
+                    source: 'api'
+                };
+            }
+        } catch (error) {
+            console.error('❌ [API] Error reordering products:', error);
+            return {
+                success: false,
+                error: { message: error.message },
+                source: 'api'
+            };
+        }
+    }
+
     async getTransactions(options = {}) {
         try {
             // Get transactions from API/cache
