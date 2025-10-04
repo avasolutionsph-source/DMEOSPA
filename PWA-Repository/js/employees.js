@@ -1207,6 +1207,7 @@ class EmployeeManager {
             document.getElementById('employeeHasSSS').checked = employee.hasSSS || false;
             document.getElementById('employeeHasPhilHealth').checked = employee.hasPhilHealth || false;
             document.getElementById('employeeHasPagibig').checked = employee.hasPagibig || false;
+            document.getElementById('employeeVoluntaryContribution').checked = employee.voluntaryContribution || false;
             
             // Fill government deduction amounts (simplified)
             document.getElementById('employeeSssAmount').value = employee.sssDeductionAmount || '0';
@@ -1472,6 +1473,8 @@ class EmployeeManager {
                 sssDeductionAmount: parseFloat(document.getElementById('employeeSssAmount')?.value || '0') || 0,
                 philHealthDeductionAmount: parseFloat(document.getElementById('employeePhilHealthAmount')?.value || '0') || 0,
                 pagIbigDeductionAmount: parseFloat(document.getElementById('employeePagibigAmount')?.value || '0') || 0,
+                // Voluntary Contribution
+                voluntaryContribution: document.getElementById('employeeVoluntaryContribution')?.checked || false,
                 // Backend compatibility
                 isActive: true,
                 syncStatus: 'synced', // Direct MongoDB save

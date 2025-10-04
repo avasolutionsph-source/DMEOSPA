@@ -213,6 +213,12 @@ const employeeSchema = new mongoose.Schema({
     default: 0 // Fixed amount in PHP for Pag-IBIG deduction
   },
   
+  // Voluntary contribution setting - if true, employee pays their own government benefits
+  voluntaryContribution: {
+    type: Boolean,
+    default: false
+  },
+  
   // Government identification numbers
   sssNumber: {
     type: String,
