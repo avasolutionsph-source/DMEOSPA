@@ -3330,6 +3330,47 @@
                 pagibigConfig.style.display = this.checked ? 'block' : 'none';
             });
         }
+        
+        // Voluntary Contribution Toggle - Disable individual government deduction checkboxes
+        const voluntaryCheckbox = document.getElementById('employeeVoluntaryContribution');
+        if (voluntaryCheckbox) {
+            voluntaryCheckbox.addEventListener('change', function() {
+                const isVoluntary = this.checked;
+                const deductionCheckboxes = [
+                    document.getElementById('employeeHasSSS'),
+                    document.getElementById('employeeHasPhilHealth'),
+                    document.getElementById('employeeHasPagibig')
+                ];
+                const deductionAmounts = [
+                    document.getElementById('employeeSssAmount'),
+                    document.getElementById('employeePhilHealthAmount'),
+                    document.getElementById('employeePagibigAmount')
+                ];
+                
+                // Disable/enable deduction checkboxes and amount fields
+                deductionCheckboxes.forEach(checkbox => {
+                    if (checkbox) {
+                        checkbox.disabled = isVoluntary;
+                        checkbox.style.opacity = isVoluntary ? '0.5' : '1';
+                        if (isVoluntary) {
+                            checkbox.checked = false;
+                            // Hide configuration sections when disabled
+                            const configId = checkbox.id.replace('employeeHas', '').toLowerCase() + 'Configuration';
+                            const configSection = document.getElementById(configId);
+                            if (configSection) configSection.style.display = 'none';
+                        }
+                    }
+                });
+                
+                deductionAmounts.forEach(input => {
+                    if (input) {
+                        input.disabled = isVoluntary;
+                        input.style.opacity = isVoluntary ? '0.5' : '1';
+                        if (isVoluntary) input.value = '0';
+                    }
+                });
+            });
+        }
     }
     
     // Initialize toggles when DOM is ready

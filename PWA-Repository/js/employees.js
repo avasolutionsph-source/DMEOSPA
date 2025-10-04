@@ -948,6 +948,12 @@ class EmployeeManager {
                                     ${employee.hasPagibig ? 'Enrolled' : 'Not Enrolled'}
                                 </span>
                             </div>
+                            <div class="info-item">
+                                <strong>Voluntary Contribution:</strong> <span style="color: ${employee.voluntaryContribution ? 'blue' : 'gray'};">
+                                    <i class="fas fa-${employee.voluntaryContribution ? 'user-check' : 'building'}"></i> 
+                                    ${employee.voluntaryContribution ? 'Enabled' : 'Disabled'}
+                                </span>
+                            </div>
                         </div>
 
                         <!-- Performance Statistics -->
@@ -1218,6 +1224,34 @@ class EmployeeManager {
             document.getElementById('sssConfiguration').style.display = employee.hasSSS ? 'block' : 'none';
             document.getElementById('philHealthConfiguration').style.display = employee.hasPhilHealth ? 'block' : 'none';
             document.getElementById('pagibigConfiguration').style.display = employee.hasPagibig ? 'block' : 'none';
+            
+            // Handle voluntary contribution state - disable deduction checkboxes if voluntary is enabled
+            if (employee.voluntaryContribution) {
+                const deductionCheckboxes = [
+                    document.getElementById('employeeHasSSS'),
+                    document.getElementById('employeeHasPhilHealth'),
+                    document.getElementById('employeeHasPagibig')
+                ];
+                const deductionAmounts = [
+                    document.getElementById('employeeSssAmount'),
+                    document.getElementById('employeePhilHealthAmount'),
+                    document.getElementById('employeePagibigAmount')
+                ];
+                
+                deductionCheckboxes.forEach(checkbox => {
+                    if (checkbox) {
+                        checkbox.disabled = true;
+                        checkbox.style.opacity = '0.5';
+                    }
+                });
+                
+                deductionAmounts.forEach(input => {
+                    if (input) {
+                        input.disabled = true;
+                        input.style.opacity = '0.5';
+                    }
+                });
+            }
 
             openModal('employeeModal');
             
