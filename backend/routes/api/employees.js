@@ -25,7 +25,8 @@ router.post('/', withErrorHandling(async (req, res) => {
             commissionRate, assignedRooms, createLogin, temporaryPassword,
             wageType, dailyRate, monthlyRate, hourlyRate, overtimeMultiplier,
             hasSSS, hasPhilHealth, hasPagibig,
-            sssDeductionAmount, philHealthDeductionAmount, pagIbigDeductionAmount } = req.body;
+            sssDeductionAmount, philHealthDeductionAmount, pagIbigDeductionAmount,
+            voluntaryContribution } = req.body;
     
     // Validate required fields
     if (!firstName || !lastName || !role) {
@@ -117,6 +118,8 @@ router.post('/', withErrorHandling(async (req, res) => {
         sssDeductionAmount: parseFloat(sssDeductionAmount) || 0,
         philHealthDeductionAmount: parseFloat(philHealthDeductionAmount) || 0,
         pagIbigDeductionAmount: parseFloat(pagIbigDeductionAmount) || 0,
+        // Voluntary contribution setting
+        voluntaryContribution: voluntaryContribution || false,
         isActive: true
     });
     
