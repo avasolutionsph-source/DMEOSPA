@@ -527,6 +527,14 @@ router.put('/:id', withErrorHandling(async (req, res) => {
         }
     });
     
+    // 🔍 DEBUGGING: Log hire date data for debugging
+    console.log('📅 [HIRE-DATE-DEBUG] Backend received hire date update data:', {
+        hireDate: updateData.hireDate,
+        hireDateType: typeof updateData.hireDate,
+        hireDateRaw: req.body.hireDate,
+        hireDateExists: !!updateData.hireDate
+    });
+    
     // Handle password reset or update
     let newPassword = null;
     if (updateData.resetPassword || updateData.password) {
@@ -686,6 +694,17 @@ router.put('/:id', withErrorHandling(async (req, res) => {
             monthlyRateValue: employee.monthlyRate,
             hourlyRateValue: employee.hourlyRate
         }
+    });
+    
+    // 🔍 DEBUGGING: Verify hire date was saved
+    console.log('📅 [HIRE-DATE-DEBUG] Employee hire date after MongoDB save (VERIFICATION):', {
+        id: employee._id,
+        name: `${employee.firstName} ${employee.lastName}`,
+        hireDate: employee.hireDate,
+        hireDateType: typeof employee.hireDate,
+        hireDateFormatted: employee.hireDate ? new Date(employee.hireDate).toISOString() : null,
+        originalUpdateHireDate: updateData.hireDate,
+        hireDateSavedCorrectly: employee.hireDate === updateData.hireDate
     });
     
     // CRITICAL VERIFICATION: Ensure salary fields were actually saved

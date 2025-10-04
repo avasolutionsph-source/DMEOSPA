@@ -1301,6 +1301,18 @@ class EmployeeManager {
             };
             console.log('💰 [SALARY-DEBUG] Form values captured:', salaryDebugInfo);
             
+            // 🔍 DEBUGGING: Capture hire date and additional field values for debugging
+            const hireDateElement = document.getElementById('employeeHireDate');
+            const hireDateValue = hireDateElement?.value;
+            const hireDateDebugInfo = {
+                hireDateElement: hireDateElement,
+                hireDateValue: hireDateValue,
+                hireDateType: typeof hireDateValue,
+                hireDateEmpty: !hireDateValue,
+                hireDateDefault: hireDateValue || new Date().toISOString().split('T')[0]
+            };
+            console.log('📅 [HIRE-DATE-DEBUG] Hire date field capture:', hireDateDebugInfo);
+            
             const employeeData = {
                 // Backend model fields (firstName/lastName) - REQUIRED
                 firstName: firstName || 'Unknown',
@@ -1351,13 +1363,18 @@ class EmployeeManager {
                 }
             }
             
-            // 🔍 DEBUGGING: Log salary data in the final object
+            // 🔍 DEBUGGING: Log salary data and hire date in the final object
             console.log('💰 [SALARY-DEBUG] Final salary data being sent to backend:', {
                 wageType: employeeData.wageType,
                 dailyRate: employeeData.dailyRate,
                 monthlyRate: employeeData.monthlyRate,
                 hourlyRate: employeeData.hourlyRate,
                 overtimeMultiplier: employeeData.overtimeMultiplier
+            });
+            console.log('📅 [HIRE-DATE-DEBUG] Final hire date being sent to backend:', {
+                hireDate: employeeData.hireDate,
+                hireDateType: typeof employeeData.hireDate,
+                originalFieldValue: hireDateValue
             });
             console.log('📝 Employee data to save:', employeeData);
             console.log('🔐 Auth token available:', !!token);

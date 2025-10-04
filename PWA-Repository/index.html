@@ -3211,8 +3211,13 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label>Monthly Rate (₱) <span style="font-size: 0.85em; color: #666; font-weight: normal;">(auto-calculated)</span></label>
-                                <input type="number" id="employeeMonthlyRate" class="form-input" step="0.01" min="0" placeholder="Auto-calculated" readonly style="background-color: #f8f9fa;">
+                                <label>Monthly Rate (₱) <span style="font-size: 0.85em; color: #666; font-weight: normal;">(can be zero)</span></label>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <input type="number" id="employeeMonthlyRate" class="form-input" step="0.01" min="0" placeholder="e.g. 15000.00" style="flex: 1;">
+                                    <button type="button" class="btn btn-secondary" onclick="setMonthlyRateZero()" style="padding: 0.5rem 1rem; font-size: 0.85rem; white-space: nowrap;">
+                                        Set to ₱0
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         
