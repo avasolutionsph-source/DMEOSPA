@@ -500,7 +500,16 @@ class EmployeeManager {
                             const monthlyRate = parseFloat(emp.monthlyRate) || 0;
                             const hourlyRate = parseFloat(emp.hourlyRate) || 0;
                             const hasAnySalary = dailyRate > 0 || monthlyRate > 0 || hourlyRate > 0;
-                            return !hasAnySalary ? `<p style="margin-left: 1rem; font-size: 0.9rem; color: #dc2626;"><i class="fas fa-exclamation-triangle"></i> No salary configured</p>` : '';
+                            if (!hasAnySalary) {
+                                // EMPLOYEE-FRIENDLY: Show context-aware message instead of alarming "No salary configured"
+                                const commissionRate = parseFloat(emp.commissionRate) || 0;
+                                if (commissionRate > 0) {
+                                    return `<p style="margin-left: 1rem; font-size: 0.9rem; color: #2563eb;"><i class="fas fa-percentage"></i> Commission Based</p>`;
+                                } else {
+                                    return `<p style="margin-left: 1rem; font-size: 0.9rem; color: #6b7280;"><i class="fas fa-clock"></i> Salary Setup Pending</p>`;
+                                }
+                            }
+                            return '';
                         })()}
                     </div>
                     
@@ -893,14 +902,24 @@ class EmployeeManager {
                                     (monthlyCalculated ? `₱${displayMonthlyRate.toFixed(2)} (calculated)` : `₱${employee.monthlyRate}`) : 
                                     'Not Set';
                                 
-                                return !isConfigured ? 
-                                    `<div class="info-item" style="color: #dc2626; background-color: #fef2f2; padding: 0.75rem; border-radius: 6px; border: 1px solid #fecaca;">
-                                        <strong><i class="fas fa-exclamation-triangle"></i> No Salary Configured:</strong> This employee has no daily, monthly, or hourly rate set. Please edit the employee to configure their salary.
-                                    </div>` : 
-                                    `<div class="info-item" style="color: #059669; background-color: #ecfdf5; padding: 0.75rem; border-radius: 6px; border: 1px solid #a7f3d0;">
+                                if (!isConfigured) {
+                                    // EMPLOYEE-FRIENDLY: Show context-aware message instead of alarming "No Salary Configured"
+                                    const commissionRate = parseFloat(employee.commissionRate) || 0;
+                                    if (commissionRate > 0) {
+                                        return `<div class="info-item" style="color: #2563eb; background-color: #eff6ff; padding: 0.75rem; border-radius: 6px; border: 1px solid #bfdbfe;">
+                                            <strong><i class="fas fa-percentage"></i> Commission Based Employee:</strong> This employee's compensation is primarily commission-based at ${commissionRate}% per transaction.
+                                        </div>`;
+                                    } else {
+                                        return `<div class="info-item" style="color: #6b7280; background-color: #f9fafb; padding: 0.75rem; border-radius: 6px; border: 1px solid #d1d5db;">
+                                            <strong><i class="fas fa-clock"></i> Salary Setup Pending:</strong> Base salary rates are being configured. Please contact management for details.
+                                        </div>`;
+                                    }
+                                } else {
+                                    return `<div class="info-item" style="color: #059669; background-color: #ecfdf5; padding: 0.75rem; border-radius: 6px; border: 1px solid #a7f3d0;">
                                         <strong><i class="fas fa-check-circle"></i> Salary Configured:</strong> Employee has salary rates properly configured.
                                         <br><small>Daily: ₱${hasDaily ? employee.dailyRate : 'Not Set'} | Monthly: ${monthlyDisplay} | Hourly: ₱${hasHourly ? employee.hourlyRate : 'Not Set'}</small>
                                     </div>`;
+                                }
                             })()}
                         </div>
                     </div>
