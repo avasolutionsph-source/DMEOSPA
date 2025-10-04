@@ -239,10 +239,10 @@ class EmployeeManager {
                     id: emp._id || emp.id, // Map MongoDB _id to frontend id field
                     name: emp.firstName ? `${emp.firstName} ${emp.lastName}`.trim() : emp.name,
                     wageType: emp.salaryType || emp.wageType || 'daily', // Map backend salaryType to frontend wageType
-                    // CRITICAL FIX: Explicitly preserve salary fields with robust number conversion
-                    dailyRate: parseFloat(emp.dailyRate) || 0,
-                    monthlyRate: parseFloat(emp.monthlyRate) || 0,
-                    hourlyRate: parseFloat(emp.hourlyRate) || 0,
+                    // CRITICAL FIX: Safely handle numeric strings for salary fields
+                    dailyRate: isNaN(parseFloat(emp.dailyRate)) ? 0 : parseFloat(emp.dailyRate),
+                    monthlyRate: isNaN(parseFloat(emp.monthlyRate)) ? 0 : parseFloat(emp.monthlyRate),
+                    hourlyRate: isNaN(parseFloat(emp.hourlyRate)) ? 0 : parseFloat(emp.hourlyRate),
                     overtimeMultiplier: emp.overtimeMultiplier || 1.25,
                     // CRITICAL FIX: Explicitly preserve government benefits fields
                     hasSSS: emp.hasSSS || false,
@@ -463,11 +463,26 @@ class EmployeeManager {
                     <div style="border-top: 1px solid #e5e7eb; padding-top: 0.75rem; margin-top: 0.75rem;">
                         <p style="font-weight: 600; color: #374151; margin-bottom: 0.5rem;">₱ Salary Configuration</p>
                         <p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-briefcase"></i> Type: ${emp.wageType === 'monthly' ? 'Monthly Salary' : 'Daily Wage'}</p>
-                        ${emp.dailyRate && parseFloat(emp.dailyRate) > 0 ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-calendar-day"></i> Daily: ₱${parseFloat(emp.dailyRate).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : ''}
-                        ${emp.monthlyRate && parseFloat(emp.monthlyRate) > 0 ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-calendar-alt"></i> Monthly: ₱${parseFloat(emp.monthlyRate).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : ''}
-                        ${emp.hourlyRate && parseFloat(emp.hourlyRate) > 0 ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-clock"></i> Hourly: ₱${parseFloat(emp.hourlyRate).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : ''}
+                        ${(() => {
+                            const dailyRate = parseFloat(emp.dailyRate) || 0;
+                            return dailyRate > 0 ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-calendar-day"></i> Daily: ₱${dailyRate.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : '';
+                        })()}
+                        ${(() => {
+                            const monthlyRate = parseFloat(emp.monthlyRate) || 0;
+                            return monthlyRate > 0 ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-calendar-alt"></i> Monthly: ₱${monthlyRate.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : '';
+                        })()}
+                        ${(() => {
+                            const hourlyRate = parseFloat(emp.hourlyRate) || 0;
+                            return hourlyRate > 0 ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-clock"></i> Hourly: ₱${hourlyRate.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : '';
+                        })()}
                         ${emp.overtimeMultiplier ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-clock"></i> OT Rate: ${emp.overtimeMultiplier}x</p>` : ''}
-                        ${(!emp.dailyRate || parseFloat(emp.dailyRate) <= 0) && (!emp.monthlyRate || parseFloat(emp.monthlyRate) <= 0) && (!emp.hourlyRate || parseFloat(emp.hourlyRate) <= 0) ? `<p style="margin-left: 1rem; font-size: 0.9rem; color: #dc2626;"><i class="fas fa-exclamation-triangle"></i> No salary configured</p>` : ''}
+                        ${(() => {
+                            const dailyRate = parseFloat(emp.dailyRate) || 0;
+                            const monthlyRate = parseFloat(emp.monthlyRate) || 0;
+                            const hourlyRate = parseFloat(emp.hourlyRate) || 0;
+                            const hasAnySalary = dailyRate > 0 || monthlyRate > 0 || hourlyRate > 0;
+                            return !hasAnySalary ? `<p style="margin-left: 1rem; font-size: 0.9rem; color: #dc2626;"><i class="fas fa-exclamation-triangle"></i> No salary configured</p>` : '';
+                        })()}
                     </div>
                     
                     ${emp.commissionRate ? `<p><i class="fas fa-percentage"></i> Commission: ${emp.commissionRate}%</p>` : ''}
@@ -579,10 +594,10 @@ class EmployeeManager {
                 id: employee._id || employee.id, // Map MongoDB _id to frontend id field
                 name: employee.firstName ? `${employee.firstName} ${employee.lastName}`.trim() : employee.name,
                 wageType: employee.salaryType || employee.wageType || 'daily', // Map backend salaryType to frontend wageType
-                // CRITICAL FIX: Explicitly preserve salary fields with robust number conversion (same as loadEmployees)
-                dailyRate: parseFloat(employee.dailyRate) || 0,
-                monthlyRate: parseFloat(employee.monthlyRate) || 0,
-                hourlyRate: parseFloat(employee.hourlyRate) || 0,
+                // CRITICAL FIX: Safely handle numeric strings for salary fields (same as loadEmployees)
+                dailyRate: isNaN(parseFloat(employee.dailyRate)) ? 0 : parseFloat(employee.dailyRate),
+                monthlyRate: isNaN(parseFloat(employee.monthlyRate)) ? 0 : parseFloat(employee.monthlyRate),
+                hourlyRate: isNaN(parseFloat(employee.hourlyRate)) ? 0 : parseFloat(employee.hourlyRate),
                 overtimeMultiplier: employee.overtimeMultiplier || 1.25,
                 // CRITICAL FIX: Explicitly preserve government benefits fields
                 hasSSS: employee.hasSSS || false,
@@ -1032,10 +1047,10 @@ class EmployeeManager {
                 id: employee._id || employee.id, // Map MongoDB _id to frontend id field
                 name: employee.firstName ? `${employee.firstName} ${employee.lastName}`.trim() : employee.name,
                 wageType: employee.salaryType || employee.wageType || 'daily', // Map backend salaryType to frontend wageType
-                // CRITICAL FIX: Explicitly preserve salary fields to prevent data loss (same as loadEmployees)
-                dailyRate: employee.dailyRate || 0,
-                monthlyRate: employee.monthlyRate || 0,
-                hourlyRate: employee.hourlyRate || 0,
+                // CRITICAL FIX: Safely handle numeric strings for salary fields (same as loadEmployees)
+                dailyRate: isNaN(parseFloat(employee.dailyRate)) ? 0 : parseFloat(employee.dailyRate),
+                monthlyRate: isNaN(parseFloat(employee.monthlyRate)) ? 0 : parseFloat(employee.monthlyRate),
+                hourlyRate: isNaN(parseFloat(employee.hourlyRate)) ? 0 : parseFloat(employee.hourlyRate),
                 overtimeMultiplier: employee.overtimeMultiplier || 1.25,
                 // CRITICAL FIX: Explicitly preserve government benefits fields
                 hasSSS: employee.hasSSS || false,
@@ -1059,9 +1074,15 @@ class EmployeeManager {
             
             // Fill salary fields - show actual values or empty if 0 (unconfigured)
             document.getElementById('employeeWageType').value = employee.wageType || 'daily';
-            document.getElementById('employeeDailyRate').value = (employee.dailyRate && employee.dailyRate > 0) ? employee.dailyRate : '';
-            document.getElementById('employeeMonthlyRate').value = (employee.monthlyRate && employee.monthlyRate > 0) ? employee.monthlyRate : '';
-            document.getElementById('employeeHourlyRate').value = (employee.hourlyRate && employee.hourlyRate > 0) ? employee.hourlyRate : '';
+            
+            // CRITICAL FIX: Properly handle numeric strings for salary fields
+            const dailyRateValue = parseFloat(employee.dailyRate) || 0;
+            const monthlyRateValue = parseFloat(employee.monthlyRate) || 0;
+            const hourlyRateValue = parseFloat(employee.hourlyRate) || 0;
+            
+            document.getElementById('employeeDailyRate').value = dailyRateValue > 0 ? dailyRateValue : '';
+            document.getElementById('employeeMonthlyRate').value = monthlyRateValue > 0 ? monthlyRateValue : '';
+            document.getElementById('employeeHourlyRate').value = hourlyRateValue > 0 ? hourlyRateValue : '';
             
             // Handle overtime pay configuration
             const hasOvertime = employee.overtimeMultiplier && employee.overtimeMultiplier > 1;
