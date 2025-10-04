@@ -250,19 +250,29 @@ class ProductsManager {
                 originalSortOrder: movedItem.sortOrder
             });
 
-            // Assign new sort orders with better ID handling
+            // Assign new sort orders with enhanced ID handling and validation
             const updateData = reorderedProducts.map((product, index) => {
-                const productId = product._id || product.id;
+                // Prioritize _id over id for MongoDB compatibility
+                let productId = product._id || product.id;
+                
+                // Ensure ID is a string and trim whitespace
+                if (productId && typeof productId === 'object' && productId.toString) {
+                    productId = productId.toString();
+                }
+                if (typeof productId === 'string') {
+                    productId = productId.trim();
+                }
                 
                 // Enhanced logging for debugging
                 console.log(`🔍 [PRODUCTS] Product ${index}:`, {
                     name: product.name,
-                    _id: product._id,
-                    id: product.id,
+                    originalId: product.id,
+                    originalObjectId: product._id,
                     finalId: productId,
                     sortOrder: index,
                     idType: typeof productId,
-                    idLength: productId?.length
+                    idLength: productId?.length,
+                    isValidString: typeof productId === 'string' && productId.length > 0
                 });
                 
                 return {
@@ -273,15 +283,29 @@ class ProductsManager {
             
             console.log('🔍 [PRODUCTS] Final update data to send:', updateData);
 
-            // Validate all IDs before sending
-            const invalidIds = updateData.filter(item => !item.id || typeof item.id !== 'string');
+            // Enhanced ID validation before sending
+            const invalidIds = updateData.filter(item => {
+                const hasValidId = item.id && 
+                                 typeof item.id === 'string' && 
+                                 item.id.trim().length > 0 &&
+                                 item.id.trim().length >= 12; // MongoDB ObjectId minimum length
+                return !hasValidId;
+            });
+            
             if (invalidIds.length > 0) {
                 hideLoading();
-                console.error('❌ [PRODUCTS] Invalid product IDs found:', invalidIds);
-                showError('Some products have invalid IDs. Please refresh and try again.');
+                console.error('❌ [PRODUCTS] Invalid product IDs found:', {
+                    invalidItems: invalidIds,
+                    totalItems: updateData.length,
+                    invalidCount: invalidIds.length
+                });
+                console.error('❌ [PRODUCTS] Full updateData for debugging:', updateData);
+                showError(`${invalidIds.length} product(s) have invalid IDs. Please refresh the page and try again.`);
                 this.displayProducts(); // Revert display
                 return;
             }
+            
+            console.log('✅ [PRODUCTS] All product IDs validated successfully');
 
             // Send reorder request via HybridAPIClient for offline support
             console.log('🚀 [PRODUCTS] Sending reorder request to API...');
@@ -319,13 +343,25 @@ class ProductsManager {
             } else {
                 console.error('❌ [PRODUCTS] Failed to reorder services:', result.error);
                 
-                // Enhanced error handling with retry mechanism
+                // Enhanced error handling with detailed diagnostics
                 let errorMessage = 'Failed to reorder services';
                 let shouldRetry = false;
+                let errorCode = result.error?.code || 'UNKNOWN_ERROR';
+                
+                console.log('🔍 [PRODUCTS] Detailed error analysis:', {
+                    fullError: result.error,
+                    errorCode: errorCode,
+                    hasDetails: !!result.error?.details,
+                    detailsCount: result.error?.details?.length || 0,
+                    errorMessage: result.error?.message
+                });
                 
                 if (result.error?.details && Array.isArray(result.error.details)) {
                     // Show specific validation errors
-                    errorMessage = `Reorder failed: ${result.error.details.join(', ')}`;
+                    errorMessage = `Reorder validation failed:\n${result.error.details.slice(0, 3).join('\n')}`;
+                    if (result.error.details.length > 3) {
+                        errorMessage += `\n... and ${result.error.details.length - 3} more error(s)`;
+                    }
                 } else if (result.error?.message) {
                     // Show general error message
                     errorMessage = result.error.message;
@@ -467,13 +503,16 @@ class ProductsManager {
         const endIndex = startIndex + this.pageSize;
         const pageProducts = this.products.slice(startIndex, endIndex);
 
-        tbody.innerHTML = pageProducts.map(product => `
-            <tr data-id="${product._id || product.id}">
+        tbody.innerHTML = pageProducts.map(product => {
+            // Ensure we use a consistent ID format
+            const productId = product._id || product.id;
+            return `
+            <tr data-id="${productId}">
                 ${this.isReorderMode ? `
                     <td style="text-align: center; cursor: grab;" class="drag-handle">
                         <i class="fas fa-grip-vertical" style="color: #ccc; font-size: 14px;"></i>
                     </td>
-                ` : ''}
+                ` : ''}`
                 <td>
                     <strong>${product.name}</strong>
                     ${product.description ? `<br><small>${product.description}</small>` : ''}
@@ -501,15 +540,16 @@ class ProductsManager {
                     }
                 </td>
                 <td>
-                    <button class="btn-icon" onclick="productsManager.editProduct('${product._id || product.id}')" title="Edit">
+                    <button class="btn-icon" onclick="productsManager.editProduct('${productId}')" title="Edit">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn-icon" onclick="productsManager.deleteProduct('${product._id || product.id}')" title="Delete">
+                    <button class="btn-icon" onclick="productsManager.deleteProduct('${productId}')" title="Delete">
                         <i class="fas fa-trash" style="color: var(--danger-color);"></i>
                     </button>
                 </td>
             </tr>
-        `).join('');
+            `;
+        }).join('');
         
         // Update pagination controls
         this.updatePaginationControls();

@@ -39,32 +39,68 @@ router.put('/reorder', withErrorHandling(async (req, res) => {
         }
     });
     
-    // Enhanced request validation
+    // Enhanced request validation with detailed error codes
     if (!req.body || Object.keys(req.body).length === 0) {
+        logger.error('Reorder validation failed - Empty request body', {
+            category: 'DATABASE',
+            operation: 'reorder_products_validation',
+            data: { requestBody: req.body, hasBody: !!req.body }
+        });
         return res.status(400).json({
             success: false,
-            error: { message: 'Request body is required for reorder operation' }
+            error: { 
+                message: 'Request body is required for reorder operation',
+                code: 'EMPTY_REQUEST_BODY',
+                details: 'The request must include a body with products array'
+            }
         });
     }
     
     if (!products) {
+        logger.error('Reorder validation failed - Missing products array', {
+            category: 'DATABASE',
+            operation: 'reorder_products_validation',
+            data: { requestBody: req.body, bodyKeys: Object.keys(req.body) }
+        });
         return res.status(400).json({
             success: false,
-            error: { message: 'Products array is missing from request body' }
+            error: { 
+                message: 'Products array is missing from request body',
+                code: 'MISSING_PRODUCTS_ARRAY',
+                details: `Request body contains: ${Object.keys(req.body).join(', ')}`
+            }
         });
     }
     
     if (!Array.isArray(products)) {
+        logger.error('Reorder validation failed - Products not an array', {
+            category: 'DATABASE',
+            operation: 'reorder_products_validation',
+            data: { products, productsType: typeof products }
+        });
         return res.status(400).json({
             success: false,
-            error: { message: 'Products must be an array' }
+            error: { 
+                message: 'Products must be an array',
+                code: 'INVALID_PRODUCTS_TYPE',
+                details: `Received ${typeof products}, expected array`
+            }
         });
     }
     
     if (products.length === 0) {
+        logger.error('Reorder validation failed - Empty products array', {
+            category: 'DATABASE',
+            operation: 'reorder_products_validation',
+            data: { productsLength: products.length }
+        });
         return res.status(400).json({
             success: false,
-            error: { message: 'Products array cannot be empty' }
+            error: { 
+                message: 'Products array cannot be empty',
+                code: 'EMPTY_PRODUCTS_ARRAY',
+                details: 'At least one product must be provided for reordering'
+            }
         });
     }
     
@@ -84,19 +120,19 @@ router.put('/reorder', withErrorHandling(async (req, res) => {
         
         const { id, sortOrder } = product;
         
-        // Enhanced ID validation
+        // Enhanced ID validation with detailed error reporting
         if (!id) {
-            validationErrors.push(`Product at index ${i}: Missing required field 'id'`);
+            validationErrors.push(`Product at index ${i}: Missing required field 'id' (MISSING_ID)`);
             continue;
         }
         
         if (typeof id !== 'string') {
-            validationErrors.push(`Product at index ${i}: Field 'id' must be a string, received ${typeof id}`);
+            validationErrors.push(`Product at index ${i}: Field 'id' must be a string, received ${typeof id} (INVALID_ID_TYPE)`);
             continue;
         }
         
         if (id.trim().length === 0) {
-            validationErrors.push(`Product at index ${i}: Field 'id' cannot be empty`);
+            validationErrors.push(`Product at index ${i}: Field 'id' cannot be empty (EMPTY_ID)`);
             continue;
         }
         
@@ -116,9 +152,10 @@ router.put('/reorder', withErrorHandling(async (req, res) => {
             continue;
         }
         
-        // Validate MongoDB ObjectID format with better error message
-        if (!mongoose.Types.ObjectId.isValid(id.trim())) {
-            validationErrors.push(`Product at index ${i}: Field 'id' is not a valid MongoDB ObjectID format (${id})`);
+        // Validate MongoDB ObjectID format with comprehensive error reporting
+        const trimmedId = id.trim();
+        if (!mongoose.Types.ObjectId.isValid(trimmedId)) {
+            validationErrors.push(`Product at index ${i}: Field 'id' is not a valid MongoDB ObjectID format (INVALID_OBJECTID) - received: "${id}" (length: ${id.length}, trimmed: "${trimmedId}", trimmed length: ${trimmedId.length})`);
             continue;
         }
         
@@ -147,17 +184,25 @@ router.put('/reorder', withErrorHandling(async (req, res) => {
     
     // Return validation errors if any
     if (validationErrors.length > 0) {
-        logger.warn('Reorder validation failed', {
+        logger.error('Reorder validation failed - Individual product validation errors', {
             category: 'DATABASE',
             operation: 'reorder_products_validation',
-            data: { errors: validationErrors, products }
+            data: { 
+                errorCount: validationErrors.length,
+                errors: validationErrors, 
+                productsCount: products.length,
+                products: products.map(p => ({ id: p.id, sortOrder: p.sortOrder, type: typeof p.id }))
+            }
         });
         
         return res.status(400).json({
             success: false,
             error: { 
-                message: 'Validation failed for product reorder',
-                details: validationErrors
+                message: `Validation failed for product reorder - ${validationErrors.length} error(s) found`,
+                code: 'VALIDATION_FAILED',
+                details: validationErrors,
+                productsCount: products.length,
+                errorCount: validationErrors.length
             }
         });
     }
