@@ -811,9 +811,45 @@ class EmployeeManager {
                             <div class="info-item">
                                 <strong>Wage Type:</strong> ${employee.wageType === 'monthly' ? 'Monthly Salary' : 'Daily Wage'}
                             </div>
-                            ${employee.dailyRate && employee.dailyRate > 0 ? `<div class="info-item"><strong>Daily Rate:</strong> ₱${employee.dailyRate.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>` : ''}
-                            ${employee.monthlyRate && employee.monthlyRate > 0 ? `<div class="info-item"><strong>Monthly Rate:</strong> ₱${employee.monthlyRate.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>` : ''}
-                            ${employee.hourlyRate && employee.hourlyRate > 0 ? `<div class="info-item"><strong>Hourly Rate:</strong> ₱${employee.hourlyRate.toLocaleString('en-PH', { minimumFractionDigits: 2 })}</div>` : ''}
+                            ${(() => {
+                                // CRITICAL FIX: Always show all three salary rates with calculation fallbacks
+                                let dailyRate = parseFloat(employee.dailyRate) || 0;
+                                let monthlyRate = parseFloat(employee.monthlyRate) || 0;
+                                let hourlyRate = parseFloat(employee.hourlyRate) || 0;
+                                
+                                let dailyCalculated = false;
+                                let monthlyCalculated = false;
+                                let hourlyCalculated = false;
+                                
+                                // Calculate missing rates using standard formulas
+                                if (dailyRate === 0 && monthlyRate > 0) {
+                                    dailyRate = monthlyRate / 22; // 22 working days per month
+                                    dailyCalculated = true;
+                                }
+                                
+                                if (monthlyRate === 0 && dailyRate > 0) {
+                                    monthlyRate = dailyRate * 22; // 22 working days per month
+                                    monthlyCalculated = true;
+                                }
+                                
+                                if (hourlyRate === 0 && dailyRate > 0) {
+                                    hourlyRate = dailyRate / 8; // 8 hours per day
+                                    hourlyCalculated = true;
+                                } else if (hourlyRate === 0 && monthlyRate > 0) {
+                                    hourlyRate = (monthlyRate / 22) / 8; // Monthly to daily to hourly
+                                    hourlyCalculated = true;
+                                }
+                                
+                                const dailyIndicator = dailyCalculated ? ' <small style="color: #666;">(calculated)</small>' : '';
+                                const monthlyIndicator = monthlyCalculated ? ' <small style="color: #666;">(calculated)</small>' : '';
+                                const hourlyIndicator = hourlyCalculated ? ' <small style="color: #666;">(calculated)</small>' : '';
+                                
+                                return `
+                                    <div class="info-item"><strong>Daily Rate:</strong> ₱${dailyRate.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${dailyIndicator}</div>
+                                    <div class="info-item"><strong>Monthly Rate:</strong> ₱${monthlyRate.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${monthlyIndicator}</div>
+                                    <div class="info-item"><strong>Hourly Rate:</strong> ₱${hourlyRate.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${hourlyIndicator}</div>
+                                `;
+                            })()}
                             <div class="info-item">
                                 <strong>Overtime Multiplier:</strong> ${employee.overtimeMultiplier || '1.25'}x
                             </div>
