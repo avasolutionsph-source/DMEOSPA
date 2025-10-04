@@ -196,11 +196,34 @@ class ProductsManager {
             const [movedItem] = reorderedProducts.splice(oldIndex, 1);
             reorderedProducts.splice(newIndex, 0, movedItem);
 
-            // Assign new sort orders
-            const updateData = reorderedProducts.map((product, index) => ({
-                id: product._id || product.id,
-                sortOrder: index
-            }));
+            // Assign new sort orders with better ID handling
+            const updateData = reorderedProducts.map((product, index) => {
+                const productId = product._id || product.id;
+                
+                // Log for debugging
+                console.log(`🔍 [PRODUCTS] Product ${index}:`, {
+                    name: product.name,
+                    _id: product._id,
+                    id: product.id,
+                    finalId: productId,
+                    sortOrder: index
+                });
+                
+                return {
+                    id: productId,
+                    sortOrder: index
+                };
+            });
+
+            // Validate all IDs before sending
+            const invalidIds = updateData.filter(item => !item.id || typeof item.id !== 'string');
+            if (invalidIds.length > 0) {
+                hideLoading();
+                console.error('❌ [PRODUCTS] Invalid product IDs found:', invalidIds);
+                showError('Some products have invalid IDs. Please refresh and try again.');
+                this.displayProducts(); // Revert display
+                return;
+            }
 
             // Send reorder request via HybridAPIClient for offline support
             const result = await window.HybridAPIClient.reorderProducts(updateData);
@@ -219,14 +242,27 @@ class ProductsManager {
                 if (result.source === 'offline_queue') {
                     showSuccess('Services reordered (will sync when online)');
                 } else {
-                    showSuccess('Services reordered successfully');
+                    const modified = result.data?.modified || 0;
+                    const requested = result.data?.requested || updateData.length;
+                    showSuccess(`Services reordered successfully (${modified}/${requested} updated)`);
                 }
                 
                 // Force refresh to ensure consistency
                 setTimeout(() => this.loadProducts(), 500);
             } else {
                 console.error('❌ [PRODUCTS] Failed to reorder services:', result.error);
-                showError(result.error?.message || 'Failed to reorder services');
+                
+                // Enhanced error handling
+                let errorMessage = 'Failed to reorder services';
+                if (result.error?.details && Array.isArray(result.error.details)) {
+                    // Show specific validation errors
+                    errorMessage = `Reorder failed: ${result.error.details.join(', ')}`;
+                } else if (result.error?.message) {
+                    // Show general error message
+                    errorMessage = result.error.message;
+                }
+                
+                showError(errorMessage);
                 this.displayProducts(); // Revert display
             }
         } catch (error) {

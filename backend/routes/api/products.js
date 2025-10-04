@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Product from '../../models/Product.js';
 import BaseRouteHandler from '../../utils/base-route-handler.js';
 import { withErrorHandling } from '../../middleware/errorHandler.js';
@@ -27,31 +28,69 @@ productHandler.createRoutes(router);
 router.put('/reorder', withErrorHandling(async (req, res) => {
     const { products } = req.body;
     
+    logger.info('Reorder request received', {
+        category: 'DATABASE',
+        operation: 'reorder_products_start',
+        data: { 
+            productsCount: products?.length || 0,
+            userId: req.userId || req.user?._id,
+            productsData: products
+        }
+    });
+    
     if (!Array.isArray(products) || products.length === 0) {
         return res.status(400).json({
             success: false,
-            error: { message: 'Products array is required' }
+            error: { message: 'Products array is required and must not be empty' }
         });
     }
     
     const userId = req.userId || req.user._id;
     const updateOperations = [];
+    const validationErrors = [];
     
     // Validate and prepare bulk operations
     for (let i = 0; i < products.length; i++) {
         const { id, sortOrder } = products[i];
         
-        if (!id || typeof sortOrder !== 'number') {
-            return res.status(400).json({
-                success: false,
-                error: { message: 'Each product must have id and sortOrder' }
-            });
+        // Enhanced validation
+        if (!id) {
+            validationErrors.push(`Product at index ${i}: Missing id`);
+            continue;
+        }
+        
+        if (typeof sortOrder !== 'number' || sortOrder < 0) {
+            validationErrors.push(`Product at index ${i}: Invalid sortOrder (${sortOrder}), must be a non-negative number`);
+            continue;
+        }
+        
+        // Validate MongoDB ObjectID format
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            validationErrors.push(`Product at index ${i}: Invalid MongoDB ObjectID format (${id})`);
+            continue;
         }
         
         updateOperations.push({
             updateOne: {
-                filter: { _id: id, userId },
+                filter: { _id: new mongoose.Types.ObjectId(id), userId },
                 update: { sortOrder, syncStatus: 'pending' }
+            }
+        });
+    }
+    
+    // Return validation errors if any
+    if (validationErrors.length > 0) {
+        logger.warn('Reorder validation failed', {
+            category: 'DATABASE',
+            operation: 'reorder_products_validation',
+            data: { errors: validationErrors, products }
+        });
+        
+        return res.status(400).json({
+            success: false,
+            error: { 
+                message: 'Validation failed for product reorder',
+                details: validationErrors
             }
         });
     }
@@ -59,27 +98,43 @@ router.put('/reorder', withErrorHandling(async (req, res) => {
     try {
         const result = await Product.bulkWrite(updateOperations);
         
-        logger.info(`Reordered products`, {
+        logger.info(`Products reordered successfully`, {
             category: 'DATABASE',
-            operation: 'reorder_products',
-            data: { count: products.length, modified: result.modifiedCount }
+            operation: 'reorder_products_success',
+            data: { 
+                requested: products.length, 
+                modified: result.modifiedCount,
+                matchedCount: result.matchedCount,
+                upsertedCount: result.upsertedCount
+            }
         });
         
         res.json({
             success: true,
-            data: { modified: result.modifiedCount },
+            data: { 
+                modified: result.modifiedCount,
+                matched: result.matchedCount,
+                requested: products.length
+            },
             message: 'Products reordered successfully'
         });
     } catch (error) {
         logger.error('Failed to reorder products', {
             category: 'DATABASE',
-            operation: 'reorder_products',
-            error: error.message
+            operation: 'reorder_products_error',
+            data: {
+                error: error.message,
+                stack: error.stack,
+                products: products
+            }
         });
         
         res.status(500).json({
             success: false,
-            error: { message: 'Failed to reorder products' }
+            error: { 
+                message: 'Database error while reordering products',
+                details: error.message
+            }
         });
     }
 }));
