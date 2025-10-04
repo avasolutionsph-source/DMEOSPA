@@ -1058,14 +1058,30 @@ class HybridAPIClient {
                     message: result.message
                 };
             } else {
+                console.error('🔥 [API-ERROR] ===== ERROR RESPONSE DEBUGGING =====');
+                console.error('🔥 [API-ERROR] Status:', response.status);
+                console.error('🔥 [API-ERROR] StatusText:', response.statusText);
+                console.error('🔥 [API-ERROR] Headers:', Object.fromEntries(response.headers.entries()));
+                console.error('🔥 [API-ERROR] URL:', response.url);
+                console.error('🔥 [API-ERROR] Request headers sent:', {
+                    'Authorization': token ? `Bearer ${token.substring(0, 20)}...` : 'NO TOKEN',
+                    'Content-Type': 'application/json'
+                });
+                console.error('🔥 [API-ERROR] Request body sent:', JSON.stringify(requestBody));
+                
                 let errorData;
+                let rawResponse;
                 try {
-                    errorData = await response.json();
+                    rawResponse = await response.text();
+                    console.error('🔥 [API-ERROR] Raw response text:', rawResponse);
+                    
+                    // Try to parse as JSON
+                    errorData = JSON.parse(rawResponse);
+                    console.error('🔥 [API-ERROR] Parsed error data:', errorData);
                 } catch (parseError) {
-                    console.error('❌ [API] Failed to parse error response as JSON:', parseError);
-                    const textResponse = await response.text();
-                    console.error('❌ [API] Raw error response text:', textResponse);
-                    errorData = { error: { message: `HTTP ${response.status}: ${textResponse}` } };
+                    console.error('🔥 [API-ERROR] Failed to parse response as JSON:', parseError);
+                    console.error('🔥 [API-ERROR] Raw response was:', rawResponse);
+                    errorData = { error: { message: `HTTP ${response.status}: ${rawResponse || response.statusText}` } };
                 }
                 
                 console.error('❌ [API] Failed to reorder products:', errorData);
@@ -1073,8 +1089,10 @@ class HybridAPIClient {
                 
                 return {
                     success: false,
-                    error: errorData.error || { message: 'Failed to reorder products' },
-                    source: 'api'
+                    error: errorData.error || errorData || { message: 'Failed to reorder products' },
+                    source: 'api',
+                    httpStatus: response.status,
+                    httpStatusText: response.statusText
                 };
             }
         } catch (error) {

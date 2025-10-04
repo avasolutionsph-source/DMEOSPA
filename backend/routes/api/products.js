@@ -50,148 +50,73 @@ router.put('/reorder', withErrorHandling(async (req, res) => {
         }
     });
     
-    // Enhanced request validation with detailed error codes
-    if (!req.body || Object.keys(req.body).length === 0) {
-        logger.error('Reorder validation failed - Empty request body', {
-            category: 'DATABASE',
-            operation: 'reorder_products_validation',
-            data: { requestBody: req.body, hasBody: !!req.body }
-        });
+    // TEMPORARY: Simplified validation for debugging
+    console.log('🔥 VALIDATION CHECK 1: req.body exists?', !!req.body);
+    console.log('🔥 VALIDATION CHECK 2: req.body keys:', req.body ? Object.keys(req.body) : 'NO BODY');
+    console.log('🔥 VALIDATION CHECK 3: products exists?', !!products);
+    console.log('🔥 VALIDATION CHECK 4: products is array?', Array.isArray(products));
+    console.log('🔥 VALIDATION CHECK 5: products length:', products ? products.length : 'NO PRODUCTS');
+    
+    // Basic validation only for now
+    if (!products || !Array.isArray(products) || products.length === 0) {
+        console.log('🔥 BASIC VALIDATION FAILED - returning 400');
         return res.status(400).json({
             success: false,
             error: { 
-                message: 'Request body is required for reorder operation',
-                code: 'EMPTY_REQUEST_BODY',
-                details: 'The request must include a body with products array'
+                message: 'SIMPLIFIED: Products array is required',
+                code: 'SIMPLE_VALIDATION_FAILED',
+                debug: {
+                    hasProducts: !!products,
+                    isArray: Array.isArray(products),
+                    length: products ? products.length : 0,
+                    bodyKeys: req.body ? Object.keys(req.body) : []
+                }
             }
         });
     }
     
-    if (!products) {
-        logger.error('Reorder validation failed - Missing products array', {
-            category: 'DATABASE',
-            operation: 'reorder_products_validation',
-            data: { requestBody: req.body, bodyKeys: Object.keys(req.body) }
-        });
-        return res.status(400).json({
-            success: false,
-            error: { 
-                message: 'Products array is missing from request body',
-                code: 'MISSING_PRODUCTS_ARRAY',
-                details: `Request body contains: ${Object.keys(req.body).join(', ')}`
-            }
-        });
-    }
-    
-    if (!Array.isArray(products)) {
-        logger.error('Reorder validation failed - Products not an array', {
-            category: 'DATABASE',
-            operation: 'reorder_products_validation',
-            data: { products, productsType: typeof products }
-        });
-        return res.status(400).json({
-            success: false,
-            error: { 
-                message: 'Products must be an array',
-                code: 'INVALID_PRODUCTS_TYPE',
-                details: `Received ${typeof products}, expected array`
-            }
-        });
-    }
-    
-    if (products.length === 0) {
-        logger.error('Reorder validation failed - Empty products array', {
-            category: 'DATABASE',
-            operation: 'reorder_products_validation',
-            data: { productsLength: products.length }
-        });
-        return res.status(400).json({
-            success: false,
-            error: { 
-                message: 'Products array cannot be empty',
-                code: 'EMPTY_PRODUCTS_ARRAY',
-                details: 'At least one product must be provided for reordering'
-            }
-        });
-    }
+    console.log('🔥 BASIC VALIDATION PASSED - proceeding with simplified logic');
     
     const userId = req.userId || req.user._id;
     const updateOperations = [];
     const validationErrors = [];
     
-    // Validate and prepare bulk operations with comprehensive error handling
+    // TEMPORARY: Simplified product validation for debugging
+    console.log('🔥 STARTING PRODUCT LOOP - products.length:', products.length);
+    
     for (let i = 0; i < products.length; i++) {
         const product = products[i];
-        
-        // Check if product is an object
-        if (!product || typeof product !== 'object') {
-            validationErrors.push(`Product at index ${i}: Invalid product format - must be an object`);
-            continue;
-        }
+        console.log(`🔥 PRODUCT ${i}:`, JSON.stringify(product, null, 2));
         
         const { id, sortOrder } = product;
+        console.log(`🔥 PRODUCT ${i} - id:`, id, 'sortOrder:', sortOrder);
         
-        // Enhanced ID validation with detailed error reporting
-        if (!id) {
-            validationErrors.push(`Product at index ${i}: Missing required field 'id' (MISSING_ID)`);
+        // Very basic validation
+        if (!id || typeof sortOrder !== 'number') {
+            console.log(`🔥 PRODUCT ${i} - BASIC VALIDATION FAILED`);
+            validationErrors.push(`Product ${i}: Basic validation failed - id: ${!!id}, sortOrder: ${typeof sortOrder}`);
             continue;
         }
         
-        if (typeof id !== 'string') {
-            validationErrors.push(`Product at index ${i}: Field 'id' must be a string, received ${typeof id} (INVALID_ID_TYPE)`);
-            continue;
-        }
-        
-        if (id.trim().length === 0) {
-            validationErrors.push(`Product at index ${i}: Field 'id' cannot be empty (EMPTY_ID)`);
-            continue;
-        }
-        
-        // Enhanced sortOrder validation
-        if (sortOrder === undefined || sortOrder === null) {
-            validationErrors.push(`Product at index ${i}: Missing required field 'sortOrder'`);
-            continue;
-        }
-        
-        if (typeof sortOrder !== 'number') {
-            validationErrors.push(`Product at index ${i}: Field 'sortOrder' must be a number, received ${typeof sortOrder}`);
-            continue;
-        }
-        
-        if (sortOrder < 0 || !Number.isInteger(sortOrder)) {
-            validationErrors.push(`Product at index ${i}: Field 'sortOrder' must be a non-negative integer, received ${sortOrder}`);
-            continue;
-        }
-        
-        // Validate MongoDB ObjectID format with comprehensive error reporting
-        const trimmedId = id.trim();
-        if (!mongoose.Types.ObjectId.isValid(trimmedId)) {
-            validationErrors.push(`Product at index ${i}: Field 'id' is not a valid MongoDB ObjectID format (INVALID_OBJECTID) - received: "${id}" (length: ${id.length}, trimmed: "${trimmedId}", trimmed length: ${trimmedId.length})`);
-            continue;
-        }
-        
-        // Additional validation: check for duplicate IDs in the request
-        const duplicateIndex = updateOperations.findIndex(op => 
-            op.updateOne.filter._id.toString() === new mongoose.Types.ObjectId(id.trim()).toString()
-        );
-        
-        if (duplicateIndex !== -1) {
-            validationErrors.push(`Product at index ${i}: Duplicate ID found - same ID used at index ${duplicateIndex}`);
-            continue;
-        }
-        
+        // Skip ObjectId validation temporarily - just use the ID as-is
         try {
+            console.log(`🔥 PRODUCT ${i} - Creating update operation`);
             updateOperations.push({
                 updateOne: {
-                    filter: { _id: new mongoose.Types.ObjectId(id.trim()), userId },
+                    filter: { _id: new mongoose.Types.ObjectId(id.toString().trim()), userId },
                     update: { sortOrder, syncStatus: 'pending' }
                 }
             });
+            console.log(`🔥 PRODUCT ${i} - Update operation created successfully`);
         } catch (objectIdError) {
-            validationErrors.push(`Product at index ${i}: Failed to create ObjectID from '${id}' - ${objectIdError.message}`);
+            console.log(`🔥 PRODUCT ${i} - ObjectId creation failed:`, objectIdError.message);
+            validationErrors.push(`Product ${i}: ObjectId error - ${objectIdError.message}`);
             continue;
         }
     }
+    
+    console.log('🔥 PRODUCT LOOP COMPLETE - updateOperations.length:', updateOperations.length);
+    console.log('🔥 PRODUCT LOOP COMPLETE - validationErrors.length:', validationErrors.length);
     
     // Return validation errors if any
     if (validationErrors.length > 0) {
