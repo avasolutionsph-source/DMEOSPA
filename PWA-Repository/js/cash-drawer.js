@@ -208,39 +208,81 @@ class CashDrawerManager {
     }
 
     async closeDrawer(closingBalance, variance = 0, notes = '') {
+        const startTime = Date.now();
+        const sessionId = this.currentSession?.id || 'unknown';
+        
+        console.log('🔒 [CLOSE DEBUG] Starting cash drawer close operation', {
+            sessionId,
+            closingBalance,
+            variance,
+            notes,
+            timestamp: new Date().toISOString()
+        });
+
         try {
-            if (!this.currentSession || this.currentSession.status !== 'open') {
-                throw new Error('No active cash drawer session to close');
+            // Step 1: Validate current session
+            console.log('🔒 [CLOSE DEBUG] Step 1: Validating current session...');
+            if (!this.currentSession) {
+                throw new Error('No current session found - drawer may already be closed');
+            }
+            
+            if (this.currentSession.status !== 'open') {
+                throw new Error(`Session status is '${this.currentSession.status}' - expected 'open'`);
             }
 
+            console.log('✅ [CLOSE DEBUG] Current session validation passed', {
+                sessionId: this.currentSession.id,
+                status: this.currentSession.status,
+                openedAt: this.currentSession.openedAt,
+                openedBy: this.currentSession.openedByName
+            });
+
+            // Step 2: Validate closing balance
+            console.log('🔒 [CLOSE DEBUG] Step 2: Validating closing balance...');
             if (closingBalance < 0) {
                 throw new Error('Closing balance cannot be negative');
             }
 
-            const currentUser = this.getCurrentUser();
-            if (!currentUser) {
-                throw new Error('User not authenticated');
+            if (isNaN(parseFloat(closingBalance))) {
+                throw new Error('Closing balance must be a valid number');
             }
 
-            console.log('🏪 [DEBUG] Closing session with user:', {
+            console.log('✅ [CLOSE DEBUG] Closing balance validation passed', {
+                closingBalance: parseFloat(closingBalance),
+                expectedBalance: this.currentSession.expectedBalance
+            });
+
+            // Step 3: Validate user authentication
+            console.log('🔒 [CLOSE DEBUG] Step 3: Validating user authentication...');
+            const currentUser = this.getCurrentUser();
+            if (!currentUser) {
+                throw new Error('User not authenticated - cannot close drawer');
+            }
+
+            console.log('✅ [CLOSE DEBUG] User authentication passed', {
                 name: currentUser.name,
                 email: currentUser.email,
                 userId: currentUser.userId
             });
 
-            // Calculate variance if not provided
+            // Step 4: Calculate variance
+            console.log('🔒 [CLOSE DEBUG] Step 4: Calculating variance...');
             if (variance === 0) {
-                variance = closingBalance - this.currentSession.expectedBalance;
+                variance = parseFloat(closingBalance) - this.currentSession.expectedBalance;
             }
 
-            // Update session with robust user data
+            console.log('✅ [CLOSE DEBUG] Variance calculated', {
+                expectedBalance: this.currentSession.expectedBalance,
+                closingBalance: parseFloat(closingBalance),
+                calculatedVariance: variance
+            });
+
+            // Step 5: Update session data
+            console.log('🔒 [CLOSE DEBUG] Step 5: Updating session data...');
+            const originalSession = { ...this.currentSession };
+            
             this.currentSession.closedBy = currentUser.userId || currentUser.email || 'Unknown User ID';
             this.currentSession.closedByName = currentUser.name || currentUser.email || currentUser.userId || 'Unknown User';
-            
-            console.log('🏪 [DEBUG] Session closed by:', {
-                closedBy: this.currentSession.closedBy,
-                closedByName: this.currentSession.closedByName
-            });
             this.currentSession.closedAt = new Date().toISOString();
             this.currentSession.closingBalance = parseFloat(closingBalance);
             this.currentSession.variance = parseFloat(variance);
@@ -248,49 +290,183 @@ class CashDrawerManager {
             this.currentSession.notes = notes;
             this.currentSession.syncStatus = 'pending';
 
-            // Save to local database
-            await window.db.put('cashDrawerSessions', this.currentSession);
+            console.log('✅ [CLOSE DEBUG] Session data updated', {
+                sessionId: this.currentSession.id,
+                oldStatus: originalSession.status,
+                newStatus: this.currentSession.status,
+                closedBy: this.currentSession.closedBy,
+                closedByName: this.currentSession.closedByName,
+                closedAt: this.currentSession.closedAt,
+                closingBalance: this.currentSession.closingBalance,
+                variance: this.currentSession.variance
+            });
 
-            // Update state manager
+            // Step 6: Save to local database
+            console.log('🔒 [CLOSE DEBUG] Step 6: Saving to IndexedDB...');
+            if (!window.db) {
+                throw new Error('IndexedDB not available - cannot save session');
+            }
+
+            const saveStartTime = Date.now();
+            await window.db.put('cashDrawerSessions', this.currentSession);
+            const saveTime = Date.now() - saveStartTime;
+
+            console.log('✅ [CLOSE DEBUG] Session saved to IndexedDB', {
+                sessionId: this.currentSession.id,
+                saveTimeMs: saveTime,
+                sessionData: {
+                    id: this.currentSession.id,
+                    status: this.currentSession.status,
+                    closingBalance: this.currentSession.closingBalance,
+                    variance: this.currentSession.variance
+                }
+            });
+
+            // Step 7: Update StateManager
+            console.log('🔒 [CLOSE DEBUG] Step 7: Updating StateManager...');
             if (window.StateManager) {
                 window.StateManager.setState('cashDrawer.currentSession', null);
                 window.StateManager.setState('cashDrawer.isDrawerOpen', false);
+                console.log('✅ [CLOSE DEBUG] StateManager updated successfully');
+            } else {
+                console.warn('⚠️ [CLOSE DEBUG] StateManager not available - state may be inconsistent');
             }
 
-            // Sync to backend if online
+            // Step 8: Sync to backend if online
+            console.log('🔒 [CLOSE DEBUG] Step 8: Syncing to backend...');
             if (this.isOnline && window.HybridAPIClient) {
                 try {
+                    const syncStartTime = Date.now();
                     const result = await window.HybridAPIClient.put(`/api/cash-drawer/sessions/${this.currentSession.serverId || this.currentSession.id}`, this.currentSession);
+                    const syncTime = Date.now() - syncStartTime;
+                    
                     if (result.success) {
                         this.currentSession.syncStatus = 'synced';
                         await window.db.put('cashDrawerSessions', this.currentSession);
+                        console.log('✅ [CLOSE DEBUG] Backend sync successful', {
+                            sessionId: this.currentSession.id,
+                            syncTimeMs: syncTime,
+                            syncStatus: 'synced'
+                        });
+                    } else {
+                        console.warn('⚠️ [CLOSE DEBUG] Backend sync failed but continuing', {
+                            sessionId: this.currentSession.id,
+                            result
+                        });
                     }
                 } catch (syncError) {
-                    console.warn('⚠️ Failed to sync closed drawer session to server:', syncError);
+                    console.warn('⚠️ [CLOSE DEBUG] Backend sync error but continuing', {
+                        sessionId: this.currentSession.id,
+                        error: syncError.message,
+                        syncStatus: 'pending'
+                    });
                 }
+            } else {
+                console.log('🔒 [CLOSE DEBUG] Skipping backend sync - offline or API client not available');
             }
 
+            // Step 9: Verify the session was saved correctly
+            console.log('🔒 [CLOSE DEBUG] Step 9: Verifying session save...');
+            const verificationSuccess = await this.verifySessionClosed(this.currentSession.id);
+            if (!verificationSuccess) {
+                throw new Error('Session verification failed - drawer may not be properly closed');
+            }
+
+            console.log('✅ [CLOSE DEBUG] Session verification passed');
+
+            // Step 10: Final cleanup and state update
+            console.log('🔒 [CLOSE DEBUG] Step 10: Final cleanup...');
             const closedSession = { ...this.currentSession };
             this.currentSession = null;
 
             // Update UI
             this.updateUI();
 
-            console.log('✅ Cash drawer closed successfully:', closedSession.id);
+            const totalTime = Date.now() - startTime;
+            console.log('✅ [CLOSE DEBUG] Cash drawer closed successfully', {
+                sessionId: closedSession.id,
+                totalTimeMs: totalTime,
+                finalStatus: closedSession.status,
+                closingBalance: closedSession.closingBalance,
+                variance: closedSession.variance,
+                closedBy: closedSession.closedByName
+            });
             
             if (window.showSuccess) {
                 const varianceText = variance !== 0 ? ` (Variance: ₱${this.formatCurrency(Math.abs(variance))})` : '';
-                window.showSuccess(`Cash drawer closed with ₱${this.formatCurrency(closingBalance)}${varianceText}`);
+                window.showSuccess(`✅ Cash drawer closed successfully with ₱${this.formatCurrency(closingBalance)}${varianceText}`);
             }
 
             return closedSession;
 
         } catch (error) {
-            console.error('❌ Error closing cash drawer:', error);
+            const totalTime = Date.now() - startTime;
+            console.error('❌ [CLOSE DEBUG] Cash drawer close operation failed', {
+                sessionId,
+                error: error.message,
+                stack: error.stack,
+                totalTimeMs: totalTime,
+                currentSessionStatus: this.currentSession?.status || 'no session'
+            });
+            
             if (window.showError) {
-                window.showError(error.message);
+                window.showError(`Failed to close cash drawer: ${error.message}`);
             }
             throw error;
+        }
+    }
+
+    async verifySessionClosed(sessionId) {
+        try {
+            console.log('🔍 [VERIFY] Verifying session was saved as closed...', { sessionId });
+            
+            if (!window.db) {
+                console.error('❌ [VERIFY] IndexedDB not available for verification');
+                return false;
+            }
+
+            // Retrieve the session from IndexedDB to verify it was saved correctly
+            const savedSession = await window.db.get('cashDrawerSessions', sessionId);
+            
+            if (!savedSession) {
+                console.error('❌ [VERIFY] Session not found in IndexedDB', { sessionId });
+                return false;
+            }
+
+            const isCorrectlyClosed = savedSession.status === 'closed' && 
+                                    savedSession.closedAt && 
+                                    savedSession.closingBalance !== undefined &&
+                                    savedSession.closedBy &&
+                                    savedSession.closedByName;
+
+            if (isCorrectlyClosed) {
+                console.log('✅ [VERIFY] Session verified as properly closed', {
+                    sessionId: savedSession.id,
+                    status: savedSession.status,
+                    closedAt: savedSession.closedAt,
+                    closingBalance: savedSession.closingBalance,
+                    closedBy: savedSession.closedByName,
+                    variance: savedSession.variance
+                });
+                return true;
+            } else {
+                console.error('❌ [VERIFY] Session found but not properly closed', {
+                    sessionId: savedSession.id,
+                    status: savedSession.status,
+                    hasClosedAt: !!savedSession.closedAt,
+                    hasClosingBalance: savedSession.closingBalance !== undefined,
+                    hasClosedBy: !!savedSession.closedBy,
+                    hasClosedByName: !!savedSession.closedByName
+                });
+                return false;
+            }
+
+        } catch (error) {
+            console.error('❌ [VERIFY] Error during session verification', {
+                sessionId,
+                error: error.message
+            });
+            return false;
         }
     }
 
@@ -453,6 +629,120 @@ class CashDrawerManager {
         const timestamp = Date.now();
         const random = Math.random().toString(36).substr(2, 5);
         return `drawer_${timestamp}_${random}`;
+    }
+
+    async debugCurrentState() {
+        console.log('🔍 [STATE DEBUG] === CASH DRAWER STATE DIAGNOSIS ===');
+        
+        try {
+            // Check current session in memory
+            console.log('🔍 [STATE DEBUG] 1. Memory State:', {
+                hasCurrentSession: !!this.currentSession,
+                sessionId: this.currentSession?.id || 'none',
+                sessionStatus: this.currentSession?.status || 'none',
+                isDrawerOpen: this.isDrawerOpen()
+            });
+
+            // Check StateManager state
+            if (window.StateManager) {
+                const stateManagerSession = window.StateManager.getState('cashDrawer.currentSession');
+                const stateManagerIsOpen = window.StateManager.getState('cashDrawer.isDrawerOpen');
+                
+                console.log('🔍 [STATE DEBUG] 2. StateManager State:', {
+                    hasSession: !!stateManagerSession,
+                    sessionId: stateManagerSession?.id || 'none',
+                    isDrawerOpen: stateManagerIsOpen
+                });
+            } else {
+                console.log('🔍 [STATE DEBUG] 2. StateManager: Not available');
+            }
+
+            // Check IndexedDB for active sessions
+            if (window.db) {
+                const allSessions = await window.db.getAll('cashDrawerSessions');
+                const activeSessions = allSessions.filter(session => session.status === 'open');
+                const recentSessions = allSessions
+                    .sort((a, b) => new Date(b.createdAt || b.openedAt) - new Date(a.createdAt || a.openedAt))
+                    .slice(0, 3);
+
+                console.log('🔍 [STATE DEBUG] 3. IndexedDB State:', {
+                    totalSessions: allSessions.length,
+                    activeSessions: activeSessions.length,
+                    activeSessionIds: activeSessions.map(s => s.id),
+                    recentSessions: recentSessions.map(s => ({
+                        id: s.id,
+                        status: s.status,
+                        openedAt: s.openedAt,
+                        closedAt: s.closedAt
+                    }))
+                });
+
+                // Check for specific session if provided
+                if (this.currentSession?.id) {
+                    const specificSession = await window.db.get('cashDrawerSessions', this.currentSession.id);
+                    console.log('🔍 [STATE DEBUG] 4. Current Session in DB:', {
+                        found: !!specificSession,
+                        status: specificSession?.status,
+                        closedAt: specificSession?.closedAt,
+                        closingBalance: specificSession?.closingBalance
+                    });
+                }
+            } else {
+                console.log('🔍 [STATE DEBUG] 3. IndexedDB: Not available');
+            }
+
+            // Check UI state
+            const drawerStatusElements = document.querySelectorAll('.cash-drawer-status');
+            const posStatus = document.getElementById('pos-drawer-status');
+            
+            console.log('🔍 [STATE DEBUG] 5. UI State:', {
+                statusElementsCount: drawerStatusElements.length,
+                posStatusExists: !!posStatus,
+                posStatusText: posStatus?.textContent?.trim() || 'none'
+            });
+
+            console.log('🔍 [STATE DEBUG] === END STATE DIAGNOSIS ===');
+
+        } catch (error) {
+            console.error('❌ [STATE DEBUG] Error during state diagnosis:', error);
+        }
+    }
+
+    async getCurrentDrawerStatus() {
+        // Public method to get comprehensive drawer status
+        const status = {
+            isOpen: this.isDrawerOpen(),
+            currentSession: this.currentSession ? {
+                id: this.currentSession.id,
+                status: this.currentSession.status,
+                openedAt: this.currentSession.openedAt,
+                openedBy: this.currentSession.openedByName
+            } : null,
+            timestamp: new Date().toISOString()
+        };
+
+        // Add StateManager state if available
+        if (window.StateManager) {
+            status.stateManager = {
+                isDrawerOpen: window.StateManager.getState('cashDrawer.isDrawerOpen'),
+                hasSession: !!window.StateManager.getState('cashDrawer.currentSession')
+            };
+        }
+
+        // Add IndexedDB state if available
+        if (window.db) {
+            try {
+                const activeSessions = await window.db.getAll('cashDrawerSessions');
+                status.database = {
+                    activeSessions: activeSessions.filter(s => s.status === 'open').length,
+                    totalSessions: activeSessions.length
+                };
+            } catch (error) {
+                status.database = { error: error.message };
+            }
+        }
+
+        return status;
     }
 
     formatCurrency(amount) {
@@ -1128,28 +1418,92 @@ class CashDrawerManager {
     }
 
     async handleCloseDrawerForm() {
+        console.log('🔒 [FORM DEBUG] Starting close drawer form submission...');
+        
+        // Get form elements for validation and user feedback
+        const closingBalanceInput = document.getElementById('closingBalance');
+        const notesInput = document.getElementById('closeDrawerNotes');
+        const submitButton = document.querySelector('#closeDrawerModal .btn-danger');
+        
         try {
-            const closingBalance = document.getElementById('closingBalance').value;
-            const notes = document.getElementById('closeDrawerNotes').value;
+            // Step 1: Validate form inputs
+            console.log('🔒 [FORM DEBUG] Step 1: Validating form inputs...');
+            
+            const closingBalance = closingBalanceInput?.value;
+            const notes = notesInput?.value || '';
 
-            if (!closingBalance) {
-                throw new Error('Closing balance is required');
+            if (!closingBalance || closingBalance.trim() === '') {
+                throw new Error('Closing balance is required - please enter the actual cash amount');
             }
 
-            await this.closeDrawer(parseFloat(closingBalance), 0, notes);
+            const numericBalance = parseFloat(closingBalance);
+            if (isNaN(numericBalance) || numericBalance < 0) {
+                throw new Error('Closing balance must be a valid positive number');
+            }
+
+            console.log('✅ [FORM DEBUG] Form validation passed', {
+                closingBalance: numericBalance,
+                notes: notes || 'No notes provided'
+            });
+
+            // Step 2: Show loading state
+            console.log('🔒 [FORM DEBUG] Step 2: Setting loading state...');
+            if (submitButton) {
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Closing Drawer...';
+                submitButton.disabled = true;
+            }
+
+            // Step 3: Close the drawer
+            console.log('🔒 [FORM DEBUG] Step 3: Calling closeDrawer method...');
+            const closedSession = await this.closeDrawer(numericBalance, 0, notes);
             
+            console.log('✅ [FORM DEBUG] Close drawer operation completed successfully', {
+                sessionId: closedSession.id,
+                finalStatus: closedSession.status
+            });
+
+            // Step 4: Close modal and clear form
+            console.log('🔒 [FORM DEBUG] Step 4: Closing modal and clearing form...');
             if (window.closeModal) {
                 window.closeModal('closeDrawerModal');
             }
 
             // Clear form
-            document.getElementById('closingBalance').value = '';
-            document.getElementById('closeDrawerNotes').value = '';
+            if (closingBalanceInput) closingBalanceInput.value = '';
+            if (notesInput) notesInput.value = '';
+
+            console.log('✅ [FORM DEBUG] Close drawer form completed successfully');
 
         } catch (error) {
-            console.error('❌ Error in close drawer form:', error);
+            console.error('❌ [FORM DEBUG] Close drawer form failed', {
+                error: error.message,
+                stack: error.stack,
+                formData: {
+                    closingBalance: closingBalanceInput?.value,
+                    notes: notesInput?.value
+                }
+            });
+            
+            // Show detailed error to user
             if (window.showError) {
-                window.showError(error.message);
+                let errorMessage = `Failed to close cash drawer: ${error.message}`;
+                
+                // Add helpful hints for common errors
+                if (error.message.includes('required')) {
+                    errorMessage += '\n\nPlease ensure all required fields are filled out.';
+                } else if (error.message.includes('authentication')) {
+                    errorMessage += '\n\nPlease try logging out and logging back in.';
+                } else if (error.message.includes('IndexedDB')) {
+                    errorMessage += '\n\nThere may be a storage issue. Please try refreshing the page.';
+                }
+                
+                window.showError(errorMessage);
+            }
+        } finally {
+            // Reset button state
+            if (submitButton) {
+                submitButton.innerHTML = '<i class="fas fa-lock"></i> Close Drawer';
+                submitButton.disabled = false;
             }
         }
     }
