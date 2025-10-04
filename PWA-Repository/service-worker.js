@@ -1,5 +1,5 @@
 // Service Worker for Offline Functionality - Enhanced Auto-Update System
-const VERSION = '2.6.0'; // AUTHENTICATION FIX - Removed all development token generation
+const VERSION = '2.7.0'; // DRAG-DROP FIX - Force cache refresh for reorder functionality
 const CACHE_NAME = `ava-solutions-v${VERSION}-${Date.now()}`; // Time-based cache busting
 const urlsToCache = [
     // Core app files
@@ -358,21 +358,46 @@ function broadcastVersionUpdate() {
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then(async (cacheNames) => {
+            console.log(`🔄 Service Worker v${VERSION} activating - clearing old caches`);
+            
+            // Delete ALL old caches aggressively
             const deletePromises = cacheNames.map(async (cacheName) => {
                 if (cacheName !== CACHE_NAME) {
+                    console.log(`🗑️ Deleting old cache: ${cacheName}`);
                     return caches.delete(cacheName);
                 }
             });
             
             await Promise.all(deletePromises);
             
+            // Force immediate control of all clients
+            await self.clients.claim();
+            
             // Broadcast version update after activation
             broadcastVersionUpdate();
             
-            // Verify current cache contents
+            // Clear any additional cached JavaScript files that might have the old error
             try {
                 const currentCache = await caches.open(CACHE_NAME);
+                
+                // Remove any cached versions of products.js specifically
+                const productsJsRequests = [
+                    './js/products.js',
+                    '/js/products.js',
+                    `${self.location.origin}/js/products.js`
+                ];
+                
+                for (const url of productsJsRequests) {
+                    try {
+                        await currentCache.delete(url);
+                        console.log(`🔄 Cleared cached products.js: ${url}`);
+                    } catch (e) {
+                        // Ignore deletion errors
+                    }
+                }
+                
                 const cachedRequests = await currentCache.keys();
+                console.log(`✅ Cache refreshed - ${cachedRequests.length} items cached`);
             } catch (error) {
                 console.warn('⚠️ Could not verify cache contents:', error);
             }
