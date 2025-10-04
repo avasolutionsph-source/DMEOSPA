@@ -752,9 +752,61 @@ router.put('/:id', withErrorHandling(async (req, res) => {
         }
     }
     
+    // CRITICAL FIX: Use same response formatting as GET endpoint for consistency
+    const responseData = {
+        // Core identification
+        _id: employee._id,
+        id: employee._id.toString(),
+        userId: employee.userId,
+        branchId: employee.branchId,
+        
+        // Personal information
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        email: employee.email,
+        phone: employee.phone,
+        position: employee.position,
+        department: employee.department,
+        role: employee.role,
+        hireDate: employee.hireDate,
+        
+        // Authentication info
+        hasLogin: !!employee.password,
+        loginRole: employee.role || null,
+        viewablePassword: employee.viewablePassword || employee.temporaryPassword || null,
+        temporaryPassword: employee.isUsingTemporaryPassword ? employee.temporaryPassword : null,
+        isUsingTemporaryPassword: employee.isUsingTemporaryPassword || false,
+        
+        // Commission settings
+        commissionRate: employee.commissionRate || 0,
+        commissionType: employee.commissionType || 'percentage',
+        
+        // CRITICAL: Salary configuration - explicitly defined (same as GET endpoint)
+        wageType: employee.salaryType || 'daily', // Map backend salaryType to frontend wageType
+        salaryType: employee.salaryType || 'daily', // Also keep backend field
+        dailyRate: employee.dailyRate || 0,
+        monthlyRate: employee.monthlyRate || 0,
+        hourlyRate: employee.hourlyRate || 0,
+        overtimeMultiplier: employee.overtimeMultiplier || 1.25,
+        
+        // Government benefits
+        hasSSS: employee.hasSSS || false,
+        hasPhilHealth: employee.hasPhilHealth || false,
+        hasPagibig: employee.hasPagibig || false,
+        sssDeductionAmount: employee.sssDeductionAmount || 0,
+        philHealthDeductionAmount: employee.philHealthDeductionAmount || 0,
+        pagIbigDeductionAmount: employee.pagIbigDeductionAmount || 0,
+        
+        // Status and metadata
+        isActive: employee.isActive !== false,
+        syncStatus: employee.syncStatus || 'synced',
+        createdAt: employee.createdAt,
+        updatedAt: employee.updatedAt
+    };
+    
     const response = {
         success: true,
-        data: employee,
+        data: responseData, // Use formatted data instead of raw employee
         message: 'Employee updated successfully'
     };
     
