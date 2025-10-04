@@ -9188,3 +9188,67 @@ button.btn-primary:hover {
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
+
+/* Reorder Mode Visual Indicators */
+.reorder-mode-active .data-table {
+    border: 2px solid var(--primary-color);
+    border-radius: 8px;
+    background-color: var(--primary-ultra-light);
+}
+
+.reorder-mode-active .data-table thead {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.reorder-mode-active .data-table tbody tr {
+    background-color: white;
+    border-bottom: 1px solid var(--primary-color);
+}
+
+.reorder-mode-active .data-table tbody tr:hover {
+    background-color: var(--primary-ultra-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(128, 0, 32, 0.2);
+}
+
+/* Enhanced reorder mode animations */
+.reorder-mode-active .drag-handle:hover {
+    transform: scale(1.2);
+    color: var(--primary-color) !important;
+}
+
+/* Reorder mode notification banner */
+.reorder-mode-banner {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    margin: 10px 0;
+    border-radius: 6px;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(128, 0, 32, 0.3);
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.reorder-mode-banner i {
+    margin-right: 8px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}

@@ -10,12 +10,12 @@ class ProductsManager {
         this.pageSize = 20;
         this.currentPage = 1;
         this.totalPages = 1;
+        this.isReorderMode = false;
     }
 
     async init() {
         await this.loadProducts();
         this.setupEventListeners();
-        this.initDragAndDrop();
     }
 
     setupEventListeners() {
@@ -60,6 +60,14 @@ class ProductsManager {
             });
         }
 
+        // Reorder mode toggle button
+        const reorderBtn = document.getElementById('reorderModeBtn');
+        if (reorderBtn) {
+            reorderBtn.addEventListener('click', () => {
+                this.toggleReorderMode();
+            });
+        }
+
         // Product form submission with double-click protection
         const form = document.getElementById('productForm');
         if (form) {
@@ -69,6 +77,72 @@ class ProductsManager {
                 if (submitBtn && submitBtn.disabled) return; // Already processing
                 await this.saveProduct();
             });
+        }
+    }
+
+    toggleReorderMode() {
+        this.isReorderMode = !this.isReorderMode;
+        
+        const reorderBtn = document.getElementById('reorderModeBtn');
+        const dragHandleHeader = document.getElementById('dragHandleHeader');
+        const tableContainer = document.querySelector('.products-table-container');
+        
+        if (this.isReorderMode) {
+            // Enter reorder mode
+            reorderBtn.innerHTML = '<i class="fas fa-check"></i> Done Reordering';
+            reorderBtn.className = 'btn btn-success';
+            dragHandleHeader.style.display = 'table-cell';
+            
+            // Add visual indicators
+            if (tableContainer) {
+                tableContainer.classList.add('reorder-mode-active');
+            }
+            
+            // Add reorder mode banner
+            this.showReorderBanner(true);
+            
+            console.log('🔄 [PRODUCTS] Reorder mode activated');
+        } else {
+            // Exit reorder mode
+            reorderBtn.innerHTML = '<i class="fas fa-arrows-alt"></i> Reorder Services';
+            reorderBtn.className = 'btn btn-secondary';
+            dragHandleHeader.style.display = 'none';
+            
+            // Remove visual indicators
+            if (tableContainer) {
+                tableContainer.classList.remove('reorder-mode-active');
+            }
+            
+            // Remove reorder mode banner
+            this.showReorderBanner(false);
+            
+            console.log('🔄 [PRODUCTS] Reorder mode deactivated');
+        }
+        
+        // Re-render the table to show/hide drag handles
+        this.displayProducts();
+    }
+
+    showReorderBanner(show) {
+        let banner = document.getElementById('reorderModeBanner');
+        
+        if (show) {
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'reorderModeBanner';
+                banner.className = 'reorder-mode-banner';
+                banner.innerHTML = '<i class="fas fa-arrows-alt"></i> Reorder Mode Active - Drag services to rearrange them';
+                
+                const tableContainer = document.querySelector('.products-table-container');
+                if (tableContainer) {
+                    tableContainer.parentNode.insertBefore(banner, tableContainer);
+                }
+            }
+            banner.style.display = 'block';
+        } else {
+            if (banner) {
+                banner.style.display = 'none';
+            }
         }
     }
 
@@ -82,6 +156,12 @@ class ProductsManager {
         // Destroy existing sortable instance if it exists
         if (this.sortable) {
             this.sortable.destroy();
+            this.sortable = null;
+        }
+
+        // Only initialize sortable in reorder mode
+        if (!this.isReorderMode) {
+            return;
         }
 
         // Initialize sortable with drag handle
@@ -232,9 +312,11 @@ class ProductsManager {
 
         tbody.innerHTML = pageProducts.map(product => `
             <tr data-id="${product._id || product.id}">
-                <td style="text-align: center; cursor: grab;" class="drag-handle">
-                    <i class="fas fa-grip-vertical" style="color: #ccc; font-size: 14px;"></i>
-                </td>
+                ${this.isReorderMode ? `
+                    <td style="text-align: center; cursor: grab;" class="drag-handle">
+                        <i class="fas fa-grip-vertical" style="color: #ccc; font-size: 14px;"></i>
+                    </td>
+                ` : ''}
                 <td>
                     <strong>${product.name}</strong>
                     ${product.description ? `<br><small>${product.description}</small>` : ''}
@@ -275,7 +357,7 @@ class ProductsManager {
         // Update pagination controls
         this.updatePaginationControls();
         
-        // Re-initialize drag and drop after content update
+        // Re-initialize drag and drop after content update (only in reorder mode)
         if (this.products.length > 0) {
             setTimeout(() => this.initDragAndDrop(), 100);
         }
