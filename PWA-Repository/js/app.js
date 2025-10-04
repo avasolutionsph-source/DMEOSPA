@@ -443,15 +443,14 @@ class App {
                     window.loadDashboard().catch(e => console.warn('Dashboard load failed:', e));
                 }
                 // Initialize Cash Drawer Manager if not already done
-                if (!window.cashDrawerManager && window.CashDrawerManager) {
-                    window.cashDrawerManager = new CashDrawerManager();
-                    window.cashDrawerManager.init().catch(e => console.warn('Cash Drawer Manager init failed:', e));
-                }
+                this.initializeCashDrawerManager();
                 break;
             case 'pos':
                 if (window.loadPOS) {
                     window.loadPOS().catch(e => console.warn('POS load failed:', e));
                 }
+                // Initialize Cash Drawer Manager for POS functionality
+                this.initializeCashDrawerManager();
                 break;
             case 'products':
                 if (window.loadProducts) {
@@ -639,6 +638,45 @@ class App {
                     await window.loadSettings();
                 }
                 break;
+        }
+    }
+
+    // Initialize Cash Drawer Manager with proper error handling
+    initializeCashDrawerManager() {
+        console.log('🏪 [APP] Attempting to initialize Cash Drawer Manager...');
+        console.log('🏪 [APP] CashDrawerManager class available:', typeof CashDrawerManager !== 'undefined');
+        console.log('🏪 [APP] cashDrawerManager instance exists:', !!window.cashDrawerManager);
+        
+        try {
+            if (!window.cashDrawerManager) {
+                if (typeof CashDrawerManager !== 'undefined') {
+                    console.log('🏪 [APP] Creating new CashDrawerManager instance...');
+                    window.cashDrawerManager = new CashDrawerManager();
+                    
+                    // Initialize asynchronously without blocking UI
+                    window.cashDrawerManager.init()
+                        .then(() => {
+                            console.log('✅ [APP] Cash Drawer Manager initialized successfully');
+                        })
+                        .catch(e => {
+                            console.warn('⚠️ [APP] Cash Drawer Manager init failed:', e);
+                            // Don't throw - allow the app to continue functioning
+                        });
+                } else {
+                    console.warn('⚠️ [APP] CashDrawerManager class not available - script may not be loaded');
+                }
+            } else {
+                console.log('✅ [APP] Cash Drawer Manager already exists');
+                // Make sure it's initialized
+                if (!window.cashDrawerManager.isInitialized) {
+                    console.log('🏪 [APP] Existing manager not initialized, initializing now...');
+                    window.cashDrawerManager.init().catch(e => 
+                        console.warn('⚠️ [APP] Cash Drawer Manager re-init failed:', e)
+                    );
+                }
+            }
+        } catch (error) {
+            console.error('❌ [APP] Error in initializeCashDrawerManager:', error);
         }
     }
 

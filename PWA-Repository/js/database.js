@@ -447,11 +447,15 @@ class Database {
 
                 // Cash drawer sessions store (v16)
                 if (!this.db.objectStoreNames.contains('cashDrawerSessions')) {
+                    console.log('🏪 Creating cashDrawerSessions object store...');
                     const cashDrawerStore = this.db.createObjectStore('cashDrawerSessions', { keyPath: 'id' });
                     cashDrawerStore.createIndex('openedBy', 'openedBy', { unique: false });
                     cashDrawerStore.createIndex('status', 'status', { unique: false });
                     cashDrawerStore.createIndex('openedAt', 'openedAt', { unique: false });
                     cashDrawerStore.createIndex('syncStatus', 'syncStatus', { unique: false });
+                    console.log('✅ cashDrawerSessions store created successfully');
+                } else {
+                    console.log('✅ cashDrawerSessions store already exists');
                 }
 
                 if (window.logger && window.logger.info) {

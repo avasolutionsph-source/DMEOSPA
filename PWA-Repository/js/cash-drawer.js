@@ -13,24 +13,31 @@ class CashDrawerManager {
     async init() {
         try {
             console.log('🏪 Initializing Cash Drawer Manager...');
+            console.log('🏪 Database available:', !!window.db);
+            console.log('🏪 StateManager available:', !!window.StateManager);
             
             // Wait for database to be ready
             await this.ensureDBReady();
+            console.log('✅ Database is ready');
             
             // Load current session if exists
             await this.loadCurrentSession();
+            console.log('✅ Current session loaded');
             
             // Setup event listeners
             this.setupEventListeners();
+            console.log('✅ Event listeners setup');
             
             this.isInitialized = true;
             console.log('✅ Cash Drawer Manager initialized successfully');
             
             // Update UI with current status
             this.updateUI();
+            console.log('✅ UI updated');
             
         } catch (error) {
             console.error('❌ Failed to initialize Cash Drawer Manager:', error);
+            console.error('❌ Error details:', error.stack);
             throw error;
         }
     }
@@ -49,10 +56,25 @@ class CashDrawerManager {
                 checkDB();
             });
         }
+
+        // Check if cashDrawerSessions store exists
+        if (window.db && window.db.db && !window.db.db.objectStoreNames.contains('cashDrawerSessions')) {
+            console.warn('⚠️ cashDrawerSessions store not found - database may need upgrade');
+            console.log('💡 You may need to clear browser data to force database upgrade from v15 to v16');
+            console.log('💡 Or refresh the page to trigger database migration');
+        } else if (window.db && window.db.db) {
+            console.log('✅ cashDrawerSessions store is available');
+        }
     }
 
     async loadCurrentSession() {
         try {
+            // Check if the store exists first
+            if (!window.db.db.objectStoreNames.contains('cashDrawerSessions')) {
+                console.warn('⚠️ cashDrawerSessions store not available - skipping session load');
+                return;
+            }
+
             // Check for active session
             const sessions = await window.db.getAll('cashDrawerSessions');
             const activeSession = sessions.find(session => session.status === 'open');
@@ -74,6 +96,7 @@ class CashDrawerManager {
             }
         } catch (error) {
             console.error('❌ Error loading current session:', error);
+            console.log('💡 This might be normal if the database is still upgrading or the store doesn\'t exist yet');
         }
     }
 
@@ -408,8 +431,15 @@ class CashDrawerManager {
     }
 
     updatePOSStatus() {
+        console.log('🏪 [POS] Updating POS status...');
         const posStatusElement = document.getElementById('pos-drawer-status');
-        if (!posStatusElement) return;
+        
+        if (!posStatusElement) {
+            console.warn('⚠️ [POS] pos-drawer-status element not found in DOM');
+            return;
+        }
+
+        console.log('🏪 [POS] Found pos-drawer-status element, drawer open:', this.isDrawerOpen());
 
         if (this.isDrawerOpen()) {
             posStatusElement.innerHTML = `
@@ -417,13 +447,19 @@ class CashDrawerManager {
                     <i class="fas fa-cash-register"></i> Drawer Open
                 </span>
             `;
+            console.log('✅ [POS] Status updated to: Drawer Open');
         } else {
             posStatusElement.innerHTML = `
                 <span class="badge badge-danger">
                     <i class="fas fa-lock"></i> Drawer Closed
                 </span>
             `;
+            console.log('✅ [POS] Status updated to: Drawer Closed');
         }
+
+        // Make sure the element is visible
+        posStatusElement.style.display = 'flex';
+        posStatusElement.style.visibility = 'visible';
     }
 
     showOpenDrawerModal() {
@@ -528,16 +564,48 @@ class CashDrawerManager {
 }
 
 // Auto-initialize when DOM is ready
+console.log('🏪 Cash Drawer Manager script loading...');
+console.log('🏪 Document ready state:', document.readyState);
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
+        console.log('🏪 DOM Content Loaded - initializing CashDrawerManager');
         if (!window.cashDrawerManager) {
             window.cashDrawerManager = new CashDrawerManager();
+            console.log('✅ CashDrawerManager instance created');
+        } else {
+            console.log('⚠️ CashDrawerManager already exists');
         }
     });
 } else {
+    console.log('🏪 DOM already ready - initializing CashDrawerManager immediately');
     if (!window.cashDrawerManager) {
         window.cashDrawerManager = new CashDrawerManager();
+        console.log('✅ CashDrawerManager instance created');
+    } else {
+        console.log('⚠️ CashDrawerManager already exists');
     }
 }
 
-console.log('🏪 Cash Drawer Manager class loaded');
+console.log('🏪 Cash Drawer Manager class loaded and setup complete');
+
+// Fallback initialization after a delay to ensure everything is loaded
+setTimeout(() => {
+    console.log('🏪 [FALLBACK] Checking cash drawer manager initialization...');
+    if (!window.cashDrawerManager) {
+        console.log('🏪 [FALLBACK] No cash drawer manager found, creating one...');
+        window.cashDrawerManager = new CashDrawerManager();
+        window.cashDrawerManager.init().catch(e => 
+            console.warn('⚠️ [FALLBACK] Cash Drawer Manager init failed:', e)
+        );
+    } else if (!window.cashDrawerManager.isInitialized) {
+        console.log('🏪 [FALLBACK] Cash drawer manager exists but not initialized, initializing...');
+        window.cashDrawerManager.init().catch(e => 
+            console.warn('⚠️ [FALLBACK] Cash Drawer Manager re-init failed:', e)
+        );
+    } else {
+        console.log('✅ [FALLBACK] Cash drawer manager already initialized');
+        // Force UI update in case it was missed
+        window.cashDrawerManager.updateUI();
+    }
+}, 2000); // Wait 2 seconds for everything to load
