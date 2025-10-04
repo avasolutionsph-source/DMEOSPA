@@ -192,14 +192,14 @@ class RoomManager {
                         <div class="room-actions" style="margin-top: 15px;">
                             ${isOccupied ? `
                                 <button class="btn btn-danger btn-sm" onclick="roomManager.endService(${room.id})">
-                                    <i class="fas fa-stop"></i> End Service
+                                    <i class="fas fa-stop"></i> End
                                 </button>
                                 <button class="btn btn-warning btn-sm" onclick="roomManager.extendService(${room.id})">
                                     <i class="fas fa-plus-circle"></i> Extend
                                 </button>
                             ` : `
                                 <button class="btn btn-success btn-sm" onclick="roomManager.startService(${room.id})">
-                                    <i class="fas fa-play"></i> Start Service
+                                    <i class="fas fa-play"></i> Start
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="roomManager.editRoom(${room.id})">
                                     <i class="fas fa-edit"></i> Edit

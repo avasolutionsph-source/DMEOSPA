@@ -4313,13 +4313,18 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
 
 .room-actions {
     display: flex;
-    gap: 10px;
+    gap: 5px;
     justify-content: center;
+    flex-wrap: wrap;
 }
 
 .room-actions .btn-sm {
-    padding: 6px 12px;
-    font-size: 0.85rem;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    min-width: auto;
+    white-space: nowrap;
+    flex: 1;
+    max-width: calc(50% - 2.5px);
 }
 
 .room-type {
