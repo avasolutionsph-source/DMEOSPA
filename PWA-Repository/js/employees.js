@@ -468,8 +468,27 @@ class EmployeeManager {
                             return dailyRate > 0 ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-calendar-day"></i> Daily: ₱${dailyRate.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : '';
                         })()}
                         ${(() => {
-                            const monthlyRate = parseFloat(emp.monthlyRate) || 0;
-                            return monthlyRate > 0 ? `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-calendar-alt"></i> Monthly: ₱${monthlyRate.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : '';
+                            let monthlyRate = parseFloat(emp.monthlyRate) || 0;
+                            let isCalculated = false;
+                            
+                            // CRITICAL FIX: If monthly rate is 0 but we have daily rate and this is a monthly salary employee, calculate it
+                            if (monthlyRate === 0 && emp.wageType === 'monthly' && emp.dailyRate && parseFloat(emp.dailyRate) > 0) {
+                                monthlyRate = parseFloat(emp.dailyRate) * 22; // 22 working days per month
+                                isCalculated = true;
+                            }
+                            
+                            // Show monthly rate if it exists (including calculated values)
+                            if (monthlyRate > 0) {
+                                const calculatedIndicator = isCalculated ? ' <small style="color: #666;">(calculated)</small>' : '';
+                                return `<p style="margin-left: 1rem; font-size: 0.9rem;"><i class="fas fa-calendar-alt"></i> Monthly: ₱${monthlyRate.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${calculatedIndicator}</p>`;
+                            }
+                            
+                            // Show if this should have a monthly rate but doesn't
+                            if (emp.wageType === 'monthly') {
+                                return `<p style="margin-left: 1rem; font-size: 0.9rem; color: #dc2626;"><i class="fas fa-exclamation-triangle"></i> Monthly: Not Set</p>`;
+                            }
+                            
+                            return '';
                         })()}
                         ${(() => {
                             const hourlyRate = parseFloat(emp.hourlyRate) || 0;
@@ -824,13 +843,27 @@ class EmployeeManager {
                                     }
                                 });
                                 
+                                // CRITICAL FIX: Calculate missing monthly rate if needed
+                                let displayMonthlyRate = employee.monthlyRate;
+                                let monthlyCalculated = false;
+                                
+                                if ((!hasMonthly || employee.monthlyRate === 0) && employee.wageType === 'monthly' && hasDaily && employee.dailyRate > 0) {
+                                    displayMonthlyRate = employee.dailyRate * 22; // 22 working days per month
+                                    monthlyCalculated = true;
+                                    hasMonthly = true; // Update flag since we now have a monthly rate
+                                }
+                                
+                                const monthlyDisplay = hasMonthly ? 
+                                    (monthlyCalculated ? `₱${displayMonthlyRate.toFixed(2)} (calculated)` : `₱${employee.monthlyRate}`) : 
+                                    'Not Set';
+                                
                                 return !isConfigured ? 
                                     `<div class="info-item" style="color: #dc2626; background-color: #fef2f2; padding: 0.75rem; border-radius: 6px; border: 1px solid #fecaca;">
                                         <strong><i class="fas fa-exclamation-triangle"></i> No Salary Configured:</strong> This employee has no daily, monthly, or hourly rate set. Please edit the employee to configure their salary.
                                     </div>` : 
                                     `<div class="info-item" style="color: #059669; background-color: #ecfdf5; padding: 0.75rem; border-radius: 6px; border: 1px solid #a7f3d0;">
                                         <strong><i class="fas fa-check-circle"></i> Salary Configured:</strong> Employee has salary rates properly configured.
-                                        <br><small>Daily: ₱${hasDaily ? employee.dailyRate : 'Not Set'} | Monthly: ₱${hasMonthly ? employee.monthlyRate : 'Not Set'} | Hourly: ₱${hasHourly ? employee.hourlyRate : 'Not Set'}</small>
+                                        <br><small>Daily: ₱${hasDaily ? employee.dailyRate : 'Not Set'} | Monthly: ${monthlyDisplay} | Hourly: ₱${hasHourly ? employee.hourlyRate : 'Not Set'}</small>
                                     </div>`;
                             })()}
                         </div>
