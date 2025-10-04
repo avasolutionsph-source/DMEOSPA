@@ -1,5 +1,5 @@
 // Service Worker for Offline Functionality - Enhanced Auto-Update System
-const VERSION = '2.7.0'; // DRAG-DROP FIX - Force cache refresh for reorder functionality
+const VERSION = '2.8.0'; // DEBUG LOGGING - Comprehensive error tracking for reorder functionality
 const CACHE_NAME = `ava-solutions-v${VERSION}-${Date.now()}`; // Time-based cache busting
 const urlsToCache = [
     // Core app files

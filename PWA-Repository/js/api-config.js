@@ -474,7 +474,7 @@
     // Export to window
     window.API_CONFIG = API_CONFIG;
     
-    // Log initialization
+    // Log initialization with detailed environment info
     if (window.logger) {
         window.logger.info('API Configuration initialized', {
             category: 'API',
@@ -483,6 +483,13 @@
             environment: isProduction ? 'production' : 'development'
         });
     } else {
-        console.log('API Configuration initialized:', API_CONFIG.BASE_URL);
+        console.log('🔧 [API-CONFIG] ===== API CONFIGURATION INITIALIZED =====');
+        console.log('🔧 [API-CONFIG] Environment:', isProduction ? 'production' : 'development');
+        console.log('🔧 [API-CONFIG] Hostname:', window.location.hostname);
+        console.log('🔧 [API-CONFIG] Port:', window.location.port);
+        console.log('🔧 [API-CONFIG] Protocol:', window.location.protocol);
+        console.log('🔧 [API-CONFIG] Base URL:', API_CONFIG.BASE_URL);
+        console.log('🔧 [API-CONFIG] WebSocket URL:', API_CONFIG.WS_URL);
+        console.log('🔧 [API-CONFIG] =======================================');
     }
 })();

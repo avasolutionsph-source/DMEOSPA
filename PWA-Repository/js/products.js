@@ -164,49 +164,105 @@ class ProductsManager {
             return;
         }
 
-        // Initialize sortable with drag handle
-        this.sortable = Sortable.create(tbody, {
-            handle: '.drag-handle',
-            animation: 150,
-            ghostClass: 'sortable-ghost',
-            chosenClass: 'sortable-chosen',
-            dragClass: 'sortable-drag',
-            onStart: (evt) => {
-                console.log('🔄 [PRODUCTS] Started dragging item:', evt.oldIndex);
-                document.body.classList.add('is-dragging');
-            },
-            onEnd: async (evt) => {
-                console.log('🔄 [PRODUCTS] Finished dragging item:', evt.oldIndex, '->', evt.newIndex);
-                document.body.classList.remove('is-dragging');
-                
-                if (evt.oldIndex !== evt.newIndex) {
-                    await this.handleReorder(evt.oldIndex, evt.newIndex);
+        // Initialize sortable with drag handle and comprehensive error handling
+        try {
+            this.sortable = Sortable.create(tbody, {
+                handle: '.drag-handle',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onStart: (evt) => {
+                    console.log('🔄 [PRODUCTS] Started dragging item:', evt.oldIndex);
+                    console.log('🔍 [PRODUCTS] Drag start event details:', {
+                        oldIndex: evt.oldIndex,
+                        item: evt.item,
+                        from: evt.from,
+                        target: evt.target,
+                        type: evt.type
+                    });
+                    document.body.classList.add('is-dragging');
+                },
+                onEnd: async (evt) => {
+                    console.log('🔄 [PRODUCTS] Finished dragging item:', evt.oldIndex, '->', evt.newIndex);
+                    console.log('🔍 [PRODUCTS] Drag end event details:', {
+                        oldIndex: evt.oldIndex,
+                        newIndex: evt.newIndex,
+                        item: evt.item,
+                        from: evt.from,
+                        to: evt.to,
+                        type: evt.type
+                    });
+                    document.body.classList.remove('is-dragging');
+                    
+                    if (evt.oldIndex !== evt.newIndex) {
+                        try {
+                            await this.handleReorder(evt.oldIndex, evt.newIndex);
+                        } catch (error) {
+                            console.error('❌ [PRODUCTS] Error in handleReorder:', error);
+                            showError('Failed to reorder services: ' + error.message);
+                        }
+                    }
+                },
+                onError: (evt) => {
+                    console.error('❌ [PRODUCTS] SortableJS error:', evt);
+                    showError('Drag and drop error occurred');
+                },
+                onMove: (evt) => {
+                    console.log('🔄 [PRODUCTS] Move event:', {
+                        dragged: evt.dragged,
+                        related: evt.related,
+                        willInsertAfter: evt.willInsertAfter
+                    });
+                    return true; // Allow the move
                 }
-            }
-        });
+            });
+            
+            console.log('✅ [PRODUCTS] SortableJS initialized successfully');
+        } catch (error) {
+            console.error('❌ [PRODUCTS] Failed to initialize SortableJS:', error);
+            showError('Failed to initialize drag-and-drop functionality');
+        }
     }
 
     async handleReorder(oldIndex, newIndex) {
         try {
-            console.log('🔄 [PRODUCTS] Reordering services...');
+            console.log('🔄 [PRODUCTS] ===== REORDER OPERATION START =====');
+            console.log('🔍 [PRODUCTS] Input parameters:', { oldIndex, newIndex });
+            console.log('🔍 [PRODUCTS] Current products array length:', this.products.length);
+            console.log('🔍 [PRODUCTS] API Config Base URL:', window.API_CONFIG?.BASE_URL);
+            console.log('🔍 [PRODUCTS] Browser online status:', navigator.onLine);
+            console.log('🔍 [PRODUCTS] Current hostname:', window.location.hostname);
+            
             showLoading('Reordering services...');
 
             // Calculate new order values for all products
             const reorderedProducts = [...this.products];
+            console.log('🔍 [PRODUCTS] Original products before reorder:', this.products.map(p => ({ name: p.name, id: p._id || p.id, sortOrder: p.sortOrder })));
+            
             const [movedItem] = reorderedProducts.splice(oldIndex, 1);
             reorderedProducts.splice(newIndex, 0, movedItem);
+            
+            console.log('🔍 [PRODUCTS] Moved item details:', {
+                name: movedItem.name,
+                _id: movedItem._id,
+                id: movedItem.id,
+                originalSortOrder: movedItem.sortOrder
+            });
 
             // Assign new sort orders with better ID handling
             const updateData = reorderedProducts.map((product, index) => {
                 const productId = product._id || product.id;
                 
-                // Log for debugging
+                // Enhanced logging for debugging
                 console.log(`🔍 [PRODUCTS] Product ${index}:`, {
                     name: product.name,
                     _id: product._id,
                     id: product.id,
                     finalId: productId,
-                    sortOrder: index
+                    sortOrder: index,
+                    idType: typeof productId,
+                    idLength: productId?.length
                 });
                 
                 return {
@@ -214,6 +270,8 @@ class ProductsManager {
                     sortOrder: index
                 };
             });
+            
+            console.log('🔍 [PRODUCTS] Final update data to send:', updateData);
 
             // Validate all IDs before sending
             const invalidIds = updateData.filter(item => !item.id || typeof item.id !== 'string');
@@ -226,7 +284,16 @@ class ProductsManager {
             }
 
             // Send reorder request via HybridAPIClient for offline support
+            console.log('🚀 [PRODUCTS] Sending reorder request to API...');
+            console.log('🔍 [PRODUCTS] Request payload:', JSON.stringify(updateData, null, 2));
+            
+            const requestStartTime = Date.now();
             const result = await window.HybridAPIClient.reorderProducts(updateData);
+            const requestEndTime = Date.now();
+            
+            console.log('🔍 [PRODUCTS] API request completed in:', (requestEndTime - requestStartTime), 'ms');
+            console.log('🔍 [PRODUCTS] API response:', JSON.stringify(result, null, 2));
+            console.log('🔄 [PRODUCTS] ===== REORDER OPERATION END =====');
             
             hideLoading();
 
@@ -252,23 +319,77 @@ class ProductsManager {
             } else {
                 console.error('❌ [PRODUCTS] Failed to reorder services:', result.error);
                 
-                // Enhanced error handling
+                // Enhanced error handling with retry mechanism
                 let errorMessage = 'Failed to reorder services';
+                let shouldRetry = false;
+                
                 if (result.error?.details && Array.isArray(result.error.details)) {
                     // Show specific validation errors
                     errorMessage = `Reorder failed: ${result.error.details.join(', ')}`;
                 } else if (result.error?.message) {
                     // Show general error message
                     errorMessage = result.error.message;
+                    
+                    // Check if this is a network or temporary error
+                    if (result.error.message.includes('fetch') || 
+                        result.error.message.includes('network') ||
+                        result.error.message.includes('timeout') ||
+                        result.error.message.includes('500') ||
+                        result.error.message.includes('502') ||
+                        result.error.message.includes('503')) {
+                        shouldRetry = true;
+                    }
+                }
+                
+                // Special handling for mysterious "Invalid_id_reorder" error
+                if (errorMessage.includes('Invalid_id_reorder') || errorMessage.includes('invalid_id')) {
+                    console.warn('🔍 [PRODUCTS] Detected mysterious "Invalid_id_reorder" error - adding debugging info');
+                    console.log('🔍 [PRODUCTS] Error source analysis:', {
+                        fullError: result.error,
+                        errorMessage: errorMessage,
+                        updateData: updateData,
+                        currentURL: window.location.href,
+                        apiBaseURL: window.API_CONFIG?.BASE_URL
+                    });
+                    
+                    errorMessage = 'Service reordering failed due to ID validation. Please refresh the page and try again.';
+                    shouldRetry = false; // Don't auto-retry validation errors
+                }
+                
+                if (shouldRetry) {
+                    // Show error with retry option
+                    if (confirm(`${errorMessage}\n\nWould you like to retry?`)) {
+                        console.log('🔄 [PRODUCTS] User requested retry, attempting reorder again...');
+                        await this.handleReorder(oldIndex, newIndex);
+                        return;
+                    }
                 }
                 
                 showError(errorMessage);
                 this.displayProducts(); // Revert display
             }
         } catch (error) {
-            console.error('❌ [PRODUCTS] Error reordering services:', error);
+            console.error('❌ [PRODUCTS] Unexpected error during reorder operation:', error);
+            console.log('🔍 [PRODUCTS] Exception details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+                oldIndex: oldIndex,
+                newIndex: newIndex,
+                productsLength: this.products?.length
+            });
+            
             hideLoading();
-            showError('Failed to reorder services');
+            
+            // Check if this is the mysterious error appearing as an exception
+            if (error.message && (error.message.includes('Invalid_id_reorder') || error.message.includes('invalid_id'))) {
+                console.warn('🔍 [PRODUCTS] The mysterious "Invalid_id_reorder" error appeared as an exception!');
+                console.log('🔍 [PRODUCTS] This suggests the error is coming from outside our codebase');
+                showError('Service reordering failed due to external validation. Please refresh the page and try again.');
+            } else {
+                showError('Unexpected error occurred while reordering services');
+            }
+            
             this.displayProducts(); // Revert display
             
             if (window.logger) {

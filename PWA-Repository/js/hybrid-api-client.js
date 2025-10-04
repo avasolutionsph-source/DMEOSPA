@@ -1008,18 +1008,33 @@ class HybridAPIClient {
 
         try {
             const token = localStorage.getItem('authToken');
-            const response = await fetch(`${this.baseURL}/api/products/reorder`, {
+            const requestUrl = `${this.baseURL}/api/products/reorder`;
+            const requestBody = { products: productsOrder };
+            
+            console.log('🔍 [API] ===== REORDER API REQUEST START =====');
+            console.log('🔍 [API] Request URL:', requestUrl);
+            console.log('🔍 [API] Base URL:', this.baseURL);
+            console.log('🔍 [API] Auth token present:', !!token);
+            console.log('🔍 [API] Request body:', JSON.stringify(requestBody, null, 2));
+            console.log('🔍 [API] Products count:', productsOrder.length);
+            
+            const response = await fetch(requestUrl, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ products: productsOrder })
+                body: JSON.stringify(requestBody)
             });
+
+            console.log('🔍 [API] Response status:', response.status);
+            console.log('🔍 [API] Response statusText:', response.statusText);
+            console.log('🔍 [API] Response headers:', Object.fromEntries(response.headers.entries()));
 
             if (response.ok) {
                 const result = await response.json();
                 console.log('✅ [API] Products reordered successfully');
+                console.log('🔍 [API] Success response:', JSON.stringify(result, null, 2));
                 
                 // Clear products cache to force refresh
                 this.cache.delete('products');
@@ -1034,8 +1049,19 @@ class HybridAPIClient {
                     message: result.message
                 };
             } else {
-                const errorData = await response.json();
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch (parseError) {
+                    console.error('❌ [API] Failed to parse error response as JSON:', parseError);
+                    const textResponse = await response.text();
+                    console.error('❌ [API] Raw error response text:', textResponse);
+                    errorData = { error: { message: `HTTP ${response.status}: ${textResponse}` } };
+                }
+                
                 console.error('❌ [API] Failed to reorder products:', errorData);
+                console.log('🔍 [API] ===== REORDER API REQUEST END (ERROR) =====');
+                
                 return {
                     success: false,
                     error: errorData.error || { message: 'Failed to reorder products' },
@@ -1043,7 +1069,15 @@ class HybridAPIClient {
                 };
             }
         } catch (error) {
-            console.error('❌ [API] Error reordering products:', error);
+            console.error('❌ [API] Network/fetch error during reorder:', error);
+            console.log('🔍 [API] Error details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+                cause: error.cause
+            });
+            console.log('🔍 [API] ===== REORDER API REQUEST END (EXCEPTION) =====');
+            
             return {
                 success: false,
                 error: { message: error.message },
