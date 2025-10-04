@@ -9,6 +9,9 @@ class CashDrawerHistoryManager {
         this.isInitialized = false;
         this.refreshDebounceTimeout = null;
         this.stateSubscriptions = [];
+        this.lastRefreshTime = 0;
+        this.minimumRefreshInterval = 2000; // 2 seconds minimum between refreshes
+        this.lastDrawerState = null;
         this.filters = {
             dateRange: '30',
             startDate: null,
@@ -139,14 +142,33 @@ class CashDrawerHistoryManager {
         try {
             // Subscribe to cash drawer session changes
             const sessionSubscription = window.StateManager.subscribe('cashDrawer.currentSession', (updates, currentValue) => {
-                console.log('🔄 Cash drawer session changed, triggering refresh...', { updates, currentValue });
-                this.debouncedRefresh();
+                console.log('🔄 Cash drawer session changed, checking if refresh needed...', { updates, currentValue });
+                
+                // Only refresh if the drawer state actually changed
+                const newDrawerState = {
+                    isOpen: window.StateManager.getState('cashDrawer.isDrawerOpen'),
+                    sessionId: currentValue?.id || null
+                };
+                
+                if (this.hasDrawerStateChanged(newDrawerState)) {
+                    console.log('🔄 Drawer state changed, triggering smart refresh...');
+                    this.smartRefresh(false); // false = automatic refresh (no success message)
+                }
             });
 
             // Subscribe to drawer open/close state changes
             const stateSubscription = window.StateManager.subscribe('cashDrawer.isDrawerOpen', (updates, currentValue) => {
-                console.log('🔄 Cash drawer state changed, triggering refresh...', { updates, currentValue });
-                this.debouncedRefresh();
+                console.log('🔄 Cash drawer open/close state changed, checking if refresh needed...', { updates, currentValue });
+                
+                const newDrawerState = {
+                    isOpen: currentValue,
+                    sessionId: window.StateManager.getState('cashDrawer.currentSession')?.id || null
+                };
+                
+                if (this.hasDrawerStateChanged(newDrawerState)) {
+                    console.log('🔄 Drawer open/close state changed, triggering smart refresh...');
+                    this.smartRefresh(false); // false = automatic refresh (no success message)
+                }
             });
 
             // Store subscriptions for cleanup
@@ -158,11 +180,32 @@ class CashDrawerHistoryManager {
         }
     }
 
+    hasDrawerStateChanged(newState) {
+        if (!this.lastDrawerState) {
+            this.lastDrawerState = newState;
+            return true; // First time, consider it changed
+        }
+
+        const hasChanged = 
+            this.lastDrawerState.isOpen !== newState.isOpen ||
+            this.lastDrawerState.sessionId !== newState.sessionId;
+
+        if (hasChanged) {
+            console.log('🔍 Drawer state change detected:', {
+                old: this.lastDrawerState,
+                new: newState
+            });
+            this.lastDrawerState = newState;
+        }
+
+        return hasChanged;
+    }
+
     setupVisibilityListener() {
         const visibilityHandler = () => {
-            if (document.visibilityState === 'visible') {
-                console.log('🔄 Page became visible, refreshing history...');
-                this.debouncedRefresh();
+            if (document.visibilityState === 'visible' && this.isOnHistoryPage()) {
+                console.log('🔄 Page became visible and on history page, triggering smart refresh...');
+                this.smartRefresh(false); // false = automatic refresh (no success message)
             }
         };
 
@@ -171,21 +214,17 @@ class CashDrawerHistoryManager {
     }
 
     setupFocusListener() {
-        const focusHandler = () => {
-            console.log('🔄 Window gained focus, refreshing history...');
-            this.debouncedRefresh();
-        };
-
-        window.addEventListener('focus', focusHandler);
-        console.log('✅ Window focus listener setup');
+        // Remove focus listener as it's redundant with visibility change
+        // and can cause unnecessary refreshes
+        console.log('✅ Focus listener setup skipped (covered by visibility change)');
     }
 
     setupPageNavigationListener() {
         const pageChangeHandler = (event) => {
             // Check if we're navigating to the cash drawer history page
             if (event.detail && event.detail.page === 'cash-drawer-history') {
-                console.log('🔄 Navigated to cash drawer history page, refreshing...');
-                this.debouncedRefresh();
+                console.log('🔄 Navigated to cash drawer history page, triggering smart refresh...');
+                this.smartRefresh(false); // false = automatic refresh (no success message)
             }
         };
 
@@ -193,7 +232,48 @@ class CashDrawerHistoryManager {
         console.log('✅ Page navigation listener setup');
     }
 
-    debouncedRefresh() {
+    isOnHistoryPage() {
+        // Check if we're currently on the cash drawer history page
+        try {
+            // Method 1: Check if history table exists and is visible
+            const historyTable = document.getElementById('historyTableBody');
+            if (historyTable && historyTable.offsetParent !== null) {
+                return true;
+            }
+
+            // Method 2: Check current page from URL or state
+            const currentHash = window.location.hash;
+            if (currentHash.includes('cash-drawer-history')) {
+                return true;
+            }
+
+            // Method 3: Check if cash drawer history section is active
+            const activeSection = document.querySelector('.page.active');
+            if (activeSection && activeSection.id === 'cash-drawer-history') {
+                return true;
+            }
+
+            return false;
+        } catch (error) {
+            console.warn('⚠️ Error checking if on history page:', error);
+            return false; // Default to false to prevent unnecessary refreshes
+        }
+    }
+
+    smartRefresh(showSuccessMessage = true) {
+        // Check if we should refresh based on timing
+        const now = Date.now();
+        if (now - this.lastRefreshTime < this.minimumRefreshInterval) {
+            console.log('🔄 Refresh skipped - too soon since last refresh');
+            return;
+        }
+
+        // Check if we're on the right page (for automatic refreshes)
+        if (!showSuccessMessage && !this.isOnHistoryPage()) {
+            console.log('🔄 Automatic refresh skipped - not on history page');
+            return;
+        }
+
         // Clear existing timeout to debounce rapid calls
         if (this.refreshDebounceTimeout) {
             clearTimeout(this.refreshDebounceTimeout);
@@ -202,10 +282,15 @@ class CashDrawerHistoryManager {
         // Set new timeout for debounced refresh
         this.refreshDebounceTimeout = setTimeout(() => {
             if (this.isInitialized) {
-                console.log('🔄 Executing debounced refresh...');
-                this.refreshHistory();
+                console.log('🔄 Executing smart refresh...', { showSuccessMessage });
+                this.performRefresh(showSuccessMessage);
             }
-        }, 500); // 500ms debounce delay
+        }, 1000); // 1 second debounce delay (increased for better stability)
+    }
+
+    // Legacy method for backward compatibility
+    debouncedRefresh() {
+        this.smartRefresh(false);
     }
 
     setDefaultCustomDates() {
@@ -788,27 +873,42 @@ class CashDrawerHistoryManager {
         return resolvedName;
     }
 
-    async refreshHistory() {
+    async performRefresh(showSuccessMessage = true) {
         try {
+            this.lastRefreshTime = Date.now();
+            
             const refreshBtn = document.getElementById('refresh-history-btn');
-            if (refreshBtn) {
+            if (refreshBtn && showSuccessMessage) {
                 refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
                 refreshBtn.disabled = true;
             }
 
             await this.loadHistory();
-            this.showSuccess('History refreshed successfully');
+            
+            // Only show success message for manual refreshes
+            if (showSuccessMessage) {
+                this.showSuccess('History refreshed successfully');
+            } else {
+                console.log('✅ History refreshed automatically (no notification)');
+            }
 
         } catch (error) {
             console.error('Error refreshing history:', error);
-            this.showError('Failed to refresh history');
+            if (showSuccessMessage) {
+                this.showError('Failed to refresh history');
+            }
         } finally {
             const refreshBtn = document.getElementById('refresh-history-btn');
-            if (refreshBtn) {
+            if (refreshBtn && showSuccessMessage) {
                 refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
                 refreshBtn.disabled = false;
             }
         }
+    }
+
+    // Public method for manual refresh (maintains compatibility)
+    async refreshHistory() {
+        return this.performRefresh(true); // true = show success message
     }
 
     clearFilters() {
@@ -1065,6 +1165,10 @@ class CashDrawerHistoryManager {
             this.refreshDebounceTimeout = null;
         }
         
+        // Reset state tracking
+        this.lastRefreshTime = 0;
+        this.lastDrawerState = null;
+        
         // Unsubscribe from StateManager subscriptions
         this.stateSubscriptions.forEach(unsubscribe => {
             try {
@@ -1079,23 +1183,6 @@ class CashDrawerHistoryManager {
     }
 }
 
-// Auto-initialize when DOM is ready
-console.log('🏪 Cash Drawer History Manager script loading...');
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('🏪 DOM Content Loaded - initializing CashDrawerHistoryManager');
-        if (!window.cashDrawerHistoryManager) {
-            window.cashDrawerHistoryManager = new CashDrawerHistoryManager();
-            console.log('✅ CashDrawerHistoryManager instance created');
-        }
-    });
-} else {
-    console.log('🏪 DOM already ready - initializing CashDrawerHistoryManager immediately');
-    if (!window.cashDrawerHistoryManager) {
-        window.cashDrawerHistoryManager = new CashDrawerHistoryManager();
-        console.log('✅ CashDrawerHistoryManager instance created');
-    }
-}
-
-console.log('🏪 Cash Drawer History Manager class loaded and setup complete');
+// CashDrawerHistoryManager class is now available globally
+// Initialization is handled by app.js to prevent multiple instances
+console.log('🏪 Cash Drawer History Manager class loaded and ready for initialization');
