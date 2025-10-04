@@ -391,6 +391,10 @@ class CashDrawerManager {
 
         if (this.isDrawerOpen()) {
             const session = this.currentSession;
+            const currentUser = this.getCurrentUser();
+            const currentUserName = currentUser ? (currentUser.name || currentUser.email) : 'Unknown';
+            const isDifferentUser = currentUserName !== session.openedByName;
+            
             widgetElement.innerHTML = `
                 <h4><i class="fas fa-cash-register"></i> Cash Drawer</h4>
                 <div class="drawer-stats">
@@ -410,6 +414,12 @@ class CashDrawerManager {
                         <span class="label">Opened By:</span>
                         <span class="value">${session.openedByName}</span>
                     </div>
+                    ${isDifferentUser ? `
+                    <div class="stat-item">
+                        <span class="label">Operating As:</span>
+                        <span class="value current-operator">${currentUserName}</span>
+                    </div>
+                    ` : ''}
                 </div>
                 <div class="drawer-actions">
                     <button class="btn btn-primary btn-sm" onclick="window.cashDrawerManager.showTransferModal()">
@@ -421,6 +431,69 @@ class CashDrawerManager {
                 </div>
             `;
         } else {
+            // Show recent session history when drawer is closed
+            this.showRecentSessionInWidget(widgetElement);
+        }
+    }
+
+    async showRecentSessionInWidget(widgetElement) {
+        try {
+            // Get the most recent closed session
+            const sessions = await this.getSessionHistory(5);
+            const recentSession = sessions.find(session => session.status === 'closed');
+            
+            if (recentSession && recentSession.closedByName) {
+                const sessionDuration = this.calculateSessionDuration(recentSession.openedAt, recentSession.closedAt);
+                widgetElement.innerHTML = `
+                    <h4><i class="fas fa-cash-register"></i> Cash Drawer</h4>
+                    <div class="drawer-closed">
+                        <div class="recent-session">
+                            <h5>Last Session:</h5>
+                            <div class="session-details">
+                                <div class="session-line">
+                                    <span class="session-action">Opened by:</span> 
+                                    <span class="session-user">${recentSession.openedByName}</span>
+                                </div>
+                                <div class="session-line">
+                                    <span class="session-action">Closed by:</span> 
+                                    <span class="session-user">${recentSession.closedByName}</span>
+                                </div>
+                                <div class="session-line">
+                                    <span class="session-action">Duration:</span> 
+                                    <span class="session-duration">${sessionDuration}</span>
+                                </div>
+                                <div class="session-line">
+                                    <span class="session-action">Final Amount:</span> 
+                                    <span class="session-amount">₱${this.formatCurrency(recentSession.closingBalance)}</span>
+                                </div>
+                                ${recentSession.variance !== 0 ? `
+                                <div class="session-line">
+                                    <span class="session-action">Variance:</span> 
+                                    <span class="session-variance ${recentSession.variance > 0 ? 'positive' : 'negative'}">
+                                        ₱${this.formatCurrency(Math.abs(recentSession.variance))} ${recentSession.variance > 0 ? '(Over)' : '(Short)'}
+                                    </span>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        <button class="btn btn-success btn-sm" onclick="window.cashDrawerManager.showOpenDrawerModal()">
+                            <i class="fas fa-unlock"></i> Open Drawer
+                        </button>
+                    </div>
+                `;
+            } else {
+                widgetElement.innerHTML = `
+                    <h4><i class="fas fa-cash-register"></i> Cash Drawer</h4>
+                    <div class="drawer-closed">
+                        <p class="text-muted">No active cash drawer session</p>
+                        <button class="btn btn-success btn-sm" onclick="window.cashDrawerManager.showOpenDrawerModal()">
+                            <i class="fas fa-unlock"></i> Open Drawer
+                        </button>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading recent session:', error);
             widgetElement.innerHTML = `
                 <h4><i class="fas fa-cash-register"></i> Cash Drawer</h4>
                 <div class="drawer-closed">
@@ -430,6 +503,23 @@ class CashDrawerManager {
                     </button>
                 </div>
             `;
+        }
+    }
+
+    calculateSessionDuration(openedAt, closedAt) {
+        if (!openedAt || !closedAt) return 'Unknown';
+        
+        const start = new Date(openedAt);
+        const end = new Date(closedAt);
+        const diffMs = end - start;
+        
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        
+        if (hours > 0) {
+            return `${hours}h ${minutes}m`;
+        } else {
+            return `${minutes}m`;
         }
     }
 
@@ -447,10 +537,22 @@ class CashDrawerManager {
         // Clear any existing click handlers
         posStatusElement.onclick = null;
 
+        const currentUser = this.getCurrentUser();
+        const currentUserName = currentUser ? (currentUser.name || currentUser.email || 'Unknown') : 'Unknown';
+        
         if (this.isDrawerOpen()) {
+            const session = this.currentSession;
+            const isDifferentUser = currentUserName !== (session.openedByName || '');
+            
             posStatusElement.innerHTML = `
                 <span class="badge badge-success clickable-status" title="Click to close drawer">
                     <i class="fas fa-cash-register"></i> Drawer Open
+                    <div class="pos-user-info">
+                        ${isDifferentUser ? 
+                            `<small>Operating: ${currentUserName}</small>` : 
+                            `<small>Operator: ${currentUserName}</small>`
+                        }
+                    </div>
                     <i class="fas fa-chevron-down status-action-icon"></i>
                 </span>
             `;
@@ -466,6 +568,9 @@ class CashDrawerManager {
             posStatusElement.innerHTML = `
                 <span class="badge badge-danger clickable-status" title="Click to open drawer">
                     <i class="fas fa-lock"></i> Drawer Closed
+                    <div class="pos-user-info">
+                        <small>User: ${currentUserName}</small>
+                    </div>
                     <i class="fas fa-chevron-down status-action-icon"></i>
                 </span>
             `;
@@ -487,7 +592,25 @@ class CashDrawerManager {
 
     showOpenDrawerModal() {
         if (window.openModal) {
+            // Update modal header with current user info
+            this.updateOpenDrawerModalHeader();
             window.openModal('openDrawerModal');
+        }
+    }
+
+    updateOpenDrawerModalHeader() {
+        const currentUser = this.getCurrentUser();
+        const modalHeader = document.querySelector('#openDrawerModal .modal-header h3');
+        
+        if (modalHeader && currentUser) {
+            const userName = currentUser.name || currentUser.email || 'Unknown User';
+            modalHeader.innerHTML = `
+                <i class="fas fa-unlock"></i> Open Cash Drawer
+                <div class="current-user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span class="opening-as">Opening as: <strong>${userName}</strong></span>
+                </div>
+            `;
         }
     }
 
@@ -498,7 +621,30 @@ class CashDrawerManager {
             if (expectedBalanceInput && this.currentSession) {
                 expectedBalanceInput.value = this.currentSession.expectedBalance.toFixed(2);
             }
+            
+            // Update modal header with current user info
+            this.updateCloseDrawerModalHeader();
             window.openModal('closeDrawerModal');
+        }
+    }
+
+    updateCloseDrawerModalHeader() {
+        const currentUser = this.getCurrentUser();
+        const modalHeader = document.querySelector('#closeDrawerModal .modal-header h3');
+        
+        if (modalHeader && currentUser && this.currentSession) {
+            const userName = currentUser.name || currentUser.email || 'Unknown User';
+            const openerName = this.currentSession.openedByName || 'Unknown';
+            const isDifferentUser = (currentUser.name || currentUser.email) !== this.currentSession.openedByName;
+            
+            modalHeader.innerHTML = `
+                <i class="fas fa-lock"></i> Close Cash Drawer
+                <div class="current-user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span class="closing-as">Closing as: <strong>${userName}</strong></span>
+                    ${isDifferentUser ? `<small class="session-opener">Session opened by: ${openerName}</small>` : ''}
+                </div>
+            `;
         }
     }
 

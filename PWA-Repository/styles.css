@@ -8496,6 +8496,143 @@ button.btn-primary:hover {
 
 #pos-drawer-status {
     display: flex;
+}
+
+/* User Identification Styles */
+.current-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.opening-as, .closing-as {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.session-opener {
+    color: var(--gray-600);
+    font-size: 0.8rem;
+    font-style: italic;
+    margin-top: 0.25rem;
+}
+
+.pos-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    margin: 0.25rem 0;
+}
+
+.pos-user-info small {
+    font-size: 0.75rem;
+    line-height: 1;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.current-operator {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+/* Recent Session Styles */
+.recent-session {
+    background: var(--secondary-color);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+}
+
+.recent-session h5 {
+    margin: 0 0 0.75rem 0;
+    color: var(--text-dark);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.session-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.session-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.session-action {
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+.session-user {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.session-duration {
+    color: var(--info-color);
+    font-weight: 500;
+}
+
+.session-amount {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.session-variance {
+    font-weight: 600;
+}
+
+.session-variance.positive {
+    color: var(--info-color);
+}
+
+.session-variance.negative {
+    color: var(--danger-color);
+}
+
+/* Modal Header User Info */
+.modal-header .current-user-info {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modal-header .current-user-info i {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.modal-header .opening-as,
+.modal-header .closing-as {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 0.9rem;
+}
+
+.modal-header .session-opener {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8rem;
+}
+
+/* Dashboard Widget User Display */
+.drawer-stats .current-operator {
+    background: rgba(34, 197, 94, 0.1);
+    color: var(--success-color);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
     align-items: center;
     gap: 0.5rem;
 }
