@@ -2085,6 +2085,17 @@ class POSSystem {
             }
             const paymentMethod = paymentMethodElement.value;
             
+            // Check cash drawer status for cash payments
+            if (paymentMethod === 'cash' && window.cashDrawerManager) {
+                if (!window.cashDrawerManager.isDrawerOpen()) {
+                    showError('Cash drawer is not open. Please open the cash drawer before processing cash transactions.');
+                    setButtonLoading('confirmCheckoutBtn', false);
+                    hideLoading();
+                    this.isProcessingCheckout = false;
+                    return;
+                }
+            }
+            
             // Validate Senior/PWD discount fields if applied
             if (this.appliedSeniorPWDDiscount) {
                 const cardholderName = document.getElementById('discountCardholderName').value.trim();
@@ -2353,6 +2364,17 @@ class POSSystem {
             if (this.appliedGiftCertificate) {
                 this.appliedGiftCertificate.usedInTransaction = transactionId;
                 await window.db.update('giftCertificates', this.appliedGiftCertificate);
+            }
+
+            // Add cash transaction to drawer session if payment is cash
+            if (paymentMethod === 'cash' && window.cashDrawerManager && window.cashDrawerManager.isDrawerOpen()) {
+                try {
+                    await window.cashDrawerManager.addCashTransaction(total);
+                    console.log('💰 Cash transaction added to drawer session');
+                } catch (drawerError) {
+                    console.warn('⚠️ Failed to add transaction to cash drawer session:', drawerError);
+                    // Don't fail the entire checkout for this error
+                }
             }
             
             // Handle room assignment for services

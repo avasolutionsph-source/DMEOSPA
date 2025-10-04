@@ -32,6 +32,15 @@ class StateManager {
                 currentCategory: 'all',
                 taxRate: 0
             },
+            cashDrawer: {
+                currentSession: null,
+                isDrawerOpen: false,
+                openingFloat: 0,
+                expectedBalance: 0,
+                transactionCount: 0,
+                totalCashSales: 0,
+                sessionHistory: []
+            },
             business: {
                 name: null,
                 type: null,

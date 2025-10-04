@@ -8348,3 +8348,176 @@ button.btn-primary:hover {
         font-size: 1.25rem;
     }
 }
+
+/* Cash Drawer Styles */
+.cash-drawer-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    background-color: var(--secondary-color);
+    border: 1px solid var(--border-color);
+}
+
+.cash-drawer-info .info-box,
+.cash-drawer-warning .warning-box {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--primary-ultra-light);
+}
+
+.cash-drawer-warning .warning-box {
+    background-color: #fef3cd;
+    border-color: var(--warning-color);
+}
+
+.drawer-session-summary {
+    background-color: var(--secondary-color);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.drawer-session-summary h4 {
+    margin-bottom: 1rem;
+    color: var(--text-dark);
+}
+
+.summary-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+}
+
+.summary-item .label {
+    font-weight: 500;
+    color: var(--text-medium);
+}
+
+.summary-item .value {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.inline-input {
+    border: none;
+    background: transparent;
+    font-weight: 600;
+    color: var(--text-dark);
+    text-align: right;
+    width: 100px;
+}
+
+.variance-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background-color: var(--secondary-color);
+    margin: 1rem 0;
+    font-weight: 500;
+}
+
+.drawer-stats {
+    display: grid;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.drawer-stats .stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.drawer-stats .stat-item:last-child {
+    border-bottom: none;
+}
+
+.drawer-stats .label {
+    font-weight: 500;
+    color: var(--text-medium);
+}
+
+.drawer-stats .value {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.drawer-actions {
+    text-align: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.drawer-closed {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.drawer-closed p {
+    margin-bottom: 1rem;
+}
+
+#cash-drawer-widget {
+    background: white;
+    border-radius: 0.75rem;
+    border: 1px solid var(--border-color);
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+#cash-drawer-widget h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    color: var(--text-dark);
+    font-size: 1.1rem;
+}
+
+#pos-drawer-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.badge-success {
+    background-color: #d1fae5;
+    color: #059669;
+}
+
+.badge-danger {
+    background-color: #fee2e2;
+    color: #dc2626;
+}

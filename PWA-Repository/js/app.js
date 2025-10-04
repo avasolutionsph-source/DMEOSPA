@@ -442,6 +442,11 @@ class App {
                 if (window.loadDashboard) {
                     window.loadDashboard().catch(e => console.warn('Dashboard load failed:', e));
                 }
+                // Initialize Cash Drawer Manager if not already done
+                if (!window.cashDrawerManager && window.CashDrawerManager) {
+                    window.cashDrawerManager = new CashDrawerManager();
+                    window.cashDrawerManager.init().catch(e => console.warn('Cash Drawer Manager init failed:', e));
+                }
                 break;
             case 'pos':
                 if (window.loadPOS) {

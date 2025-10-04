@@ -2,7 +2,7 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 15; // Incremented to add payrollSettings store
+        this.version = 16; // Incremented to add cashDrawerSessions store
         this.db = null;
         this.userId = null;
         this.isInitializing = false;
@@ -443,6 +443,15 @@ class Database {
                 if (!this.db.objectStoreNames.contains('requestQueue')) {
                     const queueStore = this.db.createObjectStore('requestQueue', { keyPath: 'id' });
                     queueStore.createIndex('timestamp', 'timestamp', { unique: false });
+                }
+
+                // Cash drawer sessions store (v16)
+                if (!this.db.objectStoreNames.contains('cashDrawerSessions')) {
+                    const cashDrawerStore = this.db.createObjectStore('cashDrawerSessions', { keyPath: 'id' });
+                    cashDrawerStore.createIndex('openedBy', 'openedBy', { unique: false });
+                    cashDrawerStore.createIndex('status', 'status', { unique: false });
+                    cashDrawerStore.createIndex('openedAt', 'openedAt', { unique: false });
+                    cashDrawerStore.createIndex('syncStatus', 'syncStatus', { unique: false });
                 }
 
                 if (window.logger && window.logger.info) {

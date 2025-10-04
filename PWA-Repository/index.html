@@ -955,6 +955,7 @@
             <div id="pos" class="page">
                 <div class="page-header">
                     <h1>Point of Sale</h1>
+                    <div id="pos-drawer-status" class="cash-drawer-status"></div>
                 </div>
                 <div class="pos-container">
                     <div class="pos-products">
@@ -1297,6 +1298,27 @@
                                 font-weight: 500;
                                 font-size: 0.95rem;
                             ">Active Schedules</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Cash Drawer Widget -->
+                    <div class="dashboard-card" style="
+                        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+                        border-radius: 16px;
+                        padding: 1.5rem;
+                        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                        border: 1px solid #e2e8f0;
+                        transition: all 0.3s ease;
+                        cursor: pointer;
+                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';">
+                        <div id="cash-drawer-widget">
+                            <h4><i class="fas fa-cash-register"></i> Cash Drawer</h4>
+                            <div class="drawer-closed">
+                                <p class="text-muted">No active cash drawer session</p>
+                                <button class="btn btn-success btn-sm" onclick="window.cashDrawerManager?.showOpenDrawerModal()">
+                                    <i class="fas fa-unlock"></i> Open Drawer
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -3678,6 +3700,110 @@
         </div>
     </div>
 
+    <!-- Cash Drawer Modals -->
+    <!-- Open Drawer Modal -->
+    <div id="openDrawerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-unlock"></i> Open Cash Drawer</h3>
+                <button class="modal-close" onclick="closeModal('openDrawerModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="openingFloat">Opening Float Amount</label>
+                    <div class="input-group">
+                        <span class="input-group-text">₱</span>
+                        <input type="number" id="openingFloat" class="form-input" placeholder="0.00" min="0" step="0.01" required>
+                    </div>
+                    <small class="form-hint">Enter the amount of cash in the drawer to start the shift</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="openDrawerNotes">Notes (Optional)</label>
+                    <textarea id="openDrawerNotes" class="form-input" rows="3" placeholder="Any notes about opening the drawer..."></textarea>
+                </div>
+
+                <div class="cash-drawer-info">
+                    <div class="info-box">
+                        <i class="fas fa-info-circle text-primary"></i>
+                        <div>
+                            <strong>Cash Drawer Control</strong>
+                            <p>Opening the cash drawer will start a new session. All cash transactions will be tracked and reconciled at the end of the shift.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('openDrawerModal')">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="window.cashDrawerManager?.handleOpenDrawerForm()">
+                    <i class="fas fa-unlock"></i> Open Drawer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Close Drawer Modal -->
+    <div id="closeDrawerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-lock"></i> Close Cash Drawer</h3>
+                <button class="modal-close" onclick="closeModal('closeDrawerModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="drawer-session-summary">
+                    <h4>Session Summary</h4>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <span class="label">Expected Balance:</span>
+                            <span class="value">
+                                ₱<input type="number" id="expectedBalance" class="inline-input" readonly>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="closingBalance">Actual Cash Count</label>
+                    <div class="input-group">
+                        <span class="input-group-text">₱</span>
+                        <input type="number" id="closingBalance" class="form-input" placeholder="0.00" min="0" step="0.01" required oninput="window.cashDrawerManager?.calculateVariance()">
+                    </div>
+                    <small class="form-hint">Count all cash in the drawer and enter the total amount</small>
+                </div>
+
+                <div class="variance-display" id="varianceDisplay">
+                    <i class="fas fa-calculator text-muted"></i>
+                    <span class="text-muted">Enter closing balance to calculate variance</span>
+                </div>
+                
+                <div class="form-group">
+                    <label for="closeDrawerNotes">Notes (Optional)</label>
+                    <textarea id="closeDrawerNotes" class="form-input" rows="3" placeholder="Any notes about closing the drawer, discrepancies, etc..."></textarea>
+                </div>
+
+                <div class="cash-drawer-warning">
+                    <div class="warning-box">
+                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                        <div>
+                            <strong>Important</strong>
+                            <p>Once closed, this session cannot be reopened. Make sure your cash count is accurate before proceeding.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('closeDrawerModal')">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="window.cashDrawerManager?.handleCloseDrawerForm()">
+                    <i class="fas fa-lock"></i> Close Drawer
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Auth modal completely removed - using login.html for authentication -->
 
 
@@ -4323,13 +4449,14 @@
     <script src="js/inventory.js"></script>
     <script src="js/employees.js"></script>
     <script src="js/shift-schedule-manager.js"></script>
+    <script src="js/cash-drawer.js"></script>
     <script src="js/customers.js"></script>
     <script src="js/settings.js"></script>
     <script src="js/performance-settings.js"></script>
     
     <!-- Module Lazy Loader for Heavy Features -->
     <script>
-    window.loadedModules = new Set(['utilities', 'api', 'entitlements', 'auth', 'sync', 'app', 'component-loader', 'dashboard', 'pos', 'products', 'inventory', 'employees', 'settings', 'gift-certificates', 'rooms', 'expense-manager', 'attendance', 'attendance-history', 'payroll', 'auto-updater', 'chatbot']);
+    window.loadedModules = new Set(['utilities', 'api', 'entitlements', 'auth', 'sync', 'app', 'component-loader', 'dashboard', 'pos', 'products', 'inventory', 'employees', 'settings', 'gift-certificates', 'rooms', 'expense-manager', 'attendance', 'attendance-history', 'payroll', 'auto-updater', 'chatbot', 'cash-drawer']);
     window.loadModule = function(moduleName) {
         return new Promise((resolve, reject) => {
             if (window.loadedModules.has(moduleName)) {
