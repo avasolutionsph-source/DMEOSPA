@@ -2245,13 +2245,17 @@ window.handleWageTypeChange = function() {
     
     const selectedType = wageTypeSelect.value;
     
+    // CRITICAL FIX: Preserve current field values before making changes
+    const currentDailyValue = dailyRateInput.value;
+    const currentMonthlyValue = monthlyRateInput.value;
+    const currentHourlyValue = hourlyRateInput.value;
+    
     if (selectedType === 'daily') {
         // Enable daily rate input, disable monthly rate input
         dailyRateInput.disabled = false;
         dailyRateInput.readOnly = false;
         dailyRateInput.style.backgroundColor = '';
         dailyRateInput.placeholder = 'e.g. 600.00';
-        dailyRateInput.focus();
         
         monthlyRateInput.disabled = true;
         monthlyRateInput.readOnly = true;
@@ -2266,8 +2270,8 @@ window.handleWageTypeChange = function() {
         
         console.log('💼 Wage type changed to Daily - Daily rate input enabled');
         
-        // Trigger calculation if daily rate has value
-        if (dailyRateInput.value) {
+        // CRITICAL FIX: Only trigger calculation if we don't have preserved values
+        if (currentDailyValue && !currentMonthlyValue && !currentHourlyValue) {
             window.calculateEmployeeRatesFromDaily();
         }
         
@@ -2277,7 +2281,6 @@ window.handleWageTypeChange = function() {
         monthlyRateInput.readOnly = false;
         monthlyRateInput.style.backgroundColor = '';
         monthlyRateInput.placeholder = 'e.g. 18000.00';
-        monthlyRateInput.focus();
         
         dailyRateInput.disabled = true;
         dailyRateInput.readOnly = true;
@@ -2292,8 +2295,9 @@ window.handleWageTypeChange = function() {
         
         console.log('💼 Wage type changed to Monthly - Monthly rate input enabled');
         
-        // Trigger calculation if monthly rate has value
-        if (monthlyRateInput.value) {
+        // CRITICAL FIX: Only trigger calculation if we don't have preserved values
+        // This prevents overwriting existing data when form is being initialized
+        if (currentMonthlyValue && !currentDailyValue && !currentHourlyValue) {
             window.calculateEmployeeRatesFromMonthly();
         }
     }
