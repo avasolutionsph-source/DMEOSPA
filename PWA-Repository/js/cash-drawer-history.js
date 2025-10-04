@@ -7,6 +7,8 @@ class CashDrawerHistoryManager {
         this.pageSize = 20;
         this.totalPages = 0;
         this.isInitialized = false;
+        this.refreshDebounceTimeout = null;
+        this.stateSubscriptions = [];
         this.filters = {
             dateRange: '30',
             startDate: null,
@@ -23,6 +25,9 @@ class CashDrawerHistoryManager {
             
             // Setup event listeners
             this.setupEventListeners();
+            
+            // Setup automatic refresh triggers
+            this.setupAutoRefresh();
             
             // Load initial data
             await this.loadHistory();
@@ -107,6 +112,102 @@ class CashDrawerHistoryManager {
         }
     }
 
+    setupAutoRefresh() {
+        console.log('🔄 Setting up automatic refresh triggers...');
+        
+        // 1. Subscribe to StateManager for cash drawer changes
+        this.setupStateManagerSubscription();
+        
+        // 2. Listen for page visibility changes
+        this.setupVisibilityListener();
+        
+        // 3. Listen for window focus events
+        this.setupFocusListener();
+        
+        // 4. Listen for page navigation events
+        this.setupPageNavigationListener();
+        
+        console.log('✅ Automatic refresh triggers setup complete');
+    }
+
+    setupStateManagerSubscription() {
+        if (!window.StateManager) {
+            console.warn('⚠️ StateManager not available for automatic refresh');
+            return;
+        }
+
+        try {
+            // Subscribe to cash drawer session changes
+            const sessionSubscription = window.StateManager.subscribe('cashDrawer.currentSession', (updates, currentValue) => {
+                console.log('🔄 Cash drawer session changed, triggering refresh...', { updates, currentValue });
+                this.debouncedRefresh();
+            });
+
+            // Subscribe to drawer open/close state changes
+            const stateSubscription = window.StateManager.subscribe('cashDrawer.isDrawerOpen', (updates, currentValue) => {
+                console.log('🔄 Cash drawer state changed, triggering refresh...', { updates, currentValue });
+                this.debouncedRefresh();
+            });
+
+            // Store subscriptions for cleanup
+            this.stateSubscriptions.push(sessionSubscription, stateSubscription);
+            
+            console.log('✅ StateManager subscriptions setup for cash drawer changes');
+        } catch (error) {
+            console.warn('⚠️ Failed to setup StateManager subscription:', error);
+        }
+    }
+
+    setupVisibilityListener() {
+        const visibilityHandler = () => {
+            if (document.visibilityState === 'visible') {
+                console.log('🔄 Page became visible, refreshing history...');
+                this.debouncedRefresh();
+            }
+        };
+
+        document.addEventListener('visibilitychange', visibilityHandler);
+        console.log('✅ Visibility change listener setup');
+    }
+
+    setupFocusListener() {
+        const focusHandler = () => {
+            console.log('🔄 Window gained focus, refreshing history...');
+            this.debouncedRefresh();
+        };
+
+        window.addEventListener('focus', focusHandler);
+        console.log('✅ Window focus listener setup');
+    }
+
+    setupPageNavigationListener() {
+        const pageChangeHandler = (event) => {
+            // Check if we're navigating to the cash drawer history page
+            if (event.detail && event.detail.page === 'cash-drawer-history') {
+                console.log('🔄 Navigated to cash drawer history page, refreshing...');
+                this.debouncedRefresh();
+            }
+        };
+
+        document.addEventListener('pageChanged', pageChangeHandler);
+        console.log('✅ Page navigation listener setup');
+    }
+
+    debouncedRefresh() {
+        // Clear existing timeout to debounce rapid calls
+        if (this.refreshDebounceTimeout) {
+            clearTimeout(this.refreshDebounceTimeout);
+        }
+
+        // Set new timeout for debounced refresh
+        this.refreshDebounceTimeout = setTimeout(() => {
+            if (this.isInitialized) {
+                console.log('🔄 Executing debounced refresh...');
+                this.refreshHistory();
+            }
+        }, 500); // 500ms debounce delay
+    }
+
     setDefaultCustomDates() {
         const endDate = new Date();
         const startDate = new Date();
@@ -135,11 +236,17 @@ class CashDrawerHistoryManager {
         try {
             console.log('📊 Loading cash drawer history...');
             
+            // Check current authentication state
+            this.validateAuthenticationState();
+            
             // Load from IndexedDB first (for offline support)
             if (window.db) {
                 try {
                     this.sessions = await window.db.getAll('cashDrawerSessions') || [];
                     console.log(`📝 Loaded ${this.sessions.length} sessions from IndexedDB`);
+                    
+                    // Debug: Check user data in existing sessions
+                    this.debugSessionUserData();
                 } catch (e) {
                     console.warn('⚠️ Could not load from IndexedDB:', e);
                     this.sessions = [];
@@ -337,8 +444,10 @@ class CashDrawerHistoryManager {
         tbody.innerHTML = currentPageSessions.map(session => {
             const sessionId = (session.sessionId || session.id || '').substring(0, 12) + '...';
             const openedAt = new Date(session.openedAt || session.createdAt).toLocaleString();
-            const openedBy = session.openedByName || 'Unknown';
-            const closedBy = session.closedByName || (session.status === 'open' ? 'N/A' : 'Unknown');
+            
+            // Enhanced user name resolution for existing sessions
+            const openedBy = this.resolveUserName(session, 'opener');
+            const closedBy = session.status === 'open' ? 'N/A' : this.resolveUserName(session, 'closer');
             const openingFloat = this.formatCurrency(session.openingFloat || 0);
             const closingBalance = session.closingBalance !== undefined ? 
                 this.formatCurrency(session.closingBalance) : 'N/A';
@@ -627,6 +736,58 @@ class CashDrawerHistoryManager {
         }
     }
 
+    resolveUserName(session, type = 'opener') {
+        console.log(`🔍 [DEBUG] Resolving ${type} name for session:`, session.id || session._id);
+        
+        let userName = null;
+        let userEmail = null;
+        let userId = null;
+
+        if (type === 'opener') {
+            // Try to get opener information from various fields
+            userName = session.openedByName;
+            userEmail = session.openedBy;
+            userId = session.openedBy;
+            
+            // Check if we have additional user info stored
+            if (session.userInfo) {
+                userName = userName || session.userInfo.resolvedName;
+                userEmail = userEmail || session.userInfo.resolvedEmail;
+                userId = userId || session.userInfo.resolvedId;
+            }
+        } else if (type === 'closer') {
+            // Try to get closer information
+            userName = session.closedByName;
+            userEmail = session.closedBy;
+            userId = session.closedBy;
+        }
+
+        // Enhanced fallback logic
+        let resolvedName = null;
+
+        // First, try the stored name
+        if (userName && userName !== 'Unknown' && userName !== 'Unknown User' && userName.trim() !== '') {
+            resolvedName = userName;
+        }
+        // Then try email if it looks like an email
+        else if (userEmail && userEmail.includes('@') && userEmail !== 'No Email') {
+            resolvedName = userEmail.split('@')[0]; // Use part before @ as display name
+        }
+        // Then try user ID if it's meaningful
+        else if (userId && userId !== 'Unknown User ID' && userId !== 'No ID' && userId.trim() !== '') {
+            resolvedName = userId;
+        }
+        // Last resort fallbacks
+        else {
+            resolvedName = type === 'opener' ? 
+                (session.openedByName || session.openedBy || 'Unknown Opener') :
+                (session.closedByName || session.closedBy || 'Unknown Closer');
+        }
+
+        console.log(`🔍 [DEBUG] Resolved ${type} name:`, resolvedName);
+        return resolvedName;
+    }
+
     async refreshHistory() {
         try {
             const refreshBtn = document.getElementById('refresh-history-btn');
@@ -776,6 +937,145 @@ class CashDrawerHistoryManager {
         } else {
             console.error('❌ Error:', message);
         }
+    }
+
+    validateAuthenticationState() {
+        console.log('🔍 [AUTH DEBUG] Validating authentication state...');
+        
+        // Check various authentication sources
+        const authSources = {
+            localStorage_user: localStorage.getItem('user'),
+            localStorage_authToken: localStorage.getItem('authToken'),
+            localStorage_loggedInUser: localStorage.getItem('loggedInUser'),
+            sessionStorage_user: sessionStorage.getItem('user'),
+            sessionStorage_authToken: sessionStorage.getItem('authToken'),
+            window_currentUser: window.currentUser,
+            window_user: window.user,
+            getCurrentUser_function: typeof window.getCurrentUser === 'function'
+        };
+
+        console.log('🔍 [AUTH DEBUG] Available auth sources:', authSources);
+
+        // Test getCurrentUser function if available
+        if (typeof window.getCurrentUser === 'function') {
+            try {
+                const currentUser = window.getCurrentUser();
+                console.log('🔍 [AUTH DEBUG] getCurrentUser() result:', currentUser);
+            } catch (error) {
+                console.warn('⚠️ [AUTH DEBUG] Error calling getCurrentUser():', error);
+            }
+        }
+
+        // Parse and validate stored user data
+        Object.keys(authSources).forEach(source => {
+            if (authSources[source] && typeof authSources[source] === 'string') {
+                try {
+                    const parsed = JSON.parse(authSources[source]);
+                    console.log(`🔍 [AUTH DEBUG] Parsed ${source}:`, parsed);
+                } catch (e) {
+                    console.log(`🔍 [AUTH DEBUG] ${source} (not JSON):`, authSources[source]);
+                }
+            }
+        });
+    }
+
+    debugSessionUserData() {
+        console.log('🔍 [SESSION DEBUG] Analyzing existing session user data...');
+        
+        if (!this.sessions || this.sessions.length === 0) {
+            console.log('🔍 [SESSION DEBUG] No sessions to analyze');
+            return;
+        }
+
+        const userDataAnalysis = {
+            total_sessions: this.sessions.length,
+            has_openedByName: 0,
+            has_closedByName: 0,
+            has_openedBy: 0,
+            has_closedBy: 0,
+            has_userInfo: 0,
+            unique_openers: new Set(),
+            unique_closers: new Set(),
+            unknown_openers: 0,
+            unknown_closers: 0
+        };
+
+        this.sessions.forEach((session, index) => {
+            // Count various user data fields
+            if (session.openedByName) {
+                userDataAnalysis.has_openedByName++;
+                userDataAnalysis.unique_openers.add(session.openedByName);
+                if (session.openedByName === 'Unknown' || session.openedByName === 'Unknown User') {
+                    userDataAnalysis.unknown_openers++;
+                }
+            }
+            
+            if (session.closedByName) {
+                userDataAnalysis.has_closedByName++;
+                userDataAnalysis.unique_closers.add(session.closedByName);
+                if (session.closedByName === 'Unknown' || session.closedByName === 'Unknown User') {
+                    userDataAnalysis.unknown_closers++;
+                }
+            }
+            
+            if (session.openedBy) userDataAnalysis.has_openedBy++;
+            if (session.closedBy) userDataAnalysis.has_closedBy++;
+            if (session.userInfo) userDataAnalysis.has_userInfo++;
+
+            // Log first few problematic sessions for detailed analysis
+            if (index < 3 && (session.openedByName === 'Unknown' || !session.openedByName)) {
+                console.log(`🔍 [SESSION DEBUG] Problematic session ${index + 1}:`, {
+                    id: session.id || session._id,
+                    openedByName: session.openedByName,
+                    openedBy: session.openedBy,
+                    closedByName: session.closedByName,
+                    closedBy: session.closedBy,
+                    userInfo: session.userInfo,
+                    createdAt: session.createdAt,
+                    openedAt: session.openedAt
+                });
+            }
+        });
+
+        // Convert sets to arrays for logging
+        userDataAnalysis.unique_openers = Array.from(userDataAnalysis.unique_openers);
+        userDataAnalysis.unique_closers = Array.from(userDataAnalysis.unique_closers);
+
+        console.log('🔍 [SESSION DEBUG] User data analysis:', userDataAnalysis);
+
+        // Provide actionable insights
+        if (userDataAnalysis.unknown_openers > 0) {
+            console.warn(`⚠️ [SESSION DEBUG] Found ${userDataAnalysis.unknown_openers} sessions with unknown openers`);
+        }
+        
+        if (userDataAnalysis.has_openedByName < userDataAnalysis.total_sessions * 0.8) {
+            console.warn(`⚠️ [SESSION DEBUG] Only ${Math.round((userDataAnalysis.has_openedByName / userDataAnalysis.total_sessions) * 100)}% of sessions have opener names`);
+        }
+
+        return userDataAnalysis;
+    }
+
+    // Cleanup method for when the manager is destroyed or page changes
+    cleanup() {
+        console.log('🧹 Cleaning up Cash Drawer History Manager...');
+        
+        // Clear debounce timeout
+        if (this.refreshDebounceTimeout) {
+            clearTimeout(this.refreshDebounceTimeout);
+            this.refreshDebounceTimeout = null;
+        }
+        
+        // Unsubscribe from StateManager subscriptions
+        this.stateSubscriptions.forEach(unsubscribe => {
+            try {
+                unsubscribe();
+            } catch (error) {
+                console.warn('⚠️ Error unsubscribing from StateManager:', error);
+            }
+        });
+        this.stateSubscriptions = [];
+        
+        console.log('✅ Cash Drawer History Manager cleanup complete');
     }
 }
 

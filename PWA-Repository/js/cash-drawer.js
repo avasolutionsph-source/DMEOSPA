@@ -124,11 +124,17 @@ class CashDrawerManager {
                 throw new Error('User not authenticated');
             }
 
-            // Create new session
+            console.log('🏪 [DEBUG] Creating session with user:', {
+                name: currentUser.name,
+                email: currentUser.email,
+                userId: currentUser.userId
+            });
+
+            // Create new session with robust user data
             const newSession = {
                 id: this.generateSessionId(),
-                openedBy: currentUser.email || currentUser.userId,
-                openedByName: currentUser.name || currentUser.email,
+                openedBy: currentUser.userId || currentUser.email || 'Unknown User ID',
+                openedByName: currentUser.name || currentUser.email || currentUser.userId || 'Unknown User',
                 openedAt: new Date().toISOString(),
                 openingFloat: parseFloat(openingFloat),
                 expectedBalance: parseFloat(openingFloat),
@@ -137,8 +143,21 @@ class CashDrawerManager {
                 status: 'open',
                 notes: notes,
                 syncStatus: 'pending',
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                // Store additional user info for debugging
+                userInfo: {
+                    originalUser: currentUser,
+                    resolvedName: currentUser.name,
+                    resolvedEmail: currentUser.email,
+                    resolvedId: currentUser.userId
+                }
             };
+
+            console.log('🏪 [DEBUG] New session created:', {
+                id: newSession.id,
+                openedBy: newSession.openedBy,
+                openedByName: newSession.openedByName
+            });
 
             // Save to local database
             await window.db.add('cashDrawerSessions', newSession);
@@ -203,14 +222,25 @@ class CashDrawerManager {
                 throw new Error('User not authenticated');
             }
 
+            console.log('🏪 [DEBUG] Closing session with user:', {
+                name: currentUser.name,
+                email: currentUser.email,
+                userId: currentUser.userId
+            });
+
             // Calculate variance if not provided
             if (variance === 0) {
                 variance = closingBalance - this.currentSession.expectedBalance;
             }
 
-            // Update session
-            this.currentSession.closedBy = currentUser.email || currentUser.userId;
-            this.currentSession.closedByName = currentUser.name || currentUser.email;
+            // Update session with robust user data
+            this.currentSession.closedBy = currentUser.userId || currentUser.email || 'Unknown User ID';
+            this.currentSession.closedByName = currentUser.name || currentUser.email || currentUser.userId || 'Unknown User';
+            
+            console.log('🏪 [DEBUG] Session closed by:', {
+                closedBy: this.currentSession.closedBy,
+                closedByName: this.currentSession.closedByName
+            });
             this.currentSession.closedAt = new Date().toISOString();
             this.currentSession.closingBalance = parseFloat(closingBalance);
             this.currentSession.variance = parseFloat(variance);
@@ -319,28 +349,104 @@ class CashDrawerManager {
     }
 
     getCurrentUser() {
+        console.log('🔍 [DEBUG] Getting current user...');
+        
         // Get current user from various sources
         if (window.StateManager) {
             const user = window.StateManager.getState('auth.currentUser');
-            if (user) return user;
+            if (user) {
+                console.log('🔍 [DEBUG] User from StateManager:', user);
+                console.log('🔍 [DEBUG] Available user fields:', Object.keys(user));
+                return this.normalizeUserData(user);
+            }
         }
         
         if (window.tokenManager && window.tokenManager.getUser) {
             const user = window.tokenManager.getUser();
-            if (user) return user;
+            if (user) {
+                console.log('🔍 [DEBUG] User from tokenManager:', user);
+                console.log('🔍 [DEBUG] Available user fields:', Object.keys(user));
+                return this.normalizeUserData(user);
+            }
         }
 
         // Fallback to localStorage
         const authData = localStorage.getItem('authData');
         if (authData) {
             try {
-                return JSON.parse(authData);
+                const user = JSON.parse(authData);
+                console.log('🔍 [DEBUG] User from localStorage:', user);
+                console.log('🔍 [DEBUG] Available user fields:', Object.keys(user));
+                return this.normalizeUserData(user);
             } catch (e) {
                 console.warn('Failed to parse auth data from localStorage');
             }
         }
 
+        console.warn('🔍 [DEBUG] No user found in any source');
         return null;
+    }
+
+    normalizeUserData(user) {
+        if (!user) return null;
+
+        // Try different possible name fields in order of preference
+        const possibleNameFields = ['name', 'displayName', 'fullName', 'firstName', 'username'];
+        const possibleEmailFields = ['email', 'emailAddress', 'userEmail'];
+        const possibleIdFields = ['id', 'userId', '_id', 'user_id'];
+
+        let userName = null;
+        let userEmail = null;
+        let userId = null;
+
+        // Find the best name field
+        for (const field of possibleNameFields) {
+            if (user[field] && typeof user[field] === 'string' && user[field].trim() !== '') {
+                userName = user[field].trim();
+                console.log(`🔍 [DEBUG] Found user name in field '${field}':`, userName);
+                break;
+            }
+        }
+
+        // Find the best email field
+        for (const field of possibleEmailFields) {
+            if (user[field] && typeof user[field] === 'string' && user[field].trim() !== '') {
+                userEmail = user[field].trim();
+                console.log(`🔍 [DEBUG] Found user email in field '${field}':`, userEmail);
+                break;
+            }
+        }
+
+        // Find the best ID field
+        for (const field of possibleIdFields) {
+            if (user[field] && user[field].toString().trim() !== '') {
+                userId = user[field].toString().trim();
+                console.log(`🔍 [DEBUG] Found user ID in field '${field}':`, userId);
+                break;
+            }
+        }
+
+        // If we have firstName and lastName separately, combine them
+        if (!userName && user.firstName && user.lastName) {
+            userName = `${user.firstName} ${user.lastName}`.trim();
+            console.log('🔍 [DEBUG] Combined firstName + lastName:', userName);
+        }
+
+        // Create normalized user object
+        const normalizedUser = {
+            ...user, // Keep all original fields
+            name: userName || userEmail || userId || 'User',
+            email: userEmail || userId || 'No Email',
+            userId: userId || userEmail || 'No ID'
+        };
+
+        console.log('🔍 [DEBUG] Normalized user data:', {
+            name: normalizedUser.name,
+            email: normalizedUser.email,
+            userId: normalizedUser.userId
+        });
+
+        return normalizedUser;
     }
 
     generateSessionId() {

@@ -375,6 +375,17 @@ class App {
         // Defer heavy component loading
         requestAnimationFrame(async () => {
             await this.loadPageComponent(pageName);
+            
+            // Dispatch pageChanged event for components that need to react to navigation
+            try {
+                const pageChangedEvent = new CustomEvent('pageChanged', {
+                    detail: { page: pageName, originalPage: originalPageName }
+                });
+                document.dispatchEvent(pageChangedEvent);
+                console.log('📄 [APP] Dispatched pageChanged event:', pageName);
+            } catch (error) {
+                console.warn('⚠️ [APP] Failed to dispatch pageChanged event:', error);
+            }
         });
     }
     
