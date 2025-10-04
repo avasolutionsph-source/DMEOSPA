@@ -1152,7 +1152,8 @@ class EmployeeManager {
                 hasPagibig: employee.hasPagibig || false,
                 sssDeductionAmount: employee.sssDeductionAmount || 0,
                 philHealthDeductionAmount: employee.philHealthDeductionAmount || 0,
-                pagIbigDeductionAmount: employee.pagIbigDeductionAmount || 0
+                pagIbigDeductionAmount: employee.pagIbigDeductionAmount || 0,
+                voluntaryContribution: employee.voluntaryContribution || false
             };
 
             this.editingEmployee = employee;
