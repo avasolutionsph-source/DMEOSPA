@@ -34,14 +34,37 @@ router.put('/reorder', withErrorHandling(async (req, res) => {
         data: { 
             productsCount: products?.length || 0,
             userId: req.userId || req.user?._id,
-            productsData: products
+            productsData: products,
+            fullRequestBody: req.body
         }
     });
     
-    if (!Array.isArray(products) || products.length === 0) {
+    // Enhanced request validation
+    if (!req.body || Object.keys(req.body).length === 0) {
         return res.status(400).json({
             success: false,
-            error: { message: 'Products array is required and must not be empty' }
+            error: { message: 'Request body is required for reorder operation' }
+        });
+    }
+    
+    if (!products) {
+        return res.status(400).json({
+            success: false,
+            error: { message: 'Products array is missing from request body' }
+        });
+    }
+    
+    if (!Array.isArray(products)) {
+        return res.status(400).json({
+            success: false,
+            error: { message: 'Products must be an array' }
+        });
+    }
+    
+    if (products.length === 0) {
+        return res.status(400).json({
+            success: false,
+            error: { message: 'Products array cannot be empty' }
         });
     }
     
@@ -49,33 +72,77 @@ router.put('/reorder', withErrorHandling(async (req, res) => {
     const updateOperations = [];
     const validationErrors = [];
     
-    // Validate and prepare bulk operations
+    // Validate and prepare bulk operations with comprehensive error handling
     for (let i = 0; i < products.length; i++) {
-        const { id, sortOrder } = products[i];
+        const product = products[i];
         
-        // Enhanced validation
+        // Check if product is an object
+        if (!product || typeof product !== 'object') {
+            validationErrors.push(`Product at index ${i}: Invalid product format - must be an object`);
+            continue;
+        }
+        
+        const { id, sortOrder } = product;
+        
+        // Enhanced ID validation
         if (!id) {
-            validationErrors.push(`Product at index ${i}: Missing id`);
+            validationErrors.push(`Product at index ${i}: Missing required field 'id'`);
             continue;
         }
         
-        if (typeof sortOrder !== 'number' || sortOrder < 0) {
-            validationErrors.push(`Product at index ${i}: Invalid sortOrder (${sortOrder}), must be a non-negative number`);
+        if (typeof id !== 'string') {
+            validationErrors.push(`Product at index ${i}: Field 'id' must be a string, received ${typeof id}`);
             continue;
         }
         
-        // Validate MongoDB ObjectID format
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            validationErrors.push(`Product at index ${i}: Invalid MongoDB ObjectID format (${id})`);
+        if (id.trim().length === 0) {
+            validationErrors.push(`Product at index ${i}: Field 'id' cannot be empty`);
             continue;
         }
         
-        updateOperations.push({
-            updateOne: {
-                filter: { _id: new mongoose.Types.ObjectId(id), userId },
-                update: { sortOrder, syncStatus: 'pending' }
-            }
-        });
+        // Enhanced sortOrder validation
+        if (sortOrder === undefined || sortOrder === null) {
+            validationErrors.push(`Product at index ${i}: Missing required field 'sortOrder'`);
+            continue;
+        }
+        
+        if (typeof sortOrder !== 'number') {
+            validationErrors.push(`Product at index ${i}: Field 'sortOrder' must be a number, received ${typeof sortOrder}`);
+            continue;
+        }
+        
+        if (sortOrder < 0 || !Number.isInteger(sortOrder)) {
+            validationErrors.push(`Product at index ${i}: Field 'sortOrder' must be a non-negative integer, received ${sortOrder}`);
+            continue;
+        }
+        
+        // Validate MongoDB ObjectID format with better error message
+        if (!mongoose.Types.ObjectId.isValid(id.trim())) {
+            validationErrors.push(`Product at index ${i}: Field 'id' is not a valid MongoDB ObjectID format (${id})`);
+            continue;
+        }
+        
+        // Additional validation: check for duplicate IDs in the request
+        const duplicateIndex = updateOperations.findIndex(op => 
+            op.updateOne.filter._id.toString() === new mongoose.Types.ObjectId(id.trim()).toString()
+        );
+        
+        if (duplicateIndex !== -1) {
+            validationErrors.push(`Product at index ${i}: Duplicate ID found - same ID used at index ${duplicateIndex}`);
+            continue;
+        }
+        
+        try {
+            updateOperations.push({
+                updateOne: {
+                    filter: { _id: new mongoose.Types.ObjectId(id.trim()), userId },
+                    update: { sortOrder, syncStatus: 'pending' }
+                }
+            });
+        } catch (objectIdError) {
+            validationErrors.push(`Product at index ${i}: Failed to create ObjectID from '${id}' - ${objectIdError.message}`);
+            continue;
+        }
     }
     
     // Return validation errors if any
