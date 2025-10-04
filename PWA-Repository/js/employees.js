@@ -823,7 +823,7 @@ class EmployeeManager {
                             ${(() => {
                                 // CRITICAL FIX: Check for configured salary rates (including 0 values)
                                 const hasDaily = employee.dailyRate !== undefined && employee.dailyRate !== null;
-                                const hasMonthly = employee.monthlyRate !== undefined && employee.monthlyRate !== null;
+                                let hasMonthly = employee.monthlyRate !== undefined && employee.monthlyRate !== null;
                                 const hasHourly = employee.hourlyRate !== undefined && employee.hourlyRate !== null;
                                 const isConfigured = hasDaily || hasMonthly || hasHourly;
                                 
