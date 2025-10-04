@@ -26,7 +26,18 @@ productHandler.createRoutes(router);
 
 // Bulk reorder products
 router.put('/reorder', withErrorHandling(async (req, res) => {
+    console.log('🔥 REORDER ENDPOINT HIT - RAW REQUEST DATA:');
+    console.log('🔥 req.body:', JSON.stringify(req.body, null, 2));
+    console.log('🔥 req.headers:', JSON.stringify(req.headers, null, 2));
+    console.log('🔥 req.userId:', req.userId);
+    console.log('🔥 req.user:', req.user);
+    
     const { products } = req.body;
+    
+    console.log('🔥 EXTRACTED PRODUCTS:', JSON.stringify(products, null, 2));
+    console.log('🔥 PRODUCTS TYPE:', typeof products);
+    console.log('🔥 PRODUCTS IS_ARRAY:', Array.isArray(products));
+    console.log('🔥 PRODUCTS LENGTH:', products?.length);
     
     logger.info('Reorder request received', {
         category: 'DATABASE',

@@ -310,6 +310,13 @@ class ProductsManager {
             // Send reorder request via HybridAPIClient for offline support
             console.log('🚀 [PRODUCTS] Sending reorder request to API...');
             console.log('🔍 [PRODUCTS] Request payload:', JSON.stringify(updateData, null, 2));
+            console.log('🔥 [FRONTEND] FINAL REQUEST DETAILS:');
+            console.log('🔥 [FRONTEND] updateData:', updateData);
+            console.log('🔥 [FRONTEND] updateData stringified:', JSON.stringify(updateData));
+            console.log('🔥 [FRONTEND] updateData length:', updateData.length);
+            console.log('🔥 [FRONTEND] First item structure:', updateData[0]);
+            console.log('🔥 [FRONTEND] API Base URL:', window.API_CONFIG?.BASE_URL);
+            console.log('🔥 [FRONTEND] Auth token exists:', !!localStorage.getItem('authToken'));
             
             const requestStartTime = Date.now();
             const result = await window.HybridAPIClient.reorderProducts(updateData);

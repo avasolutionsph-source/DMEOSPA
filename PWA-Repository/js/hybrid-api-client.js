@@ -1011,6 +1011,15 @@ class HybridAPIClient {
             const requestUrl = `${this.baseURL}/api/products/reorder`;
             const requestBody = { products: productsOrder };
             
+            console.log('🔥 [HYBRID-API] ===== DETAILED REQUEST DEBUGGING =====');
+            console.log('🔥 [HYBRID-API] Input productsOrder:', JSON.stringify(productsOrder, null, 2));
+            console.log('🔥 [HYBRID-API] Wrapped requestBody:', JSON.stringify(requestBody, null, 2));
+            console.log('🔥 [HYBRID-API] Request URL:', requestUrl);
+            console.log('🔥 [HYBRID-API] Token exists:', !!token);
+            console.log('🔥 [HYBRID-API] Token length:', token ? token.length : 0);
+            console.log('🔥 [HYBRID-API] baseURL:', this.baseURL);
+            console.log('🔥 [HYBRID-API] isOnline:', this.isOnline);
+            
             console.log('🔍 [API] ===== REORDER API REQUEST START =====');
             console.log('🔍 [API] Request URL:', requestUrl);
             console.log('🔍 [API] Base URL:', this.baseURL);
