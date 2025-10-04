@@ -508,7 +508,7 @@ class ProductsManager {
         if (this.products.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" style="text-align: center; padding: 2rem;">
+                    <td colspan="8" style="text-align: center; padding: 2rem;">
                         No products or services found. Click "Add New" to create one.
                     </td>
                 </tr>
@@ -554,6 +554,11 @@ class ProductsManager {
                 <td>
                     <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">
                         ${product.description || '-'}
+                    </div>
+                </td>
+                <td>
+                    <div style="max-width: 150px; overflow: hidden; text-overflow: ellipsis;">
+                        ${this.formatItemsUsed(product.itemsUsed)}
                     </div>
                 </td>
                 <td>
@@ -1215,6 +1220,30 @@ class ProductsManager {
     clearServiceItems() {
         this.serviceItems = [];
         this.displayServiceItems();
+    }
+
+    // Helper function to format items used for display in table
+    formatItemsUsed(itemsUsed) {
+        if (!itemsUsed || !Array.isArray(itemsUsed) || itemsUsed.length === 0) {
+            return '<span style="color: #999; font-style: italic;">None</span>';
+        }
+
+        // Format items as "Name (quantity unit), Name (quantity unit)"
+        const formattedItems = itemsUsed.map(item => {
+            const quantity = item.quantity || 1;
+            const unit = item.unit || 'units';
+            return `${item.name} (${quantity} ${unit})`;
+        });
+
+        const itemsText = formattedItems.join(', ');
+        
+        // If text is too long, truncate and add tooltip
+        if (itemsText.length > 50) {
+            const truncated = itemsText.substring(0, 47) + '...';
+            return `<span title="${itemsText}" style="cursor: help;">${truncated}</span>`;
+        }
+        
+        return itemsText;
     }
 
     // Get authentication token from localStorage
