@@ -470,7 +470,7 @@ class ProductsManager {
             if (!token) {
                 console.error('❌ [PRODUCTS] No authentication token found');
                 this.products = [];
-                this.displayProducts();
+                await this.displayProducts();
                 return;
             }
             
@@ -485,11 +485,11 @@ class ProductsManager {
                 this.products = [];
             }
             
-            this.displayProducts();
+            await this.displayProducts();
         } catch (error) {
             console.error('❌ [PRODUCTS] Error loading products:', error);
             this.products = [];
-            this.displayProducts();
+            await this.displayProducts();
             
             if (window.logger) {
                 logError('Failed to load products', {
@@ -501,9 +501,14 @@ class ProductsManager {
         }
     }
 
-    displayProducts() {
+    async displayProducts() {
         const tbody = document.getElementById('productsTableBody');
         if (!tbody) return;
+
+        // Load inventory data for item name lookup if not already loaded
+        if (this.availableInventory.length === 0) {
+            await this.loadAvailableInventory();
+        }
 
         if (this.products.length === 0) {
             tbody.innerHTML = `
@@ -558,7 +563,7 @@ class ProductsManager {
                 </td>
                 <td>
                     <div style="max-width: 150px; overflow: hidden; text-overflow: ellipsis;">
-                        ${this.formatItemsUsed(product.itemsUsed)}
+                        ${this.formatItemsUsed(product.inventoryUsage)}
                     </div>
                 </td>
                 <td>
@@ -649,24 +654,24 @@ class ProductsManager {
     }
     
     // Pagination methods
-    nextPage() {
+    async nextPage() {
         if (this.currentPage < this.totalPages) {
             this.currentPage++;
-            this.displayProducts();
+            await this.displayProducts();
         }
     }
     
-    previousPage() {
+    async previousPage() {
         if (this.currentPage > 1) {
             this.currentPage--;
-            this.displayProducts();
+            await this.displayProducts();
         }
     }
     
-    goToPage(page) {
+    async goToPage(page) {
         if (page >= 1 && page <= this.totalPages) {
             this.currentPage = page;
-            this.displayProducts();
+            await this.displayProducts();
         }
     }
 
@@ -710,8 +715,8 @@ class ProductsManager {
             document.getElementById('productNotes').value = product.notes || '';
             document.getElementById('productShowInPOS').checked = product.showInPOS;
 
-            // Load existing service items
-            this.serviceItems = product.itemsUsed ? [...product.itemsUsed] : [];
+            // Load existing service items from inventoryUsage
+            this.serviceItems = await this.convertInventoryUsageToServiceItems(product.inventoryUsage || []);
             this.displayServiceItems();
 
             openModal('productModal');
@@ -804,6 +809,12 @@ class ProductsManager {
         showLoading('Saving Service...');
         
         try {
+            // Transform serviceItems to backend inventoryUsage format
+            const inventoryUsage = this.serviceItems.map(item => ({
+                inventoryId: item.itemId,
+                quantity: item.quantity || 0
+            }));
+
             const productData = {
                 type: 'service', // Always service for spa
                 name: document.getElementById('productName').value,
@@ -813,7 +824,7 @@ class ProductsManager {
                 description: document.getElementById('productDescription').value,
                 notes: document.getElementById('productNotes').value,
                 showInPOS: document.getElementById('productShowInPOS') ? document.getElementById('productShowInPOS').checked : true,
-                itemsUsed: [...this.serviceItems], // Include items used in this service
+                inventoryUsage: inventoryUsage, // Backend expects inventoryUsage format
                 syncStatus: 'pending',
                 modifiedAt: new Date().toISOString()
             };
@@ -953,8 +964,8 @@ class ProductsManager {
             await this.loadProducts();
             
             // Force immediate re-render to ensure UI updates
-            setTimeout(() => {
-                this.displayProducts();
+            setTimeout(async () => {
+                await this.displayProducts();
             }, 100);
 
             // Reload POS if it's the current page
@@ -1222,17 +1233,57 @@ class ProductsManager {
         this.displayServiceItems();
     }
 
+    // Convert backend inventoryUsage to frontend serviceItems format
+    async convertInventoryUsageToServiceItems(inventoryUsage) {
+        if (!inventoryUsage || !Array.isArray(inventoryUsage) || inventoryUsage.length === 0) {
+            return [];
+        }
+
+        // Load inventory data if not available
+        if (this.availableInventory.length === 0) {
+            await this.loadAvailableInventory();
+        }
+
+        // Map inventoryUsage to serviceItems with names
+        const serviceItems = [];
+        for (const usage of inventoryUsage) {
+            const inventoryItem = this.availableInventory.find(item => 
+                (item._id || item.id) === usage.inventoryId
+            );
+            
+            if (inventoryItem) {
+                serviceItems.push({
+                    itemId: usage.inventoryId,
+                    name: inventoryItem.name,
+                    quantity: usage.quantity || 1,
+                    unit: inventoryItem.unit || 'units',
+                    category: inventoryItem.category
+                });
+            }
+        }
+
+        return serviceItems;
+    }
+
     // Helper function to format items used for display in table
-    formatItemsUsed(itemsUsed) {
-        if (!itemsUsed || !Array.isArray(itemsUsed) || itemsUsed.length === 0) {
+    formatItemsUsed(inventoryUsage) {
+        if (!inventoryUsage || !Array.isArray(inventoryUsage) || inventoryUsage.length === 0) {
             return '<span style="color: #999; font-style: italic;">None</span>';
         }
 
-        // Format items as "Name (quantity unit), Name (quantity unit)"
-        const formattedItems = itemsUsed.map(item => {
-            const quantity = item.quantity || 1;
-            const unit = item.unit || 'units';
-            return `${item.name} (${quantity} ${unit})`;
+        // For table display, we need to get item names from inventory
+        // This is a simplified version - in a real scenario we might cache this data
+        const formattedItems = inventoryUsage.map(usage => {
+            // Try to find the item name from available inventory
+            const inventoryItem = this.availableInventory.find(item => 
+                (item._id || item.id) === usage.inventoryId
+            );
+            
+            const name = inventoryItem ? inventoryItem.name : `Item ${usage.inventoryId.substring(0, 8)}`;
+            const quantity = usage.quantity || 1;
+            const unit = inventoryItem ? inventoryItem.unit || 'units' : 'units';
+            
+            return `${name} (${quantity} ${unit})`;
         });
 
         const itemsText = formattedItems.join(', ');
