@@ -250,7 +250,8 @@ class EmployeeManager {
                     hasPagibig: emp.hasPagibig || false,
                     sssDeductionAmount: emp.sssDeductionAmount || 0,
                     philHealthDeductionAmount: emp.philHealthDeductionAmount || 0,
-                    pagIbigDeductionAmount: emp.pagIbigDeductionAmount || 0
+                    pagIbigDeductionAmount: emp.pagIbigDeductionAmount || 0,
+                    voluntaryContribution: emp.voluntaryContribution || false
                 }));
                 
                 console.log('👥 [EMPLOYEE-MANAGER] Processed employee data sample:', employees.slice(0, 2));
