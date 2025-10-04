@@ -8521,3 +8521,43 @@ button.btn-primary:hover {
     background-color: #fee2e2;
     color: #dc2626;
 }
+
+/* Clickable Status Styles */
+.clickable-status {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    user-select: none;
+}
+
+.clickable-status:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.badge-success.clickable-status:hover {
+    background-color: #d1f7c4;
+    color: #047857;
+}
+
+.badge-danger.clickable-status:hover {
+    background-color: #fde8e8;
+    color: #b91c1c;
+}
+
+.status-action-icon {
+    margin-left: 0.25rem;
+    font-size: 0.65rem;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.clickable-status:hover .status-action-icon {
+    opacity: 1;
+}
+
+/* Active click effect */
+.clickable-status:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}

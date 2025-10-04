@@ -441,25 +441,45 @@ class CashDrawerManager {
 
         console.log('🏪 [POS] Found pos-drawer-status element, drawer open:', this.isDrawerOpen());
 
+        // Clear any existing click handlers
+        posStatusElement.onclick = null;
+
         if (this.isDrawerOpen()) {
             posStatusElement.innerHTML = `
-                <span class="badge badge-success">
+                <span class="badge badge-success clickable-status" title="Click to close drawer">
                     <i class="fas fa-cash-register"></i> Drawer Open
+                    <i class="fas fa-chevron-down status-action-icon"></i>
                 </span>
             `;
-            console.log('✅ [POS] Status updated to: Drawer Open');
+            
+            // Add click handler to close drawer
+            posStatusElement.onclick = () => {
+                console.log('🏪 [POS] Close drawer clicked from status indicator');
+                this.showCloseDrawerModal();
+            };
+            
+            console.log('✅ [POS] Status updated to: Drawer Open (clickable to close)');
         } else {
             posStatusElement.innerHTML = `
-                <span class="badge badge-danger">
+                <span class="badge badge-danger clickable-status" title="Click to open drawer">
                     <i class="fas fa-lock"></i> Drawer Closed
+                    <i class="fas fa-chevron-down status-action-icon"></i>
                 </span>
             `;
-            console.log('✅ [POS] Status updated to: Drawer Closed');
+            
+            // Add click handler to open drawer
+            posStatusElement.onclick = () => {
+                console.log('🏪 [POS] Open drawer clicked from status indicator');
+                this.showOpenDrawerModal();
+            };
+            
+            console.log('✅ [POS] Status updated to: Drawer Closed (clickable to open)');
         }
 
-        // Make sure the element is visible
+        // Make sure the element is visible and styled properly
         posStatusElement.style.display = 'flex';
         posStatusElement.style.visibility = 'visible';
+        posStatusElement.style.cursor = 'pointer';
     }
 
     showOpenDrawerModal() {
