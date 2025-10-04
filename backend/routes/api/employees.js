@@ -405,6 +405,7 @@ router.get('/:id', withErrorHandling(async (req, res) => {
         sssDeductionAmount: employee.sssDeductionAmount || 0,
         philHealthDeductionAmount: employee.philHealthDeductionAmount || 0,
         pagIbigDeductionAmount: employee.pagIbigDeductionAmount || 0,
+        voluntaryContribution: employee.voluntaryContribution || false,
         
         // Status and metadata
         isActive: employee.isActive !== false,
