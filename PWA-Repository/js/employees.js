@@ -802,13 +802,13 @@ class EmployeeManager {
                                 <strong>Commission Rate:</strong> ${employee.commissionRate || 0}%
                             </div>
                             ${(() => {
-                                // DEBUGGING: Log salary detection logic for view modal
-                                const hasDaily = employee.dailyRate && employee.dailyRate > 0;
-                                const hasMonthly = employee.monthlyRate && employee.monthlyRate > 0;
-                                const hasHourly = employee.hourlyRate && employee.hourlyRate > 0;
+                                // CRITICAL FIX: Check for configured salary rates (including 0 values)
+                                const hasDaily = employee.dailyRate !== undefined && employee.dailyRate !== null;
+                                const hasMonthly = employee.monthlyRate !== undefined && employee.monthlyRate !== null;
+                                const hasHourly = employee.hourlyRate !== undefined && employee.hourlyRate !== null;
                                 const isConfigured = hasDaily || hasMonthly || hasHourly;
                                 
-                                console.log('💰 [SALARY-DEBUG] View modal salary detection:', {
+                                console.log('💰 [SALARY-DEBUG] View modal salary detection (FIXED):', {
                                     employee: employee.name,
                                     dailyRate: employee.dailyRate,
                                     monthlyRate: employee.monthlyRate,
@@ -830,7 +830,7 @@ class EmployeeManager {
                                     </div>` : 
                                     `<div class="info-item" style="color: #059669; background-color: #ecfdf5; padding: 0.75rem; border-radius: 6px; border: 1px solid #a7f3d0;">
                                         <strong><i class="fas fa-check-circle"></i> Salary Configured:</strong> Employee has salary rates properly configured.
-                                        <br><small>Daily: ₱${employee.dailyRate || 0} | Monthly: ₱${employee.monthlyRate || 0} | Hourly: ₱${employee.hourlyRate || 0}</small>
+                                        <br><small>Daily: ₱${hasDaily ? employee.dailyRate : 'Not Set'} | Monthly: ₱${hasMonthly ? employee.monthlyRate : 'Not Set'} | Hourly: ₱${hasHourly ? employee.hourlyRate : 'Not Set'}</small>
                                     </div>`;
                             })()}
                         </div>
