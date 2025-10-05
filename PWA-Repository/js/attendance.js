@@ -275,13 +275,13 @@ class AttendanceManager {
         if (window.showNotification) {
             window.showNotification(message, isLate ? 'warning' : 'success');
         }
-        
-        // Update UI
-        this.updateSelfAttendanceStatus();
+
+        // Update UI - reload records first, then update status
         await this.loadAttendanceRecords();
         this.renderAttendanceRecords();
         this.renderAttendanceHistoryTable();
         this.updateAttendanceStats();
+        this.updateSelfAttendanceStatus();
     }
     
     // Self check-out for employees
@@ -335,13 +335,13 @@ class AttendanceManager {
         if (window.showNotification) {
             window.showNotification(message, isEarlyDeparture ? 'warning' : 'success');
         }
-        
-        // Update UI
-        this.updateSelfAttendanceStatus();
+
+        // Update UI - reload records first, then update status
         await this.loadAttendanceRecords();
         this.renderAttendanceRecords();
         this.renderAttendanceHistoryTable();
         this.updateAttendanceStats();
+        this.updateSelfAttendanceStatus();
     }
     
     // Load employees using HybridAPIClient (consistent with Employee Management)
