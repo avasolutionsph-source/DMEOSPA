@@ -1551,10 +1551,26 @@ class AttendanceManager {
         const isEmployee = user?.type === 'employee';
         const canSeeAllRecords = user?.role === 'manager' || user?.role === 'receptionist' || user?.role === 'owner' || !isEmployee;
 
+        console.log('🔒 [SECURITY-DEBUG] Attendance History Filter:', {
+            userName: user?.email,
+            userRole: user?.role,
+            userType: user?.type,
+            isEmployee: isEmployee,
+            canSeeAllRecords: canSeeAllRecords,
+            currentEmployeeId: this.currentEmployeeId,
+            totalRecords: records.length,
+            recordEmployeeIds: records.map(r => r.employeeId)
+        });
+
         if (!canSeeAllRecords && this.currentEmployeeId) {
             // Filter to show only current employee's records
-            records = records.filter(record => record.employeeId === this.currentEmployeeId);
-            console.log(`🔒 [SECURITY] Filtered to ${records.length} records for employee ${this.currentEmployeeId}`);
+            const beforeFilter = records.length;
+            records = records.filter(record => {
+                const match = record.employeeId === this.currentEmployeeId;
+                console.log(`  Record: ${record.employeeName} (ID: ${record.employeeId}) - Match: ${match}`);
+                return match;
+            });
+            console.log(`🔒 [SECURITY] Filtered ${beforeFilter} → ${records.length} records for employee ${this.currentEmployeeId}`);
         }
         
         if (records.length === 0) {
