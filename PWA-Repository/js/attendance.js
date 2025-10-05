@@ -1565,12 +1565,28 @@ class AttendanceManager {
         if (!canSeeAllRecords && this.currentEmployeeId) {
             // Filter to show only current employee's records
             const beforeFilter = records.length;
+            const currentEmployeeName = this.currentEmployeeName;
+
             records = records.filter(record => {
-                const match = record.employeeId === this.currentEmployeeId;
-                console.log(`  Record: ${record.employeeName} (ID: ${record.employeeId}) - Match: ${match}`);
+                // Match by ID (primary check)
+                const idMatch = String(record.employeeId) === String(this.currentEmployeeId);
+
+                // Match by name (fallback check)
+                const nameMatch = record.employeeName === currentEmployeeName;
+
+                const match = idMatch || nameMatch;
+
+                console.log(`  Record: ${record.employeeName} (ID: ${record.employeeId})`, {
+                    recordEmployeeId: record.employeeId,
+                    currentEmployeeId: this.currentEmployeeId,
+                    idMatch: idMatch,
+                    nameMatch: nameMatch,
+                    finalMatch: match
+                });
+
                 return match;
             });
-            console.log(`🔒 [SECURITY] Filtered ${beforeFilter} → ${records.length} records for employee ${this.currentEmployeeId}`);
+            console.log(`🔒 [SECURITY] Filtered ${beforeFilter} → ${records.length} records for employee ${this.currentEmployeeId} (${currentEmployeeName})`);
         }
         
         if (records.length === 0) {
@@ -1627,7 +1643,13 @@ class AttendanceManager {
 
         let recordsToShow = this.attendanceRecords;
         if (!canSeeAllRecords && this.currentEmployeeId) {
-            recordsToShow = this.attendanceRecords.filter(record => record.employeeId === this.currentEmployeeId);
+            const currentEmployeeName = this.currentEmployeeName;
+            recordsToShow = this.attendanceRecords.filter(record => {
+                // Match by ID or name
+                const idMatch = String(record.employeeId) === String(this.currentEmployeeId);
+                const nameMatch = record.employeeName === currentEmployeeName;
+                return idMatch || nameMatch;
+            });
         }
 
         if (recordsToShow.length === 0) {
