@@ -952,7 +952,7 @@ class AuthSystem {
             'new_therapist': ['appointments', 'attendance', 'payroll'],
             
             // Receptionist has broader access - also uses payroll-requests
-            'receptionist': ['pos', 'inventory', 'customers', 'attendance', 'payroll', 'rooms', 'expenses'],
+            'receptionist': ['pos', 'inventory', 'customers', 'appointments', 'attendance', 'payroll', 'rooms', 'expenses'],
             
             // Manager can read everything - uses full payroll page
             'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers', 
@@ -1043,7 +1043,7 @@ class AuthSystem {
             'senior_therapist': ['appointments', 'attendance', 'payroll-requests'],
             'junior_therapist': ['appointments', 'attendance', 'payroll-requests'],
             'new_therapist': ['appointments', 'attendance', 'payroll-requests'],
-            'receptionist': ['pos', 'inventory', 'customers', 'attendance', 'payroll-requests', 'rooms', 'expenses'],
+            'receptionist': ['pos', 'inventory', 'customers', 'appointments', 'attendance', 'payroll-requests', 'rooms', 'expenses'],
             'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers', 
                        'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
             'other_staff': ['attendance', 'payroll-requests']
