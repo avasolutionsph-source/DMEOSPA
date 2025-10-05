@@ -4066,18 +4066,20 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
 
 /* Attendance System Styles */
 .attendance-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
     margin-top: 1rem;
+    max-width: 100%;
 }
 
 .attendance-section {
     background: rgba(255, 255, 255, 0.98);
     border-radius: 12px;
-    padding: 1.5rem;
+    padding: 2rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
+    width: 100%;
 }
 
 .attendance-section:hover {
@@ -4095,13 +4097,13 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
 .facial-recognition-container {
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 1rem;
+    max-width: 100%;
 }
 
 .camera-container {
-    text-align: center;
-    margin-bottom: 1rem;
+    width: 100%;
+    max-width: 100%;
 }
 
 .camera-controls {
@@ -4202,25 +4204,23 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
     color: var(--text-muted);
 }
 
-/* Full-width sections for attendance tables */
-.attendance-container .attendance-section:nth-child(3),
-.attendance-container .attendance-section:nth-child(4) {
-    grid-column: 1 / -1;
-}
-
 /* Responsive design for attendance */
 @media (max-width: 768px) {
-    .attendance-container {
-        grid-template-columns: 1fr;
+    .attendance-section {
+        padding: 1.5rem;
     }
-    
+
     .camera-controls {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .camera-controls .btn {
         width: 100%;
+    }
+
+    .attendance-stats {
+        flex-direction: column !important;
     }
 }
 
