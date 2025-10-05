@@ -985,8 +985,8 @@ class AttendanceManager {
         
         try {
             const localRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
-            const unsyncedRecords = localRecords.filter(record => 
-                record.id && record.id.startsWith('local_')
+            const unsyncedRecords = localRecords.filter(record =>
+                record.id && typeof record.id === 'string' && record.id.startsWith('local_')
             );
             
             if (unsyncedRecords.length === 0) {
