@@ -40,14 +40,22 @@ class AttendanceManager {
     
     // Get authentication token
     getAuthToken() {
-        // Check localStorage for token (consistent with other modules)
+        // FIXED: Auth system uses 'authToken' not 'token'
+        // Check localStorage for authToken (matches auth.js line 652)
+        const authToken = localStorage.getItem('authToken');
+        if (authToken) return authToken;
+
+        // Check sessionStorage for authToken (matches auth.js line 658)
+        const sessionAuthToken = sessionStorage.getItem('authToken');
+        if (sessionAuthToken) return sessionAuthToken;
+
+        // Fallback: Check old 'token' key for backward compatibility
         const token = localStorage.getItem('token');
         if (token) return token;
-        
-        // Check sessionStorage as fallback
+
         const sessionToken = sessionStorage.getItem('token');
         if (sessionToken) return sessionToken;
-        
+
         // Check if user object has token
         const userStr = localStorage.getItem('user');
         if (userStr) {
@@ -58,7 +66,7 @@ class AttendanceManager {
                 console.error('Failed to parse user object:', e);
             }
         }
-        
+
         return null;
     }
     
