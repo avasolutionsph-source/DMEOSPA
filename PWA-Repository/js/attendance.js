@@ -269,13 +269,13 @@ class AttendanceManager {
         this.allAttendanceRecords.push(record);
         this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
         this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
-        
-        // Sync with backend
-        await this.syncAttendanceWithBackend(record);
-        
+
+        // Sync with backend using hybrid storage
+        await this.saveAttendanceHybrid(record);
+
         // Show notification
-        const message = isLate ? 
-            `⚠️ ${employee.name} checked in late at ${time}` : 
+        const message = isLate ?
+            `⚠️ ${employee.name} checked in late at ${time}` :
             `✅ ${employee.name} checked in successfully at ${time}`;
         
         if (window.showNotification) {
@@ -325,20 +325,20 @@ class AttendanceManager {
         // Update record
         record.checkOutTime = checkOutTime;
         record.hours = parseFloat(hoursWorked);
-        
+
         // Check for early departure (before 5:00 PM)
         const [hours] = checkOutTime.split(':').map(Number);
         const isEarlyDeparture = hours < 17;
-        
+
         // Save locally
         this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
         this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
-        
-        // Sync with backend
-        await this.syncAttendanceWithBackend(record);
-        
+
+        // Sync with backend using hybrid storage
+        await this.updateAttendanceHybrid(record, record.id);
+
         // Show notification
-        const message = isEarlyDeparture ? 
+        const message = isEarlyDeparture ?
             `⚠️ ${record.employeeName} checked out early at ${checkOutTime} (${hoursWorked} hours worked)` :
             `✅ ${record.employeeName} checked out at ${checkOutTime} (${hoursWorked} hours worked)`;
         
