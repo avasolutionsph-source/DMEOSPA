@@ -407,6 +407,13 @@ class RoomManager {
                 await window.db.update('rooms', roomData);
                 showNotification('Room updated successfully', 'success');
             } else {
+                // Check for duplicate room name before adding
+                const existingRoomWithName = this.rooms.find(r => r.name === roomData.name);
+                if (existingRoomWithName) {
+                    showNotification(`A room with the name "${roomData.name}" already exists. Please use a different name.`, 'error');
+                    return;
+                }
+
                 // Add new room
                 await window.db.add('rooms', roomData);
                 showNotification('Room added successfully', 'success');
@@ -415,16 +422,28 @@ class RoomManager {
             closeModal('roomModal');
             await this.loadRooms();
         } catch (error) {
+            // Log full error details for debugging
+            console.error('Failed to save room - Full error:', error);
+            console.error('Error name:', error?.name);
+            console.error('Error message:', error?.message || error);
+
             if (window.logger) {
                 window.logger.error('Failed to save room', {
                     category: 'ROOMS',
                     operation: 'save_room',
-                    error: error
+                    error: error,
+                    errorName: error?.name,
+                    errorMessage: error?.message || error
                 });
-            } else {
-                console.error('Failed to save room:', error);
             }
-            showNotification('Failed to save room', 'error');
+
+            // Check if it's a constraint error (duplicate name)
+            const errorString = (error?.message || error?.toString() || error || '').toLowerCase();
+            if (errorString.includes('constraint') || errorString.includes('unique') || error?.name === 'ConstraintError') {
+                showNotification(`A room with the name "${roomData.name}" already exists. Please use a different name.`, 'error');
+            } else {
+                showNotification('Failed to save room: ' + (error?.message || error), 'error');
+            }
         }
     }
 
