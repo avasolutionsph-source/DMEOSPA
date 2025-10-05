@@ -1541,9 +1541,21 @@ class AttendanceManager {
             console.warn('Attendance history table not found');
             return;
         }
-        
+
         // Use all attendance records (not just today's)
-        const records = this.allAttendanceRecords || [];
+        let records = this.allAttendanceRecords || [];
+
+        // SECURITY: Filter records for non-manager employees
+        // Only managers, owners, and receptionists can see all records
+        const user = window.authSystem?.currentUser;
+        const isEmployee = user?.type === 'employee';
+        const canSeeAllRecords = user?.role === 'manager' || user?.role === 'receptionist' || user?.role === 'owner' || !isEmployee;
+
+        if (!canSeeAllRecords && this.currentEmployeeId) {
+            // Filter to show only current employee's records
+            records = records.filter(record => record.employeeId === this.currentEmployeeId);
+            console.log(`🔒 [SECURITY] Filtered to ${records.length} records for employee ${this.currentEmployeeId}`);
+        }
         
         if (records.length === 0) {
             tableContainer.innerHTML = `
@@ -1591,8 +1603,18 @@ class AttendanceManager {
     renderAttendanceRecords() {
         const container = document.getElementById('attendanceRecords');
         if (!container) return;
-        
-        if (this.attendanceRecords.length === 0) {
+
+        // SECURITY: Filter records for non-manager employees
+        const user = window.authSystem?.currentUser;
+        const isEmployee = user?.type === 'employee';
+        const canSeeAllRecords = user?.role === 'manager' || user?.role === 'receptionist' || user?.role === 'owner' || !isEmployee;
+
+        let recordsToShow = this.attendanceRecords;
+        if (!canSeeAllRecords && this.currentEmployeeId) {
+            recordsToShow = this.attendanceRecords.filter(record => record.employeeId === this.currentEmployeeId);
+        }
+
+        if (recordsToShow.length === 0) {
             container.innerHTML = `
                 <div style="text-align: center; padding: 2rem; color: #666;">
                     <i class="fas fa-clipboard-list" style="font-size: 3rem; margin-bottom: 1rem;"></i>
@@ -1601,10 +1623,10 @@ class AttendanceManager {
             `;
             return;
         }
-        
+
         container.innerHTML = `
             <div class="attendance-list">
-                ${this.attendanceRecords.map((record, index) => `
+                ${recordsToShow.map((record, index) => `
                     <div class="attendance-record" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 1rem;">
                         ${record.capturedImage ? `
                             <div class="attendance-photo" style="flex-shrink: 0;">
