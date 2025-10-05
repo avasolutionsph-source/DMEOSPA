@@ -130,16 +130,30 @@ class AttendanceManager {
     setupRoleBasedUI() {
         // Get current user from auth system
         const user = window.authSystem?.currentUser;
-        
+
+        console.log('🔐 [UI-SETUP] authSystem status:', {
+            hasAuthSystem: !!window.authSystem,
+            hasCurrentUser: !!window.authSystem?.currentUser,
+            currentUser: window.authSystem?.currentUser
+        });
+
         if (!user) {
-            console.log('⚠️ No user found, showing default UI');
+            console.warn('⚠️ [UI-SETUP] No user found! Showing default UI. Auth might not be ready yet.');
+            // Don't show anything until auth is ready
+            const selfAttendanceSection = document.getElementById('selfAttendanceSection');
+            const managerAttendanceSection = document.getElementById('managerAttendanceSection');
+            if (selfAttendanceSection) selfAttendanceSection.style.display = 'none';
+            if (managerAttendanceSection) managerAttendanceSection.style.display = 'none';
             return;
         }
-        
-        console.log('🔐 Setting up attendance UI for:', {
+
+        console.log('🔐 [UI-SETUP] Setting up attendance UI for:', {
             email: user.email,
             type: user.type,
-            role: user.role
+            role: user.role,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            id: user.id
         });
         
         const selfAttendanceSection = document.getElementById('selfAttendanceSection');
@@ -229,29 +243,23 @@ class AttendanceManager {
     
     // Self check-in for employees
     async selfCheckin() {
+        console.log('✅ [CHECK-IN] Starting check-in process...');
+
         if (!this.currentEmployeeId || !this.currentEmployeeName) {
+            console.error('❌ [CHECK-IN] Missing employee info:', {
+                currentEmployeeId: this.currentEmployeeId,
+                currentEmployeeName: this.currentEmployeeName
+            });
             if (window.showNotification) {
                 window.showNotification('User information not found', 'error');
             }
             return;
         }
 
-        // Check if already checked in today (prevent duplicates)
-        const now = new Date();
-        const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
-        const today = phTime.toISOString().split('T')[0];
-
-        const existingCheckin = this.attendanceRecords.find(r =>
-            r.employeeId === this.currentEmployeeId &&
-            r.date === today
-        );
-
-        if (existingCheckin) {
-            if (window.showNotification) {
-                window.showNotification('You have already checked in today', 'warning');
-            }
-            return;
-        }
+        console.log('👤 [CHECK-IN] Employee info:', {
+            id: this.currentEmployeeId,
+            name: this.currentEmployeeName
+        });
 
         // Find employee data
         const employee = this.employees.find(emp => 
@@ -1069,49 +1077,105 @@ class AttendanceManager {
 
     async loadAttendanceRecords() {
         try {
-            const today = new Date().toISOString().split('T')[0];
-            
-            // Load from hybrid storage (which uses localStorage as primary)
-            let allRecords = [];
-            try {
-                allRecords = await this.loadAttendanceHybrid();
-                console.log(`📥 Loaded ${allRecords.length} records from hybrid storage`);
-            } catch (loadError) {
-                console.error('Failed to load from hybrid storage:', loadError);
-                // Fallback to just localStorage
-                allRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
-                console.log(`📦 Fallback: loaded ${allRecords.length} records from localStorage`);
-            }
-            
+            // Use Philippines timezone for today's date
+            const now = new Date();
+            const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+            const today = phTime.toISOString().split('T')[0];
+
+            // ALWAYS load from localStorage FIRST (instant, non-blocking)
+            let allRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
+            console.log(`📦 Loaded ${allRecords.length} records from localStorage (instant)`);
+
             // Sort by date, newest first
             allRecords.sort((a, b) => {
                 const dateA = new Date(a.date || a.createdAt);
                 const dateB = new Date(b.date || b.createdAt);
                 return dateB - dateA;
             });
-            
-            // Store today's records separately
+
+            // Update UI immediately with localStorage data
             this.attendanceRecords = allRecords.filter(record => record.date === today);
-            
-            // Store all records for display
             this.allAttendanceRecords = allRecords;
-            
-            // Save back to localStorage to ensure persistence
-            this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
-            this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
-            
-            console.log(`✅ Loaded ${this.attendanceRecords.length} attendance records for today`);
+
+            console.log(`✅ Loaded ${this.attendanceRecords.length} attendance records for today (from localStorage)`);
             console.log(`✅ Total attendance records: ${this.allAttendanceRecords.length}`);
-            console.log('📦 Current state:', {
-                today: this.attendanceRecords,
-                all: this.allAttendanceRecords
-            });
+
+            // Then sync with backend in BACKGROUND (non-blocking)
+            this.syncBackendInBackground();
         } catch (error) {
             console.error('❌ Failed to load attendance records:', error);
             // Try direct localStorage as last resort
             this.attendanceRecords = this.loadFromLocalStorage('attendanceRecords') || [];
             this.allAttendanceRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
             console.log('📦 Last resort: loaded from localStorage directly');
+        }
+    }
+
+    // Background sync method - non-blocking backend sync
+    async syncBackendInBackground() {
+        console.log('🔄 [BACKGROUND] Starting backend sync (non-blocking)...');
+
+        const token = this.getAuthToken();
+        if (!token) {
+            console.log('⏭️ [BACKGROUND] No auth token, skipping backend sync');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const mongoRecords = result.data || [];
+                console.log(`✅ [BACKGROUND] Loaded ${mongoRecords.length} records from backend`);
+
+                // Merge with localStorage records
+                const localRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
+                const recordMap = new Map();
+
+                // Add localStorage records first
+                localRecords.forEach(record => {
+                    const key = `${record.employeeId}_${record.date}_${record.checkInTime}`;
+                    recordMap.set(key, record);
+                });
+
+                // Add/update with MongoDB records
+                mongoRecords.forEach(record => {
+                    const key = `${record.employeeId}_${record.date}_${record.checkInTime || record.checkIn}`;
+                    recordMap.set(key, record);
+                });
+
+                const mergedRecords = Array.from(recordMap.values());
+                console.log(`✅ [BACKGROUND] Merged to ${mergedRecords.length} total records`);
+
+                // Update in-memory arrays
+                this.allAttendanceRecords = mergedRecords;
+                const now = new Date();
+                const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+                const today = phTime.toISOString().split('T')[0];
+                this.attendanceRecords = mergedRecords.filter(record => record.date === today);
+
+                // Save merged data to localStorage
+                this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
+                this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
+
+                // Refresh UI with merged data
+                this.renderAttendanceRecords();
+                this.renderAttendanceHistoryTable();
+                this.updateAttendanceStats();
+                this.updateSelfAttendanceStatus();
+
+                console.log('✅ [BACKGROUND] Sync complete, UI updated');
+            } else {
+                console.warn(`⚠️ [BACKGROUND] Backend returned ${response.status}, using localStorage only`);
+            }
+        } catch (error) {
+            console.warn('⚠️ [BACKGROUND] Backend sync failed (using localStorage only):', error.message);
         }
     }
 
