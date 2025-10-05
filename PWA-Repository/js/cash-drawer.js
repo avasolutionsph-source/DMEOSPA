@@ -188,7 +188,9 @@ class CashDrawerManager {
         } catch (error) {
             console.error('❌ Error opening cash drawer:', error);
             if (window.showError) {
-                window.showError(error.message);
+                // Handle both API error format {error: "message"} and JavaScript Error objects {message: "message"}
+                const errorMessage = error.error || error.message || error.toString() || 'Unknown error occurred';
+                window.showError(errorMessage);
             }
             throw error;
         }
@@ -361,14 +363,16 @@ class CashDrawerManager {
             const totalTime = Date.now() - startTime;
             console.error('❌ [CLOSE DEBUG] Cash drawer close operation failed', {
                 sessionId,
-                error: error.message,
+                error: error.message || error.error,
                 stack: error.stack,
                 totalTimeMs: totalTime,
                 currentSessionStatus: this.currentSession?.status || 'no session'
             });
-            
+
             if (window.showError) {
-                window.showError(`Failed to close cash drawer: ${error.message}`);
+                // Handle both API error format {error: "message"} and JavaScript Error objects {message: "message"}
+                const errorMessage = error.error || error.message || error.toString() || 'Unknown error occurred';
+                window.showError(`Failed to close cash drawer: ${errorMessage}`);
             }
             throw error;
         }
