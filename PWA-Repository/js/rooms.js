@@ -406,6 +406,11 @@ class RoomManager {
                 roomData.status = existingRoom ? existingRoom.status : 'available';
                 await window.db.update('rooms', roomData);
                 showNotification('Room updated successfully', 'success');
+
+                // Reset form to prevent confusion if modal reopens
+                document.getElementById('roomForm').reset();
+                document.getElementById('roomName').value = '';
+                document.getElementById('roomId').value = '';
             } else {
                 // Check for duplicate room name before adding
                 const existingRoomWithName = this.rooms.find(r => r.name === roomData.name);
@@ -418,6 +423,11 @@ class RoomManager {
                 await window.db.add('rooms', roomData);
                 showNotification('Room added successfully', 'success');
             }
+
+            // Reset form to prevent confusion if modal reopens
+            document.getElementById('roomForm').reset();
+            document.getElementById('roomName').value = '';
+            document.getElementById('roomId').value = '';
 
             closeModal('roomModal');
             await this.loadRooms();
