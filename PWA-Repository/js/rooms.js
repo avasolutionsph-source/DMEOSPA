@@ -5,13 +5,19 @@ class RoomManager {
         this.activeServices = [];
         this.timers = {};
         this.showHiddenRooms = false;
+        this.listenersSetup = false; // Track if event listeners are already setup
+        this.timerInterval = null; // Track timer interval to prevent duplicates
     }
 
     async init() {
         await this.loadRooms();
         await this.loadActiveServices();
-        this.setupEventListeners();
-        this.startTimerUpdates();
+        // Only setup event listeners once
+        if (!this.listenersSetup) {
+            this.setupEventListeners();
+            this.startTimerUpdates();
+            this.listenersSetup = true;
+        }
     }
 
     setupEventListeners() {
@@ -246,8 +252,13 @@ class RoomManager {
     }
 
     startTimerUpdates() {
+        // Prevent duplicate timers
+        if (this.timerInterval) {
+            return;
+        }
+
         // Update timers every second
-        setInterval(() => {
+        this.timerInterval = setInterval(() => {
             const occupiedRooms = this.rooms.filter(r => r.status === 'occupied');
             if (occupiedRooms.length > 0) {
                 this.displayRooms(); // Refresh display to update timers
