@@ -294,6 +294,7 @@ class AttendanceManager {
             id: Date.now(),
             employeeId: employee.id,
             employeeName: employee.name,
+            employeePosition: employee.position || window.authSystem?.currentUser?.role || 'Employee',
             date: date,
             checkInTime: time,
             checkOutTime: null,
@@ -1619,14 +1620,14 @@ class AttendanceManager {
                         `}
                         <div class="attendance-record-info" style="flex: 1;">
                             <h4 style="margin: 0;">${record.employeeName}</h4>
-                            <p style="margin: 0.25rem 0; color: #666;">${record.employeePosition}</p>
+                            <p style="margin: 0.25rem 0; color: #666;">${record.employeePosition || 'Employee'}</p>
                             <p class="attendance-time" style="margin: 0.25rem 0; font-size: 0.9em;">
-                                Check-in: ${new Date(record.checkInTime).toLocaleTimeString()}
+                                Check-in: ${this.formatTimeDisplay(record.checkInTime)}
                                 ${record.isLate ? `<span style="color: #dc3545; font-weight: bold;"> (Late by ${record.lateMinutes} mins)</span>` : ''}
                             </p>
                             ${record.checkOutTime ? `
                                 <p class="attendance-time" style="margin: 0.25rem 0; font-size: 0.9em;">
-                                    Check-out: ${new Date(record.checkOutTime).toLocaleTimeString()}
+                                    Check-out: ${this.formatTimeDisplay(record.checkOutTime)}
                                 </p>
                             ` : ''}
                         </div>
@@ -1807,7 +1808,7 @@ class AttendanceManager {
                     </div>
                     <div>
                         <label style="display: block; color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Date</label>
-                        <p style="margin: 0; font-weight: 500; color: #1f2937;">${new Date(record.date).toLocaleDateString()}</p>
+                        <p style="margin: 0; font-weight: 500; color: #1f2937;">${record.date || 'N/A'}</p>
                     </div>
                 </div>
                 
