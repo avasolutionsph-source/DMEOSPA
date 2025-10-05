@@ -143,14 +143,7 @@ class CashDrawerManager {
                 status: 'open',
                 notes: notes,
                 syncStatus: 'pending',
-                createdAt: new Date().toISOString(),
-                // Store additional user info for debugging
-                userInfo: {
-                    originalUser: currentUser,
-                    resolvedName: currentUser.name,
-                    resolvedEmail: currentUser.email,
-                    resolvedId: currentUser.userId
-                }
+                createdAt: new Date().toISOString()
             };
 
             console.log('🏪 [DEBUG] New session created:', {
