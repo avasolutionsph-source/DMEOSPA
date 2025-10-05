@@ -1660,11 +1660,11 @@ class AttendanceManager {
                 <div style="display: flex; gap: 2rem; margin-bottom: 1.5rem;">
                     <div style="flex: 1;">
                         <h3 style="margin-top: 0;">${record.employeeName}</h3>
-                        <p style="color: #666;">${record.employeePosition}</p>
+                        <p style="color: #666;">${record.employeePosition || 'Employee'}</p>
                         <div style="margin-top: 1rem;">
-                            <p><strong>Date:</strong> ${new Date(record.date).toLocaleDateString()}</p>
-                            <p><strong>Check-in Time:</strong> ${new Date(record.checkInTime).toLocaleTimeString()}</p>
-                            ${record.checkOutTime ? `<p><strong>Check-out Time:</strong> ${new Date(record.checkOutTime).toLocaleTimeString()}</p>` : ''}
+                            <p><strong>Date:</strong> ${record.date || 'N/A'}</p>
+                            <p><strong>Check-in Time:</strong> ${this.formatTimeDisplay(record.checkInTime)}</p>
+                            ${record.checkOutTime ? `<p><strong>Check-out Time:</strong> ${this.formatTimeDisplay(record.checkOutTime)}</p>` : ''}
                             <p><strong>Method:</strong> ${record.method === 'facial' ? 'Facial Recognition' : 'Manual Check-in'}</p>
                         </div>
                     </div>
