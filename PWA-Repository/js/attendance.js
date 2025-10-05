@@ -191,11 +191,15 @@ class AttendanceManager {
     // Update self attendance status (check if already checked in)
     async updateSelfAttendanceStatus() {
         if (!this.currentEmployeeId) return;
-        
-        const today = new Date().toLocaleDateString();
-        const todayRecord = this.attendanceRecords.find(record => 
-            record.employeeId === this.currentEmployeeId && 
-            new Date(record.date).toLocaleDateString() === today
+
+        // Use Philippines timezone (UTC+8)
+        const now = new Date();
+        const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+        const today = phTime.toISOString().split('T')[0];
+
+        const todayRecord = this.attendanceRecords.find(record =>
+            record.employeeId === this.currentEmployeeId &&
+            record.date === today
         );
         
         const selfCheckinBtn = document.getElementById('selfCheckinBtn');
@@ -231,7 +235,24 @@ class AttendanceManager {
             }
             return;
         }
-        
+
+        // Check if already checked in today (prevent duplicates)
+        const now = new Date();
+        const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+        const today = phTime.toISOString().split('T')[0];
+
+        const existingCheckin = this.attendanceRecords.find(r =>
+            r.employeeId === this.currentEmployeeId &&
+            r.date === today
+        );
+
+        if (existingCheckin) {
+            if (window.showNotification) {
+                window.showNotification('You have already checked in today', 'warning');
+            }
+            return;
+        }
+
         // Find employee data
         const employee = this.employees.find(emp => 
             (emp.id || emp._id) === this.currentEmployeeId
@@ -241,9 +262,11 @@ class AttendanceManager {
             position: window.authSystem?.currentUser?.role || 'Employee'
         };
         
+        // Use Philippines timezone (UTC+8)
         const now = new Date();
-        const date = now.toISOString().split('T')[0];
-        const time = now.toTimeString().split(' ')[0].substring(0, 5);
+        const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+        const date = phTime.toISOString().split('T')[0];
+        const time = phTime.toTimeString().split(' ')[0].substring(0, 5);
         
         // Check for late check-in (after 9:00 AM)
         const [hours, minutes] = time.split(':').map(Number);
@@ -293,23 +316,26 @@ class AttendanceManager {
             return;
         }
         
-        const today = new Date().toISOString().split('T')[0];
-        const record = this.attendanceRecords.find(r => 
-            r.employeeId === this.currentEmployeeId && 
-            r.date === today && 
-            r.checkInTime && 
+        // Use Philippines timezone (UTC+8)
+        const now = new Date();
+        const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+        const today = phTime.toISOString().split('T')[0];
+
+        const record = this.attendanceRecords.find(r =>
+            r.employeeId === this.currentEmployeeId &&
+            r.date === today &&
+            r.checkInTime &&
             !r.checkOutTime
         );
-        
+
         if (!record) {
             if (window.showNotification) {
                 window.showNotification('No active check-in found for today', 'warning');
             }
             return;
         }
-        
-        const now = new Date();
-        const checkOutTime = now.toTimeString().split(' ')[0].substring(0, 5);
+
+        const checkOutTime = phTime.toTimeString().split(' ')[0].substring(0, 5);
         
         // Calculate hours worked
         const checkInDate = new Date(`${record.date} ${record.checkInTime}`);
@@ -1633,6 +1659,33 @@ class AttendanceManager {
         }
     }
 
+    // Helper method to format time display
+    formatTimeDisplay(timeValue) {
+        if (!timeValue) return '--';
+
+        // If it's already in HH:MM format, return as-is
+        if (typeof timeValue === 'string' && /^\d{2}:\d{2}$/.test(timeValue)) {
+            return timeValue;
+        }
+
+        // If it's an ISO string, parse and format
+        try {
+            const date = new Date(timeValue);
+            if (!isNaN(date.getTime())) {
+                return date.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                    timeZone: 'Asia/Manila'
+                });
+            }
+        } catch (e) {
+            // Fallback
+        }
+
+        return String(timeValue);
+    }
+
     viewAttendanceRecord(index) {
         const records = this.allAttendanceRecords || [];
         const record = records[index];
@@ -1688,12 +1741,12 @@ class AttendanceManager {
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div>
-                        <label style="display: block; color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Check In</label>
-                        <p style="margin: 0; font-weight: 500; color: #1f2937;">${record.checkInTime || '--'}</p>
+                        <label style="display: block; color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Check In Time</label>
+                        <p style="margin: 0; font-weight: 500; color: #1f2937;">${this.formatTimeDisplay(record.checkInTime)}</p>
                     </div>
                     <div>
-                        <label style="display: block; color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Check Out</label>
-                        <p style="margin: 0; font-weight: 500; color: #1f2937;">${record.checkOutTime || '--'}</p>
+                        <label style="display: block; color: #6b7280; font-size: 0.875rem; margin-bottom: 0.25rem;">Check Out Time</label>
+                        <p style="margin: 0; font-weight: 500; color: #1f2937;">${this.formatTimeDisplay(record.checkOutTime)}</p>
                     </div>
                 </div>
                 
