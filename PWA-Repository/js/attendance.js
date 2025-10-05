@@ -263,14 +263,8 @@ class AttendanceManager {
             capturedImage: this.lastCapturedImage || null,
             recordedVideo: this.recordedVideoData || null
         };
-        
-        // Save record
-        this.attendanceRecords.push(record);
-        this.allAttendanceRecords.push(record);
-        this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
-        this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
 
-        // Sync with backend using hybrid storage
+        // Sync with backend using hybrid storage (which handles saving to arrays and localStorage)
         await this.saveAttendanceHybrid(record);
 
         // Show notification
@@ -330,11 +324,7 @@ class AttendanceManager {
         const [hours] = checkOutTime.split(':').map(Number);
         const isEarlyDeparture = hours < 17;
 
-        // Save locally
-        this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
-        this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
-
-        // Sync with backend using hybrid storage
+        // Sync with backend using hybrid storage (which handles saving to arrays and localStorage)
         await this.updateAttendanceHybrid(record, record.id);
 
         // Show notification
