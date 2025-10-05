@@ -2127,8 +2127,28 @@ console.log('✅ AttendanceManager created and ready');
 
 // Auto-init when page becomes visible
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('📊 [ATTENDANCE] DOM loaded, NOT auto-initializing (will be done by app.js)');
-    // DO NOT auto-init here - app.js will call init() when showing the page
+    console.log('📊 [ATTENDANCE] DOM loaded, checking if we should auto-initialize...');
+
+    // Check if we're on the attendance page
+    const isOnAttendancePage = window.location.hash === '#attendance' ||
+                                document.getElementById('attendance')?.style.display !== 'none';
+
+    if (isOnAttendancePage) {
+        console.log('📊 [ATTENDANCE] On attendance page, auto-initializing after delay...');
+        // Auto-init after a short delay to ensure auth is ready
+        setTimeout(async () => {
+            if (!window.attendanceManager.initialized) {
+                console.log('📊 [ATTENDANCE] Not initialized yet, calling init() now');
+                await window.attendanceManager.init().catch(e => {
+                    console.error('❌ [ATTENDANCE] Auto-init failed:', e);
+                });
+            } else {
+                console.log('📊 [ATTENDANCE] Already initialized, skipping auto-init');
+            }
+        }, 1000);
+    } else {
+        console.log('📊 [ATTENDANCE] Not on attendance page, will wait for app.js to call init()');
+    }
 });
 
 // Mark initialization status
