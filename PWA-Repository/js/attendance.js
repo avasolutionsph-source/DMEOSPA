@@ -2122,12 +2122,93 @@ window.populateAttendanceDropdown = async function() {
     }
 };
 
+// EMERGENCY DIAGNOSTIC FUNCTION - Call from console to debug attendance issues
+window.attendanceDiagnostics = function() {
+    console.log('='.repeat(80));
+    console.log('🔍 ATTENDANCE SYSTEM DIAGNOSTICS');
+    console.log('='.repeat(80));
+
+    // 1. Check if attendanceManager exists
+    console.log('\n1️⃣ ATTENDANCE MANAGER:');
+    console.log('   - Exists:', !!window.attendanceManager);
+    console.log('   - Initialized:', window.attendanceManager?.initialized);
+    console.log('   - Has currentEmployeeId:', !!window.attendanceManager?.currentEmployeeId);
+    console.log('   - currentEmployeeId value:', window.attendanceManager?.currentEmployeeId);
+    console.log('   - currentEmployeeName:', window.attendanceManager?.currentEmployeeName);
+
+    // 2. Check auth system
+    console.log('\n2️⃣ AUTH SYSTEM:');
+    console.log('   - window.authSystem exists:', !!window.authSystem);
+    console.log('   - currentUser exists:', !!window.authSystem?.currentUser);
+    if (window.authSystem?.currentUser) {
+        console.log('   - User email:', window.authSystem.currentUser.email);
+        console.log('   - User type:', window.authSystem.currentUser.type);
+        console.log('   - User role:', window.authSystem.currentUser.role);
+        console.log('   - User id:', window.authSystem.currentUser.id);
+        console.log('   - Full user object:', window.authSystem.currentUser);
+    }
+
+    // 3. Check tokens
+    console.log('\n3️⃣ AUTHENTICATION TOKENS:');
+    const token = localStorage.getItem('token');
+    const sessionToken = sessionStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    console.log('   - localStorage token:', token ? `${token.substring(0, 30)}...` : 'NOT FOUND');
+    console.log('   - sessionStorage token:', sessionToken ? `${sessionToken.substring(0, 30)}...` : 'NOT FOUND');
+    console.log('   - localStorage user:', userStr ? 'EXISTS' : 'NOT FOUND');
+    if (window.attendanceManager) {
+        const foundToken = window.attendanceManager.getAuthToken();
+        console.log('   - getAuthToken() returns:', foundToken ? `${foundToken.substring(0, 30)}...` : 'NULL');
+    }
+
+    // 4. Check UI elements
+    console.log('\n4️⃣ UI ELEMENTS:');
+    const selfAttendanceSection = document.getElementById('selfAttendanceSection');
+    const managerAttendanceSection = document.getElementById('managerAttendanceSection');
+    const selfCheckinBtn = document.getElementById('selfCheckinBtn');
+    const selfCheckoutBtn = document.getElementById('selfCheckoutBtn');
+    console.log('   - selfAttendanceSection exists:', !!selfAttendanceSection);
+    console.log('   - selfAttendanceSection displayed:', selfAttendanceSection?.style.display);
+    console.log('   - managerAttendanceSection exists:', !!managerAttendanceSection);
+    console.log('   - managerAttendanceSection displayed:', managerAttendanceSection?.style.display);
+    console.log('   - selfCheckinBtn exists:', !!selfCheckinBtn);
+    console.log('   - selfCheckinBtn disabled:', selfCheckinBtn?.disabled);
+    console.log('   - selfCheckoutBtn exists:', !!selfCheckoutBtn);
+    console.log('   - selfCheckoutBtn disabled:', selfCheckoutBtn?.disabled);
+
+    // 5. Check event listeners
+    console.log('\n5️⃣ EVENT LISTENERS:');
+    console.log('   - _listenersAttached flag:', window.attendanceManager?._listenersAttached);
+
+    // 6. Check attendance records
+    console.log('\n6️⃣ ATTENDANCE RECORDS:');
+    console.log('   - Today\'s records:', window.attendanceManager?.attendanceRecords?.length || 0);
+    console.log('   - All records:', window.attendanceManager?.allAttendanceRecords?.length || 0);
+    console.log('   - localStorage records:', localStorage.getItem('attendance_allAttendanceRecords') ? 'EXISTS' : 'NOT FOUND');
+
+    // 7. Test button click handlers
+    console.log('\n7️⃣ BUTTON CLICK HANDLERS:');
+    if (selfCheckinBtn) {
+        console.log('   - Testing selfCheckin click...');
+        try {
+            selfCheckinBtn.click();
+            console.log('   - Click executed (check above for logs)');
+        } catch (e) {
+            console.error('   - Click FAILED:', e.message);
+        }
+    }
+
+    console.log('\n' + '='.repeat(80));
+    console.log('Run window.attendanceManager.init() to manually initialize if needed');
+    console.log('='.repeat(80));
+};
+
 // Debug function to check localStorage attendance data
 window.checkAttendanceLocalStorage = function() {
     console.log('🔍 Checking attendance data in localStorage...');
-    
+
     const keys = ['attendance_attendanceRecords', 'attendance_allAttendanceRecords'];
-    
+
     keys.forEach(key => {
         const data = localStorage.getItem(key);
         if (data) {
@@ -2143,7 +2224,7 @@ window.checkAttendanceLocalStorage = function() {
             console.log(`⚠️ ${key}: Not found in localStorage`);
         }
     });
-    
+
     // Check all localStorage keys
     console.log('\n📦 All localStorage keys:');
     for (let i = 0; i < localStorage.length; i++) {
