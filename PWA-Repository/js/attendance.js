@@ -2481,15 +2481,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('📊 [ATTENDANCE] On attendance page, auto-initializing after delay...');
         // Auto-init after a short delay to ensure auth is ready
         setTimeout(async () => {
-            if (!window.attendanceManager.initialized) {
-                console.log('📊 [ATTENDANCE] Not initialized yet, calling init() now');
-                await window.attendanceManager.init().catch(e => {
-                    console.error('❌ [ATTENDANCE] Auto-init failed:', e);
-                });
-            } else {
-                console.log('📊 [ATTENDANCE] Already initialized, skipping auto-init');
+            try {
+                console.log('⏰ [ATTENDANCE] setTimeout callback fired! Checking initialization status...');
+                console.log('🔍 [ATTENDANCE] window.attendanceManager exists:', !!window.attendanceManager);
+                console.log('🔍 [ATTENDANCE] initialized value:', window.attendanceManager?.initialized);
+
+                if (!window.attendanceManager.initialized) {
+                    console.log('📊 [ATTENDANCE] Not initialized yet, calling init() now');
+                    await window.attendanceManager.init().catch(e => {
+                        console.error('❌ [ATTENDANCE] Auto-init failed:', e);
+                    });
+                } else {
+                    console.log('📊 [ATTENDANCE] Already initialized, skipping auto-init');
+                }
+            } catch (error) {
+                console.error('❌ [ATTENDANCE] Error in setTimeout callback:', error);
             }
         }, 1000);
+        console.log('✅ [ATTENDANCE] setTimeout scheduled successfully');
     } else {
         console.log('📊 [ATTENDANCE] Not on attendance page, will wait for app.js to call init()');
     }
