@@ -1299,38 +1299,43 @@ class EnhancedDashboardManager {
 
     // Immediate local stats update for new transactions (offline-capable)
     updateStatsWithNewTransaction(transaction) {
-        
+
         if (!transaction) {
             console.error('❌ [DASHBOARD] No transaction data provided');
             return;
         }
-        
+
+        console.log('📊 [DASHBOARD] Updating stats with transaction:', {
             id: transaction.id,
             total: transaction.total,
             employee: transaction.employee?.name || 'No Employee',
             createdAt: transaction.createdAt
         });
-        
+
         const today = new Date().toISOString().split('T')[0];
         const transactionDate = new Date(transaction.createdAt).toISOString().split('T')[0];
-        
+
+        console.log('📅 [DASHBOARD] Date comparison:', {
             today: today,
             transactionDate: transactionDate,
             isToday: transactionDate === today
         });
-        
+
+        console.log('💰 [DASHBOARD] Current stats before update:', {
             todayRevenue: this.stats.todayRevenue,
             todayTransactions: this.stats.todayTransactions
         });
-        
+
         if (transactionDate === today) {
             this.stats.todayRevenue += transaction.total;
             this.stats.todayTransactions += 1;
+            console.log('✅ [DASHBOARD] Updated today stats:', {
                 todayRevenue: this.stats.todayRevenue,
                 todayTransactions: this.stats.todayTransactions,
                 addedAmount: transaction.total
             });
         } else {
+            console.log('⏭️ [DASHBOARD] Transaction not from today, skipping daily stats');
         }
         
         // Update weekly/monthly stats
