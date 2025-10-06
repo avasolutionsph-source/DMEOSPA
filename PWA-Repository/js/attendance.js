@@ -5,7 +5,7 @@ class AttendanceManager {
         // Load attendance records from localStorage if available
         this.attendanceRecords = this.loadFromLocalStorage('attendanceRecords') || [];
         this.allAttendanceRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
-        
+
         console.log('🚀 [CONSTRUCTOR] Loaded from localStorage:');
         console.log('  - attendanceRecords:', this.attendanceRecords.length, 'records');
         console.log('  - allAttendanceRecords:', this.allAttendanceRecords.length, 'records');
@@ -17,8 +17,190 @@ class AttendanceManager {
         this.recordedChunks = [];
         this.isRecordingVideo = false;
         this.recordedVideoBlob = null;
+
+        // Initialize periodic sync for pending records
+        this.initPeriodicSync();
     }
-    
+
+    initPeriodicSync() {
+        // Sync pending records on app startup
+        setTimeout(() => this.syncPendingRecords(), 3000);
+
+        // Periodic sync every 5 minutes when online
+        this.syncInterval = setInterval(() => {
+            if (navigator.onLine) {
+                this.syncPendingRecords();
+            }
+        }, 5 * 60 * 1000); // 5 minutes
+
+        // Sync when coming back online
+        window.addEventListener('online', () => {
+            console.log('🌐 Network online - syncing pending attendance records');
+            this.syncPendingRecords();
+        });
+    }
+
+    async syncPendingRecords() {
+        const token = this.getAuthToken();
+        if (!token) {
+            console.log('⚠️ No auth token - skipping sync');
+            return;
+        }
+
+        // Find records with local_ prefix (not yet synced to MongoDB)
+        const pendingRecords = this.allAttendanceRecords.filter(r =>
+            r.id && r.id.toString().startsWith('local_')
+        );
+
+        if (pendingRecords.length === 0) {
+            console.log('✅ No pending attendance records to sync');
+            return;
+        }
+
+        console.log(`🔄 Syncing ${pendingRecords.length} pending attendance records...`);
+
+        for (const record of pendingRecords) {
+            // Skip records that have exceeded max retry attempts
+            const maxRetries = 10; // Stop after 10 attempts (50 minutes)
+            if (record.retryCount && record.retryCount >= maxRetries) {
+                console.warn(`⏭️ Skipping record ${record.id} - exceeded max retries (${record.retryCount}/${maxRetries})`);
+
+                // Mark as permanently failed
+                const updateIndex = this.allAttendanceRecords.findIndex(r => r.id === record.id);
+                if (updateIndex !== -1 && this.allAttendanceRecords[updateIndex].syncStatus !== 'failed') {
+                    this.allAttendanceRecords[updateIndex].syncStatus = 'failed';
+                    console.error(`❌ Marked record ${record.id} as permanently failed`);
+                }
+                continue;
+            }
+
+            try {
+                const essentialData = {
+                    employeeId: record.employeeId,
+                    employeeName: record.employeeName,
+                    employeePosition: record.employeePosition,
+                    date: record.date,
+                    checkInTime: record.checkInTime,
+                    checkOutTime: record.checkOutTime,
+                    method: record.method,
+                    isLate: record.isLate,
+                    lateMinutes: record.lateMinutes,
+                    hoursWorked: record.hoursWorked,
+                    payDeduction: record.payDeduction,
+                    checkOutDeduction: record.checkOutDeduction,
+                    earlyDepartureMinutes: record.earlyDepartureMinutes,
+                    createdAt: record.createdAt
+                };
+
+                const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(essentialData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const mongoId = result.data?.id || result.data?._id;
+
+                    // Update local record with MongoDB ID and reset retry count
+                    const updateIndex = this.allAttendanceRecords.findIndex(r => r.id === record.id);
+                    if (updateIndex !== -1) {
+                        this.allAttendanceRecords[updateIndex].id = mongoId;
+                        this.allAttendanceRecords[updateIndex].syncStatus = 'synced';
+                        this.allAttendanceRecords[updateIndex].retryCount = 0;
+                    }
+
+                    const todayIndex = this.attendanceRecords.findIndex(r => r.id === record.id);
+                    if (todayIndex !== -1) {
+                        this.attendanceRecords[todayIndex].id = mongoId;
+                        this.attendanceRecords[todayIndex].syncStatus = 'synced';
+                        this.attendanceRecords[todayIndex].retryCount = 0;
+                    }
+
+                    console.log(`✅ Synced record ${record.id} → ${mongoId}`);
+                } else {
+                    // Increment retry count on failure
+                    const updateIndex = this.allAttendanceRecords.findIndex(r => r.id === record.id);
+                    if (updateIndex !== -1) {
+                        this.allAttendanceRecords[updateIndex].retryCount = (this.allAttendanceRecords[updateIndex].retryCount || 0) + 1;
+                        this.allAttendanceRecords[updateIndex].lastSyncError = `HTTP ${response.status}`;
+                    }
+
+                    const todayIndex = this.attendanceRecords.findIndex(r => r.id === record.id);
+                    if (todayIndex !== -1) {
+                        this.attendanceRecords[todayIndex].retryCount = (this.attendanceRecords[todayIndex].retryCount || 0) + 1;
+                        this.attendanceRecords[todayIndex].lastSyncError = `HTTP ${response.status}`;
+                    }
+
+                    console.warn(`⚠️ Failed to sync record ${record.id}: ${response.status} (Retry ${record.retryCount || 1}/${maxRetries})`);
+                }
+            } catch (error) {
+                // Increment retry count on error
+                const updateIndex = this.allAttendanceRecords.findIndex(r => r.id === record.id);
+                if (updateIndex !== -1) {
+                    this.allAttendanceRecords[updateIndex].retryCount = (this.allAttendanceRecords[updateIndex].retryCount || 0) + 1;
+                    this.allAttendanceRecords[updateIndex].lastSyncError = error.message;
+                }
+
+                const todayIndex = this.attendanceRecords.findIndex(r => r.id === record.id);
+                if (todayIndex !== -1) {
+                    this.attendanceRecords[todayIndex].retryCount = (this.attendanceRecords[todayIndex].retryCount || 0) + 1;
+                    this.attendanceRecords[todayIndex].lastSyncError = error.message;
+                }
+
+                console.error(`❌ Error syncing record ${record.id}: ${error.message} (Retry ${record.retryCount || 1}/${maxRetries})`);
+            }
+        }
+
+        // Save updated records
+        this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
+        this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
+
+        console.log('✅ Periodic sync completed');
+    }
+
+    async manualSync() {
+        const syncBtn = document.getElementById('syncAttendanceBtn');
+        if (!syncBtn) return;
+
+        // Disable button and show loading state
+        const originalHTML = syncBtn.innerHTML;
+        syncBtn.disabled = true;
+        syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+
+        try {
+            await this.syncPendingRecords();
+
+            // Update UI after sync
+            this.renderAttendanceHistoryTable();
+            this.updateAttendanceStats();
+
+            if (window.showNotification) {
+                const pendingCount = this.allAttendanceRecords.filter(r =>
+                    r.id && r.id.toString().startsWith('local_')
+                ).length;
+
+                if (pendingCount === 0) {
+                    window.showNotification('✅ All attendance records synced to cloud', 'success');
+                } else {
+                    window.showNotification(`⚠️ ${pendingCount} records still pending sync`, 'warning');
+                }
+            }
+        } catch (error) {
+            console.error('Manual sync failed:', error);
+            if (window.showNotification) {
+                window.showNotification('❌ Sync failed: ' + error.message, 'error');
+            }
+        } finally {
+            // Restore button
+            syncBtn.disabled = false;
+            syncBtn.innerHTML = originalHTML;
+        }
+    }
+
     // LocalStorage helper methods
     saveToLocalStorage(key, data) {
         try {
@@ -79,20 +261,32 @@ class AttendanceManager {
 
     async init() {
         console.log('🚀 [ATTENDANCE] Initializing attendance system...');
+        console.log('🔍 [INIT-DEBUG] Initial state:', {
+            hasAuthSystem: !!window.authSystem,
+            currentUser: window.authSystem?.currentUser,
+            currentEmployeeId: this.currentEmployeeId,
+            currentEmployeeName: this.currentEmployeeName
+        });
+
         try {
             // Check user role and setup appropriate UI
             this.setupRoleBasedUI();
-            
+
+            console.log('🔍 [INIT-DEBUG] After setupRoleBasedUI:', {
+                currentEmployeeId: this.currentEmployeeId,
+                currentEmployeeName: this.currentEmployeeName
+            });
+
             // Get current user from auth system
             const user = window.authSystem?.currentUser;
-            const isSelfAttendanceUser = user?.type === 'employee' && 
+            const isSelfAttendanceUser = user?.type === 'employee' &&
                 ['senior_therapist', 'junior_therapist', 'new_therapist', 'other_staff'].includes(user?.role);
-            
+
             // Only load all employees if user manages others' attendance
             if (!isSelfAttendanceUser) {
                 // Load employees for managers/receptionists/owners
                 await this.loadEmployeesSimple();
-                
+
                 // Show notification about employees loaded only for managers
                 if (window.showNotification && this.employees.length === 0) {
                     window.showNotification('No employees found. Add employees in Employee Management first.', 'info');
@@ -102,25 +296,25 @@ class AttendanceManager {
                 this.employees = [];
                 console.log('👤 Self-attendance user detected, skipping employee loading');
             }
-            
+
             // Load attendance records and setup UI
             await this.loadAttendanceRecords();
             this.setupEventListeners();
             this.renderAttendanceRecords();
             this.renderAttendanceHistoryTable();
             this.updateAttendanceStats();
-            
+
             // Setup online sync listener
             window.addEventListener('online', async () => {
                 console.log('🌐 Network connection restored, syncing attendance data...');
                 await this.syncLocalStorageToBackend();
             });
-            
+
             // Sync on initialization if online
             if (navigator.onLine) {
                 setTimeout(() => this.syncLocalStorageToBackend(), 2000);
             }
-            
+
             // Mark as initialized
             window.attendanceManager.initialized = true;
             console.log('✅ [ATTENDANCE] Initialization complete');
@@ -1123,6 +1317,10 @@ class AttendanceManager {
     // Background sync method - non-blocking backend sync
     async syncBackendInBackground() {
         console.log('🔄 [BACKGROUND] Starting backend sync (non-blocking)...');
+        console.log('🔍 [BACKGROUND] Current employee context:', {
+            currentEmployeeId: this.currentEmployeeId,
+            currentEmployeeName: this.currentEmployeeName
+        });
 
         const token = this.getAuthToken();
         if (!token) {
@@ -1142,6 +1340,11 @@ class AttendanceManager {
                 const result = await response.json();
                 const mongoRecords = result.data || [];
                 console.log(`✅ [BACKGROUND] Loaded ${mongoRecords.length} records from backend`);
+                console.log('🔍 [BACKGROUND] MongoDB records:', mongoRecords.map(r => ({
+                    name: r.employeeName,
+                    id: r.employeeId,
+                    date: r.date
+                })));
 
                 // Merge with localStorage records
                 const localRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
@@ -1174,6 +1377,7 @@ class AttendanceManager {
                 this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
 
                 // Refresh UI with merged data
+                console.log('🔄 [BACKGROUND] Refreshing UI after backend sync...');
                 this.renderAttendanceRecords();
                 this.renderAttendanceHistoryTable();
                 this.updateAttendanceStats();
@@ -1276,25 +1480,55 @@ class AttendanceManager {
             };
             
             console.log('📤 Saving essential attendance data to MongoDB...');
-            const mongoResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(essentialData)
-            });
-            
-            if (!mongoResponse.ok) {
-                console.error('❌ Failed to save to MongoDB:', mongoResponse.status);
-                // Fallback to IndexedDB only
-                await window.db.add('attendance', attendanceRecord);
-                return;
+
+            // Retry logic for MongoDB sync
+            let mongoResult = null;
+            let retryCount = 0;
+            const maxRetries = 3;
+
+            while (retryCount < maxRetries && !mongoResult) {
+                try {
+                    const mongoResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(essentialData)
+                    });
+
+                    if (!mongoResponse.ok) {
+                        throw new Error(`MongoDB sync failed with status ${mongoResponse.status}`);
+                    }
+
+                    mongoResult = await mongoResponse.json();
+                    console.log('✅ Essential data saved to MongoDB');
+                    break;
+
+                } catch (syncError) {
+                    retryCount++;
+                    console.warn(`⚠️ MongoDB sync attempt ${retryCount} failed:`, syncError.message);
+
+                    if (retryCount < maxRetries) {
+                        // Wait before retry (exponential backoff)
+                        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+                    } else {
+                        // All retries failed - mark for later sync
+                        console.error('❌ Failed to save to MongoDB after 3 attempts');
+                        attendanceRecord.syncStatus = 'pending';
+                        attendanceRecord.syncError = syncError.message;
+
+                        // Save to IndexedDB for later sync
+                        if (window.db) {
+                            await window.db.add('attendance', attendanceRecord);
+                        }
+                        return;
+                    }
+                }
             }
-            
-            const mongoResult = await mongoResponse.json();
-            const mongoId = mongoResult.data?.id || mongoResult.data?._id;
-            console.log('✅ Essential data saved to MongoDB with ID:', mongoId);
+
+            const mongoId = mongoResult?.data?.id || mongoResult?.data?._id;
+            console.log('✅ Attendance saved to MongoDB with ID:', mongoId);
             
             // Update the record ID with server ID
             const recordIndex = this.attendanceRecords.findIndex(r => r.id === attendanceRecord.id);
@@ -1506,29 +1740,55 @@ class AttendanceManager {
             const totalPresent = todayRecords.length;
             const lateCount = todayRecords.filter(r => r.isLate).length;
             const checkedOut = todayRecords.filter(r => r.checkOutTime).length;
-            
+
+            // Count pending sync records (local_ prefix, excluding failed)
+            const pendingSyncCount = this.allAttendanceRecords.filter(r =>
+                r.id && r.id.toString().startsWith('local_') && r.syncStatus !== 'failed'
+            ).length;
+
+            // Count failed sync records
+            const failedSyncCount = this.allAttendanceRecords.filter(r =>
+                r.syncStatus === 'failed'
+            ).length;
+
             // Update stats elements if they exist
             const presentElement = document.getElementById('attendancePresentCount');
             if (presentElement) {
                 presentElement.textContent = totalPresent;
             }
-            
+
             const lateElement = document.getElementById('attendanceLateCount');
             if (lateElement) {
                 lateElement.textContent = lateCount;
             }
-            
+
             const checkedOutElement = document.getElementById('attendanceCheckedOutCount');
             if (checkedOutElement) {
                 checkedOutElement.textContent = checkedOut;
             }
-            
+
             const pendingElement = document.getElementById('attendancePendingCount');
             if (pendingElement) {
                 pendingElement.textContent = totalPresent - checkedOut;
             }
-            
-            console.log(`📊 Stats updated: Present=${totalPresent}, Late=${lateCount}, CheckedOut=${checkedOut}`);
+
+            // Update pending sync count
+            const pendingSyncElement = document.getElementById('pendingSyncCount');
+            if (pendingSyncElement) {
+                pendingSyncElement.textContent = pendingSyncCount;
+            }
+
+            // Update failed sync count (if element exists)
+            const failedSyncElement = document.getElementById('failedSyncCount');
+            if (failedSyncElement) {
+                failedSyncElement.textContent = failedSyncCount;
+                // Change color to red if there are failed records
+                if (failedSyncCount > 0) {
+                    failedSyncElement.parentElement.style.background = '#dc3545';
+                }
+            }
+
+            console.log(`📊 Stats updated: Present=${totalPresent}, Late=${lateCount}, CheckedOut=${checkedOut}, PendingSync=${pendingSyncCount}, FailedSync=${failedSyncCount}`);
         } catch (error) {
             console.error('Failed to update attendance stats:', error);
         }
@@ -1613,10 +1873,24 @@ class AttendanceManager {
             const checkOutTime = record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString() : '-';
             const hoursWorked = record.hoursWorked ? record.hoursWorked.toFixed(1) : '-';
             const status = record.checkOutTime ? 'Complete' : 'In Progress';
-            
+
+            // Check sync status
+            const isSynced = record.id && !record.id.toString().startsWith('local_');
+            const isFailed = record.syncStatus === 'failed';
+
+            let syncIcon;
+            if (isFailed) {
+                syncIcon = '<i class="fas fa-exclamation-triangle" style="color: #dc3545;" title="Sync failed - please contact support"></i>';
+            } else if (isSynced) {
+                syncIcon = '<i class="fas fa-cloud-upload-alt" style="color: #28a745;" title="Synced to cloud"></i>';
+            } else {
+                const retryInfo = record.retryCount ? ` (Retry ${record.retryCount}/10)` : '';
+                syncIcon = `<i class="fas fa-clock" style="color: #ffc107;" title="Pending sync${retryInfo}"></i>`;
+            }
+
             return `
                 <tr>
-                    <td>${record.employeeName || 'Unknown'}</td>
+                    <td>${record.employeeName || 'Unknown'} ${syncIcon}</td>
                     <td>${record.date || new Date(record.checkInTime).toLocaleDateString()}</td>
                     <td>${checkInTime}</td>
                     <td>${checkOutTime}</td>
@@ -2113,10 +2387,38 @@ class AttendanceManager {
         
         await this.loadAttendanceRecords();
         this.renderAttendanceRecords();
-        
+
         if (window.showNotification) {
             window.showNotification('Attendance data refreshed', 'success');
         }
+    }
+
+    // Cleanup method to prevent memory leaks
+    destroy() {
+        console.log('🧹 Cleaning up AttendanceManager...');
+
+        // Clear the periodic sync interval
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+            this.syncInterval = null;
+            console.log('✅ Cleared sync interval');
+        }
+
+        // Stop camera stream if active
+        if (this.stream) {
+            this.stream.getTracks().forEach(track => track.stop());
+            this.stream = null;
+            console.log('✅ Stopped camera stream');
+        }
+
+        // Clear media recorder
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            this.mediaRecorder.stop();
+            this.mediaRecorder = null;
+            console.log('✅ Stopped media recorder');
+        }
+
+        console.log('✅ AttendanceManager cleanup complete');
     }
 }
 
@@ -2153,6 +2455,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Mark initialization status
 window.attendanceManager.initialized = false;
+
+// Cleanup on page unload to prevent memory leaks
+window.addEventListener('beforeunload', () => {
+    if (window.attendanceManager) {
+        window.attendanceManager.destroy();
+    }
+});
+
+// Cleanup when navigating away from attendance page (for SPAs)
+window.addEventListener('hashchange', (event) => {
+    const oldHash = new URL(event.oldURL).hash;
+    const newHash = new URL(event.newURL).hash;
+
+    // If navigating away from attendance page
+    if (oldHash === '#attendance' && newHash !== '#attendance') {
+        console.log('📊 [ATTENDANCE] Navigating away from attendance page, cleaning up...');
+        if (window.attendanceManager && window.attendanceManager.stream) {
+            // Stop camera stream when leaving the page
+            window.attendanceManager.stream.getTracks().forEach(track => track.stop());
+            window.attendanceManager.stream = null;
+        }
+    }
+});
 
 // Simple direct employee load function for debugging
 window.loadEmployeesDirectly = async function() {

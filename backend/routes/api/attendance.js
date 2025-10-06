@@ -22,21 +22,31 @@ router.get('/test', (req, res) => {
 router.get('/', withErrorHandling(async (req, res) => {
     console.log('🔍 [ATTENDANCE DEBUG] req.user:', req.user);
     console.log('🔍 [ATTENDANCE DEBUG] req.headers:', req.headers);
-    
+
     if (!req.user) {
         console.error('❌ [ATTENDANCE] req.user is undefined');
         return res.status(401).json({ error: 'Authentication required - no user context' });
     }
-    
+
     const userId = req.user._id?.toString() || req.user.id?.toString();
-    
+
     // Query parameters for filtering
     const { employeeId, date, startDate, endDate, limit = 100 } = req.query;
-    
+
     // Build query
     const query = { userId };
-    
-    if (employeeId) {
+
+    // SECURITY: If the user is an employee (not manager/owner), only return their own records
+    // Managers and owners can see all records
+    const isEmployee = req.user.type === 'employee' || req.user.isEmployee;
+    const isManagerOrOwner = req.user.role === 'manager' || req.user.role === 'owner' || req.user.role === 'receptionist';
+
+    if (isEmployee && !isManagerOrOwner && req.user.employeeId) {
+        // Non-manager employees can only see their own attendance
+        query.employeeId = req.user.employeeId;
+        console.log('🔒 [SECURITY] Filtering attendance to employeeId:', req.user.employeeId);
+    } else if (employeeId) {
+        // Managers/owners can filter by specific employee if requested
         query.employeeId = employeeId;
     }
     

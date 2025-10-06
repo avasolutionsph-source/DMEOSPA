@@ -1850,8 +1850,10 @@ class PayrollManager {
                 console.error('❌ [PAYROLL] No authentication token found for attendance');
                 return [];
             }
-            
-            // Call MongoDB attendance API
+
+            // IMPORTANT: This fetches from MongoDB via the backend API
+            // This ensures payroll calculations use synced attendance data from all devices
+            // The attendance sync system (attendance.js) handles syncing local records to MongoDB
             const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,

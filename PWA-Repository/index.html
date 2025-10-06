@@ -1600,7 +1600,12 @@
                     
                     <!-- All Attendance Records Table -->
                     <div class="attendance-section">
-                        <h2>Attendance History</h2>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h2 style="margin: 0;">Attendance History</h2>
+                            <button id="syncAttendanceBtn" class="btn btn-primary" onclick="window.attendanceManager.manualSync()" style="display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-sync-alt"></i> Sync to Cloud
+                            </button>
+                        </div>
                         <div class="attendance-stats" style="display: flex; gap: 1rem; margin-bottom: 1rem;">
                             <div style="background: #800020; color: white; padding: 1rem; border-radius: 8px; flex: 1; text-align: center;">
                                 <div style="font-size: 1.5rem; font-weight: bold;" id="presentTodayCount">0</div>
@@ -1613,6 +1618,10 @@
                             <div style="background: #1a1a1a; color: white; padding: 1rem; border-radius: 8px; flex: 1; text-align: center;">
                                 <div style="font-size: 1.5rem; font-weight: bold;" id="absentTodayCount">5</div>
                                 <div style="font-size: 0.875rem;">Absent Today</div>
+                            </div>
+                            <div style="background: #4a5568; color: white; padding: 1rem; border-radius: 8px; flex: 1; text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: bold;" id="pendingSyncCount">0</div>
+                                <div style="font-size: 0.875rem;">Pending Sync</div>
                             </div>
                         </div>
                         <div class="table-container" style="overflow-x: auto; width: 100%;">
