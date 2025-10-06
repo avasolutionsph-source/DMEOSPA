@@ -1079,6 +1079,7 @@ class EnhancedDashboardManager {
         } else {
             console.warn(`⚠️ [DASHBOARD] Element '${id}' not found in DOM`);
             // Let's check what elements actually exist
+            console.log(
                 Array.from(document.querySelectorAll('[id*="revenue"], [id*="Revenue"], [id*="today"], [id*="Today"]'))
                     .map(el => ({ id: el.id, text: el.textContent.substring(0, 20) }))
             );
