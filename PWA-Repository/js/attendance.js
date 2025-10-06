@@ -1285,26 +1285,37 @@ class AttendanceManager {
             const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
             const today = phTime.toISOString().split('T')[0];
 
-            // ALWAYS load from localStorage FIRST (instant, non-blocking)
+            // Load from localStorage first (instant)
             let allRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
             console.log(`📦 Loaded ${allRecords.length} records from localStorage (instant)`);
 
-            // Sort by date, newest first
-            allRecords.sort((a, b) => {
-                const dateA = new Date(a.date || a.createdAt);
-                const dateB = new Date(b.date || b.createdAt);
-                return dateB - dateA;
-            });
+            // If localStorage is empty, WAIT for MongoDB (critical for cross-device)
+            if (allRecords.length === 0) {
+                console.log('📭 localStorage empty - fetching from MongoDB...');
+                await this.syncBackendInBackground();
+                // syncBackendInBackground updates this.allAttendanceRecords
+                allRecords = this.allAttendanceRecords || [];
+                console.log(`✅ Fetched ${allRecords.length} records from MongoDB`);
+            } else {
+                // If localStorage has data, show it immediately and sync in background
+                console.log('📦 localStorage has data - showing immediately, syncing in background');
 
-            // Update UI immediately with localStorage data
-            this.attendanceRecords = allRecords.filter(record => record.date === today);
-            this.allAttendanceRecords = allRecords;
+                // Sort by date, newest first
+                allRecords.sort((a, b) => {
+                    const dateA = new Date(a.date || a.createdAt);
+                    const dateB = new Date(b.date || b.createdAt);
+                    return dateB - dateA;
+                });
 
-            console.log(`✅ Loaded ${this.attendanceRecords.length} attendance records for today (from localStorage)`);
-            console.log(`✅ Total attendance records: ${this.allAttendanceRecords.length}`);
+                // Update UI immediately with localStorage data
+                this.attendanceRecords = allRecords.filter(record => record.date === today);
+                this.allAttendanceRecords = allRecords;
 
-            // Then sync with backend in BACKGROUND (non-blocking)
-            this.syncBackendInBackground();
+                console.log(`✅ Showing ${this.attendanceRecords.length} records for today (from localStorage)`);
+
+                // Then sync with backend in BACKGROUND (non-blocking)
+                this.syncBackendInBackground();
+            }
         } catch (error) {
             console.error('❌ Failed to load attendance records:', error);
             // Try direct localStorage as last resort
@@ -1386,9 +1397,29 @@ class AttendanceManager {
                 console.log('✅ [BACKGROUND] Sync complete, UI updated');
             } else {
                 console.warn(`⚠️ [BACKGROUND] Backend returned ${response.status}, using localStorage only`);
+                // Still update UI with whatever we have in localStorage
+                const now = new Date();
+                const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+                const today = phTime.toISOString().split('T')[0];
+                this.attendanceRecords = this.allAttendanceRecords.filter(record => record.date === today);
+
+                // Refresh UI
+                this.renderAttendanceRecords();
+                this.renderAttendanceHistoryTable();
+                this.updateAttendanceStats();
             }
         } catch (error) {
             console.warn('⚠️ [BACKGROUND] Backend sync failed (using localStorage only):', error.message);
+            // Still update UI with whatever we have in localStorage
+            const now = new Date();
+            const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+            const today = phTime.toISOString().split('T')[0];
+            this.attendanceRecords = this.allAttendanceRecords.filter(record => record.date === today);
+
+            // Refresh UI
+            this.renderAttendanceRecords();
+            this.renderAttendanceHistoryTable();
+            this.updateAttendanceStats();
         }
     }
 
