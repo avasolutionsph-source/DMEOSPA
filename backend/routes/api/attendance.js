@@ -28,7 +28,10 @@ router.get('/', withErrorHandling(async (req, res) => {
         return res.status(401).json({ error: 'Authentication required - no user context' });
     }
 
-    const userId = req.user._id?.toString() || req.user.id?.toString();
+    // CRITICAL: Use req.user.userId (branch owner ID) for cross-employee visibility
+    // req.user.id = individual employee ID (wrong!)
+    // req.user.userId = branch owner ID (correct!)
+    const userId = req.user.userId?.toString() || req.userId?.toString() || req.user._id?.toString() || req.user.id?.toString();
 
     // Query parameters for filtering
     const { employeeId, date, startDate, endDate, limit = 100 } = req.query;
@@ -87,8 +90,11 @@ router.get('/', withErrorHandling(async (req, res) => {
 router.post('/', withErrorHandling(async (req, res) => {
     console.log('📥 [ATTENDANCE POST] Request body:', req.body);
     console.log('👤 [ATTENDANCE POST] User:', req.user);
-    
-    const userId = req.user._id?.toString() || req.user.id?.toString();
+
+    // CRITICAL: Use req.user.userId (branch owner ID) for cross-employee visibility
+    // req.user.id = individual employee ID (wrong!)
+    // req.user.userId = branch owner ID (correct!)
+    const userId = req.user.userId?.toString() || req.userId?.toString() || req.user._id?.toString() || req.user.id?.toString();
     
     // Transform PWA format to match MongoDB schema
     const attendanceData = {
@@ -134,7 +140,8 @@ router.post('/', withErrorHandling(async (req, res) => {
 
 // PUT /api/attendance/:id - Update attendance record
 router.put('/:id', withErrorHandling(async (req, res) => {
-    const userId = req.user._id?.toString() || req.user.id?.toString();
+    // Use branch owner ID for cross-employee visibility
+    const userId = req.user.userId?.toString() || req.userId?.toString() || req.user._id?.toString() || req.user.id?.toString();
     const { id } = req.params;
     
     // Transform PWA format to match MongoDB schema
@@ -181,7 +188,8 @@ router.put('/:id', withErrorHandling(async (req, res) => {
 
 // DELETE /api/attendance/:id - Delete attendance record
 router.delete('/:id', withErrorHandling(async (req, res) => {
-    const userId = req.user._id?.toString() || req.user.id?.toString();
+    // Use branch owner ID for cross-employee visibility
+    const userId = req.user.userId?.toString() || req.userId?.toString() || req.user._id?.toString() || req.user.id?.toString();
     const { id } = req.params;
     
     // Find and delete attendance record in MongoDB
@@ -208,7 +216,8 @@ router.delete('/:id', withErrorHandling(async (req, res) => {
 
 // GET /api/attendance/stats - Get attendance statistics
 router.get('/stats', withErrorHandling(async (req, res) => {
-    const userId = req.user._id?.toString() || req.user.id?.toString();
+    // Use branch owner ID for cross-employee visibility
+    const userId = req.user.userId?.toString() || req.userId?.toString() || req.user._id?.toString() || req.user.id?.toString();
     const { startDate, endDate, employeeId } = req.query;
     
     // Build query
