@@ -477,13 +477,20 @@ class AttendanceManager {
         const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
         const date = phTime.toISOString().split('T')[0];
         const time = phTime.toTimeString().split(' ')[0].substring(0, 5);
-        
-        // Check for late check-in (after 9:00 AM)
+
+        // Check for late check-in (after 9:00 AM with grace period)
         const [hours, minutes] = time.split(':').map(Number);
         const isLate = hours > 9 || (hours === 9 && minutes > 0);
-        const status = isLate ? 'Late' : 'Present';
-        
-        // Create attendance record
+
+        // Calculate late minutes if late
+        let lateMinutes = 0;
+        if (isLate) {
+            const checkInDateTime = new Date(`${date} ${time}:00`);
+            const expectedTime = new Date(`${date} 09:00:00`);
+            lateMinutes = Math.floor((checkInDateTime - expectedTime) / 60000);
+        }
+
+        // Create COMPLETE attendance record (matching recordAttendance() format)
         const record = {
             id: Date.now(),
             employeeId: employee.id,
@@ -492,8 +499,12 @@ class AttendanceManager {
             date: date,
             checkInTime: time,
             checkOutTime: null,
-            hours: 0,
-            status: status,
+            method: 'manual',           // Required for MongoDB
+            isLate: isLate,             // Required for MongoDB
+            lateMinutes: lateMinutes,   // Required for MongoDB
+            hoursWorked: 0,             // Required for MongoDB (calculated on check-out)
+            payDeduction: 0,            // Required for MongoDB
+            createdAt: now.toISOString(), // Required for MongoDB
             capturedImage: this.lastCapturedImage || null,
             recordedVideo: this.recordedVideoData || null
         };
@@ -503,7 +514,7 @@ class AttendanceManager {
 
         // Show notification
         const message = isLate ?
-            `⚠️ ${employee.name} checked in late at ${time}` :
+            `⚠️ ${employee.name} checked in late at ${time} (${lateMinutes} min late)` :
             `✅ ${employee.name} checked in successfully at ${time}`;
         
         if (window.showNotification) {
