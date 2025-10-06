@@ -36,18 +36,23 @@ router.get('/', withErrorHandling(async (req, res) => {
     // Build query
     const query = { userId };
 
-    // SECURITY: If the user is an employee (not manager/owner), only return their own records
-    // Managers and owners can see all records
-    const isEmployee = req.user.type === 'employee' || req.user.isEmployee;
+    // SECURITY: Filter based on role hierarchy
+    // Priority: role takes precedence over type
+    // - Owners, managers, receptionists → see ALL attendance
+    // - Regular employees → see only their own attendance
     const isManagerOrOwner = req.user.role === 'manager' || req.user.role === 'owner' || req.user.role === 'receptionist';
 
-    if (isEmployee && !isManagerOrOwner && req.user.employeeId) {
-        // Non-manager employees can only see their own attendance
+    if (!isManagerOrOwner && req.user.employeeId) {
+        // Regular employees can only see their own attendance
         query.employeeId = req.user.employeeId;
-        console.log('🔒 [SECURITY] Filtering attendance to employeeId:', req.user.employeeId);
+        console.log('🔒 [SECURITY] Employee view - filtering to employeeId:', req.user.employeeId);
     } else if (employeeId) {
-        // Managers/owners can filter by specific employee if requested
+        // Managers/owners can optionally filter by specific employee
         query.employeeId = employeeId;
+        console.log('📊 [MANAGER] Filtering to specific employee:', employeeId);
+    } else {
+        // Managers/owners see all attendance for their business
+        console.log('📊 [MANAGER] Showing all attendance for userId:', userId);
     }
     
     if (date) {
