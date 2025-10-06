@@ -1296,24 +1296,37 @@ class AttendanceManager {
             const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
             const today = phTime.toISOString().split('T')[0];
 
-            // CRITICAL FIX: Always fetch fresh MongoDB data on page load for cross-device sync
-            // This ensures all browsers/devices see the same data when logging in
-            console.log('🔄 Fetching fresh data from MongoDB for cross-device sync...');
+            // Load from localStorage first (instant)
+            let allRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
+            console.log(`📦 Loaded ${allRecords.length} records from localStorage (instant)`);
 
-            await this.syncBackendInBackground();
-
-            // syncBackendInBackground updates this.allAttendanceRecords from MongoDB
-            let allRecords = this.allAttendanceRecords || [];
-
-            // Fallback to localStorage only if MongoDB fetch failed
+            // If localStorage is empty, WAIT for MongoDB (critical for cross-device)
             if (allRecords.length === 0) {
-                console.log('⚠️ MongoDB returned no data, falling back to localStorage...');
-                allRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
-                this.allAttendanceRecords = allRecords;
-                this.attendanceRecords = allRecords.filter(record => record.date === today);
-            }
+                console.log('📭 localStorage empty - fetching from MongoDB...');
+                await this.syncBackendInBackground();
+                // syncBackendInBackground updates this.allAttendanceRecords
+                allRecords = this.allAttendanceRecords || [];
+                console.log(`✅ Fetched ${allRecords.length} records from MongoDB`);
+            } else {
+                // If localStorage has data, show it immediately and sync in background
+                console.log('📦 localStorage has data - showing immediately, syncing in background');
 
-            console.log(`✅ Loaded ${allRecords.length} total records (${this.attendanceRecords?.length || 0} for today)`);
+                // Sort by date, newest first
+                allRecords.sort((a, b) => {
+                    const dateA = new Date(a.date || a.createdAt);
+                    const dateB = new Date(b.date || b.createdAt);
+                    return dateB - dateA;
+                });
+
+                // Update UI immediately with localStorage data
+                this.attendanceRecords = allRecords.filter(record => record.date === today);
+                this.allAttendanceRecords = allRecords;
+
+                console.log(`✅ Showing ${this.attendanceRecords.length} records for today (from localStorage)`);
+
+                // Then sync with backend in BACKGROUND (non-blocking)
+                this.syncBackendInBackground();
+            }
         } catch (error) {
             console.error('❌ Failed to load attendance records:', error);
             // Try direct localStorage as last resort
