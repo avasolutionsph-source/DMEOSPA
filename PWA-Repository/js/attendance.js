@@ -984,7 +984,11 @@ class AttendanceManager {
             const isLate = now > graceTime;
             const lateMinutes = isLate ? Math.floor((now - graceTime) / 60000) : 0;
             
+            // Get userId from current user (owner ID for cross-device visibility)
+            const userId = window.authSystem?.currentUser?.id;
+
             const attendanceRecord = {
+                userId: userId, // CRITICAL: Owner ID for cross-device access
                 employeeId: employee.id || employee._id,
                 employeeName: employee.name,
                 employeePosition: employee.position || 'Employee',
