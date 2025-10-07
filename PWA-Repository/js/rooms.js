@@ -142,14 +142,17 @@ class RoomManager {
             return;
         }
 
-        // Get all employees to check room assignments (force fresh data if requested)
-        console.log('🔄 [ROOMS] Fetching employees for room display, forceRefresh:', forceRefresh);
-        const result = await window.HybridAPIClient.getEmployees({ offlineFirst: !forceRefresh });
-        const allEmployees = result.success ? (result.data || []) : [];
+        // Get all room assignments from MongoDB
+        console.log('🔄 [ROOMS] Fetching room assignments, forceRefresh:', forceRefresh);
+        const assignmentsResult = await window.HybridAPIClient.get('/api/room-assignments', 'roomAssignments', {
+            offlineFirst: !forceRefresh,
+            critical: true
+        });
 
-        console.log('👥 [ROOMS] Employee data loaded:', {
-            totalEmployees: allEmployees.length,
-            employeesWithRooms: allEmployees.filter(e => e.assignedRooms && e.assignedRooms.length > 0).length
+        const allAssignments = assignmentsResult.success ? (assignmentsResult.data || []) : [];
+        console.log('👥 [ROOMS] Room assignments loaded:', {
+            totalAssignments: allAssignments.length,
+            roomsWithAssignments: new Set(allAssignments.map(a => a.roomName)).size
         });
 
         container.innerHTML = visibleRooms.map(room => {
@@ -158,10 +161,15 @@ class RoomManager {
             const statusIcon = isOccupied ? 'clock' : 'lock-open';
             const statusText = isOccupied ? 'IN SERVICE' : 'AVAILABLE';
 
-            // Get therapists assigned to this room
-            const assignedTherapists = allEmployees.filter(emp =>
-                emp.assignedRooms && emp.assignedRooms.includes(room.name)
-            );
+            // Get therapists assigned to this room from MongoDB assignments
+            const roomAssignments = allAssignments.filter(a => a.roomName === room.name);
+            const assignedTherapists = roomAssignments.map(a => ({
+                id: a.employeeId,
+                name: a.employeeName,
+                position: a.employeePosition,
+                firstName: a.employeeName.split(' ')[0],
+                lastName: a.employeeName.split(' ').slice(1).join(' ')
+            }));
 
             console.log(`🏨 [ROOMS] Room "${room.name}" assigned therapists:`, {
                 roomName: room.name,
@@ -692,12 +700,18 @@ class RoomManager {
         // Show therapist selection section
         document.getElementById('therapistSelectionSection').style.display = 'block';
 
-        // Load therapists
-        const result = await window.HybridAPIClient.getEmployees();
-        let therapists = [];
+        // Load therapists and current assignments from MongoDB
+        const [employeesResult, assignmentsResult] = await Promise.all([
+            window.HybridAPIClient.getEmployees(),
+            window.HybridAPIClient.get(`/api/room-assignments/room/${encodeURIComponent(room.name)}`, 'roomAssignments')
+        ]);
 
-        if (result.success) {
-            const allEmployees = result.data || [];
+        let therapists = [];
+        const currentAssignments = assignmentsResult.success ? (assignmentsResult.data || []) : [];
+        const assignedEmployeeIds = new Set(currentAssignments.map(a => String(a.employeeId)));
+
+        if (employeesResult.success) {
+            const allEmployees = employeesResult.data || [];
             // Filter to only therapists
             const therapistPositions = [
                 'Senior Therapist', 'Junior Therapist', 'Therapist',
@@ -715,14 +729,13 @@ class RoomManager {
             container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No therapists found</p>';
         } else {
             container.innerHTML = therapists.map(therapist => {
-                const empId = therapist.id || therapist._id;
+                const empId = String(therapist.id || therapist._id);
                 const empName = therapist.firstName ?
                     `${therapist.firstName} ${therapist.lastName}`.trim() :
                     therapist.name;
 
-                // Check if this therapist is already assigned to this room
-                const isAssigned = therapist.assignedRooms &&
-                    therapist.assignedRooms.includes(room.name);
+                // Check if this therapist is already assigned to this room (from MongoDB)
+                const isAssigned = assignedEmployeeIds.has(empId);
 
                 return `
                     <div style="padding: 10px; border-bottom: 1px solid #f0f0f0;">
@@ -731,6 +744,7 @@ class RoomManager {
                                    class="therapist-checkbox"
                                    data-employee-id="${empId}"
                                    data-employee-name="${empName}"
+                                   data-position="${therapist.position}"
                                    ${isAssigned ? 'checked' : ''}
                                    style="margin-right: 10px; width: 18px; height: 18px;">
                             <div>
@@ -744,7 +758,7 @@ class RoomManager {
         }
     }
 
-    // Save therapist assignments
+    // Save therapist assignments to MongoDB
     async saveTherapistAssignments() {
         const roomSelect = document.getElementById('assignRoomSelect');
         const selectedRoomId = parseInt(roomSelect.value);
@@ -759,84 +773,36 @@ class RoomManager {
 
         // Get all checked therapists
         const checkboxes = document.querySelectorAll('.therapist-checkbox');
-        const selectedTherapistIds = Array.from(checkboxes)
+        const selectedTherapists = Array.from(checkboxes)
             .filter(cb => cb.checked)
-            .map(cb => cb.dataset.employeeId);
+            .map(cb => ({
+                id: cb.dataset.employeeId,
+                name: cb.dataset.employeeName,
+                position: cb.getAttribute('data-position') || 'Therapist'
+            }));
 
         try {
-            // Update each therapist's assignedRooms - OPTIMIZED VERSION
-            const result = await window.HybridAPIClient.getEmployees();
+            console.log(`💾 [ROOMS] Saving assignments to MongoDB for ${room.name}...`);
+
+            // Save to MongoDB via new API
+            const result = await window.HybridAPIClient.put(
+                `/api/room-assignments/room/${encodeURIComponent(room.name)}`,
+                {
+                    roomId: room.id,
+                    employees: selectedTherapists
+                }
+            );
+
             if (result.success) {
-                const allEmployees = result.data || [];
-
-                // Filter to only therapists to reduce processing
-                const therapistPositions = [
-                    'Senior Therapist', 'Junior Therapist', 'Therapist',
-                    'Massage Therapist', 'New Therapist',
-                    'senior_therapist', 'junior_therapist', 'new_therapist'
-                ];
-                const therapists = allEmployees.filter(emp =>
-                    therapistPositions.includes(emp.position)
-                );
-
-                // Batch update promises
-                const updatePromises = [];
-
-                for (const emp of therapists) {
-                    const empId = String(emp.id || emp._id);
-                    const isSelected = selectedTherapistIds.includes(empId);
-                    const currentRooms = emp.assignedRooms || [];
-                    const hasRoom = currentRooms.includes(room.name);
-
-                    // Only update if there's a change
-                    if (isSelected && !hasRoom) {
-                        // Add room
-                        const newRooms = [...currentRooms, room.name];
-                        updatePromises.push(
-                            window.HybridAPIClient.updateEmployee(emp.id || emp._id, {
-                                ...emp,
-                                assignedRooms: newRooms
-                            })
-                        );
-                    } else if (!isSelected && hasRoom) {
-                        // Remove room
-                        const newRooms = currentRooms.filter(r => r !== room.name);
-                        updatePromises.push(
-                            window.HybridAPIClient.updateEmployee(emp.id || emp._id, {
-                                ...emp,
-                                assignedRooms: newRooms
-                            })
-                        );
-                    }
-                }
-
-                // Execute all updates in parallel
-                if (updatePromises.length > 0) {
-                    console.log(`💾 [ROOMS] Saving ${updatePromises.length} employee updates...`);
-                    await Promise.all(updatePromises);
-                    console.log('✅ [ROOMS] All employee updates completed');
-
-                    // Wait a moment for backend to fully process
-                    await new Promise(resolve => setTimeout(resolve, 500));
-
-                    // Clear employee cache in IndexedDB to force fresh fetch
-                    try {
-                        console.log('🗑️ [ROOMS] Clearing employee cache...');
-                        const tx = window.db.db.transaction(['employees'], 'readwrite');
-                        const store = tx.objectStore('employees');
-                        await store.clear();
-                        console.log('✅ [ROOMS] Employee cache cleared');
-                    } catch (error) {
-                        console.warn('⚠️ [ROOMS] Could not clear cache:', error);
-                    }
-                }
-
+                console.log('✅ [ROOMS] Assignments saved to MongoDB successfully');
                 showNotification(`Therapist assignments updated for ${room.name}`, 'success');
                 closeModal('assignTherapistModal');
 
-                // Force refresh room display with fresh employee data from API
-                console.log('🔄 [ROOMS] Force refreshing room display from API...');
+                // Force refresh room display with fresh data from MongoDB
+                console.log('🔄 [ROOMS] Refreshing display from MongoDB...');
                 await this.displayRooms(true);
+            } else {
+                throw new Error(result.error || 'Failed to save assignments');
             }
         } catch (error) {
             console.error('Failed to save therapist assignments:', error);
