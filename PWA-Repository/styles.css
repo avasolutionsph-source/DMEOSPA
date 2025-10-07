@@ -4251,6 +4251,11 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
     background: var(--primary-ultra-light);
 }
 
+.room-card.pending {
+    border-color: #f39c12;
+    background: #fff3cd;
+}
+
 .room-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -4260,10 +4265,20 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
     animation: pulse-occupied 2s infinite;
 }
 
+.room-card.pending {
+    animation: pulse-pending 2s infinite;
+}
+
 @keyframes pulse-occupied {
     0% { box-shadow: 0 2px 8px rgba(128, 0, 32, 0.2); }
     50% { box-shadow: 0 2px 16px rgba(128, 0, 32, 0.4); }
     100% { box-shadow: 0 2px 8px rgba(128, 0, 32, 0.2); }
+}
+
+@keyframes pulse-pending {
+    0% { box-shadow: 0 2px 8px rgba(243, 156, 18, 0.2); }
+    50% { box-shadow: 0 2px 16px rgba(243, 156, 18, 0.4); }
+    100% { box-shadow: 0 2px 8px rgba(243, 156, 18, 0.2); }
 }
 
 .room-header {
@@ -4282,6 +4297,10 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
 
 .room-header.occupied {
     background: var(--primary-dark);
+}
+
+.room-header.pending {
+    background: #f39c12;
 }
 
 .room-body {

@@ -153,15 +153,21 @@ class RoomManager {
 
     async loadActiveServices() {
         try {
-            // Load only active services (not completed ones)
+            // Load active and pending services (not completed ones)
             const allServices = await window.db.getAll('activeServices');
-            this.activeServices = (allServices || []).filter(service => service.status === 'active');
-            
-            // Update room statuses based on active services
+            this.activeServices = (allServices || []).filter(service =>
+                service.status === 'active' || service.status === 'pending'
+            );
+
+            // Update room statuses based on active and pending services
             for (const service of this.activeServices) {
                 const room = this.rooms.find(r => r.id === service.roomId);
                 if (room) {
-                    room.status = 'occupied';
+                    if (service.status === 'pending') {
+                        room.status = 'pending';
+                    } else {
+                        room.status = 'occupied';
+                    }
                     room.currentService = service;
                 }
             }
@@ -237,9 +243,10 @@ class RoomManager {
 
         container.innerHTML = visibleRooms.map(room => {
             const isOccupied = room.status === 'occupied';
-            const statusColor = isOccupied ? '#800020' : '#27ae60';
-            const statusIcon = isOccupied ? 'clock' : 'lock-open';
-            const statusText = isOccupied ? 'IN SERVICE' : 'AVAILABLE';
+            const isPending = room.status === 'pending';
+            const statusColor = isOccupied ? '#800020' : isPending ? '#f39c12' : '#27ae60'; // Red, Yellow, Green
+            const statusIcon = isOccupied ? 'clock' : isPending ? 'hourglass-half' : 'lock-open';
+            const statusText = isOccupied ? 'IN SERVICE' : isPending ? 'PENDING' : 'AVAILABLE';
 
             // Get therapists assigned to this room from MongoDB assignments
             const roomAssignments = allAssignments.filter(a => a.roomName === room.name);
@@ -280,7 +287,22 @@ class RoomManager {
             let timerDisplay = '';
             let serviceInfo = '';
 
-            if (isOccupied && room.currentService) {
+            if (isPending && room.currentService) {
+                // Pending service - show service info but no timer
+                serviceInfo = `
+                    <div class="service-info" style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #f39c12;">
+                        <div style="color: #f39c12; font-weight: bold; margin-bottom: 8px;">
+                            <i class="fas fa-hourglass-half"></i> PENDING - Click "Start" to begin
+                        </div>
+                        <div><strong>Service:</strong> ${room.currentService.serviceName}</div>
+                        <div><strong>Client:</strong> ${room.currentService.clientName || 'Walk-in'}</div>
+                        <div><strong>Therapist:</strong> ${room.currentService.employeeName}</div>
+                        ${room.currentService.estimatedDuration ?
+                            `<div><strong>Duration:</strong> ${room.currentService.estimatedDuration} mins</div>` : ''}
+                    </div>
+                `;
+            } else if (isOccupied && room.currentService) {
+                // Active service - show timer
                 const elapsed = this.calculateElapsedTime(room.currentService.startTime);
                 timerDisplay = `
                     <div class="room-timer" style="font-size: 1.5rem; font-weight: bold; color: #800020; margin: 10px 0;">
@@ -311,8 +333,8 @@ class RoomManager {
             }
 
             return `
-                <div class="room-card ${isOccupied ? 'occupied' : 'available'} ${room.hidden ? 'hidden-room' : ''}" style="${room.hidden ? 'opacity: 0.6; border-style: dashed;' : ''}">
-                    <div class="room-header ${isOccupied ? 'occupied' : 'available'}" style="padding: 10px; margin: -1px -1px 0 -1px;">
+                <div class="room-card ${isOccupied ? 'occupied' : isPending ? 'pending' : 'available'} ${room.hidden ? 'hidden-room' : ''}" style="${room.hidden ? 'opacity: 0.6; border-style: dashed;' : ''}">
+                    <div class="room-header ${isOccupied ? 'occupied' : isPending ? 'pending' : 'available'}" style="padding: 10px; margin: -1px -1px 0 -1px;">
                         <h3 style="margin: 0; display: flex; justify-content: space-between; align-items: center;">
                             <span>
                                 <i class="fas fa-door-${isOccupied ? 'closed' : 'open'}"></i> ${room.name}${therapistNamesHeader}
@@ -343,10 +365,14 @@ class RoomManager {
                                 <button class="btn btn-warning btn-sm" onclick="roomManager.extendService(${room.id})">
                                     <i class="fas fa-plus-circle"></i> Extend
                                 </button>
-                            ` : `
-                                <button class="btn btn-success btn-sm" onclick="roomManager.startService(${room.id})">
+                            ` : isPending ? `
+                                <button class="btn btn-success btn-sm" onclick="roomManager.startPendingService(${room.id})">
                                     <i class="fas fa-play"></i> Start
                                 </button>
+                                <button class="btn btn-danger btn-sm" onclick="roomManager.cancelPendingService(${room.id})">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>
+                            ` : `
                                 <button class="btn btn-secondary btn-sm" onclick="roomManager.editRoom(${room.id})">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
@@ -406,6 +432,59 @@ class RoomManager {
         }, 1000);
     }
 
+    async startPendingService(roomId) {
+        const room = this.rooms.find(r => r.id === roomId);
+        if (!room || !room.currentService || room.status !== 'pending') {
+            showNotification('No pending service found', 'error');
+            return;
+        }
+
+        // Update the existing pending service with start time
+        room.currentService.startTime = new Date().toISOString();
+        room.currentService.status = 'active';
+
+        // Update in activeServices database
+        if (room.currentService.id) {
+            await window.db.update('activeServices', room.currentService);
+        } else {
+            // If no ID, add it (shouldn't happen but safety check)
+            const serviceId = await window.db.add('activeServices', room.currentService);
+            room.currentService.id = serviceId;
+        }
+
+        // Update room status to occupied
+        room.status = 'occupied';
+        await window.db.update('rooms', room);
+
+        // Refresh room list
+        this.displayRooms();
+        showNotification(`Service started in ${room.name}`, 'success');
+    }
+
+    async cancelPendingService(roomId) {
+        const room = this.rooms.find(r => r.id === roomId);
+        if (!room || !room.currentService || room.status !== 'pending') {
+            showNotification('No pending service found', 'error');
+            return;
+        }
+
+        if (!confirm(`Cancel pending service in ${room.name}?`)) return;
+
+        // Remove from activeServices if it has an ID
+        if (room.currentService.id) {
+            await window.db.delete('activeServices', room.currentService.id);
+        }
+
+        // Clear room
+        room.status = 'available';
+        room.currentService = null;
+        await window.db.update('rooms', room);
+
+        // Refresh room list
+        this.displayRooms();
+        showNotification(`Pending service cancelled in ${room.name}`, 'info');
+    }
+
     async startService(roomId) {
         const room = this.rooms.find(r => r.id === roomId);
         if (!room) return;
@@ -422,7 +501,7 @@ class RoomManager {
         const employeeOptions = employees.map(e => `${e.id}: ${e.name}`).join('\n');
         const employeeId = prompt(`Select employee ID:\n${employeeOptions}`);
         const employee = employees.find(e => e.id === parseInt(employeeId));
-        
+
         if (!employee) {
             showNotification('Please select a valid employee', 'error');
             return;
@@ -716,11 +795,11 @@ class RoomManager {
             roomId: roomId,
             roomName: room.name,
             ...serviceDetails,
-            startTime: new Date().toISOString(),
-            status: 'active'
+            startTime: null, // Don't start timer yet - will be set when user clicks "Start"
+            status: 'pending' // Set to pending instead of active
         };
-        
-        console.log('🏨 [ROOM] Creating active service:', {
+
+        console.log('🏨 [ROOM] Creating pending service (not started yet):', {
             activeService: activeService,
             employeeId: activeService.employeeId,
             employeeName: activeService.employeeName
@@ -728,12 +807,12 @@ class RoomManager {
 
         const serviceId = await window.db.add('activeServices', activeService);
         activeService.id = serviceId;
-        
+
         // Add to active services array
         this.activeServices.push(activeService);
 
-        // Update room status to occupied and set current service
-        room.status = 'occupied';
+        // Update room status to pending (yellow) instead of occupied (red)
+        room.status = 'pending';
         room.currentService = activeService;
         await window.db.update('rooms', room);
         
