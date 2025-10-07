@@ -457,7 +457,7 @@ class RoomManager {
         room.currentService.startTime = new Date().toISOString();
         room.currentService.status = 'active';
 
-        // Update in activeServices database
+        // Update in IndexedDB
         if (room.currentService.id) {
             await window.db.update('activeServices', room.currentService);
         } else {
@@ -466,12 +466,31 @@ class RoomManager {
             room.currentService.id = serviceId;
         }
 
+        // ALSO update in MongoDB (so other devices see the change)
+        if (room.currentService._id) {
+            try {
+                await window.HybridAPIClient.put(`/api/room-services/${room.currentService._id}`, {
+                    startTime: room.currentService.startTime,
+                    status: 'active'
+                }, {
+                    critical: true
+                });
+                console.log('✅ [ROOM] Service status updated in MongoDB');
+            } catch (error) {
+                console.error('⚠️ [ROOM] Failed to update service in MongoDB:', error);
+            }
+        }
+
         // Update room status to occupied
         room.status = 'occupied';
         await window.db.update('rooms', room);
 
-        // Refresh room list
-        this.displayRooms();
+        // Refresh room list (for therapist or manager view)
+        if (this.isTherapistView) {
+            await this.showTherapistView();
+        } else {
+            this.displayRooms();
+        }
         showNotification(`Service started in ${room.name}`, 'success');
     }
 
@@ -819,8 +838,26 @@ class RoomManager {
             employeeName: activeService.employeeName
         });
 
-        const serviceId = await window.db.add('activeServices', activeService);
-        activeService.id = serviceId;
+        // Save to IndexedDB first (for offline support)
+        const localServiceId = await window.db.add('activeServices', activeService);
+        activeService.id = localServiceId;
+
+        // ALSO save to MongoDB via API (so other devices can see it)
+        try {
+            const apiResult = await window.HybridAPIClient.post('/api/room-services', activeService, {
+                critical: true
+            });
+
+            if (apiResult.success && apiResult.data?._id) {
+                // Update with MongoDB ID
+                activeService._id = apiResult.data._id;
+                await window.db.update('activeServices', { ...activeService, _id: apiResult.data._id });
+                console.log('✅ [ROOM] Service saved to MongoDB:', apiResult.data._id);
+            }
+        } catch (error) {
+            console.error('⚠️ [ROOM] Failed to save service to MongoDB (offline mode):', error);
+            // Continue anyway - service is saved locally
+        }
 
         // Add to active services array
         this.activeServices.push(activeService);
@@ -1052,12 +1089,41 @@ class RoomManager {
                 throw new Error(`No employee ID found for therapist. Available fields: ${userData ? Object.keys(userData).join(', ') : 'none'}`);
             }
 
-            // FIRST: Load room data and services to get current status
-            console.log('📦 [THERAPIST] Loading rooms and services first...');
+            // FIRST: Load room data and services from MongoDB (not IndexedDB)
+            console.log('📦 [THERAPIST] Loading rooms and services from MongoDB...');
             await this.loadRooms();
-            await this.loadActiveServices();
 
-            console.log('🔍 [THERAPIST] Loaded rooms after services:', this.rooms.map(r => ({
+            // Load services from MongoDB API (so we see services from other devices)
+            try {
+                const servicesResult = await window.HybridAPIClient.get('/api/room-services', 'roomServicesLive', {
+                    critical: true,
+                    bypassCache: true  // Always get fresh data
+                });
+
+                if (servicesResult.success && servicesResult.data) {
+                    console.log('📋 [THERAPIST] Loaded services from MongoDB:', servicesResult.data);
+
+                    // Update room statuses based on MongoDB services
+                    for (const service of servicesResult.data) {
+                        const room = this.rooms.find(r => r.id === service.roomId);
+                        if (room) {
+                            room.status = service.status === 'pending' ? 'pending' : 'occupied';
+                            room.currentService = service;
+                            console.log('🔗 [THERAPIST] Linked service to room:', {
+                                roomName: room.name,
+                                status: room.status,
+                                serviceName: service.serviceName
+                            });
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('⚠️ [THERAPIST] Failed to load services from MongoDB, falling back to IndexedDB:', error);
+                // Fallback to local IndexedDB
+                await this.loadActiveServices();
+            }
+
+            console.log('🔍 [THERAPIST] Final room statuses:', this.rooms.map(r => ({
                 id: r.id,
                 name: r.name,
                 status: r.status,
