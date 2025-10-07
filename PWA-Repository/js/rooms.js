@@ -843,9 +843,20 @@ class RoomManager {
         activeService.id = localServiceId;
 
         // ALSO save to MongoDB via API (so other devices can see it)
+        console.log('🔄 [ROOM] Attempting to save service to MongoDB...', {
+            hasHybridAPIClient: !!window.HybridAPIClient,
+            activeService: activeService
+        });
+
         try {
             const apiResult = await window.HybridAPIClient.post('/api/room-services', activeService, {
                 critical: true
+            });
+
+            console.log('📡 [ROOM] MongoDB API response:', {
+                success: apiResult.success,
+                hasData: !!apiResult.data,
+                dataId: apiResult.data?._id
             });
 
             if (apiResult.success && apiResult.data?._id) {
@@ -853,9 +864,16 @@ class RoomManager {
                 activeService._id = apiResult.data._id;
                 await window.db.update('activeServices', { ...activeService, _id: apiResult.data._id });
                 console.log('✅ [ROOM] Service saved to MongoDB:', apiResult.data._id);
+            } else {
+                console.warn('⚠️ [ROOM] MongoDB save returned but no _id:', apiResult);
             }
         } catch (error) {
-            console.error('⚠️ [ROOM] Failed to save service to MongoDB (offline mode):', error);
+            console.error('❌ [ROOM] Failed to save service to MongoDB:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                apiClientStatus: window.HybridAPIClient?.isOnline
+            });
             // Continue anyway - service is saved locally
         }
 

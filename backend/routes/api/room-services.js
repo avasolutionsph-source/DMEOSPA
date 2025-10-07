@@ -32,8 +32,17 @@ router.get('/', async (req, res) => {
 // Create a new pending service
 router.post('/', async (req, res) => {
     try {
+        console.log('📥 [ROOM-SERVICES] POST request received:', {
+            hasBody: !!req.body,
+            bodyKeys: Object.keys(req.body || {}),
+            hasUser: !!req.user,
+            userKeys: Object.keys(req.user || {})
+        });
+
         const userId = req.user.userId || req.user.id;
         const serviceData = req.body;
+
+        console.log('🔑 [ROOM-SERVICES] Creating service with userId:', userId);
 
         const newService = new ActiveService({
             ...serviceData,
@@ -44,8 +53,10 @@ router.post('/', async (req, res) => {
 
         console.log(`✅ [ROOM-SERVICES] Created pending service:`, {
             serviceId: newService._id,
+            userId: newService.userId,
             roomName: serviceData.roomName,
-            status: serviceData.status
+            status: serviceData.status,
+            employeeName: serviceData.employeeName
         });
 
         res.json({
@@ -54,6 +65,7 @@ router.post('/', async (req, res) => {
         });
     } catch (error) {
         console.error('❌ [ROOM-SERVICES] Error creating service:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({
             success: false,
             error: error.message
