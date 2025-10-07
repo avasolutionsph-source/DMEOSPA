@@ -966,11 +966,32 @@ class RoomManager {
             const allAssignments = assignmentsResult.data || [];
 
             // Filter to only this therapist's assignments
+            // Try multiple ID formats for matching (MongoDB stores IDs in different formats)
             const myAssignments = allAssignments.filter(a => {
-                const match = String(a.employeeId) === String(employeeId);
+                // Convert both IDs to strings for comparison
+                const assignmentId = String(a.employeeId || '');
+                const currentId = String(employeeId || '');
+
+                // Also try matching with the employee's _id if it exists in assignment
+                const assignmentIdAlt = String(a.employeeId?._id || a.employeeId?.id || '');
+
+                // Try to extract ObjectId string if it's an object
+                let assignmentIdStr = assignmentId;
+                if (a.employeeId && typeof a.employeeId === 'object') {
+                    assignmentIdStr = a.employeeId.$oid || a.employeeId.toString() || assignmentId;
+                }
+
+                const match = assignmentIdStr === currentId ||
+                             assignmentId === currentId ||
+                             assignmentIdAlt === currentId;
+
                 console.log('🔍 [ROOMS] Comparing:', {
                     assignmentEmployeeId: a.employeeId,
+                    assignmentIdStr,
+                    assignmentIdAlt,
                     currentEmployeeId: employeeId,
+                    employeeName: a.employeeName,
+                    roomName: a.roomName,
                     match
                 });
                 return match;
