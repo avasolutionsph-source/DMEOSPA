@@ -155,13 +155,27 @@ class RoomManager {
         try {
             // Load active and pending services (not completed ones)
             const allServices = await window.db.getAll('activeServices');
+
+            console.log('📋 [ROOMS] All services from IndexedDB:', allServices);
+
             this.activeServices = (allServices || []).filter(service =>
                 service.status === 'active' || service.status === 'pending'
             );
 
+            console.log('✅ [ROOMS] Filtered active/pending services:', this.activeServices);
+
             // Update room statuses based on active and pending services
             for (const service of this.activeServices) {
                 const room = this.rooms.find(r => r.id === service.roomId);
+                console.log('🔗 [ROOMS] Linking service to room:', {
+                    serviceId: service.id,
+                    serviceStatus: service.status,
+                    serviceName: service.serviceName,
+                    roomId: service.roomId,
+                    foundRoom: !!room,
+                    roomName: room?.name
+                });
+
                 if (room) {
                     if (service.status === 'pending') {
                         room.status = 'pending';
