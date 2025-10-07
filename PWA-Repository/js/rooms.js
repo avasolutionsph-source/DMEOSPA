@@ -1052,10 +1052,24 @@ class RoomManager {
                 throw new Error(`No employee ID found for therapist. Available fields: ${userData ? Object.keys(userData).join(', ') : 'none'}`);
             }
 
-            // Get all room assignments
+            // FIRST: Load room data and services to get current status
+            console.log('📦 [THERAPIST] Loading rooms and services first...');
+            await this.loadRooms();
+            await this.loadActiveServices();
+
+            console.log('🔍 [THERAPIST] Loaded rooms after services:', this.rooms.map(r => ({
+                id: r.id,
+                name: r.name,
+                status: r.status,
+                hasService: !!r.currentService,
+                serviceStatus: r.currentService?.status
+            })));
+
+            // THEN: Get room assignments
             console.log('🔍 [ROOMS] Fetching room assignments from API...');
             const assignmentsResult = await window.HybridAPIClient.get('/api/room-assignments', 'roomAssignments', {
-                critical: true
+                critical: false,
+                timeout: 5000
             });
 
             console.log('📦 [ROOMS] API Response:', {
@@ -1122,18 +1136,6 @@ class RoomManager {
                 `;
                 return;
             }
-
-            // Load actual room data to get current status
-            await this.loadRooms();
-            await this.loadActiveServices();
-
-            console.log('🔍 [THERAPIST] Loaded rooms:', this.rooms.map(r => ({
-                id: r.id,
-                name: r.name,
-                status: r.status,
-                hasService: !!r.currentService,
-                serviceStatus: r.currentService?.status
-            })));
 
             // Group assignments by room
             const roomGroups = {};
