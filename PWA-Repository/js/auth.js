@@ -1040,9 +1040,9 @@ class AuthSystem {
         
         // Define permissions (same as above)
         const rolePermissions = {
-            'senior_therapist': ['appointments', 'attendance', 'payroll-requests'],
-            'junior_therapist': ['appointments', 'attendance', 'payroll-requests'],
-            'new_therapist': ['appointments', 'attendance', 'payroll-requests'],
+            'senior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
+            'junior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
+            'new_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
             'receptionist': ['pos', 'inventory', 'customers', 'appointments', 'attendance', 'payroll-requests', 'rooms', 'expenses'],
             'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers', 
                        'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
