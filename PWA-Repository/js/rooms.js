@@ -10,13 +10,28 @@ class RoomManager {
     }
 
     async init() {
-        await this.loadRooms();
-        await this.loadActiveServices();
-        // Only setup event listeners once
-        if (!this.listenersSetup) {
-            this.setupEventListeners();
-            this.startTimerUpdates();
-            this.listenersSetup = true;
+        // Check if user is a therapist
+        const userRole = window.app?.userData?.role || localStorage.getItem('userRole');
+        const isTherapist = userRole && (
+            userRole === 'senior_therapist' ||
+            userRole === 'junior_therapist' ||
+            userRole === 'new_therapist' ||
+            userRole === 'therapist'
+        );
+
+        if (isTherapist) {
+            // Show therapist view
+            await this.showTherapistView();
+        } else {
+            // Show manager/owner view
+            await this.loadRooms();
+            await this.loadActiveServices();
+            // Only setup event listeners once
+            if (!this.listenersSetup) {
+                this.setupEventListeners();
+                this.startTimerUpdates();
+                this.listenersSetup = true;
+            }
         }
     }
 
@@ -807,6 +822,139 @@ class RoomManager {
         } catch (error) {
             console.error('Failed to save therapist assignments:', error);
             showNotification('Failed to save assignments', 'error');
+        }
+    }
+
+    // Therapist view - shows only their assigned rooms
+    async showTherapistView() {
+        const container = document.getElementById('roomsGrid');
+        if (!container) return;
+
+        // Hide management buttons for therapists
+        const headerActions = document.querySelector('.header-actions');
+        if (headerActions) {
+            headerActions.style.display = 'none';
+        }
+
+        // Update page title
+        const pageHeader = document.querySelector('#rooms .page-header h1');
+        if (pageHeader) {
+            pageHeader.textContent = 'My Assigned Rooms';
+        }
+
+        try {
+            // Get current user's employee ID
+            const userId = window.app?.userData?.userId || localStorage.getItem('userId');
+            const employeeId = window.app?.userData?.employeeId || userId;
+
+            console.log('👤 [ROOMS] Loading therapist view for employee:', employeeId);
+
+            // Get all room assignments
+            const assignmentsResult = await window.HybridAPIClient.get('/api/room-assignments', 'roomAssignments', {
+                critical: true
+            });
+
+            if (!assignmentsResult.success) {
+                throw new Error('Failed to load room assignments');
+            }
+
+            const allAssignments = assignmentsResult.data || [];
+
+            // Filter to only this therapist's assignments
+            const myAssignments = allAssignments.filter(a =>
+                String(a.employeeId) === String(employeeId)
+            );
+
+            console.log('🏨 [ROOMS] Therapist assignments found:', myAssignments.length);
+
+            if (myAssignments.length === 0) {
+                // No rooms assigned
+                container.innerHTML = `
+                    <div class="empty-state" style="text-align: center; padding: 60px 20px;">
+                        <i class="fas fa-door-closed" style="font-size: 4rem; color: #ddd; margin-bottom: 20px;"></i>
+                        <h2 style="color: #666; margin-bottom: 10px;">No Rooms Assigned</h2>
+                        <p style="color: #999; font-size: 1.1rem;">
+                            You don't have any rooms assigned yet.<br>
+                            Please contact your manager for room assignments.
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Group assignments by room
+            const roomGroups = {};
+            myAssignments.forEach(assignment => {
+                if (!roomGroups[assignment.roomName]) {
+                    roomGroups[assignment.roomName] = {
+                        roomName: assignment.roomName,
+                        roomId: assignment.roomId,
+                        assignments: []
+                    };
+                }
+                roomGroups[assignment.roomName].assignments.push(assignment);
+            });
+
+            // Display assigned rooms
+            container.innerHTML = `
+                <div style="max-width: 1200px; margin: 0 auto;">
+                    <div class="info-banner" style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; margin-bottom: 30px; border-radius: 5px;">
+                        <i class="fas fa-info-circle" style="color: #2196F3; margin-right: 10px;"></i>
+                        <strong>Your Assigned Rooms:</strong> You are assigned to ${Object.keys(roomGroups).length} room(s)
+                    </div>
+
+                    <div class="rooms-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                        ${Object.values(roomGroups).map(group => `
+                            <div class="room-card available" style="border: 2px solid #2196F3; background: white; border-radius: 10px; padding: 0; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                <div class="room-header" style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); color: white; padding: 20px;">
+                                    <h3 style="margin: 0; font-size: 1.5rem;">
+                                        <i class="fas fa-door-open"></i> ${group.roomName}
+                                    </h3>
+                                </div>
+                                <div class="room-body" style="padding: 20px;">
+                                    <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                                        <div style="font-weight: 600; color: #666; margin-bottom: 10px;">
+                                            <i class="fas fa-info-circle"></i> Room Details
+                                        </div>
+                                        <div style="color: #555;">
+                                            <div style="margin: 5px 0;">
+                                                <i class="fas fa-hashtag" style="width: 20px; color: #2196F3;"></i>
+                                                Room ID: <strong>#${group.roomId}</strong>
+                                            </div>
+                                            <div style="margin: 5px 0;">
+                                                <i class="fas fa-calendar-alt" style="width: 20px; color: #2196F3;"></i>
+                                                Assigned: <strong>${new Date(group.assignments[0].assignedAt).toLocaleDateString()}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; border-left: 3px solid #4CAF50;">
+                                        <div style="font-weight: 600; color: #2e7d32; margin-bottom: 10px;">
+                                            <i class="fas fa-check-circle"></i> Assignment Status
+                                        </div>
+                                        <div style="color: #555;">
+                                            You are authorized to use this room for client services
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+        } catch (error) {
+            console.error('Failed to load therapist room view:', error);
+            container.innerHTML = `
+                <div class="empty-state" style="text-align: center; padding: 60px 20px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: #f44336; margin-bottom: 20px;"></i>
+                    <h2 style="color: #666; margin-bottom: 10px;">Error Loading Rooms</h2>
+                    <p style="color: #999; font-size: 1.1rem;">
+                        Unable to load your assigned rooms.<br>
+                        Please try refreshing the page.
+                    </p>
+                </div>
+            `;
         }
     }
 }
