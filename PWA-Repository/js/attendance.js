@@ -1822,14 +1822,12 @@ class AttendanceManager {
         // SECURITY: Filter records for non-manager employees
         // Only managers, owners, and receptionists can see all records
         const user = window.authSystem?.currentUser;
-        const isEmployee = user?.type === 'employee';
-        const canSeeAllRecords = user?.role === 'manager' || user?.role === 'receptionist' || user?.role === 'owner' || !isEmployee;
+        const userRole = user?.role || user?.type; // Check both role and type fields
+        const canSeeAllRecords = userRole === 'manager' || userRole === 'receptionist' || userRole === 'owner';
 
         console.log('🔒 [SECURITY-DEBUG] Attendance History Filter:', {
             userName: user?.email,
-            userRole: user?.role,
-            userType: user?.type,
-            isEmployee: isEmployee,
+            userRole: userRole,
             canSeeAllRecords: canSeeAllRecords,
             currentEmployeeId: this.currentEmployeeId,
             totalRecords: records.length,
