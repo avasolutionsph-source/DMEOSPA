@@ -1494,10 +1494,18 @@ class POSSystem {
 
                     newEmployeeSelect.addEventListener('change', async (e) => {
                         const selectedEmployeeId = e.target.value;
+                        const selectedOption = e.target.options[e.target.selectedIndex];
+                        const selectedEmployeeName = selectedOption?.text;
 
-                        if (!selectedEmployeeId || !roomSelect) return;
+                        if (!selectedEmployeeId || !roomSelect) {
+                            console.log('ℹ️ [POS] Employee deselected or room select not found');
+                            return;
+                        }
 
-                        console.log('👤 [POS] Employee selected, checking for assigned room:', selectedEmployeeId);
+                        console.log('👤 [POS] Employee selected:', {
+                            id: selectedEmployeeId,
+                            name: selectedEmployeeName
+                        });
 
                         try {
                             // Get room assignments from API
@@ -1505,33 +1513,67 @@ class POSSystem {
                                 critical: false
                             });
 
+                            console.log('📦 [POS] Room assignments API response:', {
+                                success: assignmentsResult.success,
+                                dataLength: assignmentsResult.data?.length,
+                                assignments: assignmentsResult.data
+                            });
+
                             if (assignmentsResult.success && assignmentsResult.data) {
-                                // Find room assigned to this employee
-                                const employeeAssignment = assignmentsResult.data.find(a =>
-                                    String(a.employeeId) === String(selectedEmployeeId)
-                                );
+                                // Find room assigned to this employee - try multiple ID matching strategies
+                                const employeeAssignment = assignmentsResult.data.find(a => {
+                                    const match = String(a.employeeId) === String(selectedEmployeeId) ||
+                                                 String(a.employeeId._id || a.employeeId) === String(selectedEmployeeId) ||
+                                                 String(a.employeeId) === String(selectedEmployeeId._id || selectedEmployeeId);
+
+                                    console.log('🔍 [POS] Comparing assignment:', {
+                                        assignmentEmployeeId: a.employeeId,
+                                        assignmentEmployeeName: a.employeeName,
+                                        assignmentRoom: a.roomName,
+                                        selectedEmployeeId: selectedEmployeeId,
+                                        match: match
+                                    });
+
+                                    return match;
+                                });
 
                                 if (employeeAssignment) {
+                                    console.log('✅ [POS] Found assignment:', employeeAssignment);
+
                                     // Find the room in the dropdown and select it
                                     const roomOptions = Array.from(roomSelect.options);
+                                    console.log('🏠 [POS] Available room options:', roomOptions.map(opt => ({
+                                        value: opt.value,
+                                        text: opt.text,
+                                        disabled: opt.disabled
+                                    })));
+
                                     const matchingOption = roomOptions.find(opt => {
                                         // Match by room ID from assignment
-                                        return String(opt.value) === String(employeeAssignment.roomId);
+                                        const match = String(opt.value) === String(employeeAssignment.roomId);
+                                        console.log('🔍 [POS] Comparing room option:', {
+                                            optionValue: opt.value,
+                                            assignmentRoomId: employeeAssignment.roomId,
+                                            match: match
+                                        });
+                                        return match;
                                     });
 
                                     if (matchingOption && !matchingOption.disabled) {
                                         roomSelect.value = matchingOption.value;
-                                        console.log(`✅ [POS] Auto-selected room: ${employeeAssignment.roomName} for employee`);
+                                        console.log(`✅ [POS] Auto-selected room: ${employeeAssignment.roomName} (ID: ${matchingOption.value})`);
                                         showNotification(`Automatically assigned to ${employeeAssignment.roomName}`, 'success');
+                                    } else if (matchingOption && matchingOption.disabled) {
+                                        console.log(`⚠️ [POS] Employee's assigned room (${employeeAssignment.roomName}) is occupied`);
                                     } else {
-                                        console.log(`⚠️ [POS] Employee's assigned room (${employeeAssignment.roomName}) is not available`);
+                                        console.log(`⚠️ [POS] Employee's assigned room (${employeeAssignment.roomName}, ID: ${employeeAssignment.roomId}) not found in dropdown`);
                                     }
                                 } else {
-                                    console.log('ℹ️ [POS] No room assignment found for this employee');
+                                    console.log('ℹ️ [POS] No room assignment found for employee ID:', selectedEmployeeId);
                                 }
                             }
                         } catch (error) {
-                            console.error('Failed to fetch room assignments:', error);
+                            console.error('❌ [POS] Failed to fetch room assignments:', error);
                             // Don't show error to user - this is just a convenience feature
                         }
                     });
