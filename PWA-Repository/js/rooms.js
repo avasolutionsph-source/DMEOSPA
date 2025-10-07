@@ -926,8 +926,12 @@ class RoomManager {
                 }
             }
 
-            // Get employee ID - extract string from various possible formats
-            let employeeId = userData?._id || userData?.userId || userData?.id;
+            // Get employee ID - try all possible field names
+            let employeeId = userData?._id ||
+                           userData?.userId ||
+                           userData?.id ||
+                           userData?.employeeId ||
+                           userData?.email; // Fallback to email as unique identifier
 
             // If it's an object (like MongoDB ObjectId), try to get the string value
             if (employeeId && typeof employeeId === 'object') {
@@ -938,13 +942,16 @@ class RoomManager {
                 employeeId,
                 employeeIdType: typeof employeeId,
                 userData,
+                userDataKeys: userData ? Object.keys(userData) : [],
                 userType: userData?.type,
-                userRole: userData?.role
+                userRole: userData?.role,
+                userEmail: userData?.email
             });
 
             // Validate we have an employee ID
             if (!employeeId) {
-                throw new Error('No employee ID found for therapist');
+                console.error('❌ [ROOMS] No employee ID found. userData:', userData);
+                throw new Error(`No employee ID found for therapist. Available fields: ${userData ? Object.keys(userData).join(', ') : 'none'}`);
             }
 
             // Get all room assignments
