@@ -476,7 +476,11 @@ class POSSystem {
                     'Junior Therapist',
                     'Therapist',
                     'Massage Therapist',
-                    'New Therapist'
+                    'New Therapist',
+                    // Also include role-based format (lowercase with underscore)
+                    'senior_therapist',
+                    'junior_therapist',
+                    'new_therapist'
                 ];
 
                 const filteredEmployees = employees.filter(emp =>
