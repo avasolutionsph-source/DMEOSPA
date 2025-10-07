@@ -621,19 +621,43 @@ class RoomManager {
         room.currentService.endTime = endTime.toISOString();
         room.currentService.actualDuration = durationMinutes;
         room.currentService.status = 'completed';
-        
-        // Save to history/database
+
+        // Save to IndexedDB
         await window.db.update('activeServices', room.currentService);
-        
+
+        // ALSO update in MongoDB (so other devices see the change)
+        if (room.currentService._id) {
+            try {
+                await window.HybridAPIClient.put(`/api/room-services/${room.currentService._id}`, {
+                    endTime: room.currentService.endTime,
+                    actualDuration: room.currentService.actualDuration,
+                    status: 'completed'
+                }, {
+                    critical: true
+                });
+                console.log('✅ [ROOM] Service ended in MongoDB');
+            } catch (error) {
+                console.error('⚠️ [ROOM] Failed to update service in MongoDB:', error);
+            }
+        }
+
         // Remove from active services array
-        this.activeServices = this.activeServices.filter(service => service.id !== room.currentService.id);
+        this.activeServices = this.activeServices.filter(service =>
+            service.id !== room.currentService.id && service._id !== room.currentService._id
+        );
 
         // Clear room
         room.status = 'available';
         room.currentService = null;
         await window.db.update('rooms', room);
 
-        this.displayRooms();
+        // Refresh view (therapist or manager)
+        if (this.isTherapistView) {
+            await this.showTherapistView();
+        } else {
+            this.displayRooms();
+        }
+
         showNotification(`Service ended. Duration: ${durationMinutes} minutes`, 'info');
     }
 
@@ -1526,7 +1550,7 @@ class RoomManager {
                                         <div style="color: #800020; font-weight: bold; margin-bottom: 10px;">
                                             <i class="fas fa-clock"></i> Active Service
                                         </div>
-                                        <div style="font-size: 1.5rem; font-weight: bold; color: #800020; margin: 10px 0;">
+                                        <div style="font-size: 1.5rem; font-weight: bold; color: #800020; margin: 10px 0;" class="service-timer" data-room-id="${room.id}">
                                             ${elapsed}
                                         </div>
                                         <div style="color: #555; font-size: 0.9rem;">
@@ -1535,6 +1559,11 @@ class RoomManager {
                                             <div style="margin: 5px 0;"><strong>Started:</strong> ${new Date(room.currentService.startTime).toLocaleTimeString()}</div>
                                         </div>
                                     </div>
+                                `;
+                                actionButtons = `
+                                    <button class="btn btn-danger" onclick="roomManager.endService(${room.id})" style="width: 100%;">
+                                        <i class="fas fa-stop"></i> End Service
+                                    </button>
                                 `;
                             } else {
                                 statusBadge = `<span style="background: #27ae60; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold;">
