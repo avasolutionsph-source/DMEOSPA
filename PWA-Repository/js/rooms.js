@@ -1095,10 +1095,18 @@ class RoomManager {
 
             // Load services from MongoDB API (so we see services from other devices)
             try {
-                const servicesResult = await window.HybridAPIClient.get('/api/room-services', 'roomServicesLive', {
-                    critical: true,
-                    bypassCache: true  // Always get fresh data
-                });
+                console.log('🔄 [THERAPIST] Calling room-services API...');
+
+                const servicesResult = await Promise.race([
+                    window.HybridAPIClient.get('/api/room-services', 'roomServicesLive', {
+                        critical: false,
+                        bypassCache: true,
+                        timeout: 10000
+                    }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('API timeout after 10s')), 10000))
+                ]);
+
+                console.log('✅ [THERAPIST] API response received:', servicesResult);
 
                 if (servicesResult.success && servicesResult.data) {
                     console.log('📋 [THERAPIST] Loaded services from MongoDB:', servicesResult.data);
@@ -1116,10 +1124,18 @@ class RoomManager {
                             });
                         }
                     }
+                } else {
+                    console.warn('⚠️ [THERAPIST] API returned no data:', servicesResult);
+                    await this.loadActiveServices();
                 }
             } catch (error) {
-                console.error('⚠️ [THERAPIST] Failed to load services from MongoDB, falling back to IndexedDB:', error);
+                console.error('⚠️ [THERAPIST] Failed to load services from MongoDB:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    stack: error.stack
+                });
                 // Fallback to local IndexedDB
+                console.log('📦 [THERAPIST] Falling back to IndexedDB...');
                 await this.loadActiveServices();
             }
 
