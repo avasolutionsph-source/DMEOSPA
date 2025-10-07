@@ -815,13 +815,27 @@ class RoomManager {
                     console.log(`💾 [ROOMS] Saving ${updatePromises.length} employee updates...`);
                     await Promise.all(updatePromises);
                     console.log('✅ [ROOMS] All employee updates completed');
+
+                    // Wait a moment for backend to fully process
+                    await new Promise(resolve => setTimeout(resolve, 500));
+
+                    // Clear employee cache in IndexedDB to force fresh fetch
+                    try {
+                        console.log('🗑️ [ROOMS] Clearing employee cache...');
+                        const tx = window.db.db.transaction(['employees'], 'readwrite');
+                        const store = tx.objectStore('employees');
+                        await store.clear();
+                        console.log('✅ [ROOMS] Employee cache cleared');
+                    } catch (error) {
+                        console.warn('⚠️ [ROOMS] Could not clear cache:', error);
+                    }
                 }
 
                 showNotification(`Therapist assignments updated for ${room.name}`, 'success');
                 closeModal('assignTherapistModal');
 
-                // Force refresh room display with fresh employee data
-                console.log('🔄 [ROOMS] Force refreshing room display...');
+                // Force refresh room display with fresh employee data from API
+                console.log('🔄 [ROOMS] Force refreshing room display from API...');
                 await this.displayRooms(true);
             }
         } catch (error) {
