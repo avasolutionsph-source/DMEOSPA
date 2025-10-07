@@ -865,7 +865,7 @@ class RoomManager {
         if (!container) return;
 
         // Hide management buttons for therapists
-        const headerActions = document.querySelector('.header-actions');
+        const headerActions = document.querySelector('#rooms .header-actions');
         if (headerActions) {
             headerActions.style.display = 'none';
         }
@@ -876,12 +876,34 @@ class RoomManager {
             pageHeader.textContent = 'My Assigned Rooms';
         }
 
-        try {
-            // Get current user's employee ID
-            const userId = window.app?.userData?.userId || localStorage.getItem('userId');
-            const employeeId = window.app?.userData?.employeeId || userId;
+        console.log('🔒 [ROOMS] Hiding management buttons for therapist view', {
+            headerActionsFound: !!headerActions,
+            headerActionsDisplay: headerActions?.style?.display
+        });
 
-            console.log('👤 [ROOMS] Loading therapist view for employee:', employeeId);
+        try {
+            // Get current user data
+            let userData = window.app?.userData;
+            if (!userData) {
+                const currentUserStr = localStorage.getItem('currentUser');
+                if (currentUserStr) {
+                    try {
+                        userData = JSON.parse(currentUserStr);
+                    } catch (error) {
+                        console.error('Failed to parse currentUser:', error);
+                    }
+                }
+            }
+
+            // Get employee ID - for employee type users, their _id is their employee ID
+            const employeeId = userData?._id || userData?.userId;
+
+            console.log('👤 [ROOMS] Loading therapist view for employee:', {
+                employeeId,
+                userData,
+                userType: userData?.type,
+                userRole: userData?.role
+            });
 
             // Get all room assignments
             const assignmentsResult = await window.HybridAPIClient.get('/api/room-assignments', 'roomAssignments', {
