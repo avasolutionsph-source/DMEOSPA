@@ -58,7 +58,7 @@ class RoomManager {
 
             // Show therapist view - don't call manager view at all
             try {
-                await this.showTherapistView();
+                await this.showTherapistView(userData); // Pass userData to avoid re-fetching
             } catch (error) {
                 console.error('❌ [ROOMS] Therapist view failed:', error);
                 // Show error but don't fall back to manager view
@@ -891,7 +891,7 @@ class RoomManager {
     }
 
     // Therapist view - shows only their assigned rooms
-    async showTherapistView() {
+    async showTherapistView(userData = null) {
         const container = document.getElementById('roomsGrid');
         if (!container) return;
 
@@ -913,8 +913,10 @@ class RoomManager {
         });
 
         try {
-            // Get current user data
-            let userData = window.app?.userData;
+            // Use passed userData or fetch it
+            if (!userData) {
+                userData = window.app?.userData;
+            }
             if (!userData) {
                 const currentUserStr = localStorage.getItem('currentUser');
                 if (currentUserStr) {
@@ -924,6 +926,9 @@ class RoomManager {
                         console.error('Failed to parse currentUser:', error);
                     }
                 }
+            }
+            if (!userData && window.authSystem) {
+                userData = window.authSystem.getCurrentUser();
             }
 
             // Get employee ID - try all possible field names
