@@ -197,12 +197,22 @@ class RoomManager {
                 `;
             }
 
+            // Build therapist names for header
+            let therapistNamesHeader = '';
+            if (assignedTherapists.length > 0) {
+                const names = assignedTherapists.map(t => {
+                    const name = t.firstName ? `${t.firstName} ${t.lastName}`.trim() : t.name;
+                    return name;
+                }).join(', ');
+                therapistNamesHeader = ` <span style="color: #2196F3; font-size: 0.75rem;">(${names})</span>`;
+            }
+
             return `
                 <div class="room-card ${isOccupied ? 'occupied' : 'available'} ${room.hidden ? 'hidden-room' : ''}" style="${room.hidden ? 'opacity: 0.6; border-style: dashed;' : ''}">
                     <div class="room-header ${isOccupied ? 'occupied' : 'available'}" style="padding: 10px; margin: -1px -1px 0 -1px;">
                         <h3 style="margin: 0; display: flex; justify-content: space-between; align-items: center;">
                             <span>
-                                <i class="fas fa-door-${isOccupied ? 'closed' : 'open'}"></i> ${room.name}
+                                <i class="fas fa-door-${isOccupied ? 'closed' : 'open'}"></i> ${room.name}${therapistNamesHeader}
                                 ${room.hidden ? '<span style="color: #ff9800; font-size: 0.7rem; margin-left: 5px;">(Hidden)</span>' : ''}
                             </span>
                             <span style="font-size: 0.8rem;">
@@ -726,46 +736,60 @@ class RoomManager {
 
         // Get all checked therapists
         const checkboxes = document.querySelectorAll('.therapist-checkbox');
-        const selectedTherapists = Array.from(checkboxes)
+        const selectedTherapistIds = Array.from(checkboxes)
             .filter(cb => cb.checked)
-            .map(cb => ({
-                id: cb.dataset.employeeId,
-                name: cb.dataset.employeeName
-            }));
+            .map(cb => cb.dataset.employeeId);
 
         try {
-            // Update each therapist's assignedRooms
+            // Update each therapist's assignedRooms - OPTIMIZED VERSION
             const result = await window.HybridAPIClient.getEmployees();
             if (result.success) {
                 const allEmployees = result.data || [];
 
-                for (const emp of allEmployees) {
+                // Filter to only therapists to reduce processing
+                const therapistPositions = [
+                    'Senior Therapist', 'Junior Therapist', 'Therapist',
+                    'Massage Therapist', 'New Therapist',
+                    'senior_therapist', 'junior_therapist', 'new_therapist'
+                ];
+                const therapists = allEmployees.filter(emp =>
+                    therapistPositions.includes(emp.position)
+                );
+
+                // Batch update promises
+                const updatePromises = [];
+
+                for (const emp of therapists) {
                     const empId = String(emp.id || emp._id);
-                    const isSelected = selectedTherapists.some(t => String(t.id) === empId);
+                    const isSelected = selectedTherapistIds.includes(empId);
+                    const currentRooms = emp.assignedRooms || [];
+                    const hasRoom = currentRooms.includes(room.name);
 
-                    // Get current assigned rooms
-                    let assignedRooms = emp.assignedRooms || [];
-
-                    if (isSelected) {
-                        // Add room if not already assigned
-                        if (!assignedRooms.includes(room.name)) {
-                            assignedRooms.push(room.name);
-                        }
-                    } else {
-                        // Remove room if currently assigned
-                        assignedRooms = assignedRooms.filter(r => r !== room.name);
+                    // Only update if there's a change
+                    if (isSelected && !hasRoom) {
+                        // Add room
+                        const newRooms = [...currentRooms, room.name];
+                        updatePromises.push(
+                            window.HybridAPIClient.updateEmployee(emp.id || emp._id, {
+                                ...emp,
+                                assignedRooms: newRooms
+                            })
+                        );
+                    } else if (!isSelected && hasRoom) {
+                        // Remove room
+                        const newRooms = currentRooms.filter(r => r !== room.name);
+                        updatePromises.push(
+                            window.HybridAPIClient.updateEmployee(emp.id || emp._id, {
+                                ...emp,
+                                assignedRooms: newRooms
+                            })
+                        );
                     }
+                }
 
-                    // Update employee if assignments changed
-                    if (JSON.stringify(emp.assignedRooms) !== JSON.stringify(assignedRooms)) {
-                        const updateData = {
-                            ...emp,
-                            assignedRooms: assignedRooms
-                        };
-
-                        // Update via API
-                        await window.HybridAPIClient.updateEmployee(emp.id || emp._id, updateData);
-                    }
+                // Execute all updates in parallel
+                if (updatePromises.length > 0) {
+                    await Promise.all(updatePromises);
                 }
 
                 showNotification(`Therapist assignments updated for ${room.name}`, 'success');
