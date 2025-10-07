@@ -947,9 +947,9 @@ class AuthSystem {
         // Define what pages each role can access
         const rolePermissions = {
             // Therapist roles can only see their own data - they use payroll-requests instead of payroll
-            'senior_therapist': ['appointments', 'attendance', 'payroll'],
-            'junior_therapist': ['appointments', 'attendance', 'payroll'],
-            'new_therapist': ['appointments', 'attendance', 'payroll'],
+            'senior_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
+            'junior_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
+            'new_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
             
             // Receptionist has broader access - also uses payroll-requests
             'receptionist': ['pos', 'inventory', 'customers', 'appointments', 'attendance', 'payroll', 'rooms', 'expenses'],
