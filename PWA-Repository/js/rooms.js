@@ -543,18 +543,53 @@ class RoomManager {
 
         if (!confirm(`Cancel pending service in ${room.name}?`)) return;
 
-        // Remove from activeServices if it has an ID
-        if (room.currentService.id) {
-            await window.db.delete('activeServices', room.currentService.id);
+        const serviceMongoId = room.currentService._id;
+        const serviceLocalId = room.currentService.id;
+
+        // Delete from IndexedDB
+        if (serviceLocalId) {
+            await window.db.delete('activeServices', serviceLocalId);
         }
+
+        // ALSO delete from MongoDB (so other devices see the cancellation)
+        if (serviceMongoId) {
+            try {
+                await window.HybridAPIClient.delete(`/api/room-services/${serviceMongoId}`, {
+                    critical: true
+                });
+                console.log('✅ [ROOM] Pending service deleted from MongoDB');
+            } catch (error) {
+                console.error('⚠️ [ROOM] Failed to delete service from MongoDB:', error);
+            }
+        }
+
+        // Remove from active services array
+        this.activeServices = this.activeServices.filter(service =>
+            service.id !== serviceLocalId && service._id !== serviceMongoId
+        );
+
+        console.log('🧹 [ROOM] Cancelled pending service:', {
+            roomId: room.id,
+            roomName: room.name,
+            serviceLocalId: serviceLocalId,
+            serviceMongoId: serviceMongoId
+        });
 
         // Clear room
         room.status = 'available';
         room.currentService = null;
         await window.db.update('rooms', room);
 
+        // Give MongoDB a moment to process the deletion
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         // Refresh room list
-        this.displayRooms();
+        if (this.isTherapistView) {
+            await this.showTherapistView();
+        } else {
+            this.displayRooms();
+        }
+
         showNotification(`Pending service cancelled in ${room.name}`, 'info');
     }
 
