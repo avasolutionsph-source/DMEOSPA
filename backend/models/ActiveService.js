@@ -34,7 +34,7 @@ const activeServiceSchema = new mongoose.Schema({
         required: true
     },
     transactionId: {
-        type: Number
+        type: String  // MongoDB ObjectId as string
     },
     estimatedDuration: {
         type: Number  // in minutes
