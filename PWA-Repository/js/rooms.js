@@ -1093,23 +1093,43 @@ class RoomManager {
             console.log('📦 [THERAPIST] Loading rooms and services from MongoDB...');
             await this.loadRooms();
 
-            // Load services from MongoDB API (so we see services from other devices)
+            // Load services from MongoDB API using direct fetch (bypass HybridAPIClient)
             try {
-                console.log('🔄 [THERAPIST] Calling room-services API...');
+                console.log('🔄 [THERAPIST] Calling room-services API with direct fetch...');
 
-                const servicesResult = await Promise.race([
-                    window.HybridAPIClient.get('/api/room-services', 'roomServicesLive', {
-                        critical: false,
-                        bypassCache: true,
-                        timeout: 10000
-                    }),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('API timeout after 10s')), 10000))
-                ]);
+                // Get auth token
+                const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+                if (!authToken) {
+                    throw new Error('No auth token found');
+                }
 
-                console.log('✅ [THERAPIST] API response received:', servicesResult);
+                // Make direct fetch with timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-                if (servicesResult.success && servicesResult.data) {
-                    console.log('📋 [THERAPIST] Loaded services from MongoDB:', servicesResult.data);
+                const response = await fetch('https://daetspa-backend.onrender.com/api/room-services', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                console.log('✅ [THERAPIST] API response status:', response.status);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const servicesResult = await response.json();
+
+                console.log('📋 [THERAPIST] API response:', servicesResult);
+
+                if (servicesResult.success && servicesResult.data && servicesResult.data.length > 0) {
+                    console.log(`✅ [THERAPIST] Found ${servicesResult.data.length} active/pending services`);
 
                     // Update room statuses based on MongoDB services
                     for (const service of servicesResult.data) {
@@ -1125,15 +1145,18 @@ class RoomManager {
                         }
                     }
                 } else {
-                    console.warn('⚠️ [THERAPIST] API returned no data:', servicesResult);
-                    await this.loadActiveServices();
+                    console.log('ℹ️ [THERAPIST] No active services found in MongoDB');
                 }
             } catch (error) {
-                console.error('⚠️ [THERAPIST] Failed to load services from MongoDB:', error);
-                console.error('Error details:', {
-                    message: error.message,
-                    stack: error.stack
-                });
+                if (error.name === 'AbortError') {
+                    console.error('⚠️ [THERAPIST] API request timed out after 8 seconds');
+                } else {
+                    console.error('⚠️ [THERAPIST] Failed to load services from MongoDB:', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        stack: error.stack
+                    });
+                }
                 // Fallback to local IndexedDB
                 console.log('📦 [THERAPIST] Falling back to IndexedDB...');
                 await this.loadActiveServices();
