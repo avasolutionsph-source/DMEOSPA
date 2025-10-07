@@ -1,5 +1,5 @@
 // Service Worker for Offline Functionality - Enhanced Auto-Update System
-const VERSION = '2.8.0'; // DEBUG LOGGING - Comprehensive error tracking for reorder functionality
+const VERSION = '2.8.1'; // ROOM SERVICES - Cross-device MongoDB sync for pending services
 const CACHE_NAME = `ava-solutions-v${VERSION}-${Date.now()}`; // Time-based cache busting
 const urlsToCache = [
     // Core app files
@@ -122,36 +122,53 @@ self.addEventListener('fetch', (event) => {
 
     // Handle API requests with intelligent caching for unified backend
     if (event.request.url.includes('/api/')) {
+        // Log room-services requests for debugging
+        if (event.request.url.includes('/room-services')) {
+            console.log('🔧 [SW] Intercepted room-services request:', event.request.url, event.request.method);
+        }
+
         // Check if it's a unified backend URL
         const isUnifiedBackend = event.request.url.includes('daetspa-backend.onrender.com') ||
                                 event.request.url.includes('localhost:4001');
-        
+
         event.respondWith(
             fetch(event.request)
                 .then(response => {
+                    if (event.request.url.includes('/room-services')) {
+                        console.log('✅ [SW] room-services fetch completed, status:', response.status);
+                    }
+
                     // Cache successful GET requests for offline use
                     if (event.request.method === 'GET' && response.ok && isUnifiedBackend) {
                         const responseToCache = response.clone();
                         caches.open(CACHE_NAME).then(cache => {
                             // Only cache non-sensitive and non-dynamic endpoints
-                            if (!event.request.url.includes('/auth/') && 
+                            if (!event.request.url.includes('/auth/') &&
                                 !event.request.url.includes('/user/') &&
                                 !event.request.url.includes('/transactions') &&
                                 !event.request.url.includes('/inventory') &&
-                                !event.request.url.includes('/employees')) {
+                                !event.request.url.includes('/employees') &&
+                                !event.request.url.includes('/room-services') &&
+                                !event.request.url.includes('/room-assignments')) {
                                 cache.put(event.request, responseToCache);
                             }
                         });
                     }
                     return response;
                 })
-                .catch(() => {
+                .catch((err) => {
+                    if (event.request.url.includes('/room-services')) {
+                        console.error('❌ [SW] room-services fetch failed:', err.message);
+                    }
+
                     // Try to return cached response for GET requests (but not for dynamic data)
                     if (event.request.method === 'GET') {
                         // Don't serve cached versions of dynamic data endpoints
                         const isDynamicEndpoint = event.request.url.includes('/transactions') ||
                                                  event.request.url.includes('/inventory') ||
-                                                 event.request.url.includes('/employees');
+                                                 event.request.url.includes('/employees') ||
+                                                 event.request.url.includes('/room-services') ||
+                                                 event.request.url.includes('/room-assignments');
                         
                         if (!isDynamicEndpoint) {
                             return caches.match(event.request).then(cachedResponse => {

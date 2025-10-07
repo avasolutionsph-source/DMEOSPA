@@ -1095,30 +1095,49 @@ class RoomManager {
 
             // Load services from MongoDB API using direct fetch (bypass HybridAPIClient)
             try {
-                console.log('🔄 [THERAPIST] Calling room-services API with direct fetch...');
+                console.log('🔄 [THERAPIST] Starting MongoDB API call...');
+                console.log('🔍 [THERAPIST] Checking auth token...');
 
                 // Get auth token
                 const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+                console.log('🔑 [THERAPIST] Auth token exists:', !!authToken, 'Length:', authToken?.length);
+
                 if (!authToken) {
                     throw new Error('No auth token found');
                 }
 
-                // Make direct fetch with timeout
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 8000);
+                console.log('🌐 [THERAPIST] Creating fetch request...');
+                const apiUrl = 'https://daetspa-backend.onrender.com/api/room-services';
+                console.log('🎯 [THERAPIST] Target URL:', apiUrl);
 
-                const response = await fetch('https://daetspa-backend.onrender.com/api/room-services', {
+                // Make direct fetch with timeout using Promise.race
+                const controller = new AbortController();
+
+                const fetchPromise = fetch(apiUrl, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
                     },
                     signal: controller.signal
+                }).then(response => {
+                    console.log('📡 [THERAPIST] Fetch completed, got response object');
+                    return response;
+                }).catch(err => {
+                    console.error('❌ [THERAPIST] Fetch threw error:', err.message);
+                    throw err;
                 });
 
-                clearTimeout(timeoutId);
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => {
+                        controller.abort();
+                        reject(new Error('Request timeout after 8 seconds'));
+                    }, 8000);
+                });
 
-                console.log('✅ [THERAPIST] API response status:', response.status);
+                console.log('⏳ [THERAPIST] Waiting for fetch response (8 second timeout)...');
+                const response = await Promise.race([fetchPromise, timeoutPromise]);
+                console.log('✅ [THERAPIST] Got response! Status:', response.status, 'OK:', response.ok);
 
                 if (!response.ok) {
                     const errorText = await response.text();
