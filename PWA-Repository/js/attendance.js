@@ -1300,143 +1300,77 @@ class AttendanceManager {
             const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
             const today = phTime.toISOString().split('T')[0];
 
-            // Load from localStorage first (instant)
-            let allRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
-            console.log(`📦 Loaded ${allRecords.length} records from localStorage (instant)`);
+            console.log('🔄 [ATTENDANCE] Always fetching from MongoDB for cross-device sync...');
 
-            // If localStorage is empty, WAIT for MongoDB (critical for cross-device)
-            if (allRecords.length === 0) {
-                console.log('📭 localStorage empty - fetching from MongoDB...');
-                await this.syncBackendInBackground();
-                // syncBackendInBackground updates this.allAttendanceRecords
-                allRecords = this.allAttendanceRecords || [];
-                console.log(`✅ Fetched ${allRecords.length} records from MongoDB`);
-            } else {
-                // If localStorage has data, show it immediately and sync in background
-                console.log('📦 localStorage has data - showing immediately, syncing in background');
+            // ALWAYS fetch from MongoDB first (like employees do)
+            // This ensures cross-device consistency
+            const token = this.getAuthToken();
 
-                // Sort by date, newest first
-                allRecords.sort((a, b) => {
-                    const dateA = new Date(a.date || a.createdAt);
-                    const dateB = new Date(b.date || b.createdAt);
-                    return dateB - dateA;
+            if (!token) {
+                console.log('⚠️ No auth token - using localStorage only');
+                this.attendanceRecords = this.loadFromLocalStorage('attendanceRecords') || [];
+                this.allAttendanceRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
+                return;
+            }
+
+            try {
+                const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
 
-                // Update UI immediately with localStorage data
-                this.attendanceRecords = allRecords.filter(record => record.date === today);
-                this.allAttendanceRecords = allRecords;
+                if (response.ok) {
+                    const result = await response.json();
+                    const mongoRecords = result.data || [];
+                    console.log(`✅ [MONGODB] Loaded ${mongoRecords.length} records from MongoDB`);
 
-                console.log(`✅ Showing ${this.attendanceRecords.length} records for today (from localStorage)`);
+                    // Normalize MongoDB records
+                    const normalizedRecords = mongoRecords.map(record => ({
+                        ...record,
+                        id: record._id || record.id,
+                        checkInTime: record.checkInTime || (record.checkIn ? new Date(record.checkIn).toISOString() : null),
+                        checkOutTime: record.checkOutTime || (record.checkOut ? new Date(record.checkOut).toISOString() : null)
+                    }));
 
-                // Then sync with backend in BACKGROUND (non-blocking)
-                this.syncBackendInBackground();
+                    // Get pending local records that haven't been synced yet
+                    const localRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
+                    const pendingLocal = localRecords.filter(r =>
+                        r.id && r.id.toString().startsWith('local_')
+                    );
+
+                    // Merge: MongoDB records + pending local records
+                    const mergedRecords = [...normalizedRecords, ...pendingLocal];
+
+                    console.log(`✅ [MERGE] ${normalizedRecords.length} MongoDB + ${pendingLocal.length} pending = ${mergedRecords.length} total`);
+
+                    // Update in-memory and localStorage
+                    this.allAttendanceRecords = mergedRecords;
+                    this.attendanceRecords = mergedRecords.filter(record => record.date === today);
+
+                    this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
+                    this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
+
+                    console.log(`✅ Showing ${this.attendanceRecords.length} records for today`);
+                } else {
+                    console.warn(`⚠️ Backend returned ${response.status}, using localStorage`);
+                    this.attendanceRecords = this.loadFromLocalStorage('attendanceRecords') || [];
+                    this.allAttendanceRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
+                }
+            } catch (fetchError) {
+                console.warn('⚠️ MongoDB fetch failed, using localStorage:', fetchError.message);
+                this.attendanceRecords = this.loadFromLocalStorage('attendanceRecords') || [];
+                this.allAttendanceRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
             }
         } catch (error) {
             console.error('❌ Failed to load attendance records:', error);
-            // Try direct localStorage as last resort
             this.attendanceRecords = this.loadFromLocalStorage('attendanceRecords') || [];
             this.allAttendanceRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
             console.log('📦 Last resort: loaded from localStorage directly');
         }
     }
 
-    // Background sync method - non-blocking backend sync
-    async syncBackendInBackground() {
-        console.log('🔄 [BACKGROUND] Starting backend sync (non-blocking)...');
-        console.log('🔍 [BACKGROUND] Current employee context:', {
-            currentEmployeeId: this.currentEmployeeId,
-            currentEmployeeName: this.currentEmployeeName
-        });
-
-        const token = this.getAuthToken();
-        if (!token) {
-            console.log('⏭️ [BACKGROUND] No auth token, skipping backend sync');
-            return;
-        }
-
-        try {
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                const mongoRecords = result.data || [];
-                console.log(`✅ [BACKGROUND] Loaded ${mongoRecords.length} records from backend`);
-                console.log('🔍 [BACKGROUND] MongoDB records:', mongoRecords.map(r => ({
-                    name: r.employeeName,
-                    id: r.employeeId,
-                    date: r.date
-                })));
-
-                // Merge with localStorage records
-                const localRecords = this.loadFromLocalStorage('allAttendanceRecords') || [];
-                const recordMap = new Map();
-
-                // Add localStorage records first
-                localRecords.forEach(record => {
-                    const key = `${record.employeeId}_${record.date}_${record.checkInTime}`;
-                    recordMap.set(key, record);
-                });
-
-                // Add/update with MongoDB records
-                mongoRecords.forEach(record => {
-                    const key = `${record.employeeId}_${record.date}_${record.checkInTime || record.checkIn}`;
-                    recordMap.set(key, record);
-                });
-
-                const mergedRecords = Array.from(recordMap.values());
-                console.log(`✅ [BACKGROUND] Merged to ${mergedRecords.length} total records`);
-
-                // Update in-memory arrays
-                this.allAttendanceRecords = mergedRecords;
-                const now = new Date();
-                const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
-                const today = phTime.toISOString().split('T')[0];
-                this.attendanceRecords = mergedRecords.filter(record => record.date === today);
-
-                // Save merged data to localStorage
-                this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
-                this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);
-
-                // Refresh UI with merged data
-                console.log('🔄 [BACKGROUND] Refreshing UI after backend sync...');
-                this.renderAttendanceRecords();
-                this.renderAttendanceHistoryTable();
-                this.updateAttendanceStats();
-                this.updateSelfAttendanceStatus();
-
-                console.log('✅ [BACKGROUND] Sync complete, UI updated');
-            } else {
-                console.warn(`⚠️ [BACKGROUND] Backend returned ${response.status}, using localStorage only`);
-                // Still update UI with whatever we have in localStorage
-                const now = new Date();
-                const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
-                const today = phTime.toISOString().split('T')[0];
-                this.attendanceRecords = this.allAttendanceRecords.filter(record => record.date === today);
-
-                // Refresh UI
-                this.renderAttendanceRecords();
-                this.renderAttendanceHistoryTable();
-                this.updateAttendanceStats();
-            }
-        } catch (error) {
-            console.warn('⚠️ [BACKGROUND] Backend sync failed (using localStorage only):', error.message);
-            // Still update UI with whatever we have in localStorage
-            const now = new Date();
-            const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
-            const today = phTime.toISOString().split('T')[0];
-            this.attendanceRecords = this.allAttendanceRecords.filter(record => record.date === today);
-
-            // Refresh UI
-            this.renderAttendanceRecords();
-            this.renderAttendanceHistoryTable();
-            this.updateAttendanceStats();
-        }
-    }
 
     // ============================================================================
     // HYBRID STORAGE METHODS: Essential data → MongoDB, Media → IndexedDB
