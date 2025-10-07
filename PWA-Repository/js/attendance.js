@@ -580,8 +580,15 @@ class AttendanceManager {
             phTime, businessCloseTime, checkOutGracePeriodMinutes
         );
 
-        // Calculate hours worked using ISO timestamps
-        const checkInDate = new Date(record.checkInTime);
+        // Calculate hours worked - handle both old "HH:MM" and new ISO timestamp formats
+        let checkInDate;
+        if (record.checkInTime.includes('T')) {
+            // New format: ISO timestamp
+            checkInDate = new Date(record.checkInTime);
+        } else {
+            // Old format: "HH:MM" - convert to full date
+            checkInDate = new Date(`${record.date}T${record.checkInTime}:00`);
+        }
         const checkOutDate = phTime;
         const hoursWorked = ((checkOutDate - checkInDate) / (1000 * 60 * 60));
 
