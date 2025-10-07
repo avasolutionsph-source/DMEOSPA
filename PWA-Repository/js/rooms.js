@@ -7,6 +7,7 @@ class RoomManager {
         this.showHiddenRooms = false;
         this.listenersSetup = false; // Track if event listeners are already setup
         this.timerInterval = null; // Track timer interval to prevent duplicates
+        this.isTherapistView = false; // Flag to prevent manager view from showing for therapists
     }
 
     async init() {
@@ -53,6 +54,8 @@ class RoomManager {
 
         if (isTherapist) {
             console.log('🏠 [ROOMS] Showing therapist view');
+            this.isTherapistView = true; // Set flag to block manager view
+
             // Show therapist view - don't call manager view at all
             try {
                 await this.showTherapistView();
@@ -67,14 +70,18 @@ class RoomManager {
                             <h2 style="color: #666; margin-bottom: 10px;">Error Loading Rooms</h2>
                             <p style="color: #999; font-size: 1.1rem;">
                                 Unable to load your assigned rooms.<br>
+                                Error: ${error.message}<br>
                                 Please refresh the page or contact your manager.
                             </p>
                         </div>
                     `;
                 }
             }
+            return; // IMPORTANT: Exit early, don't continue to manager view
         } else {
             console.log('🏠 [ROOMS] Showing manager/owner view');
+            this.isTherapistView = false;
+
             // Show manager/owner view
             await this.loadRooms();
             await this.loadActiveServices();
@@ -177,6 +184,12 @@ class RoomManager {
     }
 
     async displayRooms(forceRefresh = false) {
+        // CRITICAL: Do not run displayRooms for therapists
+        if (this.isTherapistView) {
+            console.log('🚫 [ROOMS] displayRooms blocked - therapist view is active');
+            return;
+        }
+
         const container = document.getElementById('roomsGrid');
         if (!container) return;
 
