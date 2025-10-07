@@ -895,11 +895,17 @@ class RoomManager {
                 }
             }
 
-            // Get employee ID - for employee type users, their _id is their employee ID
-            const employeeId = userData?._id || userData?.userId;
+            // Get employee ID - extract string from various possible formats
+            let employeeId = userData?._id || userData?.userId || userData?.id;
+
+            // If it's an object (like MongoDB ObjectId), try to get the string value
+            if (employeeId && typeof employeeId === 'object') {
+                employeeId = employeeId.$oid || employeeId.toString();
+            }
 
             console.log('👤 [ROOMS] Loading therapist view for employee:', {
                 employeeId,
+                employeeIdType: typeof employeeId,
                 userData,
                 userType: userData?.type,
                 userRole: userData?.role
