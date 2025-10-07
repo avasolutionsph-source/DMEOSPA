@@ -3632,6 +3632,36 @@
         </div>
     </div>
 
+    <!-- Therapist Assignment Modal -->
+    <div id="assignTherapistModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Assign Therapist to <span id="assignRoomName"></span></h2>
+                <button class="modal-close" onclick="closeModal('assignTherapistModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="assignRoomId">
+                <div class="form-group">
+                    <label>Select Therapists</label>
+                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 10px;">
+                        Select one or more therapists to assign to this room
+                    </p>
+                    <div id="therapistCheckboxList" style="max-height: 400px; overflow-y: auto; border: 1px solid #e5e5e5; border-radius: 5px; padding: 15px;">
+                        <!-- Therapist checkboxes will be dynamically loaded here -->
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('assignTherapistModal')">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="roomManager.saveTherapistAssignments()">
+                        <i class="fas fa-save"></i> Save Assignments
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Expense Modal -->
     <div id="expenseModal" class="modal">
         <div class="modal-content">

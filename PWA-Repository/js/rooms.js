@@ -207,6 +207,9 @@ class RoomManager {
                                 <button class="btn btn-success btn-sm" onclick="roomManager.startService(${room.id})">
                                     <i class="fas fa-play"></i> Start
                                 </button>
+                                <button class="btn btn-info btn-sm" onclick="roomManager.showAssignTherapistModal(${room.id})" title="Assign Therapist">
+                                    <i class="fas fa-user-plus"></i> Assign
+                                </button>
                                 <button class="btn btn-secondary btn-sm" onclick="roomManager.editRoom(${room.id})">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
@@ -595,6 +598,128 @@ class RoomManager {
         }
 
         return true;
+    }
+
+    // Show therapist assignment modal
+    async showAssignTherapistModal(roomId) {
+        const room = this.rooms.find(r => r.id === roomId);
+        if (!room) return;
+
+        // Set room info in modal
+        document.getElementById('assignRoomId').value = roomId;
+        document.getElementById('assignRoomName').textContent = room.name;
+
+        // Load therapists
+        const result = await window.HybridAPIClient.getEmployees();
+        let therapists = [];
+
+        if (result.success) {
+            const allEmployees = result.data || [];
+            // Filter to only therapists
+            const therapistPositions = [
+                'Senior Therapist', 'Junior Therapist', 'Therapist',
+                'Massage Therapist', 'New Therapist',
+                'senior_therapist', 'junior_therapist', 'new_therapist'
+            ];
+            therapists = allEmployees.filter(emp =>
+                therapistPositions.includes(emp.position)
+            );
+        }
+
+        // Display therapist checkboxes
+        const container = document.getElementById('therapistCheckboxList');
+        if (therapists.length === 0) {
+            container.innerHTML = '<p style="color: #999;">No therapists found</p>';
+        } else {
+            container.innerHTML = therapists.map(therapist => {
+                const empId = therapist.id || therapist._id;
+                const empName = therapist.firstName ?
+                    `${therapist.firstName} ${therapist.lastName}`.trim() :
+                    therapist.name;
+
+                // Check if this therapist is already assigned to this room
+                const isAssigned = therapist.assignedRooms &&
+                    therapist.assignedRooms.includes(room.name);
+
+                return `
+                    <div style="padding: 10px; border-bottom: 1px solid #f0f0f0;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox"
+                                   class="therapist-checkbox"
+                                   data-employee-id="${empId}"
+                                   data-employee-name="${empName}"
+                                   ${isAssigned ? 'checked' : ''}
+                                   style="margin-right: 10px; width: 18px; height: 18px;">
+                            <div>
+                                <div style="font-weight: 500;">${empName}</div>
+                                <div style="font-size: 0.85rem; color: #666;">${therapist.position}</div>
+                            </div>
+                        </label>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        openModal('assignTherapistModal');
+    }
+
+    // Save therapist assignments
+    async saveTherapistAssignments() {
+        const roomId = parseInt(document.getElementById('assignRoomId').value);
+        const room = this.rooms.find(r => r.id === roomId);
+        if (!room) return;
+
+        // Get all checked therapists
+        const checkboxes = document.querySelectorAll('.therapist-checkbox');
+        const selectedTherapists = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(cb => ({
+                id: cb.dataset.employeeId,
+                name: cb.dataset.employeeName
+            }));
+
+        try {
+            // Update each therapist's assignedRooms
+            const result = await window.HybridAPIClient.getEmployees();
+            if (result.success) {
+                const allEmployees = result.data || [];
+
+                for (const emp of allEmployees) {
+                    const empId = String(emp.id || emp._id);
+                    const isSelected = selectedTherapists.some(t => String(t.id) === empId);
+
+                    // Get current assigned rooms
+                    let assignedRooms = emp.assignedRooms || [];
+
+                    if (isSelected) {
+                        // Add room if not already assigned
+                        if (!assignedRooms.includes(room.name)) {
+                            assignedRooms.push(room.name);
+                        }
+                    } else {
+                        // Remove room if currently assigned
+                        assignedRooms = assignedRooms.filter(r => r !== room.name);
+                    }
+
+                    // Update employee if assignments changed
+                    if (JSON.stringify(emp.assignedRooms) !== JSON.stringify(assignedRooms)) {
+                        const updateData = {
+                            ...emp,
+                            assignedRooms: assignedRooms
+                        };
+
+                        // Update via API
+                        await window.HybridAPIClient.updateEmployee(emp.id || emp._id, updateData);
+                    }
+                }
+
+                showNotification(`Therapist assignments updated for ${room.name}`, 'success');
+                closeModal('assignTherapistModal');
+            }
+        } catch (error) {
+            console.error('Failed to save therapist assignments:', error);
+            showNotification('Failed to save assignments', 'error');
+        }
     }
 }
 

@@ -908,7 +908,28 @@ class HybridAPIClient {
             source: employees.length > 0 ? 'merged' : result.source
         };
     }
-    
+
+    async updateEmployee(employeeId, data, options = {}) {
+        console.log('✏️ [HYBRID-API] updateEmployee() called:', { employeeId, data });
+
+        // Update via API
+        const result = await this.put(`/api/employees/${employeeId}`, data, {
+            ...options
+        });
+
+        // If successful, also update IndexedDB
+        if (result.success && result.data) {
+            try {
+                await window.db.update('employees', result.data);
+                console.log('✅ [HYBRID-API] Employee updated in IndexedDB');
+            } catch (error) {
+                console.error('❌ [HYBRID-API] Failed to update employee in IndexedDB:', error);
+            }
+        }
+
+        return result;
+    }
+
     // Quick test function - run window.HybridAPIClient.quickTestEmployees() in console
     async quickTestEmployees() {
         console.log('🧪 [QUICK-TEST] Testing employees endpoint...');
