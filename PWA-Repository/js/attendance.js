@@ -476,28 +476,26 @@ class AttendanceManager {
         const now = new Date();
         const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
         const date = phTime.toISOString().split('T')[0];
-        const time = phTime.toTimeString().split(' ')[0].substring(0, 5);
 
-        // Check for late check-in (after 9:00 AM with grace period)
-        const [hours, minutes] = time.split(':').map(Number);
-        const isLate = hours > 9 || (hours === 9 && minutes > 0);
+        // Calculate if late (assuming 9:00 AM start time)
+        const businessOpen = new Date(phTime);
+        businessOpen.setHours(9, 0, 0, 0);
+        const graceTime = new Date(businessOpen.getTime() + 5 * 60000); // 5 minutes grace
+        const isLate = phTime > graceTime;
+        const lateMinutes = isLate ? Math.floor((phTime - graceTime) / 60000) : 0;
 
-        // Calculate late minutes if late
-        let lateMinutes = 0;
-        if (isLate) {
-            const checkInDateTime = new Date(`${date} ${time}:00`);
-            const expectedTime = new Date(`${date} 09:00:00`);
-            lateMinutes = Math.floor((checkInDateTime - expectedTime) / 60000);
-        }
+        // Get userId from current user (owner ID for cross-device visibility)
+        const userId = window.authSystem?.currentUser?.id;
 
         // Create COMPLETE attendance record (matching recordAttendance() format)
         const record = {
             id: Date.now(),
+            userId: userId, // CRITICAL: Owner ID for cross-device access
             employeeId: employee.id,
             employeeName: employee.name,
             employeePosition: employee.position || window.authSystem?.currentUser?.role || 'Employee',
             date: date,
-            checkInTime: time,
+            checkInTime: phTime.toISOString(), // ✅ FIX: Use full ISO timestamp like recordAttendance()
             checkOutTime: null,
             method: 'manual',           // Required for MongoDB
             isLate: isLate,             // Required for MongoDB
@@ -512,11 +510,16 @@ class AttendanceManager {
         // Sync with backend using hybrid storage (which handles saving to arrays and localStorage)
         await this.saveAttendanceHybrid(record);
 
-        // Show notification
+        // Show notification with properly formatted time
+        const displayTime = phTime.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
         const message = isLate ?
-            `⚠️ ${employee.name} checked in late at ${time} (${lateMinutes} min late)` :
-            `✅ ${employee.name} checked in successfully at ${time}`;
-        
+            `⚠️ ${employee.name} checked in late at ${displayTime} (${lateMinutes} min late)` :
+            `✅ ${employee.name} checked in successfully at ${displayTime}`;
+
         if (window.showNotification) {
             window.showNotification(message, isLate ? 'warning' : 'success');
         }
