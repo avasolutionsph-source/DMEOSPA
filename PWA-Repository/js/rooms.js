@@ -89,6 +89,7 @@ class RoomManager {
             if (!this.listenersSetup) {
                 this.setupEventListeners();
                 this.startTimerUpdates();
+                this.startManagerAutoRefresh(); // Add auto-refresh for manager view
                 this.listenersSetup = true;
             }
         }
@@ -151,9 +152,69 @@ class RoomManager {
         }
     }
 
+    // Helper to update room statuses based on loaded services
+    updateRoomStatusesFromServices() {
+        // Update room statuses based on active and pending services
+        for (const service of this.activeServices) {
+            const room = this.rooms.find(r => r.id === service.roomId);
+            console.log('🔗 [ROOMS] Linking service to room:', {
+                serviceId: service.id || service._id,
+                serviceStatus: service.status,
+                serviceName: service.serviceName,
+                roomId: service.roomId,
+                foundRoom: !!room,
+                roomName: room?.name
+            });
+
+            if (room) {
+                if (service.status === 'pending') {
+                    room.status = 'pending';
+                } else {
+                    room.status = 'occupied';
+                }
+                room.currentService = service;
+            }
+        }
+    }
+
     async loadActiveServices() {
         try {
-            // Load active and pending services (not completed ones)
+            // For manager view, load from MongoDB for cross-device sync
+            if (!this.isTherapistView) {
+                try {
+                    const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+                    if (authToken) {
+                        const response = await fetch('https://daetspa-backend.onrender.com/api/room-services', {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${authToken}`
+                            }
+                        });
+
+                        if (response.ok) {
+                            const result = await response.json();
+                            if (result.success && result.data) {
+                                this.activeServices = result.data;
+                                console.log('✅ [ROOMS] Loaded active/pending services from MongoDB:', this.activeServices);
+
+                                // Sync to IndexedDB for offline access
+                                for (const service of this.activeServices) {
+                                    await window.db.update('activeServices', service);
+                                }
+
+                                // Update room statuses and return early
+                                this.updateRoomStatusesFromServices();
+                                return;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.log('⚠️ [ROOMS] Failed to load from MongoDB, falling back to IndexedDB:', error);
+                }
+            }
+
+            // Fallback to IndexedDB (for offline or if MongoDB fails)
             const allServices = await window.db.getAll('activeServices');
 
             console.log('📋 [ROOMS] All services from IndexedDB:', allServices);
@@ -164,27 +225,6 @@ class RoomManager {
 
             console.log('✅ [ROOMS] Filtered active/pending services:', this.activeServices);
 
-            // Update room statuses based on active and pending services
-            for (const service of this.activeServices) {
-                const room = this.rooms.find(r => r.id === service.roomId);
-                console.log('🔗 [ROOMS] Linking service to room:', {
-                    serviceId: service.id,
-                    serviceStatus: service.status,
-                    serviceName: service.serviceName,
-                    roomId: service.roomId,
-                    foundRoom: !!room,
-                    roomName: room?.name
-                });
-
-                if (room) {
-                    if (service.status === 'pending') {
-                        room.status = 'pending';
-                    } else {
-                        room.status = 'occupied';
-                    }
-                    room.currentService = service;
-                }
-            }
         } catch (error) {
             if (window.logger) {
                 window.logger.error('Failed to load active services', {
@@ -1035,6 +1075,67 @@ class RoomManager {
         } catch (error) {
             console.error('Failed to save therapist assignments:', error);
             showNotification('Failed to save assignments', 'error');
+        }
+    }
+
+    // Start auto-refresh for manager view
+    startManagerAutoRefresh() {
+        // Check for service status changes from MongoDB every 5 seconds
+        if (this.managerRefreshInterval) {
+            clearInterval(this.managerRefreshInterval);
+        }
+        this.managerRefreshInterval = setInterval(async () => {
+            console.log('🔄 [MANAGER] Auto-checking for service updates...');
+            await this.checkForServiceUpdates();
+        }, 5000);
+    }
+
+    // Check for service status updates from MongoDB (for manager view)
+    async checkForServiceUpdates() {
+        try {
+            // Get auth token
+            const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+            if (!authToken) return;
+
+            // Fetch from MongoDB
+            const response = await fetch('https://daetspa-backend.onrender.com/api/room-services', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+
+            if (!response.ok) return;
+
+            const result = await response.json();
+            if (result.success && result.data) {
+                // Check if any service status changed
+                const currentServices = this.activeServices.map(s => ({
+                    id: s._id,
+                    status: s.status,
+                    startTime: s.startTime
+                }));
+
+                const hasChanges = result.data.some(apiService => {
+                    const current = currentServices.find(s => s.id === apiService._id);
+                    return !current ||
+                           current.status !== apiService.status ||
+                           current.startTime !== apiService.startTime;
+                });
+
+                // Also check if services were added or removed
+                const countChanged = result.data.length !== this.activeServices.length;
+
+                if (hasChanges || countChanged) {
+                    console.log('✨ [MANAGER] Service status changed! Refreshing view...');
+                    await this.loadRooms();
+                    await this.loadActiveServices();
+                    this.displayRooms();
+                }
+            }
+        } catch (error) {
+            // Silent fail - don't spam console on network errors
         }
     }
 
