@@ -1113,6 +1113,14 @@ class RoomManager {
             await this.loadRooms();
             await this.loadActiveServices();
 
+            console.log('🔍 [THERAPIST] Loaded rooms:', this.rooms.map(r => ({
+                id: r.id,
+                name: r.name,
+                status: r.status,
+                hasService: !!r.currentService,
+                serviceStatus: r.currentService?.status
+            })));
+
             // Group assignments by room
             const roomGroups = {};
             myAssignments.forEach(assignment => {
@@ -1138,6 +1146,16 @@ class RoomManager {
                         ${Object.values(roomGroups).map(group => {
                             // Find the actual room data to get current status
                             const room = this.rooms.find(r => r.id === group.roomId);
+
+                            console.log('🏨 [THERAPIST] Checking room:', {
+                                groupRoomId: group.roomId,
+                                groupRoomName: group.roomName,
+                                foundRoom: !!room,
+                                roomStatus: room?.status,
+                                roomCurrentService: room?.currentService,
+                                allRoomIds: this.rooms.map(r => r.id)
+                            });
+
                             const isPending = room?.status === 'pending';
                             const isOccupied = room?.status === 'occupied';
                             const isAvailable = !isPending && !isOccupied;
