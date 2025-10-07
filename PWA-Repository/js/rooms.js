@@ -618,24 +618,27 @@ class RoomManager {
         const durationMinutes = Math.floor((endTime - startTime) / 60000);
 
         // Update service record
+        const serviceId = room.currentService.id;
+        const serviceMongoId = room.currentService._id;
+
         room.currentService.endTime = endTime.toISOString();
         room.currentService.actualDuration = durationMinutes;
         room.currentService.status = 'completed';
 
-        // Save to IndexedDB
+        // Update in IndexedDB to completed status
         await window.db.update('activeServices', room.currentService);
 
         // ALSO update in MongoDB (so other devices see the change)
-        if (room.currentService._id) {
+        if (serviceMongoId) {
             try {
-                await window.HybridAPIClient.put(`/api/room-services/${room.currentService._id}`, {
+                await window.HybridAPIClient.put(`/api/room-services/${serviceMongoId}`, {
                     endTime: room.currentService.endTime,
                     actualDuration: room.currentService.actualDuration,
                     status: 'completed'
                 }, {
                     critical: true
                 });
-                console.log('✅ [ROOM] Service ended in MongoDB');
+                console.log('✅ [ROOM] Service marked as completed in MongoDB');
             } catch (error) {
                 console.error('⚠️ [ROOM] Failed to update service in MongoDB:', error);
             }
@@ -643,13 +646,24 @@ class RoomManager {
 
         // Remove from active services array
         this.activeServices = this.activeServices.filter(service =>
-            service.id !== room.currentService.id && service._id !== room.currentService._id
+            service.id !== serviceId && service._id !== serviceMongoId
         );
 
-        // Clear room
+        console.log('🧹 [ROOM] Clearing room status:', {
+            roomId: room.id,
+            roomName: room.name,
+            previousStatus: room.status,
+            serviceId: serviceId,
+            serviceMongoId: serviceMongoId
+        });
+
+        // Clear room - set to available
         room.status = 'available';
         room.currentService = null;
         await window.db.update('rooms', room);
+
+        // Give MongoDB a moment to process the update before refreshing
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         // Refresh view (therapist or manager)
         if (this.isTherapistView) {
@@ -1364,8 +1378,15 @@ class RoomManager {
                     for (const service of servicesResult.data) {
                         const room = this.rooms.find(r => r.id === service.roomId);
                         if (room) {
-                            room.status = service.status === 'pending' ? 'pending' : 'occupied';
-                            room.currentService = service;
+                            // Only update room status if service is actually active or pending
+                            if (service.status === 'pending') {
+                                room.status = 'pending';
+                                room.currentService = service;
+                            } else if (service.status === 'active') {
+                                room.status = 'occupied';
+                                room.currentService = service;
+                            }
+                            // Ignore completed services - they shouldn't be returned by API anyway
                             console.log('🔗 [THERAPIST] Linked service to room:', {
                                 roomName: room.name,
                                 status: room.status,
