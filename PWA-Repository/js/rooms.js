@@ -1109,6 +1109,10 @@ class RoomManager {
                 return;
             }
 
+            // Load actual room data to get current status
+            await this.loadRooms();
+            await this.loadActiveServices();
+
             // Group assignments by room
             const roomGroups = {};
             myAssignments.forEach(assignment => {
@@ -1122,7 +1126,7 @@ class RoomManager {
                 roomGroups[assignment.roomName].assignments.push(assignment);
             });
 
-            // Display assigned rooms
+            // Display assigned rooms with current status
             container.innerHTML = `
                 <div style="max-width: 1200px; margin: 0 auto;">
                     <div class="info-banner" style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; margin-bottom: 30px; border-radius: 5px;">
@@ -1131,14 +1135,88 @@ class RoomManager {
                     </div>
 
                     <div class="rooms-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
-                        ${Object.values(roomGroups).map(group => `
-                            <div class="room-card available" style="border: 2px solid #2196F3; background: white; border-radius: 10px; padding: 0; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                                <div class="room-header" style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); color: white; padding: 20px;">
-                                    <h3 style="margin: 0; font-size: 1.5rem;">
-                                        <i class="fas fa-door-open"></i> ${group.roomName}
-                                    </h3>
+                        ${Object.values(roomGroups).map(group => {
+                            // Find the actual room data to get current status
+                            const room = this.rooms.find(r => r.id === group.roomId);
+                            const isPending = room?.status === 'pending';
+                            const isOccupied = room?.status === 'occupied';
+                            const isAvailable = !isPending && !isOccupied;
+
+                            let statusBadge = '';
+                            let statusInfo = '';
+                            let actionButtons = '';
+
+                            if (isPending && room.currentService) {
+                                statusBadge = `<span style="background: #f39c12; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold;">
+                                    <i class="fas fa-hourglass-half"></i> PENDING
+                                </span>`;
+                                statusInfo = `
+                                    <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #f39c12;">
+                                        <div style="color: #f39c12; font-weight: bold; margin-bottom: 10px;">
+                                            <i class="fas fa-hourglass-half"></i> Pending Service
+                                        </div>
+                                        <div style="color: #555; font-size: 0.9rem;">
+                                            <div style="margin: 5px 0;"><strong>Service:</strong> ${room.currentService.serviceName}</div>
+                                            <div style="margin: 5px 0;"><strong>Client:</strong> ${room.currentService.clientName || 'Walk-in'}</div>
+                                            ${room.currentService.estimatedDuration ?
+                                                `<div style="margin: 5px 0;"><strong>Duration:</strong> ${room.currentService.estimatedDuration} mins</div>` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                                actionButtons = `
+                                    <button class="btn btn-success" onclick="roomManager.startPendingService(${room.id})" style="width: 100%; margin-bottom: 10px;">
+                                        <i class="fas fa-play"></i> Start Service
+                                    </button>
+                                `;
+                            } else if (isOccupied && room.currentService) {
+                                const elapsed = this.calculateElapsedTime(room.currentService.startTime);
+                                statusBadge = `<span style="background: #800020; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold;">
+                                    <i class="fas fa-clock"></i> IN SERVICE
+                                </span>`;
+                                statusInfo = `
+                                    <div style="background: #ffebee; padding: 15px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #800020;">
+                                        <div style="color: #800020; font-weight: bold; margin-bottom: 10px;">
+                                            <i class="fas fa-clock"></i> Active Service
+                                        </div>
+                                        <div style="font-size: 1.5rem; font-weight: bold; color: #800020; margin: 10px 0;">
+                                            ${elapsed}
+                                        </div>
+                                        <div style="color: #555; font-size: 0.9rem;">
+                                            <div style="margin: 5px 0;"><strong>Service:</strong> ${room.currentService.serviceName}</div>
+                                            <div style="margin: 5px 0;"><strong>Client:</strong> ${room.currentService.clientName || 'Walk-in'}</div>
+                                            <div style="margin: 5px 0;"><strong>Started:</strong> ${new Date(room.currentService.startTime).toLocaleTimeString()}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            } else {
+                                statusBadge = `<span style="background: #27ae60; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold;">
+                                    <i class="fas fa-check"></i> AVAILABLE
+                                </span>`;
+                                statusInfo = `
+                                    <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin-bottom: 15px; border-left: 3px solid #4CAF50;">
+                                        <div style="font-weight: 600; color: #2e7d32; margin-bottom: 10px;">
+                                            <i class="fas fa-check-circle"></i> Ready for Service
+                                        </div>
+                                        <div style="color: #555;">
+                                            This room is available and ready for clients
+                                        </div>
+                                    </div>
+                                `;
+                            }
+
+                            return `
+                            <div class="room-card ${isPending ? 'pending' : isOccupied ? 'occupied' : 'available'}" style="border-radius: 10px; padding: 0; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                <div class="room-header ${isPending ? 'pending' : isOccupied ? 'occupied' : 'available'}" style="padding: 20px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                        <h3 style="margin: 0; font-size: 1.5rem;">
+                                            <i class="fas fa-door-${isOccupied ? 'closed' : 'open'}"></i> ${group.roomName}
+                                        </h3>
+                                        ${statusBadge}
+                                    </div>
                                 </div>
                                 <div class="room-body" style="padding: 20px;">
+                                    ${statusInfo}
+
                                     <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
                                         <div style="font-weight: 600; color: #666; margin-bottom: 10px;">
                                             <i class="fas fa-info-circle"></i> Room Details
@@ -1155,20 +1233,29 @@ class RoomManager {
                                         </div>
                                     </div>
 
-                                    <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; border-left: 3px solid #4CAF50;">
-                                        <div style="font-weight: 600; color: #2e7d32; margin-bottom: 10px;">
-                                            <i class="fas fa-check-circle"></i> Assignment Status
-                                        </div>
-                                        <div style="color: #555;">
-                                            You are authorized to use this room for client services
-                                        </div>
-                                    </div>
+                                    ${actionButtons}
                                 </div>
                             </div>
-                        `).join('')}
+                        `;
+                        }).join('')}
                     </div>
                 </div>
             `;
+
+            // Auto-refresh timer for active services
+            if (this.timerInterval) {
+                clearInterval(this.timerInterval);
+            }
+            this.timerInterval = setInterval(() => {
+                // Only update if there are active services
+                const hasActiveServices = Object.values(roomGroups).some(group => {
+                    const room = this.rooms.find(r => r.id === group.roomId);
+                    return room?.status === 'occupied';
+                });
+                if (hasActiveServices) {
+                    this.showTherapistView(userData);
+                }
+            }, 1000);
 
         } catch (error) {
             console.error('Failed to load therapist room view:', error);
