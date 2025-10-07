@@ -1556,7 +1556,10 @@ class RoomManager {
                                         <div style="color: #555; font-size: 0.9rem;">
                                             <div style="margin: 5px 0;"><strong>Service:</strong> ${room.currentService.serviceName}</div>
                                             <div style="margin: 5px 0;"><strong>Client:</strong> ${room.currentService.clientName || 'Walk-in'}</div>
+                                            <div style="margin: 5px 0;"><strong>Therapist:</strong> ${room.currentService.employeeName}</div>
                                             <div style="margin: 5px 0;"><strong>Started:</strong> ${new Date(room.currentService.startTime).toLocaleTimeString()}</div>
+                                            ${room.currentService.estimatedDuration ?
+                                                `<div style="margin: 5px 0;"><strong>Duration:</strong> ${room.currentService.estimatedDuration} mins</div>` : ''}
                                         </div>
                                     </div>
                                 `;
