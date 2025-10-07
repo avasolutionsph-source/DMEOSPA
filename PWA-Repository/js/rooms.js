@@ -10,16 +10,36 @@ class RoomManager {
     }
 
     async init() {
-        // Check if user is a therapist
-        const userRole = window.app?.userData?.role || localStorage.getItem('userRole');
-        const userType = window.app?.userData?.type || localStorage.getItem('userType');
+        // Get user data from window.app or localStorage
+        let userData = window.app?.userData;
+
+        if (!userData) {
+            // Try to get from localStorage
+            const currentUserStr = localStorage.getItem('currentUser');
+            if (currentUserStr) {
+                try {
+                    userData = JSON.parse(currentUserStr);
+                } catch (error) {
+                    console.error('Failed to parse currentUser from localStorage:', error);
+                }
+            }
+        }
+
+        // Also check authSystem as fallback
+        if (!userData && window.authSystem) {
+            userData = window.authSystem.getCurrentUser();
+        }
+
+        const userRole = userData?.role;
+        const userType = userData?.type;
 
         console.log('🏠 [ROOMS] Role detection:', {
             userRole,
             userType,
-            appUserData: window.app?.userData,
-            localStorageRole: localStorage.getItem('userRole'),
-            localStorageType: localStorage.getItem('userType')
+            userData,
+            hasAppUserData: !!window.app?.userData,
+            hasLocalStorage: !!localStorage.getItem('currentUser'),
+            hasAuthSystem: !!window.authSystem?.getCurrentUser()
         });
 
         const isTherapist = userRole && (
