@@ -469,15 +469,30 @@ class POSSystem {
                 const duplicateCheck = new Set();
                 
                 console.log(`🔵 [POS] Starting to process ${employees.length} employees`);
-                
-                employees.forEach((emp, index) => {
+
+                // Filter to only show therapists in POS checkout
+                const therapistPositions = [
+                    'Senior Therapist',
+                    'Junior Therapist',
+                    'Therapist',
+                    'Massage Therapist',
+                    'New Therapist'
+                ];
+
+                const filteredEmployees = employees.filter(emp =>
+                    therapistPositions.includes(emp.position)
+                );
+
+                console.log(`🎯 [POS] Filtered to ${filteredEmployees.length} therapists out of ${employees.length} total employees`);
+
+                filteredEmployees.forEach((emp, index) => {
                     const empId = String(emp.id || emp._id || `temp_${index}`);
                     const empKey = `${empId}_${emp.name}_${emp.position}`;
-                    
+
                     if (!duplicateCheck.has(empKey)) {
                         duplicateCheck.add(empKey);
                         employeesToAdd.set(empKey, emp);
-                        console.log(`✅ [POS] Employee #${index + 1}: ${emp.name} will be added`);
+                        console.log(`✅ [POS] Therapist #${index + 1}: ${emp.name} will be added`);
                     } else {
                         console.warn(`⚠️ [POS] DUPLICATE DETECTED #${index + 1}: ${emp.name} - SKIPPING`);
                     }
