@@ -1038,6 +1038,62 @@ class RoomManager {
         }
     }
 
+    // Helper method to update timer displays without full refresh
+    updateTimerDisplays() {
+        this.rooms.forEach(room => {
+            if (room.status === 'occupied' && room.currentService?.startTime) {
+                const timerElement = document.querySelector(`[data-room-id="${room.id}"] .service-timer`);
+                if (timerElement) {
+                    const duration = Math.floor((Date.now() - new Date(room.currentService.startTime)) / 1000);
+                    const hours = Math.floor(duration / 3600);
+                    const minutes = Math.floor((duration % 3600) / 60);
+                    const seconds = duration % 60;
+                    timerElement.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }
+        });
+    }
+
+    // Check for new pending services from MongoDB
+    async checkForNewPendingServices(userData) {
+        try {
+            // Get auth token
+            const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+            if (!authToken) return;
+
+            // Fetch from MongoDB
+            const response = await fetch('https://daetspa-backend.onrender.com/api/room-services', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+
+            if (!response.ok) return;
+
+            const result = await response.json();
+            if (result.success && result.data && result.data.length > 0) {
+                // Check if we have new services we didn't have before
+                const currentServiceIds = this.rooms
+                    .filter(r => r.currentService)
+                    .map(r => r.currentService._id)
+                    .filter(id => id);
+
+                const hasNewServices = result.data.some(service =>
+                    !currentServiceIds.includes(service._id)
+                );
+
+                if (hasNewServices) {
+                    console.log('✨ [THERAPIST] New pending service detected! Refreshing view...');
+                    await this.showTherapistView(userData);
+                }
+            }
+        } catch (error) {
+            // Silent fail - don't spam console on network errors
+        }
+    }
+
     // Therapist view - shows only their assigned rooms
     async showTherapistView(userData = null) {
         const container = document.getElementById('roomsGrid');
@@ -1433,20 +1489,31 @@ class RoomManager {
                 </div>
             `;
 
-            // Auto-refresh timer for active services
+            // Auto-refresh timer for active services AND check for new pending services
             if (this.timerInterval) {
                 clearInterval(this.timerInterval);
             }
+
+            // Update timers every second for active services
             this.timerInterval = setInterval(() => {
-                // Only update if there are active services
                 const hasActiveServices = Object.values(roomGroups).some(group => {
                     const room = this.rooms.find(r => r.id === group.roomId);
                     return room?.status === 'occupied';
                 });
                 if (hasActiveServices) {
-                    this.showTherapistView(userData);
+                    // Just update the timer display, don't refresh everything
+                    this.updateTimerDisplays();
                 }
             }, 1000);
+
+            // Check for new pending services from MongoDB every 5 seconds
+            if (this.pendingCheckInterval) {
+                clearInterval(this.pendingCheckInterval);
+            }
+            this.pendingCheckInterval = setInterval(async () => {
+                console.log('🔄 [THERAPIST] Auto-checking for new pending services...');
+                await this.checkForNewPendingServices(userData);
+            }, 5000); // Check every 5 seconds
 
         } catch (error) {
             console.error('Failed to load therapist room view:', error);
