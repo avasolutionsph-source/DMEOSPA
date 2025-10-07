@@ -109,12 +109,12 @@ class RoomManager {
         return this.activeServices || [];
     }
 
-    displayRooms() {
+    async displayRooms() {
         const container = document.getElementById('roomsGrid');
         if (!container) return;
 
-        const visibleRooms = this.showHiddenRooms ? 
-            this.rooms : 
+        const visibleRooms = this.showHiddenRooms ?
+            this.rooms :
             this.rooms.filter(room => !room.hidden);
 
         if (visibleRooms.length === 0 && this.rooms.length === 0) {
@@ -142,15 +142,41 @@ class RoomManager {
             return;
         }
 
+        // Get all employees to check room assignments
+        const result = await window.HybridAPIClient.getEmployees();
+        const allEmployees = result.success ? (result.data || []) : [];
+
         container.innerHTML = visibleRooms.map(room => {
             const isOccupied = room.status === 'occupied';
             const statusColor = isOccupied ? '#800020' : '#27ae60';
             const statusIcon = isOccupied ? 'clock' : 'lock-open';
             const statusText = isOccupied ? 'IN SERVICE' : 'AVAILABLE';
-            
+
+            // Get therapists assigned to this room
+            const assignedTherapists = allEmployees.filter(emp =>
+                emp.assignedRooms && emp.assignedRooms.includes(room.name)
+            );
+
+            let assignedTherapistsDisplay = '';
+            if (assignedTherapists.length > 0) {
+                assignedTherapistsDisplay = `
+                    <div class="assigned-therapists" style="background: #f0f8ff; padding: 8px; border-radius: 5px; margin-bottom: 10px; border-left: 3px solid #2196F3;">
+                        <div style="font-weight: 600; color: #1976D2; margin-bottom: 5px;">
+                            <i class="fas fa-user-check"></i> Assigned Therapists:
+                        </div>
+                        ${assignedTherapists.map(t => {
+                            const name = t.firstName ? `${t.firstName} ${t.lastName}`.trim() : t.name;
+                            return `<div style="font-size: 0.9rem; color: #555; padding: 2px 0;">
+                                <i class="fas fa-circle" style="font-size: 0.5rem; color: #4CAF50;"></i> ${name}
+                            </div>`;
+                        }).join('')}
+                    </div>
+                `;
+            }
+
             let timerDisplay = '';
             let serviceInfo = '';
-            
+
             if (isOccupied && room.currentService) {
                 const elapsed = this.calculateElapsedTime(room.currentService.startTime);
                 timerDisplay = `
@@ -158,14 +184,14 @@ class RoomManager {
                         <i class="fas fa-clock"></i> ${elapsed}
                     </div>
                 `;
-                
+
                 serviceInfo = `
                     <div class="service-info" style="background: #fff; padding: 10px; border-radius: 5px; margin-top: 10px;">
                         <div><strong>Service:</strong> ${room.currentService.serviceName}</div>
                         <div><strong>Client:</strong> ${room.currentService.clientName || 'Walk-in'}</div>
                         <div><strong>Therapist:</strong> ${room.currentService.employeeName}</div>
                         <div><strong>Started:</strong> ${new Date(room.currentService.startTime).toLocaleTimeString()}</div>
-                        ${room.currentService.estimatedDuration ? 
+                        ${room.currentService.estimatedDuration ?
                             `<div><strong>Duration:</strong> ${room.currentService.estimatedDuration} mins</div>` : ''}
                     </div>
                 `;
@@ -191,10 +217,11 @@ class RoomManager {
                                 <i class="fas fa-users"></i> Capacity: ${room.capacity}
                             </span>
                         </div>
-                        
+
+                        ${assignedTherapistsDisplay}
                         ${timerDisplay}
                         ${serviceInfo}
-                        
+
                         <div class="room-actions" style="margin-top: 15px;">
                             ${isOccupied ? `
                                 <button class="btn btn-danger btn-sm" onclick="roomManager.endService(${room.id})">
@@ -206,9 +233,6 @@ class RoomManager {
                             ` : `
                                 <button class="btn btn-success btn-sm" onclick="roomManager.startService(${room.id})">
                                     <i class="fas fa-play"></i> Start
-                                </button>
-                                <button class="btn btn-info btn-sm" onclick="roomManager.showAssignTherapistModal(${room.id})" title="Assign Therapist">
-                                    <i class="fas fa-user-plus"></i> Assign
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="roomManager.editRoom(${room.id})">
                                     <i class="fas fa-edit"></i> Edit
@@ -600,14 +624,40 @@ class RoomManager {
         return true;
     }
 
-    // Show therapist assignment modal
-    async showAssignTherapistModal(roomId) {
-        const room = this.rooms.find(r => r.id === roomId);
+    // Show assign room modal (new workflow)
+    async showAssignRoomModal() {
+        // Load available rooms (not hidden)
+        const availableRooms = this.rooms.filter(r => !r.hidden);
+
+        // Populate room dropdown
+        const roomSelect = document.getElementById('assignRoomSelect');
+        roomSelect.innerHTML = '<option value="">-- Select Room --</option>' +
+            availableRooms.map(room =>
+                `<option value="${room.id}">${room.name} - ${this.getRoomTypeLabel(room.type)}</option>`
+            ).join('');
+
+        // Hide therapist selection initially
+        document.getElementById('therapistSelectionSection').style.display = 'none';
+        document.getElementById('therapistCheckboxList').innerHTML = '';
+
+        openModal('assignTherapistModal');
+    }
+
+    // When room is selected from dropdown
+    async onRoomSelected() {
+        const roomSelect = document.getElementById('assignRoomSelect');
+        const selectedRoomId = parseInt(roomSelect.value);
+
+        if (!selectedRoomId) {
+            document.getElementById('therapistSelectionSection').style.display = 'none';
+            return;
+        }
+
+        const room = this.rooms.find(r => r.id === selectedRoomId);
         if (!room) return;
 
-        // Set room info in modal
-        document.getElementById('assignRoomId').value = roomId;
-        document.getElementById('assignRoomName').textContent = room.name;
+        // Show therapist selection section
+        document.getElementById('therapistSelectionSection').style.display = 'block';
 
         // Load therapists
         const result = await window.HybridAPIClient.getEmployees();
@@ -629,7 +679,7 @@ class RoomManager {
         // Display therapist checkboxes
         const container = document.getElementById('therapistCheckboxList');
         if (therapists.length === 0) {
-            container.innerHTML = '<p style="color: #999;">No therapists found</p>';
+            container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No therapists found</p>';
         } else {
             container.innerHTML = therapists.map(therapist => {
                 const empId = therapist.id || therapist._id;
@@ -659,14 +709,19 @@ class RoomManager {
                 `;
             }).join('');
         }
-
-        openModal('assignTherapistModal');
     }
 
     // Save therapist assignments
     async saveTherapistAssignments() {
-        const roomId = parseInt(document.getElementById('assignRoomId').value);
-        const room = this.rooms.find(r => r.id === roomId);
+        const roomSelect = document.getElementById('assignRoomSelect');
+        const selectedRoomId = parseInt(roomSelect.value);
+
+        if (!selectedRoomId) {
+            showNotification('Please select a room first', 'error');
+            return;
+        }
+
+        const room = this.rooms.find(r => r.id === selectedRoomId);
         if (!room) return;
 
         // Get all checked therapists
@@ -715,6 +770,8 @@ class RoomManager {
 
                 showNotification(`Therapist assignments updated for ${room.name}`, 'success');
                 closeModal('assignTherapistModal');
+                // Refresh room display to show updated assignments
+                await this.displayRooms();
             }
         } catch (error) {
             console.error('Failed to save therapist assignments:', error);
