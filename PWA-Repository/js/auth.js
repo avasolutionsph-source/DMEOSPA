@@ -950,14 +950,14 @@ class AuthSystem {
             'senior_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
             'junior_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
             'new_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
-            
+
             // Receptionist has broader access - also uses payroll-requests
-            'receptionist': ['pos', 'inventory', 'customers', 'appointments', 'attendance', 'payroll', 'rooms', 'expenses'],
-            
+            'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll', 'rooms', 'expenses'],
+
             // Manager can read everything - uses full payroll page
-            'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers', 
+            'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers',
                        'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
-            
+
             // Other staff limited access - uses payroll-requests
             'other_staff': ['attendance', 'payroll']
         };
@@ -1043,8 +1043,8 @@ class AuthSystem {
             'senior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
             'junior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
             'new_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
-            'receptionist': ['pos', 'inventory', 'customers', 'appointments', 'attendance', 'payroll-requests', 'rooms', 'expenses'],
-            'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers', 
+            'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll-requests', 'rooms', 'expenses'],
+            'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers',
                        'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
             'other_staff': ['attendance', 'payroll-requests']
         };
