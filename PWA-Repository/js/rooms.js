@@ -1121,12 +1121,23 @@ class RoomManager {
                 console.log('✅ [THERAPIST] API response status:', response.status);
 
                 if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ [THERAPIST] API error response:', errorText);
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
-                const servicesResult = await response.json();
+                // Get response text first for debugging
+                const responseText = await response.text();
+                console.log('📄 [THERAPIST] Raw API response:', responseText);
 
-                console.log('📋 [THERAPIST] API response:', servicesResult);
+                let servicesResult;
+                try {
+                    servicesResult = JSON.parse(responseText);
+                    console.log('📋 [THERAPIST] Parsed API response:', servicesResult);
+                } catch (parseError) {
+                    console.error('❌ [THERAPIST] Failed to parse JSON:', parseError);
+                    throw new Error('Invalid JSON response from API');
+                }
 
                 if (servicesResult.success && servicesResult.data && servicesResult.data.length > 0) {
                     console.log(`✅ [THERAPIST] Found ${servicesResult.data.length} active/pending services`);
@@ -1145,7 +1156,11 @@ class RoomManager {
                         }
                     }
                 } else {
-                    console.log('ℹ️ [THERAPIST] No active services found in MongoDB');
+                    console.log('ℹ️ [THERAPIST] No active services found in MongoDB', {
+                        success: servicesResult?.success,
+                        dataExists: !!servicesResult?.data,
+                        dataLength: servicesResult?.data?.length
+                    });
                 }
             } catch (error) {
                 if (error.name === 'AbortError') {
