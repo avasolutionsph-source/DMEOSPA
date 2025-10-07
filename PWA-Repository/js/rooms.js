@@ -12,6 +12,16 @@ class RoomManager {
     async init() {
         // Check if user is a therapist
         const userRole = window.app?.userData?.role || localStorage.getItem('userRole');
+        const userType = window.app?.userData?.type || localStorage.getItem('userType');
+
+        console.log('🏠 [ROOMS] Role detection:', {
+            userRole,
+            userType,
+            appUserData: window.app?.userData,
+            localStorageRole: localStorage.getItem('userRole'),
+            localStorageType: localStorage.getItem('userType')
+        });
+
         const isTherapist = userRole && (
             userRole === 'senior_therapist' ||
             userRole === 'junior_therapist' ||
@@ -19,10 +29,14 @@ class RoomManager {
             userRole === 'therapist'
         );
 
+        console.log('🏠 [ROOMS] Is therapist?', isTherapist);
+
         if (isTherapist) {
+            console.log('🏠 [ROOMS] Showing therapist view');
             // Show therapist view
             await this.showTherapistView();
         } else {
+            console.log('🏠 [ROOMS] Showing manager/owner view');
             // Show manager/owner view
             await this.loadRooms();
             await this.loadActiveServices();
