@@ -53,8 +53,26 @@ class RoomManager {
 
         if (isTherapist) {
             console.log('🏠 [ROOMS] Showing therapist view');
-            // Show therapist view
-            await this.showTherapistView();
+            // Show therapist view - don't call manager view at all
+            try {
+                await this.showTherapistView();
+            } catch (error) {
+                console.error('❌ [ROOMS] Therapist view failed:', error);
+                // Show error but don't fall back to manager view
+                const container = document.getElementById('roomsGrid');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="empty-state" style="text-align: center; padding: 60px 20px;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: #f44336; margin-bottom: 20px;"></i>
+                            <h2 style="color: #666; margin-bottom: 10px;">Error Loading Rooms</h2>
+                            <p style="color: #999; font-size: 1.1rem;">
+                                Unable to load your assigned rooms.<br>
+                                Please refresh the page or contact your manager.
+                            </p>
+                        </div>
+                    `;
+                }
+            }
         } else {
             console.log('🏠 [ROOMS] Showing manager/owner view');
             // Show manager/owner view
@@ -911,9 +929,21 @@ class RoomManager {
                 userRole: userData?.role
             });
 
+            // Validate we have an employee ID
+            if (!employeeId) {
+                throw new Error('No employee ID found for therapist');
+            }
+
             // Get all room assignments
+            console.log('🔍 [ROOMS] Fetching room assignments from API...');
             const assignmentsResult = await window.HybridAPIClient.get('/api/room-assignments', 'roomAssignments', {
                 critical: true
+            });
+
+            console.log('📦 [ROOMS] API Response:', {
+                success: assignmentsResult.success,
+                dataLength: assignmentsResult.data?.length,
+                data: assignmentsResult.data
             });
 
             if (!assignmentsResult.success) {
@@ -923,11 +953,21 @@ class RoomManager {
             const allAssignments = assignmentsResult.data || [];
 
             // Filter to only this therapist's assignments
-            const myAssignments = allAssignments.filter(a =>
-                String(a.employeeId) === String(employeeId)
-            );
+            const myAssignments = allAssignments.filter(a => {
+                const match = String(a.employeeId) === String(employeeId);
+                console.log('🔍 [ROOMS] Comparing:', {
+                    assignmentEmployeeId: a.employeeId,
+                    currentEmployeeId: employeeId,
+                    match
+                });
+                return match;
+            });
 
-            console.log('🏨 [ROOMS] Therapist assignments found:', myAssignments.length);
+            console.log('🏨 [ROOMS] Therapist assignments found:', {
+                total: allAssignments.length,
+                filtered: myAssignments.length,
+                myAssignments
+            });
 
             if (myAssignments.length === 0) {
                 // No rooms assigned
