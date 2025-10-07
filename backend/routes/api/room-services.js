@@ -1,21 +1,18 @@
 import { Router } from 'express';
-import { ObjectId } from 'mongodb';
+import ActiveService from '../../models/ActiveService.js';
 
 const router = Router();
 
 // Get all active/pending room services for a business
 router.get('/', async (req, res) => {
     try {
-        const db = req.app.locals.db;
         const userId = req.user.userId || req.user.id;
 
         // Get all active and pending services for this business
-        const services = await db.collection('activeServices')
-            .find({
-                userId: userId,
-                status: { $in: ['active', 'pending'] }
-            })
-            .toArray();
+        const services = await ActiveService.find({
+            userId: userId,
+            status: { $in: ['active', 'pending'] }
+        }).sort({ createdAt: -1 });
 
         console.log(`📋 [ROOM-SERVICES] Found ${services.length} active/pending services for user ${userId}`);
 
@@ -35,31 +32,25 @@ router.get('/', async (req, res) => {
 // Create a new pending service
 router.post('/', async (req, res) => {
     try {
-        const db = req.app.locals.db;
         const userId = req.user.userId || req.user.id;
         const serviceData = req.body;
 
-        const newService = {
+        const newService = new ActiveService({
             ...serviceData,
-            userId: userId,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        };
+            userId: userId
+        });
 
-        const result = await db.collection('activeServices').insertOne(newService);
+        await newService.save();
 
         console.log(`✅ [ROOM-SERVICES] Created pending service:`, {
-            serviceId: result.insertedId,
+            serviceId: newService._id,
             roomName: serviceData.roomName,
             status: serviceData.status
         });
 
         res.json({
             success: true,
-            data: {
-                ...newService,
-                _id: result.insertedId
-            }
+            data: newService
         });
     } catch (error) {
         console.error('❌ [ROOM-SERVICES] Error creating service:', error);
@@ -73,28 +64,24 @@ router.post('/', async (req, res) => {
 // Update service status (pending -> active, or end service)
 router.put('/:id', async (req, res) => {
     try {
-        const db = req.app.locals.db;
         const userId = req.user.userId || req.user.id;
         const serviceId = req.params.id;
         const updateData = req.body;
 
-        const result = await db.collection('activeServices').findOneAndUpdate(
+        const service = await ActiveService.findOneAndUpdate(
             {
-                _id: new ObjectId(serviceId),
+                _id: serviceId,
                 userId: userId
             },
             {
-                $set: {
-                    ...updateData,
-                    updatedAt: new Date()
-                }
+                $set: updateData
             },
             {
-                returnDocument: 'after'
+                new: true
             }
         );
 
-        if (!result.value) {
+        if (!service) {
             return res.status(404).json({
                 success: false,
                 error: 'Service not found'
@@ -105,7 +92,7 @@ router.put('/:id', async (req, res) => {
 
         res.json({
             success: true,
-            data: result.value
+            data: service
         });
     } catch (error) {
         console.error('❌ [ROOM-SERVICES] Error updating service:', error);
@@ -119,16 +106,15 @@ router.put('/:id', async (req, res) => {
 // Delete/cancel a service
 router.delete('/:id', async (req, res) => {
     try {
-        const db = req.app.locals.db;
         const userId = req.user.userId || req.user.id;
         const serviceId = req.params.id;
 
-        const result = await db.collection('activeServices').deleteOne({
-            _id: new ObjectId(serviceId),
+        const service = await ActiveService.findOneAndDelete({
+            _id: serviceId,
             userId: userId
         });
 
-        if (result.deletedCount === 0) {
+        if (!service) {
             return res.status(404).json({
                 success: false,
                 error: 'Service not found'
