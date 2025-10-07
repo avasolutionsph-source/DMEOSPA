@@ -540,7 +540,7 @@ class AttendanceManager {
             }
             return;
         }
-        
+
         // Use Philippines timezone (UTC+8)
         const now = new Date();
         const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
@@ -560,29 +560,53 @@ class AttendanceManager {
             return;
         }
 
-        const checkOutTime = phTime.toTimeString().split(' ')[0].substring(0, 5);
-        
-        // Calculate hours worked
-        const checkInDate = new Date(`${record.date} ${record.checkInTime}`);
-        const checkOutDate = new Date(`${record.date} ${checkOutTime}`);
-        const hoursWorked = ((checkOutDate - checkInDate) / (1000 * 60 * 60)).toFixed(2);
-        
-        // Update record
-        record.checkOutTime = checkOutTime;
-        record.hours = parseFloat(hoursWorked);
+        // Get employee data for hourly rate
+        const employee = this.employees.find(e =>
+            (e.id || e._id) === this.currentEmployeeId
+        ) || {
+            id: this.currentEmployeeId,
+            name: this.currentEmployeeName,
+            hourlyRate: 0
+        };
 
-        // Check for early departure (before 5:00 PM)
-        const [hours] = checkOutTime.split(':').map(Number);
-        const isEarlyDeparture = hours < 17;
+        // Get business settings for grace period
+        const businessSettings = await this.getBusinessSettings();
+        const checkOutGracePeriodMinutes = businessSettings.checkOutGracePeriodMinutes || 15;
+        const businessCloseTime = businessSettings.businessCloseTime || '18:00';
+        const hourlyRate = employee.hourlyRate || 0;
+
+        // Calculate early departure deduction
+        const { deductionHours, isEarlyDeparture } = this.calculateEarlyDepartureDeduction(
+            phTime, businessCloseTime, checkOutGracePeriodMinutes
+        );
+
+        // Calculate hours worked using ISO timestamps
+        const checkInDate = new Date(record.checkInTime);
+        const checkOutDate = phTime;
+        const hoursWorked = ((checkOutDate - checkInDate) / (1000 * 60 * 60));
+
+        // Update record with complete backend-compatible data
+        record.checkOutTime = phTime.toISOString(); // ✅ FIX: Use full ISO timestamp
+        record.hoursWorked = parseFloat(hoursWorked.toFixed(2)); // ✅ FIX: Use hoursWorked not hours
+        record.checkOutDeduction = isEarlyDeparture ? deductionHours : 0;
+        record.earlyDepartureMinutes = isEarlyDeparture ? this.calculateEarlyMinutes(phTime, businessCloseTime, checkOutGracePeriodMinutes) : 0;
+        record.payDeduction = deductionHours * hourlyRate;
 
         // Sync with backend using hybrid storage (which handles saving to arrays and localStorage)
         await this.updateAttendanceHybrid(record, record.id);
 
-        // Show notification
-        const message = isEarlyDeparture ?
-            `⚠️ ${record.employeeName} checked out early at ${checkOutTime} (${hoursWorked} hours worked)` :
-            `✅ ${record.employeeName} checked out at ${checkOutTime} (${hoursWorked} hours worked)`;
-        
+        // Show notification with properly formatted time
+        const displayTime = phTime.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+
+        let message = `✅ ${record.employeeName} checked out at ${displayTime} (${hoursWorked.toFixed(1)} hours worked)`;
+        if (isEarlyDeparture) {
+            message += `\n⚠️ Early departure: ${deductionHours}h deduction (₱${(deductionHours * hourlyRate).toFixed(2)})`;
+        }
+
         if (window.showNotification) {
             window.showNotification(message, isEarlyDeparture ? 'warning' : 'success');
         }
