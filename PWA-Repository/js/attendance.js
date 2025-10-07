@@ -447,6 +447,12 @@ class AttendanceManager {
     async selfCheckin() {
         console.log('✅ [CHECK-IN] Starting check-in process...');
 
+        // Disable check-in button to prevent double-clicks
+        const checkinBtn = document.getElementById('selfCheckinBtn');
+        if (checkinBtn) {
+            checkinBtn.disabled = true;
+        }
+
         if (!this.currentEmployeeId || !this.currentEmployeeName) {
             console.error('❌ [CHECK-IN] Missing employee info:', {
                 currentEmployeeId: this.currentEmployeeId,
@@ -455,6 +461,8 @@ class AttendanceManager {
             if (window.showNotification) {
                 window.showNotification('User information not found', 'error');
             }
+            // Re-enable button
+            if (checkinBtn) checkinBtn.disabled = false;
             return;
         }
 
@@ -463,75 +471,105 @@ class AttendanceManager {
             name: this.currentEmployeeName
         });
 
+        // Use Philippines timezone (UTC+8)
+        const now = new Date();
+        const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+        const date = phTime.toISOString().split('T')[0];
+
+        // DUPLICATE PREVENTION: Check if already checked in today
+        const existingCheckin = this.attendanceRecords.find(record =>
+            String(record.employeeId) === String(this.currentEmployeeId) &&
+            record.date === date &&
+            !record.checkOutTime // Not yet checked out
+        );
+
+        if (existingCheckin) {
+            console.log('⚠️ [CHECK-IN] Already checked in today:', existingCheckin);
+            if (window.showNotification) {
+                const checkinTime = this.formatTimeDisplay(existingCheckin.checkInTime);
+                window.showNotification(`Already checked in today at ${checkinTime}`, 'warning');
+            }
+            // Re-enable button
+            if (checkinBtn) checkinBtn.disabled = false;
+            return;
+        }
+
         // Find employee data
-        const employee = this.employees.find(emp => 
+        const employee = this.employees.find(emp =>
             (emp.id || emp._id) === this.currentEmployeeId
         ) || {
             id: this.currentEmployeeId,
             name: this.currentEmployeeName,
             position: window.authSystem?.currentUser?.role || 'Employee'
         };
-        
-        // Use Philippines timezone (UTC+8)
-        const now = new Date();
-        const phTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
-        const date = phTime.toISOString().split('T')[0];
 
-        // Calculate if late (assuming 9:00 AM start time)
-        const businessOpen = new Date(phTime);
-        businessOpen.setHours(9, 0, 0, 0);
-        const graceTime = new Date(businessOpen.getTime() + 5 * 60000); // 5 minutes grace
-        const isLate = phTime > graceTime;
-        const lateMinutes = isLate ? Math.floor((phTime - graceTime) / 60000) : 0;
+        try {
+            // Calculate if late (assuming 9:00 AM start time)
+            const businessOpen = new Date(phTime);
+            businessOpen.setHours(9, 0, 0, 0);
+            const graceTime = new Date(businessOpen.getTime() + 5 * 60000); // 5 minutes grace
+            const isLate = phTime > graceTime;
+            const lateMinutes = isLate ? Math.floor((phTime - graceTime) / 60000) : 0;
 
-        // Get userId from current user (owner ID for cross-device visibility)
-        const userId = window.authSystem?.currentUser?.id;
+            // Get userId from current user (owner ID for cross-device visibility)
+            const userId = window.authSystem?.currentUser?.id;
 
-        // Create COMPLETE attendance record (matching recordAttendance() format)
-        const record = {
-            id: Date.now(),
-            userId: userId, // CRITICAL: Owner ID for cross-device access
-            employeeId: employee.id,
-            employeeName: employee.name,
-            employeePosition: employee.position || window.authSystem?.currentUser?.role || 'Employee',
-            date: date,
-            checkInTime: phTime.toISOString(), // ✅ FIX: Use full ISO timestamp like recordAttendance()
-            checkOutTime: null,
-            method: 'manual',           // Required for MongoDB
-            isLate: isLate,             // Required for MongoDB
-            lateMinutes: lateMinutes,   // Required for MongoDB
-            hoursWorked: 0,             // Required for MongoDB (calculated on check-out)
-            payDeduction: 0,            // Required for MongoDB
-            createdAt: now.toISOString(), // Required for MongoDB
-            capturedImage: this.lastCapturedImage || null,
-            recordedVideo: this.recordedVideoData || null
-        };
+            // Create COMPLETE attendance record (matching recordAttendance() format)
+            const record = {
+                id: Date.now(),
+                userId: userId, // CRITICAL: Owner ID for cross-device access
+                employeeId: employee.id,
+                employeeName: employee.name,
+                employeePosition: employee.position || window.authSystem?.currentUser?.role || 'Employee',
+                date: date,
+                checkInTime: phTime.toISOString(), // ✅ FIX: Use full ISO timestamp like recordAttendance()
+                checkOutTime: null,
+                method: 'manual',           // Required for MongoDB
+                isLate: isLate,             // Required for MongoDB
+                lateMinutes: lateMinutes,   // Required for MongoDB
+                hoursWorked: 0,             // Required for MongoDB (calculated on check-out)
+                payDeduction: 0,            // Required for MongoDB
+                createdAt: now.toISOString(), // Required for MongoDB
+                capturedImage: this.lastCapturedImage || null,
+                recordedVideo: this.recordedVideoData || null
+            };
 
-        // Sync with backend using hybrid storage (which handles saving to arrays and localStorage)
-        await this.saveAttendanceHybrid(record);
+            // Sync with backend using hybrid storage (which handles saving to arrays and localStorage)
+            await this.saveAttendanceHybrid(record);
 
-        // Show notification with properly formatted time
-        const displayTime = phTime.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
-        const message = isLate ?
-            `⚠️ ${employee.name} checked in late at ${displayTime} (${lateMinutes} min late)` :
-            `✅ ${employee.name} checked in successfully at ${displayTime}`;
+            // Show notification with properly formatted time
+            const displayTime = phTime.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+            const message = isLate ?
+                `⚠️ ${employee.name} checked in late at ${displayTime} (${lateMinutes} min late)` :
+                `✅ ${employee.name} checked in successfully at ${displayTime}`;
 
-        if (window.showNotification) {
-            window.showNotification(message, isLate ? 'warning' : 'success');
+            if (window.showNotification) {
+                window.showNotification(message, isLate ? 'warning' : 'success');
+            }
+
+            // Update UI - reload records first, then update status
+            await this.loadAttendanceRecords();
+            this.renderAttendanceRecords();
+            this.renderAttendanceHistoryTable();
+            this.updateAttendanceStats();
+            this.updateSelfAttendanceStatus();
+        } catch (error) {
+            console.error('❌ [CHECK-IN] Failed:', error);
+            if (window.showNotification) {
+                window.showNotification('Failed to check in: ' + error.message, 'error');
+            }
+        } finally {
+            // Always re-enable check-in button
+            if (checkinBtn) {
+                checkinBtn.disabled = false;
+            }
         }
-
-        // Update UI - reload records first, then update status
-        await this.loadAttendanceRecords();
-        this.renderAttendanceRecords();
-        this.renderAttendanceHistoryTable();
-        this.updateAttendanceStats();
-        this.updateSelfAttendanceStatus();
     }
-    
+
     // Self check-out for employees
     async selfCheckout() {
         if (!this.currentEmployeeId) {
@@ -1377,11 +1415,33 @@ class AttendanceManager {
                     // Merge: MongoDB records + pending local records
                     const mergedRecords = [...normalizedRecords, ...pendingLocal];
 
-                    console.log(`✅ [MERGE] ${normalizedRecords.length} MongoDB + ${pendingLocal.length} pending = ${mergedRecords.length} total`);
+                    // DEDUPLICATION: Remove duplicate records based on employeeId + date + checkInTime
+                    const uniqueRecords = [];
+                    const seenKeys = new Set();
 
-                    // Update in-memory and localStorage
-                    this.allAttendanceRecords = mergedRecords;
-                    this.attendanceRecords = mergedRecords.filter(record => record.date === today);
+                    for (const record of mergedRecords) {
+                        // Create unique key from employeeId, date, and checkInTime
+                        const key = `${record.employeeId}_${record.date}_${record.checkInTime}`;
+
+                        if (!seenKeys.has(key)) {
+                            seenKeys.add(key);
+                            uniqueRecords.push(record);
+                        } else {
+                            console.log('🔄 [DEDUP] Skipping duplicate record:', {
+                                employeeId: record.employeeId,
+                                employeeName: record.employeeName,
+                                date: record.date,
+                                checkInTime: record.checkInTime
+                            });
+                        }
+                    }
+
+                    const dedupedCount = mergedRecords.length - uniqueRecords.length;
+                    console.log(`✅ [MERGE] ${normalizedRecords.length} MongoDB + ${pendingLocal.length} pending = ${mergedRecords.length} total (${dedupedCount} duplicates removed)`);
+
+                    // Update in-memory and localStorage with deduplicated records
+                    this.allAttendanceRecords = uniqueRecords;
+                    this.attendanceRecords = uniqueRecords.filter(record => record.date === today);
 
                     this.saveToLocalStorage('allAttendanceRecords', this.allAttendanceRecords);
                     this.saveToLocalStorage('attendanceRecords', this.attendanceRecords);

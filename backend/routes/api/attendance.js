@@ -95,7 +95,36 @@ router.post('/', withErrorHandling(async (req, res) => {
     // req.user.id = individual employee ID (wrong!)
     // req.user.userId = branch owner ID (correct!)
     const userId = req.user.userId?.toString() || req.userId?.toString() || req.user._id?.toString() || req.user.id?.toString();
-    
+
+    // DUPLICATE PREVENTION: Check if employee already checked in today without checking out
+    const existingAttendance = await Attendance.findOne({
+        userId: userId,
+        employeeId: req.body.employeeId,
+        date: req.body.date,
+        checkOutTime: null // Only check for active check-ins (not checked out)
+    });
+
+    if (existingAttendance) {
+        console.log('⚠️ [ATTENDANCE POST] Duplicate check-in prevented:', existingAttendance._id);
+        logger.info('Duplicate attendance check-in prevented', {
+            category: 'DATABASE',
+            operation: 'duplicate_prevented',
+            data: { userId, employeeId: req.body.employeeId, date: req.body.date }
+        });
+
+        // Return existing record instead of creating duplicate
+        return res.status(200).json({
+            success: true,
+            data: {
+                ...existingAttendance.toObject(),
+                id: existingAttendance._id,
+                _id: existingAttendance._id
+            },
+            message: 'Already checked in today',
+            duplicate: true
+        });
+    }
+
     // Transform PWA format to match MongoDB schema
     const attendanceData = {
         ...req.body,
@@ -108,13 +137,9 @@ router.post('/', withErrorHandling(async (req, res) => {
         checkInTime: req.body.checkInTime || new Date().toISOString(),
         checkOutTime: req.body.checkOutTime || null
     };
-    
-    // Don't delete these fields as they might be needed
-    // delete attendanceData.checkInTime;
-    // delete attendanceData.checkOutTime;
-    
+
     console.log('💾 [ATTENDANCE POST] Saving data:', attendanceData);
-    
+
     // Create new attendance record in MongoDB
     const attendance = new Attendance(attendanceData);
     const savedAttendance = await attendance.save();
