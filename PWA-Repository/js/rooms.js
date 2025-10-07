@@ -109,7 +109,7 @@ class RoomManager {
         return this.activeServices || [];
     }
 
-    async displayRooms() {
+    async displayRooms(forceRefresh = false) {
         const container = document.getElementById('roomsGrid');
         if (!container) return;
 
@@ -142,9 +142,15 @@ class RoomManager {
             return;
         }
 
-        // Get all employees to check room assignments
-        const result = await window.HybridAPIClient.getEmployees();
+        // Get all employees to check room assignments (force fresh data if requested)
+        console.log('🔄 [ROOMS] Fetching employees for room display, forceRefresh:', forceRefresh);
+        const result = await window.HybridAPIClient.getEmployees({ offlineFirst: !forceRefresh });
         const allEmployees = result.success ? (result.data || []) : [];
+
+        console.log('👥 [ROOMS] Employee data loaded:', {
+            totalEmployees: allEmployees.length,
+            employeesWithRooms: allEmployees.filter(e => e.assignedRooms && e.assignedRooms.length > 0).length
+        });
 
         container.innerHTML = visibleRooms.map(room => {
             const isOccupied = room.status === 'occupied';
@@ -156,6 +162,15 @@ class RoomManager {
             const assignedTherapists = allEmployees.filter(emp =>
                 emp.assignedRooms && emp.assignedRooms.includes(room.name)
             );
+
+            console.log(`🏨 [ROOMS] Room "${room.name}" assigned therapists:`, {
+                roomName: room.name,
+                assignedCount: assignedTherapists.length,
+                therapists: assignedTherapists.map(t => ({
+                    name: t.firstName ? `${t.firstName} ${t.lastName}` : t.name,
+                    assignedRooms: t.assignedRooms
+                }))
+            });
 
             let assignedTherapistsDisplay = '';
             if (assignedTherapists.length > 0) {
@@ -789,13 +804,17 @@ class RoomManager {
 
                 // Execute all updates in parallel
                 if (updatePromises.length > 0) {
+                    console.log(`💾 [ROOMS] Saving ${updatePromises.length} employee updates...`);
                     await Promise.all(updatePromises);
+                    console.log('✅ [ROOMS] All employee updates completed');
                 }
 
                 showNotification(`Therapist assignments updated for ${room.name}`, 'success');
                 closeModal('assignTherapistModal');
-                // Refresh room display to show updated assignments
-                await this.displayRooms();
+
+                // Force refresh room display with fresh employee data
+                console.log('🔄 [ROOMS] Force refreshing room display...');
+                await this.displayRooms(true);
             }
         } catch (error) {
             console.error('Failed to save therapist assignments:', error);
