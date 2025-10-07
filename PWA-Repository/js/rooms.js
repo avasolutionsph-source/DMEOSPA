@@ -583,14 +583,22 @@ class RoomManager {
     toggleShowHidden() {
         this.showHiddenRooms = !this.showHiddenRooms;
         this.displayRooms();
-        
+
         const toggleBtn = document.getElementById('toggleHiddenRoomsBtn');
         if (toggleBtn) {
             toggleBtn.innerHTML = `
-                <i class="fas fa-eye${this.showHiddenRooms ? '' : '-slash'}"></i> 
+                <i class="fas fa-eye${this.showHiddenRooms ? '' : '-slash'}"></i>
                 ${this.showHiddenRooms ? 'Hide' : 'Show'} Hidden Rooms
             `;
         }
+    }
+
+    // Force refresh display with fresh data
+    async forceRefreshDisplay() {
+        console.log('🔄 [ROOMS] Manual refresh triggered');
+        showNotification('Refreshing room data...', 'info');
+        await this.displayRooms(true);
+        showNotification('Room data refreshed!', 'success');
     }
 
     // Get available rooms for checkout
@@ -829,9 +837,11 @@ const roomManager = new RoomManager();
 // Make roomManager globally available for POS system
 window.roomManager = roomManager;
 
-// Load rooms when page is shown
+// Load rooms when page is shown - force refresh to get latest data
 window.loadRooms = async function() {
     await roomManager.init();
+    // Force refresh display to show latest employee assignments
+    await roomManager.displayRooms(true);
 };
 
 // Initialize room manager on app start
