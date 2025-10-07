@@ -1477,10 +1477,66 @@ class POSSystem {
         setTimeout(async () => {
             const modal = document.getElementById('checkoutModal');
             if (modal && modal.classList.contains('active')) {
-                
+
                 // Initialize customer dropdown
                 if (window.customerManager) {
                     await window.customerManager.initializeSearchableCustomerDropdown();
+                }
+
+                // Setup auto room selection when employee is selected
+                const employeeSelect = document.getElementById('checkoutEmployeeSelect');
+                const roomSelect = document.getElementById('checkoutRoomSelect');
+
+                if (employeeSelect && roomSelect) {
+                    // Remove any existing listeners to prevent duplicates
+                    const newEmployeeSelect = employeeSelect.cloneNode(true);
+                    employeeSelect.parentNode.replaceChild(newEmployeeSelect, employeeSelect);
+
+                    newEmployeeSelect.addEventListener('change', async (e) => {
+                        const selectedEmployeeId = e.target.value;
+
+                        if (!selectedEmployeeId || !roomSelect) return;
+
+                        console.log('👤 [POS] Employee selected, checking for assigned room:', selectedEmployeeId);
+
+                        try {
+                            // Get room assignments from API
+                            const assignmentsResult = await window.HybridAPIClient.get('/api/room-assignments', 'roomAssignments', {
+                                critical: false
+                            });
+
+                            if (assignmentsResult.success && assignmentsResult.data) {
+                                // Find room assigned to this employee
+                                const employeeAssignment = assignmentsResult.data.find(a =>
+                                    String(a.employeeId) === String(selectedEmployeeId)
+                                );
+
+                                if (employeeAssignment) {
+                                    // Find the room in the dropdown and select it
+                                    const roomOptions = Array.from(roomSelect.options);
+                                    const matchingOption = roomOptions.find(opt => {
+                                        // Match by room ID from assignment
+                                        return String(opt.value) === String(employeeAssignment.roomId);
+                                    });
+
+                                    if (matchingOption && !matchingOption.disabled) {
+                                        roomSelect.value = matchingOption.value;
+                                        console.log(`✅ [POS] Auto-selected room: ${employeeAssignment.roomName} for employee`);
+                                        showNotification(`Automatically assigned to ${employeeAssignment.roomName}`, 'success');
+                                    } else {
+                                        console.log(`⚠️ [POS] Employee's assigned room (${employeeAssignment.roomName}) is not available`);
+                                    }
+                                } else {
+                                    console.log('ℹ️ [POS] No room assignment found for this employee');
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Failed to fetch room assignments:', error);
+                            // Don't show error to user - this is just a convenience feature
+                        }
+                    });
+
+                    console.log('✅ [POS] Auto room selection handler attached');
                 }
             } else {
                 console.error('❌ Checkout modal failed to open');
