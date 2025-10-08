@@ -108,11 +108,18 @@ class AppointmentsManager {
     async loadAppointments() {
         try {
             console.log('📥 Loading appointments from server...');
-            
+
             // Get current user info for branch ID (using PWA auth system keys)
             const userData = localStorage.getItem('currentUser');
             const userToken = localStorage.getItem('authToken');
-            
+
+            console.log('🔍 [APPOINTMENTS] Auth check:', {
+                hasUserData: !!userData,
+                hasToken: !!userToken,
+                userDataLength: userData?.length,
+                tokenLength: userToken?.length
+            });
+
             if (!userData || !userToken) {
                 console.warn('No user data available, showing placeholder');
                 this.showLoginRequired();
@@ -120,6 +127,14 @@ class AppointmentsManager {
             }
 
             const user = JSON.parse(userData);
+            console.log('👤 [APPOINTMENTS] Parsed user:', {
+                userId: user.userId,
+                id: user.id,
+                role: user.role,
+                type: user.type,
+                email: user.email
+            });
+
             const branchId = user.userId || user.id;
             
             // Fetch appointments from the unified backend API
@@ -607,6 +622,11 @@ class AppointmentsManager {
             const userData = localStorage.getItem('currentUser');
             const userToken = localStorage.getItem('authToken');
 
+            console.log('🔍 [ADVANCE-BOOKINGS] Auth check:', {
+                hasUserData: !!userData,
+                hasToken: !!userToken
+            });
+
             if (!userData || !userToken) {
                 console.warn('No user data available for advance bookings');
                 this.showAdvanceBookingsPlaceholder();
@@ -614,6 +634,12 @@ class AppointmentsManager {
             }
 
             const user = JSON.parse(userData);
+            console.log('👤 [ADVANCE-BOOKINGS] User data:', {
+                role: user.role,
+                type: user.type,
+                userId: user.userId,
+                id: user.id
+            });
 
             // Fetch advance bookings from the unified backend API
             const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/advance-bookings`, {
