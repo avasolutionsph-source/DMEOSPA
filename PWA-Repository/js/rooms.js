@@ -274,20 +274,37 @@ class RoomManager {
             let response;
             try {
                 console.log('🚀 [ROOMS] Calling fetch NOW...');
-                response = await fetch('https://daetspa-backend.onrender.com/api/advance-bookings', {
+
+                // Create a race between fetch and manual timeout
+                const fetchPromise = fetch('https://daetspa-backend.onrender.com/api/advance-bookings', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${authToken}`
                     },
-                    signal: controller.signal
+                    signal: controller.signal,
+                    cache: 'no-store' // Bypass service worker cache
                 });
+
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => {
+                        console.warn('⏰ [ROOMS] Manual timeout reached');
+                        reject(new Error('Request timeout after 10 seconds'));
+                    }, 10000);
+                });
+
+                console.log('⏳ [ROOMS] Racing fetch vs timeout...');
+                response = await Promise.race([fetchPromise, timeoutPromise]);
                 console.log('✅ [ROOMS] Fetch completed!');
                 clearTimeout(timeoutId);
             } catch (fetchError) {
                 console.error('❌ [ROOMS] Fetch error caught:', fetchError);
                 clearTimeout(timeoutId);
-                console.error('❌ [ROOMS] Fetch error:', fetchError);
+                console.error('❌ [ROOMS] Fetch error details:', {
+                    name: fetchError.name,
+                    message: fetchError.message,
+                    stack: fetchError.stack
+                });
                 throw fetchError;
             }
 
