@@ -1562,14 +1562,16 @@ class POSSystem {
                                     if (matchingOption && !matchingOption.disabled) {
                                         roomSelect.value = matchingOption.value;
                                         console.log(`✅ [POS] Auto-selected room: ${employeeAssignment.roomName} (ID: ${matchingOption.value})`);
-                                        showNotification(`Automatically assigned to ${employeeAssignment.roomName}`, 'success');
+                                        showNotification(`Automatically assigned to ${employeeAssignment.roomName}. You can also select Home Service.`, 'success');
                                     } else if (matchingOption && matchingOption.disabled) {
                                         console.log(`⚠️ [POS] Employee's assigned room (${employeeAssignment.roomName}) is occupied`);
+                                        showNotification(`${employeeAssignment.roomName} is occupied. Please select another room or Home Service.`, 'warning');
                                     } else {
                                         console.log(`⚠️ [POS] Employee's assigned room (${employeeAssignment.roomName}, ID: ${employeeAssignment.roomId}) not found in dropdown`);
                                     }
                                 } else {
                                     console.log('ℹ️ [POS] No room assignment found for employee ID:', selectedEmployeeId);
+                                    // Don't auto-select anything - let user choose between rooms or home service
                                 }
                             }
                         } catch (error) {
@@ -1812,36 +1814,51 @@ class POSSystem {
                 rooms = window.rooms || [];
             }
             const select = document.getElementById('checkoutRoomSelect');
-            
+
             if (select) {
-                select.innerHTML = '<option value="">No Room Assignment</option>';
-                
-                // Show all rooms with status indicators
-                rooms.forEach(room => {
-                    const option = document.createElement('option');
-                    option.value = room.status === 'available' ? room.id : '';
-                    
-                    const statusIcon = room.status === 'occupied' ? '🔴' : '🟢';
-                    const statusText = room.status === 'occupied' ? 'IN SERVICE' : 'AVAILABLE';
-                    
-                    let roomText = `${statusIcon} ${room.name} - ${this.roomTypes[room.type] || room.type}`;
-                    
-                    if (room.status === 'occupied') {
-                        // Disable occupied rooms and show service info
-                        option.disabled = true;
-                        option.style.color = '#999';
-                        if (room.currentService) {
-                            roomText += ` (${statusText} - ${room.currentService.employeeName})`;
+                // Clear existing options and add default
+                select.innerHTML = '<option value="">-- Select Location --</option>';
+
+                // Add Home Service option
+                const homeServiceOption = document.createElement('option');
+                homeServiceOption.value = 'home-service';
+                homeServiceOption.textContent = '🏠 Home Service';
+                select.appendChild(homeServiceOption);
+
+                // Create optgroup for rooms if there are any
+                if (rooms.length > 0) {
+                    const roomsGroup = document.createElement('optgroup');
+                    roomsGroup.label = '--- Available Rooms ---';
+
+                    // Show all rooms with status indicators
+                    rooms.forEach(room => {
+                        const option = document.createElement('option');
+                        option.value = room.status === 'available' ? room.id : '';
+
+                        const statusIcon = room.status === 'occupied' ? '🔴' : '🟢';
+                        const statusText = room.status === 'occupied' ? 'IN SERVICE' : 'AVAILABLE';
+
+                        let roomText = `${statusIcon} ${room.name} - ${this.roomTypes[room.type] || room.type}`;
+
+                        if (room.status === 'occupied') {
+                            // Disable occupied rooms and show service info
+                            option.disabled = true;
+                            option.style.color = '#999';
+                            if (room.currentService) {
+                                roomText += ` (${statusText} - ${room.currentService.employeeName})`;
+                            } else {
+                                roomText += ` (${statusText})`;
+                            }
                         } else {
-                            roomText += ` (${statusText})`;
+                            roomText += ` (${statusText} - Capacity: ${room.capacity})`;
                         }
-                    } else {
-                        roomText += ` (${statusText} - Capacity: ${room.capacity})`;
-                    }
-                    
-                    option.textContent = roomText;
-                    select.appendChild(option);
-                });
+
+                        option.textContent = roomText;
+                        roomsGroup.appendChild(option);
+                    });
+
+                    select.appendChild(roomsGroup);
+                }
             }
         } catch (error) {
             this.logError('Failed to load rooms for checkout', 'load_checkout_rooms', error);
@@ -2494,28 +2511,28 @@ class POSSystem {
                 }
             }
             
-            // Handle room assignment for services
-            const selectedRoomId = document.getElementById('checkoutRoomSelect')?.value;
+            // Handle room assignment or home service for services
+            const selectedLocation = document.getElementById('checkoutRoomSelect')?.value;
             const hasServices = this.cart.some(item => item.type === 'service');
-            
-            if (hasServices && selectedRoomId) {
+
+            if (hasServices && selectedLocation) {
                 // Get employee details from cached data or loadEmployees result
-                const employee = this.employees ? 
-                    this.employees.find(emp => 
-                        emp._id === selectedEmployeeId || 
+                const employee = this.employees ?
+                    this.employees.find(emp =>
+                        emp._id === selectedEmployeeId ||
                         emp.id === selectedEmployeeId ||
                         String(emp._id) === String(selectedEmployeeId) ||
                         String(emp.id) === String(selectedEmployeeId)
                     ) : null;
-                
+
                 // Get service details with durations
                 const serviceItems = this.cart.filter(item => item.type === 'service');
                 const serviceNames = serviceItems.map(item => item.name).join(', ');
-                
+
                 // Calculate total estimated duration from all services
                 let totalDuration = 0;
                 for (const serviceItem of serviceItems) {
-                    const service = this.products.find(p => 
+                    const service = this.products.find(p =>
                         p._id === serviceItem.id || p.id === serviceItem.id ||
                         String(p._id) === String(serviceItem.id) || String(p.id) === String(serviceItem.id)
                     );
@@ -2525,26 +2542,50 @@ class POSSystem {
                         totalDuration += 60 * serviceItem.quantity; // Default 60 minutes per service
                     }
                 }
-                
-                // Assign room to service
-                if (window.roomManager && typeof window.roomManager.assignRoomToService === 'function') {
-                    const serviceAssignmentData = {
+
+                // Check if home service or room assignment
+                if (selectedLocation === 'home-service') {
+                    // Home Service - add metadata to transaction, don't assign room
+                    console.log('🏠 [POS] Home service selected:', {
                         serviceName: serviceNames,
-                        clientName: transaction.customerName || 'Walk-in',
-                        employeeId: selectedEmployeeId,
-                        employeeName: employee?.name || 'Unknown',
-                        transactionId: transactionId,
-                        estimatedDuration: totalDuration || 60 // Use calculated duration or default 60 minutes
-                    };
-                    
-                    console.log('🏨 [POS] Assigning room to service with data:', {
-                        roomId: selectedRoomId,
-                        serviceData: serviceAssignmentData,
-                        selectedEmployeeId: selectedEmployeeId,
-                        employeeObject: employee
+                        employeeName: employee?.name,
+                        duration: totalDuration
                     });
-                    
-                    await window.roomManager.assignRoomToService(parseInt(selectedRoomId), serviceAssignmentData);
+
+                    // Add service location to transaction
+                    transaction.serviceLocation = 'home-service';
+                    transaction.serviceName = serviceNames;
+                    transaction.estimatedDuration = totalDuration;
+
+                    // Update transaction in database with service location
+                    await window.db.update('transactions', transaction);
+
+                    console.log('✅ [POS] Transaction updated with home service metadata');
+                } else {
+                    // Room assignment - use existing logic
+                    if (window.roomManager && typeof window.roomManager.assignRoomToService === 'function') {
+                        const serviceAssignmentData = {
+                            serviceName: serviceNames,
+                            clientName: transaction.customerName || 'Walk-in',
+                            employeeId: selectedEmployeeId,
+                            employeeName: employee?.name || 'Unknown',
+                            transactionId: transactionId,
+                            estimatedDuration: totalDuration || 60 // Use calculated duration or default 60 minutes
+                        };
+
+                        console.log('🏨 [POS] Assigning room to service with data:', {
+                            roomId: selectedLocation,
+                            serviceData: serviceAssignmentData,
+                            selectedEmployeeId: selectedEmployeeId,
+                            employeeObject: employee
+                        });
+
+                        await window.roomManager.assignRoomToService(parseInt(selectedLocation), serviceAssignmentData);
+
+                        // Add service location to transaction
+                        transaction.serviceLocation = `room-${selectedLocation}`;
+                        await window.db.update('transactions', transaction);
+                    }
                 }
             }
 
