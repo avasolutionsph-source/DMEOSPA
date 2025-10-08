@@ -712,15 +712,13 @@ class RoomManager {
                 `${therapist.firstName} ${therapist.lastName}`.trim() :
                 therapist.name;
 
-            // Find advance bookings for this therapist (upcoming within next 24 hours)
+            // Find ALL advance bookings for this therapist
             const now = new Date();
-            const next24Hours = new Date(now.getTime() + (24 * 60 * 60 * 1000));
 
             const therapistBookings = (this.advanceBookings || []).filter(booking => {
                 const bookingDate = new Date(booking.bookingDateTime);
                 return (String(booking.employeeId) === String(therapistId)) &&
                        bookingDate >= now &&
-                       bookingDate <= next24Hours &&
                        booking.status === 'scheduled';
             });
 
@@ -2483,10 +2481,8 @@ class RoomManager {
                         }).join('')}
 
                         ${(() => {
-                            // Advance Bookings - renders upcoming bookings for this therapist within 24 hours
-                            // Get advance bookings for this therapist (upcoming within next 24 hours)
+                            // Advance Bookings - renders ALL upcoming bookings for this therapist
                             const now = new Date();
-                            const next24Hours = new Date(now.getTime() + (24 * 60 * 60 * 1000));
 
                             console.log('🔍 [THERAPIST] Checking advance bookings:', {
                                 totalBookings: this.advanceBookings?.length || 0,
@@ -2501,7 +2497,6 @@ class RoomManager {
                                 const currentId = String(employeeId);
 
                                 const matchesEmployee = bookingEmployeeId === currentId;
-                                const isInTimeRange = bookingDate >= now && bookingDate <= next24Hours;
                                 const isScheduled = booking.status === 'scheduled';
 
                                 console.log('📋 [THERAPIST] Checking booking:', {
@@ -2512,13 +2507,12 @@ class RoomManager {
                                     bookingDateTime: booking.bookingDateTime,
                                     bookingDate,
                                     now,
-                                    isInTimeRange,
                                     status: booking.status,
                                     isScheduled,
-                                    willInclude: matchesEmployee && isInTimeRange && isScheduled
+                                    willInclude: matchesEmployee && isScheduled
                                 });
 
-                                return matchesEmployee && isInTimeRange && isScheduled;
+                                return matchesEmployee && isScheduled;
                             });
 
                             console.log('📅 [THERAPIST] Advance bookings found:', {
