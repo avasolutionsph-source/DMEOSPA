@@ -544,7 +544,12 @@ class RoomManager {
                         <i class="fas fa-times"></i> Cancel
                     </button>
                 `;
-            } else if (isActive && activeService) {
+            }
+
+            // Declare isNearEnd before the else if block so it's accessible later
+            let isNearEnd = false;
+
+            if (isActive && activeService) {
                 const elapsed = this.calculateElapsedTime(activeService.startTime);
 
                 // Calculate remaining time to determine card color
@@ -554,7 +559,7 @@ class RoomManager {
                 const remainingMinutes = estimatedDuration - elapsedMinutes;
 
                 // Blue when more than 10 mins remaining, Red when 10 mins or less
-                const isNearEnd = remainingMinutes <= 10;
+                isNearEnd = remainingMinutes <= 10;
                 const cardColor = isNearEnd ? '#800020' : '#2196F3'; // Maroon or Blue
                 const bgColor = isNearEnd ? '#ffebee' : '#e3f2fd'; // Light red or light blue
 
@@ -578,7 +583,7 @@ class RoomManager {
                         <i class="fas fa-stop"></i> End
                     </button>
                 `;
-            } else {
+            } else if (!isPending) {
                 // Available - no active service
                 serviceInfo = `
                     <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin-top: 10px; border-left: 3px solid #4CAF50;">
@@ -593,7 +598,7 @@ class RoomManager {
                 actionButtons = '';
             }
 
-            // Determine card state class (use cardColor and bgColor from isActive block if available)
+            // Determine card state class
             const cardStateClass = isPending ? 'pending' : isActive ? (isNearEnd ? 'occupied' : 'active-service') : 'available';
             const headerStyle = isActive && !isNearEnd ? 'background: #2196F3; color: white;' : '';
 
@@ -2129,6 +2134,7 @@ class RoomManager {
                             let statusBadge = '';
                             let statusInfo = '';
                             let actionButtons = '';
+                            let isNearEnd = false; // Declare outside blocks
 
                             if (isPending) {
                                 statusBadge = `<span style="background: #f39c12; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold;">
