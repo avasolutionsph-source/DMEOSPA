@@ -305,7 +305,16 @@ class RoomManager {
                     message: fetchError.message,
                     stack: fetchError.stack
                 });
-                throw fetchError;
+
+                // Don't throw - just set empty array and continue
+                console.warn('⚠️ [ROOMS] Continuing with empty advance bookings due to fetch error');
+                this.advanceBookings = [];
+
+                console.log('📊 [ROOMS] Final advanceBookings array (after error):', {
+                    length: 0,
+                    bookings: []
+                });
+                return; // Exit gracefully
             }
 
             console.log('📡 [ROOMS] Advance bookings API response:', {
