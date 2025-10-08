@@ -2605,6 +2605,21 @@ class POSSystem {
                     await window.db.update('transactions', transaction);
 
                     console.log('✅ [POS] Home service created and transaction updated');
+
+                    // Add to roomManager's active services array (same as room assignments do)
+                    if (window.roomManager) {
+                        if (!window.roomManager.activeServices) {
+                            window.roomManager.activeServices = [];
+                        }
+                        window.roomManager.activeServices.push(homeServiceData);
+                        console.log('📝 [POS] Added home service to roomManager.activeServices array');
+                    }
+
+                    // Refresh room display to show new home service card (same as room assignments)
+                    if (window.roomManager && window.app?.currentPage === 'rooms') {
+                        console.log('🔄 [POS] Refreshing room display to show new home service');
+                        window.roomManager.displayRooms();
+                    }
                 } else {
                     // Room assignment - use existing logic
                     if (window.roomManager && typeof window.roomManager.assignRoomToService === 'function') {
