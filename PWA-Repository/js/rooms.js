@@ -502,6 +502,20 @@ class RoomManager {
                 String(service.therapistId) === String(therapistId)
             );
 
+            console.log(`🔍 [ROOMS] Looking for home service for therapist "${therapistName}" (ID: ${therapistId}):`, {
+                therapistId: therapistId,
+                homeServicesCount: homeServices.length,
+                homeServices: homeServices.map(s => ({
+                    employeeId: s.employeeId,
+                    therapistId: s.therapistId,
+                    employeeName: s.employeeName,
+                    status: s.status,
+                    match: String(s.employeeId) === String(therapistId) || String(s.therapistId) === String(therapistId)
+                })),
+                foundService: !!activeService,
+                serviceDetails: activeService
+            });
+
             const isPending = activeService?.status === 'pending';
             const isActive = activeService?.status === 'active';
             const isAvailable = !isPending && !isActive;

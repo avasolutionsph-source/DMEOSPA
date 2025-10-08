@@ -9,12 +9,25 @@ const activeServiceSchema = new mongoose.Schema({
     },
     roomId: {
         type: Number,
-        required: true
+        required: false,  // Optional - null for home services
+        default: null
     },
     roomName: {
         type: String,
-        required: true,
+        required: false,  // Optional for home services
         trim: true
+    },
+    isHomeService: {
+        type: Boolean,
+        default: false,
+        index: true
+    },
+    therapistId: {
+        type: String,
+        index: true
+    },
+    therapistName: {
+        type: String
     },
     serviceName: {
         type: String,

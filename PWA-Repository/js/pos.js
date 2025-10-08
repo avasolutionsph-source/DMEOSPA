@@ -2581,6 +2581,15 @@ class POSSystem {
                     const serviceId = await window.db.add('activeServices', homeServiceData);
                     homeServiceData.id = serviceId;
 
+                    console.log('📝 [POS] Home service data prepared for save:', {
+                        employeeId: homeServiceData.employeeId,
+                        therapistId: homeServiceData.therapistId,
+                        employeeName: homeServiceData.employeeName,
+                        status: homeServiceData.status,
+                        isHomeService: homeServiceData.isHomeService,
+                        localId: serviceId
+                    });
+
                     // Save to MongoDB via API for cross-device sync
                     try {
                         const apiResult = await window.HybridAPIClient.post('/api/room-services', homeServiceData, {
