@@ -1801,6 +1801,9 @@ class RoomManager {
                 if (servicesResult.success && servicesResult.data && servicesResult.data.length > 0) {
                     console.log(`✅ [THERAPIST] Found ${servicesResult.data.length} active/pending services`);
 
+                    // Populate this.activeServices for use by action functions
+                    this.activeServices = servicesResult.data;
+
                     // Update room statuses based on MongoDB services
                     for (const service of servicesResult.data) {
                         const room = this.rooms.find(r => r.id === service.roomId);
