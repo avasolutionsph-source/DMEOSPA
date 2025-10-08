@@ -2211,6 +2211,14 @@ class RoomManager {
 
             // Display assigned rooms and home services with current status
             const totalAssignments = Object.keys(roomGroups).length + myHomeServices.length;
+
+            console.log('🎨 [THERAPIST] About to render view with:', {
+                rooms: Object.keys(roomGroups).length,
+                homeServices: myHomeServices.length,
+                advanceBookings: this.advanceBookings?.length || 0,
+                advanceBookingsData: this.advanceBookings
+            });
+
             container.innerHTML = `
                 <div style="max-width: 1200px; margin: 0 auto;">
                     <div class="info-banner" style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; margin-bottom: 30px; border-radius: 5px;">
