@@ -1487,8 +1487,19 @@
 
                 <!-- Appointments List Container -->
                 <div class="appointments-container" id="appointmentsContainer">
+                    <h2 style="margin: 2rem 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-calendar-check"></i> Website Bookings
+                    </h2>
                     <div class="appointments-list" id="appointmentsList">
                         <!-- Appointments will be loaded here by JavaScript -->
+                    </div>
+
+                    <!-- Advance Bookings Section -->
+                    <h2 style="margin: 2rem 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-calendar-plus"></i> Advance Bookings (POS)
+                    </h2>
+                    <div class="appointments-list" id="advanceBookingsList">
+                        <!-- Advance bookings will be loaded here by JavaScript -->
                     </div>
                 </div>
 
@@ -3872,6 +3883,29 @@
                             <option value="">-- Select Location --</option>
                         </select>
                         <small>Choose service location or home service</small>
+                    </div>
+
+                    <!-- Advance Booking Option -->
+                    <div class="form-group" id="advanceBookingSection">
+                        <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" id="advanceBookingCheckbox" onchange="posSystem.toggleAdvanceBookingFields()">
+                            <span class="checkmark"></span>
+                            <span style="margin-left: 8px;">
+                                <i class="fas fa-calendar-plus"></i> Schedule as Advance Booking
+                            </span>
+                        </label>
+                        <small>Book this service for a future date and time</small>
+
+                        <!-- Advance Booking Date/Time Fields (hidden by default) -->
+                        <div id="advanceBookingFields" style="display: none; margin-top: 1rem; padding: 1rem; background: var(--gray-50); border-radius: var(--border-radius-sm); border: 1px solid var(--gray-200);">
+                            <div class="form-group" style="margin-bottom: 0.75rem;">
+                                <label>
+                                    <i class="fas fa-calendar"></i> Booking Date & Time <span style="color: var(--danger-color);">*</span>
+                                </label>
+                                <input type="datetime-local" id="advanceBookingDateTime" class="form-input" min="">
+                                <small>Select the date and time for this service</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 

@@ -2,7 +2,7 @@
 class Database {
     constructor() {
         this.dbName = 'AvaSolutionsDB';
-        this.version = 16; // Incremented to add cashDrawerSessions store
+        this.version = 17; // Incremented to add advanceBookings store
         this.db = null;
         this.userId = null;
         this.isInitializing = false;
@@ -270,7 +270,16 @@ class Database {
                     activeServicesStore.createIndex('status', 'status', { unique: false });
                     activeServicesStore.createIndex('employeeId', 'employeeId', { unique: false });
                 }
-                
+
+                // Advance Bookings store (for scheduled future services)
+                if (!this.db.objectStoreNames.contains('advanceBookings')) {
+                    const advanceBookingsStore = this.db.createObjectStore('advanceBookings', { keyPath: 'id', autoIncrement: true });
+                    advanceBookingsStore.createIndex('bookingDateTime', 'bookingDateTime', { unique: false });
+                    advanceBookingsStore.createIndex('status', 'status', { unique: false });
+                    advanceBookingsStore.createIndex('employeeId', 'employeeId', { unique: false });
+                    advanceBookingsStore.createIndex('isHomeService', 'isHomeService', { unique: false });
+                }
+
                 // Service History store (for completed services)
                 if (!this.db.objectStoreNames.contains('serviceHistory')) {
                     const serviceHistoryStore = this.db.createObjectStore('serviceHistory', { keyPath: 'id', autoIncrement: true });

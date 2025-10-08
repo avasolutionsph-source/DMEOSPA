@@ -24,6 +24,7 @@ import shiftSchedulesRoutes from './shift-schedules.js';
 import cashDrawerRoutes from './cash-drawer.js';
 import roomAssignmentsRoutes from './room-assignments.js';
 import roomServicesRoutes from './room-services.js';
+import advanceBookingsRoutes from './advance-bookings.js';
 import { authenticateJWT, optionalAuth, requireBusinessUser } from '../../middleware/auth.js';
 import { apiRequestLogger } from '../../middleware/requestLogger.js';
 import logger from '../../utils/logger.js';
@@ -249,6 +250,7 @@ router.use('/customers', authenticateJWT, requireBusinessUser, customersRoutes);
 router.use('/attendance', authenticateJWT, requireBusinessUser, attendanceRoutes);
 router.use('/room-assignments', authenticateJWT, requireBusinessUser, roomAssignmentsRoutes);
 router.use('/room-services', authenticateJWT, requireBusinessUser, roomServicesRoutes);
+router.use('/advance-bookings', authenticateJWT, requireBusinessUser, advanceBookingsRoutes);
 router.use('/payroll', payrollRoutes); // Payroll with built-in auth middleware
 router.use('/payroll-requests', payrollRequestsRoutes); // Payroll requests with auth
 router.use('/shift-schedules', authenticateJWT, requireBusinessUser, shiftSchedulesRoutes); // Shift schedules for managers/owners

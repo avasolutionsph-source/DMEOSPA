@@ -1684,7 +1684,7 @@ class POSSystem {
     toggleSeniorPWDFields() {
         const checkbox = document.getElementById('applySeniorPWD');
         const fieldsDiv = document.getElementById('seniorPWDFields');
-        
+
         if (checkbox.checked) {
             fieldsDiv.style.display = 'block';
             this.appliedSeniorPWDDiscount = { percentage: 20 };
@@ -1692,8 +1692,32 @@ class POSSystem {
             fieldsDiv.style.display = 'none';
             this.appliedSeniorPWDDiscount = null;
         }
-        
+
         this.updateCheckoutTotals();
+    }
+
+    // Toggle advance booking fields
+    toggleAdvanceBookingFields() {
+        const checkbox = document.getElementById('advanceBookingCheckbox');
+        const fieldsDiv = document.getElementById('advanceBookingFields');
+        const dateTimeInput = document.getElementById('advanceBookingDateTime');
+
+        if (checkbox.checked) {
+            fieldsDiv.style.display = 'block';
+
+            // Set minimum datetime to now
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+            dateTimeInput.min = minDateTime;
+        } else {
+            fieldsDiv.style.display = 'none';
+            dateTimeInput.value = '';
+        }
     }
 
     // Apply promo discount
@@ -2521,11 +2545,131 @@ class POSSystem {
                 }
             }
             
+            // Check if this is an advance booking
+            const advanceBookingCheckbox = document.getElementById('advanceBookingCheckbox');
+            const advanceBookingDateTime = document.getElementById('advanceBookingDateTime');
+            const isAdvanceBooking = advanceBookingCheckbox?.checked;
+
             // Handle room assignment or home service for services
             const selectedLocation = document.getElementById('checkoutRoomSelect')?.value;
             const hasServices = this.cart.some(item => item.type === 'service');
 
-            if (hasServices && selectedLocation) {
+            if (hasServices && isAdvanceBooking && advanceBookingDateTime?.value) {
+                // Advance Booking - Save for future date/time
+                console.log('📅 [POS] Creating advance booking');
+
+                // Validate booking datetime
+                const bookingDate = new Date(advanceBookingDateTime.value);
+                if (bookingDate <= new Date()) {
+                    showError('Booking date must be in the future');
+                    setButtonLoading('confirmCheckoutBtn', false);
+                    hideLoading();
+                    this.isProcessingCheckout = false;
+                    return;
+                }
+
+                // Get employee details
+                const employee = this.employees?.find(emp =>
+                    emp._id === selectedEmployeeId ||
+                    emp.id === selectedEmployeeId ||
+                    String(emp._id) === String(selectedEmployeeId) ||
+                    String(emp.id) === String(selectedEmployeeId)
+                );
+
+                // Get service details
+                const serviceItems = this.cart.filter(item => item.type === 'service');
+                const serviceNames = serviceItems.map(item => item.name).join(', ');
+
+                // Calculate total duration and price
+                let totalDuration = 0;
+                let servicePrice = 0;
+                for (const serviceItem of serviceItems) {
+                    const service = this.products.find(p =>
+                        p._id === serviceItem.id || p.id === serviceItem.id ||
+                        String(p._id) === String(serviceItem.id) || String(p.id) === String(serviceItem.id)
+                    );
+                    if (service && service.duration) {
+                        totalDuration += service.duration * serviceItem.quantity;
+                    } else {
+                        totalDuration += 60 * serviceItem.quantity;
+                    }
+                    servicePrice += serviceItem.price * serviceItem.quantity;
+                }
+
+                // Determine room info
+                let roomId = null;
+                let roomName = null;
+                let isHomeService = false;
+
+                if (selectedLocation === 'home-service') {
+                    isHomeService = true;
+                    roomName = `Home Service - ${employee?.name || 'Unknown'}`;
+                } else if (selectedLocation) {
+                    roomId = parseInt(selectedLocation);
+                    // Get room name from roomManager if available
+                    if (window.roomManager && window.roomManager.rooms) {
+                        const room = window.roomManager.rooms.find(r => r.id === roomId);
+                        roomName = room?.name || `Room ${roomId}`;
+                    } else {
+                        roomName = `Room ${roomId}`;
+                    }
+                }
+
+                // Create advance booking data
+                const advanceBookingData = {
+                    bookingDateTime: bookingDate.toISOString(),
+                    employeeId: selectedEmployeeId,
+                    employeeName: employee?.name || employeeName || 'Unknown',
+                    serviceName: serviceNames,
+                    estimatedDuration: totalDuration || 60,
+                    servicePrice: servicePrice,
+                    roomId: roomId,
+                    roomName: roomName,
+                    isHomeService: isHomeService,
+                    clientName: transaction.customerInfo?.name || transaction.customerName || 'Did not select customer',
+                    clientPhone: transaction.customerInfo?.phone || null,
+                    clientEmail: transaction.customerInfo?.email || null,
+                    clientAddress: transaction.customerInfo?.address || null,
+                    paymentMethod: paymentMethod,
+                    transactionId: transactionId,
+                    status: 'scheduled',
+                    specialRequests: null
+                };
+
+                // Save to IndexedDB
+                try {
+                    const bookingId = await window.db.add('advanceBookings', advanceBookingData);
+                    advanceBookingData.id = bookingId;
+                    console.log('📝 [POS] Advance booking saved locally:', bookingId);
+                } catch (dbError) {
+                    console.error('❌ [POS] Failed to save advance booking locally:', dbError);
+                }
+
+                // Save to MongoDB via API
+                try {
+                    const apiResult = await window.HybridAPIClient.post('/api/advance-bookings', advanceBookingData, {
+                        critical: true
+                    });
+
+                    if (apiResult.success && apiResult.data?._id) {
+                        advanceBookingData._id = apiResult.data._id;
+                        await window.db.update('advanceBookings', { ...advanceBookingData, _id: apiResult.data._id });
+                        console.log('✅ [POS] Advance booking saved to MongoDB:', apiResult.data._id);
+                    }
+                } catch (error) {
+                    console.error('❌ [POS] Failed to save advance booking to MongoDB:', error);
+                    // Continue anyway - will sync later
+                }
+
+                // Mark transaction as advance booking
+                transaction.isAdvanceBooking = true;
+                transaction.bookingDateTime = bookingDate.toISOString();
+                transaction.advanceBookingId = advanceBookingData._id || advanceBookingData.id;
+                await window.db.update('transactions', transaction);
+
+                console.log('✅ [POS] Advance booking created successfully');
+
+            } else if (hasServices && selectedLocation) {
                 // Get employee details from cached data or loadEmployees result
                 const employee = this.employees ?
                     this.employees.find(emp =>

@@ -243,6 +243,44 @@ class RoomManager {
         return this.activeServices || [];
     }
 
+    async loadAdvanceBookings() {
+        try {
+            const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+            if (!authToken) {
+                this.advanceBookings = [];
+                return;
+            }
+
+            const response = await fetch('https://daetspa-backend.onrender.com/api/advance-bookings', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.data) {
+                    // Filter for today and future bookings only
+                    const now = new Date();
+                    this.advanceBookings = result.data.filter(booking => {
+                        const bookingDate = new Date(booking.bookingDateTime);
+                        return bookingDate >= now || booking.status === 'in-progress';
+                    });
+                    console.log('✅ [ROOMS] Loaded advance bookings:', this.advanceBookings);
+                } else {
+                    this.advanceBookings = [];
+                }
+            } else {
+                this.advanceBookings = [];
+            }
+        } catch (error) {
+            console.error('Failed to load advance bookings:', error);
+            this.advanceBookings = [];
+        }
+    }
+
     async displayRooms(forceRefresh = false) {
         // CRITICAL: Do not run displayRooms for therapists
         if (this.isTherapistView) {
@@ -253,8 +291,9 @@ class RoomManager {
         const container = document.getElementById('roomsGrid');
         if (!container) return;
 
-        // 🔧 FIX: Reload active services to get latest home services from database
+        // 🔧 FIX: Reload active services and advance bookings to get latest data from database
         await this.loadActiveServices();
+        await this.loadAdvanceBookings();
 
         const visibleRooms = this.showHiddenRooms ?
             this.rooms :
@@ -635,8 +674,85 @@ class RoomManager {
             `;
         }).join('');
 
-        // Combine room cards and home service cards
-        container.innerHTML = roomCardsHTML + homeServiceCardsHTML;
+        // Generate advance booking cards for therapists
+        const advanceBookingCardsHTML = therapists.map(therapist => {
+            // Get therapist ID
+            const therapistId = therapist._id || therapist.id;
+            const therapistName = therapist.firstName ?
+                `${therapist.firstName} ${therapist.lastName}`.trim() :
+                therapist.name;
+
+            // Find advance bookings for this therapist (upcoming within next 24 hours)
+            const now = new Date();
+            const next24Hours = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+
+            const therapistBookings = (this.advanceBookings || []).filter(booking => {
+                const bookingDate = new Date(booking.bookingDateTime);
+                return (String(booking.employeeId) === String(therapistId)) &&
+                       bookingDate >= now &&
+                       bookingDate <= next24Hours &&
+                       booking.status === 'scheduled';
+            });
+
+            if (therapistBookings.length === 0) return '';
+
+            return therapistBookings.map(booking => {
+                const bookingDate = new Date(booking.bookingDateTime);
+                const timeUntil = Math.floor((bookingDate - now) / (60 * 1000)); // minutes
+                const isImminent = timeUntil <= 30; // Within 30 minutes
+
+                return `
+                    <div class="room-card pending" ${isImminent ? 'style="border-color: #f39c12; border-width: 3px;"' : ''}>
+                        <div class="room-header pending" style="padding: 10px; margin: -1px -1px 0 -1px;">
+                            <h3 style="margin: 0; display: flex; justify-content: space-between; align-items: center;">
+                                <span>
+                                    <i class="fas fa-calendar-plus"></i> ${therapistName}
+                                </span>
+                                <span style="font-size: 0.8rem;">
+                                    <i class="fas fa-clock"></i> ADVANCE BOOKING
+                                </span>
+                            </h3>
+                        </div>
+                        <div class="room-body" style="padding: 15px;">
+                            <div class="room-type" style="color: #666; margin-bottom: 10px;">
+                                <i class="fas fa-${booking.isHomeService ? 'home' : 'store'}"></i> ${booking.isHomeService ? 'Home Service' : booking.roomName}
+                                ${isImminent ? '<span class="badge badge-warning" style="float: right; font-size: 0.7rem;">IMMINENT</span>' : ''}
+                            </div>
+
+                            <div class="service-info" style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #f39c12;">
+                                <div style="color: #856404; font-weight: bold; margin-bottom: 8px;">
+                                    <i class="fas fa-hourglass-half"></i> Scheduled: ${bookingDate.toLocaleString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}
+                                </div>
+                                <div><strong>Service:</strong> ${booking.serviceName}</div>
+                                <div><strong>Client:</strong> ${booking.clientName}</div>
+                                ${booking.clientAddress ? `<div><strong>Location:</strong> ${booking.clientAddress}</div>` : ''}
+                                ${booking.estimatedDuration ? `<div><strong>Duration:</strong> ${booking.estimatedDuration} mins</div>` : ''}
+                                <div style="margin-top: 8px; color: ${isImminent ? '#d32f2f' : '#856404'}; font-weight: bold;">
+                                    <i class="fas fa-stopwatch"></i> ${timeUntil > 60 ? `In ${Math.floor(timeUntil / 60)}h ${timeUntil % 60}m` : `In ${timeUntil} minutes`}
+                                </div>
+                            </div>
+
+                            <div class="room-actions" style="margin-top: 15px;">
+                                <button class="btn btn-success btn-sm" onclick="roomManager.startAdvanceBooking('${booking._id || booking.id}')">
+                                    <i class="fas fa-play"></i> Start Now
+                                </button>
+                                <button class="btn btn-secondary btn-sm" onclick="window.app.showPage('appointments')">
+                                    <i class="fas fa-info-circle"></i> View Details
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }).join('');
+
+        // Combine room cards, home service cards, and advance booking cards
+        container.innerHTML = roomCardsHTML + homeServiceCardsHTML + advanceBookingCardsHTML;
     }
 
     getRoomTypeLabel(type) {
@@ -1562,6 +1678,91 @@ class RoomManager {
         } catch (error) {
             console.error('Failed to end home service:', error);
             showNotification('Failed to end home service', 'error');
+        }
+    }
+
+    async startAdvanceBooking(bookingId) {
+        if (!confirm('Start this advance booking now? This will create an active service.')) {
+            return;
+        }
+
+        try {
+            const booking = (this.advanceBookings || []).find(b => b._id === bookingId || b.id === bookingId);
+            if (!booking) {
+                showError('Booking not found');
+                return;
+            }
+
+            // Create active service from booking
+            const serviceData = {
+                serviceName: booking.serviceName,
+                clientName: booking.clientName,
+                clientAddress: booking.clientAddress,
+                clientPhone: booking.clientPhone,
+                clientEmail: booking.clientEmail,
+                employeeId: booking.employeeId,
+                employeeName: booking.employeeName,
+                therapistId: booking.employeeId,
+                therapistName: booking.employeeName,
+                estimatedDuration: booking.estimatedDuration,
+                isHomeService: booking.isHomeService,
+                roomId: booking.roomId,
+                roomName: booking.roomName,
+                status: 'active',
+                startTime: new Date().toISOString()
+            };
+
+            // Save active service to IndexedDB
+            const serviceId = await window.db.add('activeServices', serviceData);
+            serviceData.id = serviceId;
+
+            // Save to MongoDB
+            try {
+                const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+                const apiResult = await fetch('https://daetspa-backend.onrender.com/api/room-services', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(serviceData)
+                });
+
+                if (apiResult.ok) {
+                    const result = await apiResult.json();
+                    if (result.data && result.data._id) {
+                        serviceData._id = result.data._id;
+                        await window.db.update('activeServices', { ...serviceData, _id: result.data._id });
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to save to MongoDB:', error);
+            }
+
+            // Update booking status to in-progress
+            try {
+                const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+                await fetch(`https://daetspa-backend.onrender.com/api/advance-bookings/${bookingId}/convert`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ activeServiceId: serviceId })
+                });
+            } catch (error) {
+                console.error('Failed to update booking status:', error);
+            }
+
+            showSuccess('Advance booking started successfully!');
+
+            // Refresh display
+            await this.loadActiveServices();
+            await this.loadAdvanceBookings();
+            this.displayRooms();
+        } catch (error) {
+            console.error('Error starting advance booking:', error);
+            showError('Failed to start booking: ' + error.message);
         }
     }
 

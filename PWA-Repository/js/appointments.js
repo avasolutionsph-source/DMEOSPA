@@ -6,16 +6,17 @@
 class AppointmentsManager {
     constructor() {
         this.appointments = [];
+        this.advanceBookings = [];
         this.currentFilter = 'all';
         this.currentDate = ''; // Start with empty date to show all appointments
         this.refreshInterval = null;
         this.authCheckInterval = null;
-        
+
         // Track login state for automatic refresh
         const userData = localStorage.getItem('currentUser');
         const userToken = localStorage.getItem('authToken');
         this.wasLoggedIn = !!(userData && userToken);
-        
+
         console.log('🗓️ Appointments Manager initialized');
     }
 
@@ -23,6 +24,7 @@ class AppointmentsManager {
         this.bindEvents();
         this.setupAuthListener();
         await this.loadAppointments();
+        await this.loadAdvanceBookings();
         this.startAutoRefresh();
     }
 
@@ -32,17 +34,30 @@ class AppointmentsManager {
             if (e.target.matches('.appointment-filter-btn')) {
                 this.handleFilterClick(e.target);
             }
-            
+
             if (e.target.matches('.confirm-appointment-btn')) {
                 this.confirmAppointment(e.target.dataset.id);
             }
-            
+
             if (e.target.matches('.cancel-appointment-btn')) {
                 this.cancelAppointment(e.target.dataset.id);
             }
-            
+
             if (e.target.matches('.complete-appointment-btn')) {
                 this.completeAppointment(e.target.dataset.id);
+            }
+
+            // Advance Booking Actions
+            if (e.target.matches('.start-advance-booking-btn')) {
+                this.startAdvanceBooking(e.target.dataset.id);
+            }
+
+            if (e.target.matches('.cancel-advance-booking-btn')) {
+                this.cancelAdvanceBooking(e.target.dataset.id);
+            }
+
+            if (e.target.matches('.edit-advance-booking-btn')) {
+                this.editAdvanceBooking(e.target.dataset.id);
             }
         });
 
@@ -52,13 +67,17 @@ class AppointmentsManager {
             dateFilter.addEventListener('change', (e) => {
                 this.currentDate = e.target.value;
                 this.filterAndDisplayAppointments();
+                this.displayAdvanceBookings();
             });
         }
 
         // Refresh button
         const refreshBtn = document.getElementById('refreshAppointmentsBtn');
         if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.loadAppointments());
+            refreshBtn.addEventListener('click', () => {
+                this.loadAppointments();
+                this.loadAdvanceBookings();
+            });
         }
     }
 
@@ -570,11 +589,381 @@ class AppointmentsManager {
 
     destroy() {
         this.stopAutoRefresh();
-        
+
         // Clear auth check interval
         if (this.authCheckInterval) {
             clearInterval(this.authCheckInterval);
             this.authCheckInterval = null;
+        }
+    }
+
+    // ===== ADVANCE BOOKINGS METHODS =====
+
+    async loadAdvanceBookings() {
+        try {
+            console.log('📥 Loading advance bookings from server...');
+
+            // Get current user info
+            const userData = localStorage.getItem('currentUser');
+            const userToken = localStorage.getItem('authToken');
+
+            if (!userData || !userToken) {
+                console.warn('No user data available for advance bookings');
+                this.showAdvanceBookingsPlaceholder();
+                return;
+            }
+
+            const user = JSON.parse(userData);
+
+            // Fetch advance bookings from the unified backend API
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/advance-bookings`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${userToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                this.advanceBookings = data.data || [];
+                console.log(`✅ Loaded ${this.advanceBookings.length} advance bookings`);
+
+                // Log to activity system
+                if (window.activityLogger) {
+                    window.activityLogger.logActivity(
+                        'sync',
+                        'advance-booking',
+                        null,
+                        `Loaded ${this.advanceBookings.length} advance bookings from server`,
+                        { count: this.advanceBookings.length }
+                    );
+                }
+            } else {
+                console.error('Failed to load advance bookings:', response.statusText);
+                this.advanceBookings = [];
+            }
+        } catch (error) {
+            console.error('Error loading advance bookings:', error);
+            this.advanceBookings = [];
+        }
+
+        this.displayAdvanceBookings();
+    }
+
+    displayAdvanceBookings() {
+        const container = document.getElementById('advanceBookingsList');
+        if (!container) return;
+
+        // Filter by date if set
+        let filteredBookings = this.advanceBookings;
+        if (this.currentDate) {
+            filteredBookings = this.advanceBookings.filter(booking => {
+                const bookingDate = new Date(booking.bookingDateTime).toISOString().split('T')[0];
+                return bookingDate === this.currentDate;
+            });
+        }
+
+        if (filteredBookings.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-calendar-times"></i>
+                    <h3>No Advance Bookings</h3>
+                    <p>There are no advance bookings scheduled at this time.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const html = filteredBookings.map(booking => this.generateAdvanceBookingCard(booking)).join('');
+        container.innerHTML = html;
+    }
+
+    generateAdvanceBookingCard(booking) {
+        const bookingDate = new Date(booking.bookingDateTime);
+        const formattedDate = bookingDate.toLocaleDateString('en-US', {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+        const formattedTime = bookingDate.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        const statusClass = this.getAdvanceBookingStatusClass(booking.status);
+        const statusIcon = this.getAdvanceBookingStatusIcon(booking.status);
+
+        // Format service location
+        const locationText = booking.isHomeService ?
+            'Home Service' : (booking.roomName || 'In-Spa');
+        const locationIcon = booking.isHomeService ?
+            'fas fa-home' : 'fas fa-store';
+
+        // Check if booking time is near (within 30 minutes)
+        const isNear = (bookingDate - new Date()) <= 30 * 60 * 1000 && bookingDate > new Date();
+        const isPast = bookingDate < new Date();
+
+        return `
+            <div class="appointment-card ${statusClass}" data-id="${booking._id}" ${isNear ? 'style="border-left: 4px solid #f39c12;"' : ''}>
+                <div class="appointment-header">
+                    <div class="appointment-time">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span class="date">${formattedDate}</span>
+                        <span class="time">${formattedTime}</span>
+                        ${isNear && booking.status === 'scheduled' ? '<span class="badge badge-warning" style="margin-left: 0.5rem;">Starting Soon</span>' : ''}
+                        ${isPast && booking.status === 'scheduled' ? '<span class="badge badge-danger" style="margin-left: 0.5rem;">Overdue</span>' : ''}
+                    </div>
+                    <div class="appointment-status">
+                        <span class="status-badge ${statusClass}">
+                            <i class="${statusIcon}"></i>
+                            ${booking.status.toUpperCase()}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="appointment-details">
+                    <div class="client-info">
+                        <h3 class="client-name">
+                            <i class="fas fa-user"></i>
+                            ${booking.clientName}
+                        </h3>
+                        ${booking.clientPhone || booking.clientEmail ? `
+                            <div class="contact-info">
+                                ${booking.clientPhone ? `
+                                    <span class="phone">
+                                        <i class="fas fa-phone"></i>
+                                        ${booking.clientPhone}
+                                    </span>
+                                ` : ''}
+                                ${booking.clientEmail ? `
+                                    <span class="email">
+                                        <i class="fas fa-envelope"></i>
+                                        ${booking.clientEmail}
+                                    </span>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="service-info">
+                        <div class="service-name">
+                            <i class="fas fa-spa"></i>
+                            <strong>${booking.serviceName}</strong>
+                            <span class="duration">(${booking.estimatedDuration} min)</span>
+                        </div>
+                        <div class="service-details">
+                            <span class="price">
+                                <i class="fas fa-peso-sign"></i>
+                                ₱${booking.servicePrice ? booking.servicePrice.toFixed(2) : '0.00'}
+                            </span>
+                            <span class="location">
+                                <i class="${locationIcon}"></i>
+                                ${locationText}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="therapist-info">
+                        <i class="fas fa-user-md"></i>
+                        <span>Employee: <strong>${booking.employeeName}</strong></span>
+                    </div>
+
+                    ${booking.isHomeService && booking.clientAddress ? `
+                        <div class="home-address">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span><strong>Service Address:</strong> ${booking.clientAddress}</span>
+                        </div>
+                    ` : ''}
+
+                    ${booking.specialRequests ? `
+                        <div class="special-requests">
+                            <i class="fas fa-sticky-note"></i>
+                            <span><strong>Special Requests:</strong> ${booking.specialRequests}</span>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="appointment-actions">
+                    ${booking.status === 'scheduled' || booking.status === 'confirmed' ? `
+                        <button class="btn btn-success btn-sm start-advance-booking-btn" data-id="${booking._id}">
+                            <i class="fas fa-play"></i> Start Service
+                        </button>
+                    ` : ''}
+                    ${booking.status === 'scheduled' ? `
+                        <button class="btn btn-secondary btn-sm edit-advance-booking-btn" data-id="${booking._id}">
+                            <i class="fas fa-edit"></i> Reschedule
+                        </button>
+                    ` : ''}
+                    ${booking.status !== 'cancelled' && booking.status !== 'completed' ? `
+                        <button class="btn btn-danger btn-sm cancel-advance-booking-btn" data-id="${booking._id}">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    getAdvanceBookingStatusClass(status) {
+        const statusMap = {
+            'scheduled': 'status-pending',
+            'confirmed': 'status-confirmed',
+            'in-progress': 'status-active',
+            'completed': 'status-completed',
+            'cancelled': 'status-cancelled'
+        };
+        return statusMap[status] || 'status-pending';
+    }
+
+    getAdvanceBookingStatusIcon(status) {
+        const iconMap = {
+            'scheduled': 'fas fa-clock',
+            'confirmed': 'fas fa-check-circle',
+            'in-progress': 'fas fa-spinner fa-spin',
+            'completed': 'fas fa-check-double',
+            'cancelled': 'fas fa-times-circle'
+        };
+        return iconMap[status] || 'fas fa-question-circle';
+    }
+
+    showAdvanceBookingsPlaceholder() {
+        const container = document.getElementById('advanceBookingsList');
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-sign-in-alt"></i>
+                <h3>Login Required</h3>
+                <p>Please log in to view advance bookings.</p>
+            </div>
+        `;
+    }
+
+    async startAdvanceBooking(bookingId) {
+        if (!confirm('Start this advance booking now? This will create an active service.')) {
+            return;
+        }
+
+        try {
+            const booking = this.advanceBookings.find(b => b._id === bookingId || b.id === bookingId);
+            if (!booking) {
+                showError('Booking not found');
+                return;
+            }
+
+            // Create active service from booking
+            if (window.roomManager) {
+                const serviceData = {
+                    serviceName: booking.serviceName,
+                    clientName: booking.clientName,
+                    clientAddress: booking.clientAddress,
+                    clientPhone: booking.clientPhone,
+                    clientEmail: booking.clientEmail,
+                    employeeId: booking.employeeId,
+                    employeeName: booking.employeeName,
+                    estimatedDuration: booking.estimatedDuration,
+                    isHomeService: booking.isHomeService,
+                    roomId: booking.roomId,
+                    roomName: booking.roomName,
+                    status: 'active',
+                    startTime: new Date().toISOString()
+                };
+
+                // Save active service
+                const serviceId = await window.db.add('activeServices', serviceData);
+                serviceData.id = serviceId;
+
+                // Update booking status to in-progress
+                const userToken = localStorage.getItem('authToken');
+                await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/advance-bookings/${bookingId}/convert`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${userToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ activeServiceId: serviceId })
+                });
+
+                showSuccess('Advance booking started successfully!');
+                await this.loadAdvanceBookings();
+
+                // Navigate to rooms page if available
+                if (window.app && window.app.showPage) {
+                    window.app.showPage('rooms');
+                }
+            }
+        } catch (error) {
+            console.error('Error starting advance booking:', error);
+            showError('Failed to start booking: ' + error.message);
+        }
+    }
+
+    async cancelAdvanceBooking(bookingId) {
+        const reason = prompt('Please enter cancellation reason:');
+        if (!reason) return;
+
+        try {
+            const userToken = localStorage.getItem('authToken');
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/advance-bookings/${bookingId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${userToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ reason })
+            });
+
+            if (response.ok) {
+                showSuccess('Advance booking cancelled successfully');
+                await this.loadAdvanceBookings();
+            } else {
+                showError('Failed to cancel booking');
+            }
+        } catch (error) {
+            console.error('Error cancelling advance booking:', error);
+            showError('Failed to cancel booking: ' + error.message);
+        }
+    }
+
+    async editAdvanceBooking(bookingId) {
+        // Simple reschedule - prompt for new date/time
+        const booking = this.advanceBookings.find(b => b._id === bookingId || b.id === bookingId);
+        if (!booking) return;
+
+        const currentDateTime = new Date(booking.bookingDateTime);
+        const newDateTimeStr = prompt('Enter new date and time (YYYY-MM-DD HH:MM):',
+            currentDateTime.toISOString().slice(0, 16).replace('T', ' '));
+
+        if (!newDateTimeStr) return;
+
+        try {
+            const newDateTime = new Date(newDateTimeStr.replace(' ', 'T'));
+            if (newDateTime <= new Date()) {
+                showError('New date must be in the future');
+                return;
+            }
+
+            const userToken = localStorage.getItem('authToken');
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/advance-bookings/${bookingId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${userToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ bookingDateTime: newDateTime.toISOString() })
+            });
+
+            if (response.ok) {
+                showSuccess('Booking rescheduled successfully');
+                await this.loadAdvanceBookings();
+            } else {
+                showError('Failed to reschedule booking');
+            }
+        } catch (error) {
+            console.error('Error rescheduling booking:', error);
+            showError('Failed to reschedule booking: ' + error.message);
         }
     }
 }
