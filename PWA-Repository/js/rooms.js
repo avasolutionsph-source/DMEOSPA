@@ -260,15 +260,20 @@ class RoomManager {
                 tokenPreview: authToken.substring(0, 20) + '...'
             });
 
+            console.log('⏳ [ROOMS] Creating AbortController...');
             // Add timeout to prevent hanging
             const controller = new AbortController();
+
+            console.log('⏳ [ROOMS] Setting up timeout...');
             const timeoutId = setTimeout(() => {
                 console.warn('⚠️ [ROOMS] Advance bookings fetch timeout after 10 seconds');
                 controller.abort();
             }, 10000);
 
+            console.log('⏳ [ROOMS] About to call fetch...');
             let response;
             try {
+                console.log('🚀 [ROOMS] Calling fetch NOW...');
                 response = await fetch('https://daetspa-backend.onrender.com/api/advance-bookings', {
                     method: 'GET',
                     headers: {
@@ -277,8 +282,10 @@ class RoomManager {
                     },
                     signal: controller.signal
                 });
+                console.log('✅ [ROOMS] Fetch completed!');
                 clearTimeout(timeoutId);
             } catch (fetchError) {
+                console.error('❌ [ROOMS] Fetch error caught:', fetchError);
                 clearTimeout(timeoutId);
                 console.error('❌ [ROOMS] Fetch error:', fetchError);
                 throw fetchError;
