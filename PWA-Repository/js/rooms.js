@@ -244,8 +244,9 @@ class RoomManager {
     }
 
     async loadAdvanceBookings(caller = 'unknown') {
+        console.log(`🔄 [ROOMS] Loading advance bookings... (called by: ${caller})`);
+
         try {
-            console.log(`🔄 [ROOMS] Loading advance bookings... (called by: ${caller})`);
             const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
             if (!authToken) {
                 console.warn('⚠️ [ROOMS] No auth token found for advance bookings');
@@ -253,7 +254,11 @@ class RoomManager {
                 return;
             }
 
-            console.log('🌐 [ROOMS] Fetching advance bookings from API...');
+            console.log('🌐 [ROOMS] Fetching advance bookings from API...', {
+                url: 'https://daetspa-backend.onrender.com/api/advance-bookings',
+                hasToken: !!authToken,
+                tokenPreview: authToken.substring(0, 20) + '...'
+            });
 
             // Add timeout to prevent hanging
             const controller = new AbortController();
@@ -262,53 +267,108 @@ class RoomManager {
                 controller.abort();
             }, 10000);
 
-            const response = await fetch('https://daetspa-backend.onrender.com/api/advance-bookings', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`
-                },
-                signal: controller.signal
-            }).finally(() => clearTimeout(timeoutId));
+            let response;
+            try {
+                response = await fetch('https://daetspa-backend.onrender.com/api/advance-bookings', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+            } catch (fetchError) {
+                clearTimeout(timeoutId);
+                console.error('❌ [ROOMS] Fetch error:', fetchError);
+                throw fetchError;
+            }
 
             console.log('📡 [ROOMS] Advance bookings API response:', {
                 status: response.status,
                 ok: response.ok,
-                statusText: response.statusText
+                statusText: response.statusText,
+                headers: Object.fromEntries([...response.headers.entries()])
             });
 
             if (response.ok) {
                 const result = await response.json();
-                console.log('📦 [ROOMS] Advance bookings API result:', result);
+                console.log('📦 [ROOMS] Advance bookings API result:', {
+                    success: result.success,
+                    dataType: typeof result.data,
+                    dataLength: result.data?.length,
+                    fullResult: result
+                });
 
                 if (result.success && result.data) {
                     // Filter for today and future bookings only
                     const now = new Date();
-                    this.advanceBookings = result.data.filter(booking => {
-                        const bookingDate = new Date(booking.bookingDateTime);
-                        return bookingDate >= now || booking.status === 'in-progress';
+                    const allBookings = result.data;
+
+                    console.log('🔍 [ROOMS] Filtering bookings:', {
+                        totalBookings: allBookings.length,
+                        now: now.toISOString(),
+                        bookingDates: allBookings.map(b => ({
+                            id: b._id,
+                            dateTime: b.bookingDateTime,
+                            status: b.status,
+                            employeeId: b.employeeId,
+                            employeeName: b.employeeName
+                        }))
                     });
+
+                    this.advanceBookings = allBookings.filter(booking => {
+                        const bookingDate = new Date(booking.bookingDateTime);
+                        const isFuture = bookingDate >= now;
+                        const isInProgress = booking.status === 'in-progress';
+                        return isFuture || isInProgress;
+                    });
+
                     console.log('✅ [ROOMS] Loaded advance bookings:', {
-                        totalFromAPI: result.data.length,
+                        totalFromAPI: allBookings.length,
                         afterFiltering: this.advanceBookings.length,
-                        bookings: this.advanceBookings
+                        filtered: this.advanceBookings.map(b => ({
+                            id: b._id,
+                            dateTime: b.bookingDateTime,
+                            status: b.status,
+                            employeeId: b.employeeId,
+                            employeeName: b.employeeName
+                        }))
                     });
                 } else {
-                    console.warn('⚠️ [ROOMS] No advance bookings data in response');
+                    console.warn('⚠️ [ROOMS] No advance bookings data in response', {
+                        resultSuccess: result.success,
+                        hasData: !!result.data,
+                        result
+                    });
                     this.advanceBookings = [];
                 }
             } else {
-                console.error('❌ [ROOMS] Failed to fetch advance bookings:', response.status);
+                const errorText = await response.text();
+                console.error('❌ [ROOMS] Failed to fetch advance bookings:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    errorText
+                });
                 this.advanceBookings = [];
             }
         } catch (error) {
             if (error.name === 'AbortError') {
                 console.error('❌ [ROOMS] Advance bookings fetch aborted due to timeout');
             } else {
-                console.error('❌ [ROOMS] Failed to load advance bookings:', error);
+                console.error('❌ [ROOMS] Failed to load advance bookings:', {
+                    error,
+                    message: error.message,
+                    stack: error.stack
+                });
             }
             this.advanceBookings = [];
         }
+
+        console.log('📊 [ROOMS] Final advanceBookings array:', {
+            length: this.advanceBookings?.length || 0,
+            bookings: this.advanceBookings
+        });
     }
 
     async displayRooms(forceRefresh = false) {
