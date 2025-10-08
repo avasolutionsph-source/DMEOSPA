@@ -2552,10 +2552,10 @@ class POSSystem {
                         duration: totalDuration
                     });
 
-                    // Create home service record for tracking (similar to room service but without room)
+                    // Create therapist-specific home service record (similar to room assignment)
                     const homeServiceData = {
                         roomId: null, // No physical room
-                        roomName: 'Home Service',
+                        roomName: `Home Service - ${employee?.name || 'Unknown'}`, // Therapist-specific
                         serviceName: serviceNames,
                         clientName: transaction.customerName || 'Walk-in',
                         employeeId: selectedEmployeeId,
@@ -2564,7 +2564,9 @@ class POSSystem {
                         estimatedDuration: totalDuration || 60,
                         startTime: null, // Will be set when service starts
                         status: 'pending', // Same as room services
-                        isHomeService: true // Flag to identify home services
+                        isHomeService: true, // Flag to identify home services
+                        therapistId: selectedEmployeeId, // For grouping by therapist
+                        therapistName: employee?.name || 'Unknown' // For display
                     };
 
                     // Save to IndexedDB

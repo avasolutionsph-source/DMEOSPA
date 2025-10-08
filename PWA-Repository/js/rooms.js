@@ -528,7 +528,7 @@ class RoomManager {
                     <div class="room-header ${isPending ? 'pending' : isActive ? 'occupied' : 'available'}" style="padding: 10px; margin: -1px -1px 0 -1px;">
                         <h3 style="margin: 0; display: flex; justify-content: space-between; align-items: center;">
                             <span>
-                                <i class="fas fa-home"></i> Home Service
+                                <i class="fas fa-home"></i> ${service.therapistName || service.employeeName || 'Unknown'}
                             </span>
                             <span style="font-size: 0.8rem;">
                                 <i class="fas fa-${isPending ? 'hourglass-half' : isActive ? 'clock' : 'check'}"></i> ${isPending ? 'PENDING' : isActive ? 'IN SERVICE' : 'AVAILABLE'}
@@ -537,7 +537,7 @@ class RoomManager {
                     </div>
                     <div class="room-body" style="padding: 15px;">
                         <div class="room-type" style="color: #666; margin-bottom: 10px;">
-                            <i class="fas fa-map-marker-alt"></i> Off-site Service
+                            <i class="fas fa-map-marker-alt"></i> Home Service
                         </div>
 
                         ${timerDisplay}
