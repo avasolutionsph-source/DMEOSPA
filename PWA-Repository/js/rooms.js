@@ -1731,6 +1731,9 @@ class RoomManager {
             console.log('📦 [THERAPIST] Loading rooms and services from MongoDB...');
             await this.loadRooms();
 
+            // Declare servicesResult outside try block so it's accessible later
+            let servicesResult = { success: false, data: [] };
+
             // Load services from MongoDB API using direct fetch (bypass HybridAPIClient)
             try {
                 console.log('🔄 [THERAPIST] Starting MongoDB API call...');
@@ -1787,7 +1790,6 @@ class RoomManager {
                 const responseText = await response.text();
                 console.log('📄 [THERAPIST] Raw API response:', responseText);
 
-                let servicesResult;
                 try {
                     servicesResult = JSON.parse(responseText);
                     console.log('📋 [THERAPIST] Parsed API response:', servicesResult);
