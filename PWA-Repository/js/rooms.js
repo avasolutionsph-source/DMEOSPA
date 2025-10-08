@@ -253,6 +253,9 @@ class RoomManager {
         const container = document.getElementById('roomsGrid');
         if (!container) return;
 
+        // 🔧 FIX: Reload active services to get latest home services from database
+        await this.loadActiveServices();
+
         const visibleRooms = this.showHiddenRooms ?
             this.rooms :
             this.rooms.filter(room => !room.hidden);
