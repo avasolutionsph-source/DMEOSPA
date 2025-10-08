@@ -295,7 +295,14 @@ class RoomManager {
             roomsWithAssignments: new Set(allAssignments.map(a => a.roomName)).size
         });
 
-        container.innerHTML = visibleRooms.map(room => {
+        // Get home services (services without roomId)
+        const homeServices = this.activeServices.filter(service =>
+            service.isHomeService === true || service.roomName === 'Home Service'
+        );
+        console.log('🏠 [ROOMS] Home services found:', homeServices.length);
+
+        // Build room cards HTML
+        let roomCardsHTML = visibleRooms.map(room => {
             const isOccupied = room.status === 'occupied';
             const isPending = room.status === 'pending';
             const statusColor = isOccupied ? '#800020' : isPending ? '#f39c12' : '#27ae60'; // Red, Yellow, Green
@@ -461,6 +468,91 @@ class RoomManager {
                 </div>
             `;
         }).join('');
+
+        // Add home service cards
+        const homeServiceCardsHTML = homeServices.map(service => {
+            const isPending = service.status === 'pending';
+            const isActive = service.status === 'active';
+
+            let timerDisplay = '';
+            let serviceInfo = '';
+            let actionButtons = '';
+
+            if (isPending) {
+                serviceInfo = `
+                    <div class="service-info" style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #f39c12;">
+                        <div style="color: #f39c12; font-weight: bold; margin-bottom: 8px;">
+                            <i class="fas fa-hourglass-half"></i> PENDING - Service not started
+                        </div>
+                        <div><strong>Service:</strong> ${service.serviceName}</div>
+                        <div><strong>Client:</strong> ${service.clientName || 'Walk-in'}</div>
+                        <div><strong>Therapist:</strong> ${service.employeeName}</div>
+                        ${service.estimatedDuration ?
+                            `<div><strong>Duration:</strong> ${service.estimatedDuration} mins</div>` : ''}
+                    </div>
+                `;
+                actionButtons = `
+                    <button class="btn btn-success btn-sm" onclick="roomManager.startHomeService('${service._id || service.id}')">
+                        <i class="fas fa-play"></i> Start
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="roomManager.cancelHomeService('${service._id || service.id}')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                `;
+            } else if (isActive) {
+                const elapsed = this.calculateElapsedTime(service.startTime);
+                timerDisplay = `
+                    <div class="room-timer" style="font-size: 1.5rem; font-weight: bold; color: #800020; margin: 10px 0;">
+                        <i class="fas fa-clock"></i> ${elapsed}
+                    </div>
+                `;
+                serviceInfo = `
+                    <div class="service-info" style="background: #fff; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                        <div><strong>Service:</strong> ${service.serviceName}</div>
+                        <div><strong>Client:</strong> ${service.clientName || 'Walk-in'}</div>
+                        <div><strong>Therapist:</strong> ${service.employeeName}</div>
+                        <div><strong>Started:</strong> ${new Date(service.startTime).toLocaleTimeString()}</div>
+                        ${service.estimatedDuration ?
+                            `<div><strong>Duration:</strong> ${service.estimatedDuration} mins</div>` : ''}
+                    </div>
+                `;
+                actionButtons = `
+                    <button class="btn btn-danger btn-sm" onclick="roomManager.endHomeService('${service._id || service.id}')">
+                        <i class="fas fa-stop"></i> End
+                    </button>
+                `;
+            }
+
+            return `
+                <div class="room-card ${isPending ? 'pending' : isActive ? 'occupied' : 'available'}">
+                    <div class="room-header ${isPending ? 'pending' : isActive ? 'occupied' : 'available'}" style="padding: 10px; margin: -1px -1px 0 -1px;">
+                        <h3 style="margin: 0; display: flex; justify-content: space-between; align-items: center;">
+                            <span>
+                                <i class="fas fa-home"></i> Home Service
+                            </span>
+                            <span style="font-size: 0.8rem;">
+                                <i class="fas fa-${isPending ? 'hourglass-half' : isActive ? 'clock' : 'check'}"></i> ${isPending ? 'PENDING' : isActive ? 'IN SERVICE' : 'AVAILABLE'}
+                            </span>
+                        </h3>
+                    </div>
+                    <div class="room-body" style="padding: 15px;">
+                        <div class="room-type" style="color: #666; margin-bottom: 10px;">
+                            <i class="fas fa-map-marker-alt"></i> Off-site Service
+                        </div>
+
+                        ${timerDisplay}
+                        ${serviceInfo}
+
+                        <div class="room-actions" style="margin-top: 15px;">
+                            ${actionButtons}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Combine room cards and home service cards
+        container.innerHTML = roomCardsHTML + homeServiceCardsHTML;
     }
 
     getRoomTypeLabel(type) {
@@ -1238,6 +1330,154 @@ class RoomManager {
         } catch (error) {
             console.error('Failed to leave room:', error);
             showNotification('Failed to leave room', 'error');
+        }
+    }
+
+    // Start home service
+    async startHomeService(serviceId) {
+        try {
+            const service = this.activeServices.find(s =>
+                s.id === serviceId || s._id === serviceId || String(s._id) === String(serviceId)
+            );
+
+            if (!service || service.status !== 'pending') {
+                showNotification('Home service not found or already started', 'error');
+                return;
+            }
+
+            // Update service with start time
+            service.startTime = new Date().toISOString();
+            service.status = 'active';
+
+            // Update in IndexedDB
+            await window.db.update('activeServices', service);
+
+            // Update in MongoDB
+            if (service._id) {
+                try {
+                    await window.HybridAPIClient.put(`/api/room-services/${service._id}`, {
+                        startTime: service.startTime,
+                        status: 'active'
+                    }, {
+                        critical: true
+                    });
+                    console.log('✅ [HOME SERVICE] Service started in MongoDB');
+                } catch (error) {
+                    console.error('⚠️ [HOME SERVICE] Failed to update in MongoDB:', error);
+                }
+            }
+
+            // Refresh display
+            await this.loadActiveServices();
+            this.displayRooms();
+            showNotification('Home service started', 'success');
+        } catch (error) {
+            console.error('Failed to start home service:', error);
+            showNotification('Failed to start home service', 'error');
+        }
+    }
+
+    // Cancel home service
+    async cancelHomeService(serviceId) {
+        if (!confirm('Cancel this home service?')) return;
+
+        try {
+            const service = this.activeServices.find(s =>
+                s.id === serviceId || s._id === serviceId || String(s._id) === String(serviceId)
+            );
+
+            if (!service) {
+                showNotification('Home service not found', 'error');
+                return;
+            }
+
+            // Delete from IndexedDB
+            if (service.id) {
+                await window.db.delete('activeServices', service.id);
+            }
+
+            // Delete from MongoDB
+            if (service._id) {
+                try {
+                    await window.HybridAPIClient.delete(`/api/room-services/${service._id}`, {
+                        critical: true
+                    });
+                    console.log('✅ [HOME SERVICE] Service deleted from MongoDB');
+                } catch (error) {
+                    console.error('⚠️ [HOME SERVICE] Failed to delete from MongoDB:', error);
+                }
+            }
+
+            // Remove from active services array
+            this.activeServices = this.activeServices.filter(s =>
+                s.id !== service.id && s._id !== service._id
+            );
+
+            // Refresh display
+            await this.loadActiveServices();
+            this.displayRooms();
+            showNotification('Home service cancelled', 'info');
+        } catch (error) {
+            console.error('Failed to cancel home service:', error);
+            showNotification('Failed to cancel home service', 'error');
+        }
+    }
+
+    // End home service
+    async endHomeService(serviceId) {
+        if (!confirm('End this home service?')) return;
+
+        try {
+            const service = this.activeServices.find(s =>
+                s.id === serviceId || s._id === serviceId || String(s._id) === String(serviceId)
+            );
+
+            if (!service) {
+                showNotification('Home service not found', 'error');
+                return;
+            }
+
+            // Calculate duration
+            const startTime = new Date(service.startTime);
+            const endTime = new Date();
+            const durationMinutes = Math.floor((endTime - startTime) / 60000);
+
+            // Update service record
+            service.endTime = endTime.toISOString();
+            service.actualDuration = durationMinutes;
+            service.status = 'completed';
+
+            // Update in IndexedDB
+            await window.db.update('activeServices', service);
+
+            // Update in MongoDB
+            if (service._id) {
+                try {
+                    await window.HybridAPIClient.put(`/api/room-services/${service._id}`, {
+                        endTime: service.endTime,
+                        actualDuration: service.actualDuration,
+                        status: 'completed'
+                    }, {
+                        critical: true
+                    });
+                    console.log('✅ [HOME SERVICE] Service completed in MongoDB');
+                } catch (error) {
+                    console.error('⚠️ [HOME SERVICE] Failed to update in MongoDB:', error);
+                }
+            }
+
+            // Remove from active services array
+            this.activeServices = this.activeServices.filter(s =>
+                s.id !== service.id && s._id !== service._id
+            );
+
+            // Refresh display
+            await this.loadActiveServices();
+            this.displayRooms();
+            showNotification(`Home service ended. Duration: ${durationMinutes} minutes`, 'info');
+        } catch (error) {
+            console.error('Failed to end home service:', error);
+            showNotification('Failed to end home service', 'error');
         }
     }
 

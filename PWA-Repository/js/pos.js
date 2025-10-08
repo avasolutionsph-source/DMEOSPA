@@ -2545,12 +2545,46 @@ class POSSystem {
 
                 // Check if home service or room assignment
                 if (selectedLocation === 'home-service') {
-                    // Home Service - add metadata to transaction, don't assign room
+                    // Home Service - create a service record but don't assign to physical room
                     console.log('🏠 [POS] Home service selected:', {
                         serviceName: serviceNames,
                         employeeName: employee?.name,
                         duration: totalDuration
                     });
+
+                    // Create home service record for tracking (similar to room service but without room)
+                    const homeServiceData = {
+                        roomId: null, // No physical room
+                        roomName: 'Home Service',
+                        serviceName: serviceNames,
+                        clientName: transaction.customerName || 'Walk-in',
+                        employeeId: selectedEmployeeId,
+                        employeeName: employee?.name || 'Unknown',
+                        transactionId: transactionId,
+                        estimatedDuration: totalDuration || 60,
+                        startTime: null, // Will be set when service starts
+                        status: 'pending', // Same as room services
+                        isHomeService: true // Flag to identify home services
+                    };
+
+                    // Save to IndexedDB
+                    const serviceId = await window.db.add('activeServices', homeServiceData);
+                    homeServiceData.id = serviceId;
+
+                    // Save to MongoDB via API for cross-device sync
+                    try {
+                        const apiResult = await window.HybridAPIClient.post('/api/room-services', homeServiceData, {
+                            critical: true
+                        });
+
+                        if (apiResult.success && apiResult.data?._id) {
+                            homeServiceData._id = apiResult.data._id;
+                            await window.db.update('activeServices', { ...homeServiceData, _id: apiResult.data._id });
+                            console.log('✅ [POS] Home service saved to MongoDB:', apiResult.data._id);
+                        }
+                    } catch (error) {
+                        console.error('❌ [POS] Failed to save home service to MongoDB:', error);
+                    }
 
                     // Add service location to transaction
                     transaction.serviceLocation = 'home-service';
@@ -2560,7 +2594,7 @@ class POSSystem {
                     // Update transaction in database with service location
                     await window.db.update('transactions', transaction);
 
-                    console.log('✅ [POS] Transaction updated with home service metadata');
+                    console.log('✅ [POS] Home service created and transaction updated');
                 } else {
                     // Room assignment - use existing logic
                     if (window.roomManager && typeof window.roomManager.assignRoomToService === 'function') {
