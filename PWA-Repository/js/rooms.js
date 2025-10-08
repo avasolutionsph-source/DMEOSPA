@@ -2493,23 +2493,33 @@ class RoomManager {
 
                             const myAdvanceBookings = (this.advanceBookings || []).filter(booking => {
                                 const bookingDate = new Date(booking.bookingDateTime);
-                                const bookingEmployeeId = String(booking.employeeId);
-                                const currentId = String(employeeId);
+                                const bookingEmployeeId = String(booking.employeeId || '');
 
-                                const matchesEmployee = bookingEmployeeId === currentId;
+                                // Try multiple ID formats for matching (MongoDB _id vs frontend id)
+                                const currentId = String(employeeId || '');
+                                const currentIdAlt = String(userData?._id || '');
+                                const currentIdAlt2 = String(userData?.id || '');
+
+                                // Match if bookingEmployeeId matches any of the current user's ID formats
+                                const matchesEmployee = bookingEmployeeId === currentId ||
+                                                       bookingEmployeeId === currentIdAlt ||
+                                                       bookingEmployeeId === currentIdAlt2;
                                 const isScheduled = booking.status === 'scheduled';
 
                                 console.log('📋 [THERAPIST] Checking booking:', {
                                     bookingId: booking._id || booking.id,
                                     bookingEmployeeId,
                                     currentEmployeeId: currentId,
+                                    currentIdAlt,
+                                    currentIdAlt2,
                                     matchesEmployee,
                                     bookingDateTime: booking.bookingDateTime,
                                     bookingDate,
                                     now,
                                     status: booking.status,
                                     isScheduled,
-                                    willInclude: matchesEmployee && isScheduled
+                                    willInclude: matchesEmployee && isScheduled,
+                                    fullBooking: booking
                                 });
 
                                 return matchesEmployee && isScheduled;
