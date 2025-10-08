@@ -2308,15 +2308,47 @@ class RoomManager {
                 services: myHomeServices
             });
 
-            if (myAssignments.length === 0 && myHomeServices.length === 0) {
-                // No rooms or home services assigned
+            // Check if therapist has any advance bookings
+            const myAdvanceBookings = (this.advanceBookings || []).filter(booking => {
+                const bookingEmployeeId = String(booking.employeeId || '');
+                const currentId = String(employeeId || '');
+                const currentIdAlt = String(userData?._id || '');
+                const currentIdAlt2 = String(userData?.id || '');
+
+                const matchesEmployee = bookingEmployeeId === currentId ||
+                                       bookingEmployeeId === currentIdAlt ||
+                                       bookingEmployeeId === currentIdAlt2;
+                const isScheduled = booking.status === 'scheduled';
+
+                console.log('📋 [THERAPIST] Pre-check booking:', {
+                    bookingId: booking._id || booking.id,
+                    bookingEmployeeId,
+                    currentEmployeeId: currentId,
+                    currentIdAlt,
+                    currentIdAlt2,
+                    matchesEmployee,
+                    status: booking.status,
+                    isScheduled
+                });
+
+                return matchesEmployee && isScheduled;
+            });
+
+            console.log('📅 [THERAPIST] Pre-check advance bookings:', {
+                total: this.advanceBookings?.length || 0,
+                filtered: myAdvanceBookings.length,
+                bookings: myAdvanceBookings
+            });
+
+            if (myAssignments.length === 0 && myHomeServices.length === 0 && myAdvanceBookings.length === 0) {
+                // No rooms, home services, or advance bookings
                 container.innerHTML = `
                     <div class="empty-state" style="text-align: center; padding: 60px 20px;">
                         <i class="fas fa-door-closed" style="font-size: 4rem; color: #ddd; margin-bottom: 20px;"></i>
-                        <h2 style="color: #666; margin-bottom: 10px;">No Rooms Assigned</h2>
+                        <h2 style="color: #666; margin-bottom: 10px;">No Assignments</h2>
                         <p style="color: #999; font-size: 1.1rem;">
-                            You don't have any rooms assigned yet.<br>
-                            Please contact your manager for room assignments.
+                            You don't have any room assignments or upcoming bookings yet.<br>
+                            Please contact your manager for assignments.
                         </p>
                     </div>
                 `;
