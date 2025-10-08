@@ -29,9 +29,12 @@ router.get('/', async (req, res) => {
             if (endDate) {
                 query.bookingDateTime.$lte = new Date(endDate);
             }
+        } else {
+            // Default: Only return future bookings (performance optimization)
+            query.bookingDateTime = { $gte: new Date() };
         }
 
-        const bookings = await AdvanceBooking.find(query).sort({ bookingDateTime: 1 });
+        const bookings = await AdvanceBooking.find(query).sort({ bookingDateTime: 1 }).lean();
 
         console.log(`📋 [ADVANCE-BOOKINGS] Found ${bookings.length} bookings for user ${userId}`);
 
