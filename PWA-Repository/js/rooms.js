@@ -323,15 +323,34 @@ class RoomManager {
 
             let assignedTherapistsDisplay = '';
             if (assignedTherapists.length > 0) {
+                // Get assignment IDs from allAssignments for unassign functionality
+                const assignmentsWithIds = assignedTherapists.map(t => {
+                    const assignment = roomAssignments.find(a =>
+                        a.employeeId === t.id || String(a.employeeId) === String(t.id)
+                    );
+                    return {
+                        ...t,
+                        assignmentId: assignment?._id
+                    };
+                });
+
                 assignedTherapistsDisplay = `
                     <div class="assigned-therapists" style="background: #f0f8ff; padding: 8px; border-radius: 5px; margin-bottom: 10px; border-left: 3px solid #2196F3;">
                         <div style="font-weight: 600; color: #1976D2; margin-bottom: 5px;">
                             <i class="fas fa-user-check"></i> Assigned Therapists:
                         </div>
-                        ${assignedTherapists.map(t => {
+                        ${assignmentsWithIds.map(t => {
                             const name = t.firstName ? `${t.firstName} ${t.lastName}`.trim() : t.name;
-                            return `<div style="font-size: 0.9rem; color: #555; padding: 2px 0;">
-                                <i class="fas fa-circle" style="font-size: 0.5rem; color: #4CAF50;"></i> ${name}
+                            return `<div style="font-size: 0.9rem; color: #555; padding: 2px 0; display: flex; justify-content: space-between; align-items: center;">
+                                <span>
+                                    <i class="fas fa-circle" style="font-size: 0.5rem; color: #4CAF50;"></i> ${name}
+                                </span>
+                                <button class="btn btn-danger btn-sm"
+                                        onclick="roomManager.unassignTherapist('${t.assignmentId}', '${room.name}', '${name.replace(/'/g, "\\'")}')"
+                                        style="padding: 2px 8px; font-size: 0.75rem; margin-left: 10px;"
+                                        title="Unassign ${name}">
+                                    <i class="fas fa-times"></i>
+                                </button>
                             </div>`;
                         }).join('')}
                     </div>
@@ -1148,6 +1167,42 @@ class RoomManager {
         } catch (error) {
             console.error('Failed to save therapist assignments:', error);
             showNotification('Failed to save assignments', 'error');
+        }
+    }
+
+    // Unassign a therapist from a room
+    async unassignTherapist(assignmentId, roomName, therapistName) {
+        if (!confirm(`Unassign ${therapistName} from ${roomName}?`)) {
+            return;
+        }
+
+        try {
+            console.log(`🗑️ [ROOMS] Unassigning therapist from room...`, {
+                assignmentId,
+                roomName,
+                therapistName
+            });
+
+            // Delete assignment via API
+            const result = await window.HybridAPIClient.delete(
+                `/api/room-assignments/${assignmentId}`,
+                {
+                    critical: true
+                }
+            );
+
+            if (result.success) {
+                console.log('✅ [ROOMS] Therapist unassigned successfully');
+                showNotification(`${therapistName} unassigned from ${roomName}`, 'success');
+
+                // Force refresh room display with fresh data from MongoDB
+                await this.displayRooms(true);
+            } else {
+                throw new Error(result.error || 'Failed to unassign therapist');
+            }
+        } catch (error) {
+            console.error('Failed to unassign therapist:', error);
+            showNotification('Failed to unassign therapist', 'error');
         }
     }
 
