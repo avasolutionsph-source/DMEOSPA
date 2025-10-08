@@ -349,7 +349,7 @@ class RoomManager {
                                         onclick="roomManager.unassignTherapist('${t.assignmentId}', '${room.name}', '${name.replace(/'/g, "\\'")}')"
                                         style="padding: 2px 8px; font-size: 0.75rem; margin-left: 10px;"
                                         title="Unassign ${name}">
-                                    <i class="fas fa-times"></i>
+                                    <i class="fas fa-user-times"></i> Unassign
                                 </button>
                             </div>`;
                         }).join('')}
