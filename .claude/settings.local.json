@@ -1,9 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nFIX: Add manual refresh button and auto-refresh on page load\n\nIssues Fixed:\n- Therapist names not appearing after assignment\n- Cached employee data being used\n- No way to manually refresh\n\nSolutions:\n1. Added \"Refresh\" button in room header\n   - Green button with sync icon\n   - Forces fresh data fetch\n   - Shows loading notification\n\n2. Auto-refresh on page navigation\n   - loadRooms() now forces refresh\n   - Gets latest employee assignments\n   - No more stale data\n\n3. forceRefreshDisplay() method\n   - Can be called manually\n   - Shows user feedback\n   - Logs refresh action\n\nUser Experience:\n- Click \"Refresh\" button to see latest assignments\n- Automatic refresh when navigating to Rooms page\n- Clear visual feedback with notifications\n\nWorkflow:\n1. Assign therapist to room\n2. Modal closes with success message\n3. Click \"Refresh\" button (or navigate away and back)\n4. Therapist names now show in room headers\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git push:*)"
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": [],

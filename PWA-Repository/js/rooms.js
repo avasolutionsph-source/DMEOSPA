@@ -2482,8 +2482,8 @@ class RoomManager {
                         `;
                         }).join('')}
 
-                        ${/* Advance Bookings for this therapist */''}
                         ${(() => {
+                            // Advance Bookings - renders upcoming bookings for this therapist within 24 hours
                             // Get advance bookings for this therapist (upcoming within next 24 hours)
                             const now = new Date();
                             const next24Hours = new Date(now.getTime() + (24 * 60 * 60 * 1000));
