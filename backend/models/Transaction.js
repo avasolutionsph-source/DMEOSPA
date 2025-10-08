@@ -104,6 +104,7 @@ const transactionSchema = new mongoose.Schema({
   customerName: String,
   customerPhone: String,
   customerEmail: String,
+  customerAddress: String,
   
   // Status
   status: {

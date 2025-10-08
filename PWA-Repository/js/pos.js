@@ -2313,7 +2313,8 @@ class POSSystem {
                 customerInfo: customerData ? {
                     name: `${customerData.firstName} ${customerData.lastName}`,
                     phone: customerData.phone,
-                    email: customerData.email
+                    email: customerData.email,
+                    address: customerData.address
                 } : null,
                 
                 // Discount details for audit
@@ -2402,6 +2403,7 @@ class POSSystem {
                     customerName: transaction.customerInfo?.name,
                     customerPhone: transaction.customerInfo?.phone,
                     customerEmail: transaction.customerInfo?.email,
+                    customerAddress: transaction.customerInfo?.address,
                     status: 'completed',
                     auditLog: transaction.auditLog,
                     syncStatus: 'synced',

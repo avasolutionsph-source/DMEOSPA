@@ -888,6 +888,7 @@ class CustomerManager {
             const lastName = document.getElementById('customerLastName')?.value.trim();
             const phone = document.getElementById('customerPhone')?.value.trim();
             const email = document.getElementById('customerEmail')?.value.trim();
+            const address = document.getElementById('customerAddress')?.value.trim();
 
             if (!firstName || !lastName || !phone) {
                 throw new Error('Please fill in customer first name, last name, and phone number');
@@ -913,6 +914,7 @@ class CustomerManager {
                 lastName,
                 phone,
                 email: email || null,
+                address: address || null,
                 dateAdded: new Date().toISOString(),
                 lastVisit: new Date().toISOString(),
                 totalVisits: 1,
