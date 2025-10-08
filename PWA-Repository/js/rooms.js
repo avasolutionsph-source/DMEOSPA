@@ -254,13 +254,22 @@ class RoomManager {
             }
 
             console.log('🌐 [ROOMS] Fetching advance bookings from API...');
+
+            // Add timeout to prevent hanging
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                console.warn('⚠️ [ROOMS] Advance bookings fetch timeout after 10 seconds');
+                controller.abort();
+            }, 10000);
+
             const response = await fetch('https://daetspa-backend.onrender.com/api/advance-bookings', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
-                }
-            });
+                },
+                signal: controller.signal
+            }).finally(() => clearTimeout(timeoutId));
 
             console.log('📡 [ROOMS] Advance bookings API response:', {
                 status: response.status,
@@ -293,7 +302,11 @@ class RoomManager {
                 this.advanceBookings = [];
             }
         } catch (error) {
-            console.error('❌ [ROOMS] Failed to load advance bookings:', error);
+            if (error.name === 'AbortError') {
+                console.error('❌ [ROOMS] Advance bookings fetch aborted due to timeout');
+            } else {
+                console.error('❌ [ROOMS] Failed to load advance bookings:', error);
+            }
             this.advanceBookings = [];
         }
     }
