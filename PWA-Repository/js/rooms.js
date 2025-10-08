@@ -546,8 +546,20 @@ class RoomManager {
                 `;
             } else if (isActive && activeService) {
                 const elapsed = this.calculateElapsedTime(activeService.startTime);
+
+                // Calculate remaining time to determine card color
+                const startTime = new Date(activeService.startTime);
+                const elapsedMinutes = Math.floor((Date.now() - startTime.getTime()) / 1000 / 60);
+                const estimatedDuration = activeService.estimatedDuration || 60;
+                const remainingMinutes = estimatedDuration - elapsedMinutes;
+
+                // Blue when more than 10 mins remaining, Red when 10 mins or less
+                const isNearEnd = remainingMinutes <= 10;
+                const cardColor = isNearEnd ? '#800020' : '#2196F3'; // Maroon or Blue
+                const bgColor = isNearEnd ? '#ffebee' : '#e3f2fd'; // Light red or light blue
+
                 timerDisplay = `
-                    <div class="room-timer" style="font-size: 1.5rem; font-weight: bold; color: #800020; margin: 10px 0;">
+                    <div class="room-timer" style="font-size: 1.5rem; font-weight: bold; color: ${cardColor}; margin: 10px 0;">
                         <i class="fas fa-clock"></i> ${elapsed}
                     </div>
                 `;
@@ -558,6 +570,7 @@ class RoomManager {
                         <div><strong>Started:</strong> ${new Date(activeService.startTime).toLocaleTimeString()}</div>
                         ${activeService.estimatedDuration ?
                             `<div><strong>Duration:</strong> ${activeService.estimatedDuration} mins</div>` : ''}
+                        ${isNearEnd ? `<div style="color: ${cardColor}; font-weight: bold; margin-top: 5px;"><i class="fas fa-exclamation-triangle"></i> ${remainingMinutes} mins remaining</div>` : ''}
                     </div>
                 `;
                 actionButtons = `
@@ -580,9 +593,13 @@ class RoomManager {
                 actionButtons = '';
             }
 
+            // Determine card state class (use cardColor and bgColor from isActive block if available)
+            const cardStateClass = isPending ? 'pending' : isActive ? (isNearEnd ? 'occupied' : 'active-service') : 'available';
+            const headerStyle = isActive && !isNearEnd ? 'background: #2196F3; color: white;' : '';
+
             return `
-                <div class="room-card ${isPending ? 'pending' : isActive ? 'occupied' : 'available'}">
-                    <div class="room-header ${isPending ? 'pending' : isActive ? 'occupied' : 'available'}" style="padding: 10px; margin: -1px -1px 0 -1px;">
+                <div class="room-card ${cardStateClass}" ${isActive && !isNearEnd ? 'style="border-color: #2196F3;"' : ''}>
+                    <div class="room-header ${cardStateClass}" style="padding: 10px; margin: -1px -1px 0 -1px; ${headerStyle}">
                         <h3 style="margin: 0; display: flex; justify-content: space-between; align-items: center;">
                             <span>
                                 <i class="fas fa-home"></i> ${therapistName}
@@ -2137,15 +2154,27 @@ class RoomManager {
                                 `;
                             } else if (isActive) {
                                 const elapsed = this.calculateElapsedTime(homeService.startTime);
-                                statusBadge = `<span style="background: #800020; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold;">
+
+                                // Calculate remaining time to determine card color
+                                const startTime = new Date(homeService.startTime);
+                                const elapsedMinutes = Math.floor((Date.now() - startTime.getTime()) / 1000 / 60);
+                                const estimatedDuration = homeService.estimatedDuration || 60;
+                                const remainingMinutes = estimatedDuration - elapsedMinutes;
+
+                                // Blue when more than 10 mins remaining, Red when 10 mins or less
+                                const isNearEnd = remainingMinutes <= 10;
+                                const cardColor = isNearEnd ? '#800020' : '#2196F3'; // Maroon or Blue
+                                const bgColor = isNearEnd ? '#ffebee' : '#e3f2fd'; // Light red or light blue
+
+                                statusBadge = `<span style="background: ${cardColor}; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold;">
                                     <i class="fas fa-clock"></i> IN SERVICE
                                 </span>`;
                                 statusInfo = `
-                                    <div style="background: #ffebee; padding: 15px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #800020;">
-                                        <div style="color: #800020; font-weight: bold; margin-bottom: 10px;">
+                                    <div style="background: ${bgColor}; padding: 15px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid ${cardColor};">
+                                        <div style="color: ${cardColor}; font-weight: bold; margin-bottom: 10px;">
                                             <i class="fas fa-clock"></i> Active Home Service
                                         </div>
-                                        <div style="font-size: 1.5rem; font-weight: bold; color: #800020; margin: 10px 0;" class="service-timer" data-home-service-id="${homeService._id || homeService.id}">
+                                        <div style="font-size: 1.5rem; font-weight: bold; color: ${cardColor}; margin: 10px 0;" class="service-timer" data-home-service-id="${homeService._id || homeService.id}">
                                             <i class="fas fa-clock"></i> ${elapsed}
                                         </div>
                                         <div style="color: #555; font-size: 0.9rem;">
@@ -2154,6 +2183,7 @@ class RoomManager {
                                             <div style="margin: 5px 0;"><strong>Started:</strong> ${new Date(homeService.startTime).toLocaleTimeString()}</div>
                                             ${homeService.estimatedDuration ?
                                                 `<div style="margin: 5px 0;"><strong>Duration:</strong> ${homeService.estimatedDuration} mins</div>` : ''}
+                                            ${isNearEnd ? `<div style="color: ${cardColor}; font-weight: bold; margin-top: 5px;"><i class="fas fa-exclamation-triangle"></i> ${remainingMinutes} mins remaining</div>` : ''}
                                         </div>
                                     </div>
                                 `;
@@ -2164,9 +2194,14 @@ class RoomManager {
                                 `;
                             }
 
+                            // Determine card styling based on time remaining
+                            const cardClass = isPending ? 'pending' : (isActive && isNearEnd) ? 'occupied' : isActive ? 'active-service' : 'available';
+                            const headerBgColor = isPending ? '' : (isActive && !isNearEnd) ? 'background: #2196F3; color: white;' : '';
+                            const borderColor = (isActive && !isNearEnd) ? 'border-color: #2196F3;' : '';
+
                             return `
-                            <div class="room-card ${isPending ? 'pending' : isActive ? 'occupied' : 'available'}" style="border-radius: 10px; padding: 0; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                                <div class="room-header ${isPending ? 'pending' : isActive ? 'occupied' : 'available'}" style="padding: 20px;">
+                            <div class="room-card ${cardClass}" style="border-radius: 10px; padding: 0; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); ${borderColor}">
+                                <div class="room-header ${cardClass}" style="padding: 20px; ${headerBgColor}">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                         <h3 style="margin: 0; font-size: 1.5rem;">
                                             <i class="fas fa-home"></i> Home Service
