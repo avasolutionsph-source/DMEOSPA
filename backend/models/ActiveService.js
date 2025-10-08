@@ -35,7 +35,19 @@ const activeServiceSchema = new mongoose.Schema({
     },
     clientName: {
         type: String,
-        default: 'Walk-in'
+        default: 'Did not select customer'
+    },
+    clientAddress: {
+        type: String,
+        default: null
+    },
+    clientPhone: {
+        type: String,
+        default: null
+    },
+    clientEmail: {
+        type: String,
+        default: null
     },
     employeeId: {
         type: String,

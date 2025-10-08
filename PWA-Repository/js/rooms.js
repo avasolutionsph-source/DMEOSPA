@@ -531,7 +531,8 @@ class RoomManager {
                             <i class="fas fa-hourglass-half"></i> PENDING - Service not started
                         </div>
                         <div><strong>Service:</strong> ${activeService.serviceName}</div>
-                        <div><strong>Client:</strong> ${activeService.clientName || 'Walk-in'}</div>
+                        <div><strong>Client:</strong> ${activeService.clientName || 'Did not select customer'}</div>
+                        ${activeService.clientAddress ? `<div><strong>Location:</strong> ${activeService.clientAddress}</div>` : ''}
                         ${activeService.estimatedDuration ?
                             `<div><strong>Duration:</strong> ${activeService.estimatedDuration} mins</div>` : ''}
                     </div>
@@ -571,7 +572,8 @@ class RoomManager {
                 serviceInfo = `
                     <div class="service-info" style="background: #fff; padding: 10px; border-radius: 5px; margin-top: 10px;">
                         <div><strong>Service:</strong> ${activeService.serviceName}</div>
-                        <div><strong>Client:</strong> ${activeService.clientName || 'Walk-in'}</div>
+                        <div><strong>Client:</strong> ${activeService.clientName || 'Did not select customer'}</div>
+                        ${activeService.clientAddress ? `<div><strong>Location:</strong> ${activeService.clientAddress}</div>` : ''}
                         <div><strong>Started:</strong> ${new Date(activeService.startTime).toLocaleTimeString()}</div>
                         ${activeService.estimatedDuration ?
                             `<div><strong>Duration:</strong> ${activeService.estimatedDuration} mins</div>` : ''}
@@ -2147,7 +2149,8 @@ class RoomManager {
                                         </div>
                                         <div style="color: #555; font-size: 0.9rem;">
                                             <div style="margin: 5px 0;"><strong>Service:</strong> ${homeService.serviceName}</div>
-                                            <div style="margin: 5px 0;"><strong>Client:</strong> ${homeService.clientName || 'Walk-in'}</div>
+                                            <div style="margin: 5px 0;"><strong>Client:</strong> ${homeService.clientName || 'Did not select customer'}</div>
+                                            ${homeService.clientAddress ? `<div style="margin: 5px 0;"><strong>Location:</strong> ${homeService.clientAddress}</div>` : ''}
                                             ${homeService.estimatedDuration ?
                                                 `<div style="margin: 5px 0;"><strong>Duration:</strong> ${homeService.estimatedDuration} mins</div>` : ''}
                                         </div>
@@ -2185,7 +2188,8 @@ class RoomManager {
                                         </div>
                                         <div style="color: #555; font-size: 0.9rem;">
                                             <div style="margin: 5px 0;"><strong>Service:</strong> ${homeService.serviceName}</div>
-                                            <div style="margin: 5px 0;"><strong>Client:</strong> ${homeService.clientName || 'Walk-in'}</div>
+                                            <div style="margin: 5px 0;"><strong>Client:</strong> ${homeService.clientName || 'Did not select customer'}</div>
+                                            ${homeService.clientAddress ? `<div style="margin: 5px 0;"><strong>Location:</strong> ${homeService.clientAddress}</div>` : ''}
                                             <div style="margin: 5px 0;"><strong>Started:</strong> ${new Date(homeService.startTime).toLocaleTimeString()}</div>
                                             ${homeService.estimatedDuration ?
                                                 `<div style="margin: 5px 0;"><strong>Duration:</strong> ${homeService.estimatedDuration} mins</div>` : ''}
@@ -2225,7 +2229,7 @@ class RoomManager {
                                         <div style="color: #555;">
                                             <div style="margin: 5px 0;">
                                                 <i class="fas fa-map-marker-alt" style="width: 20px; color: #2196F3;"></i>
-                                                Location: <strong>Home Service</strong>
+                                                Location: <strong>${homeService.clientAddress || 'Home Service'}</strong>
                                             </div>
                                         </div>
                                     </div>

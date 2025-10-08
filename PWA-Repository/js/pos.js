@@ -2565,7 +2565,10 @@ class POSSystem {
                         roomId: null, // No physical room
                         roomName: `Home Service - ${employee?.name || 'Unknown'}`, // Therapist-specific
                         serviceName: serviceNames,
-                        clientName: transaction.customerName || 'Walk-in',
+                        clientName: transaction.customerInfo?.name || transaction.customerName || 'Did not select customer',
+                        clientAddress: transaction.customerInfo?.address || null,
+                        clientPhone: transaction.customerInfo?.phone || null,
+                        clientEmail: transaction.customerInfo?.email || null,
                         employeeId: selectedEmployeeId,
                         employeeName: employee?.name || 'Unknown',
                         transactionId: transactionId,
