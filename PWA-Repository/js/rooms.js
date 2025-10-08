@@ -266,9 +266,9 @@ class RoomManager {
 
             console.log('⏳ [ROOMS] Setting up timeout...');
             const timeoutId = setTimeout(() => {
-                console.warn('⚠️ [ROOMS] Advance bookings fetch timeout after 10 seconds');
+                console.warn('⚠️ [ROOMS] Advance bookings fetch timeout after 30 seconds');
                 controller.abort();
-            }, 10000);
+            }, 30000);
 
             console.log('⏳ [ROOMS] About to call fetch...');
             let response;
@@ -289,8 +289,8 @@ class RoomManager {
                 const timeoutPromise = new Promise((_, reject) => {
                     setTimeout(() => {
                         console.warn('⏰ [ROOMS] Manual timeout reached');
-                        reject(new Error('Request timeout after 10 seconds'));
-                    }, 10000);
+                        reject(new Error('Request timeout after 30 seconds'));
+                    }, 30000);
                 });
 
                 console.log('⏳ [ROOMS] Racing fetch vs timeout...');
