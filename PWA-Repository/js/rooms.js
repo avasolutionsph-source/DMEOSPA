@@ -246,6 +246,27 @@ class RoomManager {
     async loadAdvanceBookings(caller = 'unknown') {
         console.log(`🔄 [ROOMS] Loading advance bookings... (called by: ${caller})`);
 
+        // SHORTCUT: Check if appointments manager already loaded them
+        if (window.appointmentsManager?.advanceBookings?.length > 0) {
+            console.log('✅ [ROOMS] Using advance bookings from appointments manager:', window.appointmentsManager.advanceBookings.length);
+            this.advanceBookings = window.appointmentsManager.advanceBookings;
+            return;
+        }
+
+        // FALLBACK: Try IndexedDB first
+        try {
+            if (window.db) {
+                const localBookings = await window.db.getAll('advanceBookings');
+                if (localBookings && localBookings.length > 0) {
+                    console.log('✅ [ROOMS] Using advance bookings from IndexedDB:', localBookings.length);
+                    this.advanceBookings = localBookings;
+                    return;
+                }
+            }
+        } catch (dbError) {
+            console.warn('⚠️ [ROOMS] Could not load from IndexedDB:', dbError);
+        }
+
         try {
             const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
             if (!authToken) {
