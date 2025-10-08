@@ -1906,8 +1906,35 @@ class RoomManager {
                 myAssignments
             });
 
-            if (myAssignments.length === 0) {
-                // No rooms assigned
+            // Also check for home services assigned to this therapist
+            const myHomeServices = servicesResult.data?.filter(service => {
+                if (!service.isHomeService) return false;
+
+                const serviceEmployeeId = String(service.employeeId || service.therapistId || '');
+                const currentId = String(employeeId || '');
+
+                const match = serviceEmployeeId === currentId;
+
+                console.log('🏠 [THERAPIST] Checking home service:', {
+                    serviceEmployeeId,
+                    serviceTherapistId: service.therapistId,
+                    currentEmployeeId: employeeId,
+                    serviceName: service.serviceName,
+                    status: service.status,
+                    match
+                });
+
+                return match;
+            }) || [];
+
+            console.log('🏠 [THERAPIST] Home services found:', {
+                total: servicesResult.data?.length || 0,
+                homeServices: myHomeServices.length,
+                services: myHomeServices
+            });
+
+            if (myAssignments.length === 0 && myHomeServices.length === 0) {
+                // No rooms or home services assigned
                 container.innerHTML = `
                     <div class="empty-state" style="text-align: center; padding: 60px 20px;">
                         <i class="fas fa-door-closed" style="font-size: 4rem; color: #ddd; margin-bottom: 20px;"></i>
@@ -1934,12 +1961,13 @@ class RoomManager {
                 roomGroups[assignment.roomName].assignments.push(assignment);
             });
 
-            // Display assigned rooms with current status
+            // Display assigned rooms and home services with current status
+            const totalAssignments = Object.keys(roomGroups).length + myHomeServices.length;
             container.innerHTML = `
                 <div style="max-width: 1200px; margin: 0 auto;">
                     <div class="info-banner" style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; margin-bottom: 30px; border-radius: 5px;">
                         <i class="fas fa-info-circle" style="color: #2196F3; margin-right: 10px;"></i>
-                        <strong>Your Assigned Rooms:</strong> You are assigned to ${Object.keys(roomGroups).length} room(s)
+                        <strong>Your Assignments:</strong> ${Object.keys(roomGroups).length} room(s)${myHomeServices.length > 0 ? ` + ${myHomeServices.length} home service(s)` : ''}
                     </div>
 
                     <div class="rooms-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
@@ -2066,6 +2094,97 @@ class RoomManager {
                                             style="width: 100%; margin-top: 10px;">
                                         <i class="fas fa-sign-out-alt"></i> Leave Room
                                     </button>
+                                </div>
+                            </div>
+                        `;
+                        }).join('')}
+
+                        ${myHomeServices.map(homeService => {
+                            const isPending = homeService.status === 'pending';
+                            const isActive = homeService.status === 'active';
+                            const isAvailable = !isPending && !isActive;
+
+                            let statusBadge = '';
+                            let statusInfo = '';
+                            let actionButtons = '';
+
+                            if (isPending) {
+                                statusBadge = `<span style="background: #f39c12; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold;">
+                                    <i class="fas fa-hourglass-half"></i> PENDING
+                                </span>`;
+                                statusInfo = `
+                                    <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #f39c12;">
+                                        <div style="color: #f39c12; font-weight: bold; margin-bottom: 10px;">
+                                            <i class="fas fa-hourglass-half"></i> Pending Home Service
+                                        </div>
+                                        <div style="color: #555; font-size: 0.9rem;">
+                                            <div style="margin: 5px 0;"><strong>Service:</strong> ${homeService.serviceName}</div>
+                                            <div style="margin: 5px 0;"><strong>Client:</strong> ${homeService.clientName || 'Walk-in'}</div>
+                                            ${homeService.estimatedDuration ?
+                                                `<div style="margin: 5px 0;"><strong>Duration:</strong> ${homeService.estimatedDuration} mins</div>` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                                actionButtons = `
+                                    <button class="btn btn-success" onclick="roomManager.startHomeService('${homeService._id || homeService.id}')" style="width: 100%; margin-bottom: 10px;">
+                                        <i class="fas fa-play"></i> Start Service
+                                    </button>
+                                `;
+                            } else if (isActive) {
+                                const elapsed = this.calculateElapsedTime(homeService.startTime);
+                                statusBadge = `<span style="background: #800020; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold;">
+                                    <i class="fas fa-clock"></i> IN SERVICE
+                                </span>`;
+                                statusInfo = `
+                                    <div style="background: #ffebee; padding: 15px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #800020;">
+                                        <div style="color: #800020; font-weight: bold; margin-bottom: 10px;">
+                                            <i class="fas fa-clock"></i> Active Home Service
+                                        </div>
+                                        <div style="font-size: 1.5rem; font-weight: bold; color: #800020; margin: 10px 0;" class="service-timer" data-home-service-id="${homeService._id || homeService.id}">
+                                            <i class="fas fa-clock"></i> ${elapsed}
+                                        </div>
+                                        <div style="color: #555; font-size: 0.9rem;">
+                                            <div style="margin: 5px 0;"><strong>Service:</strong> ${homeService.serviceName}</div>
+                                            <div style="margin: 5px 0;"><strong>Client:</strong> ${homeService.clientName || 'Walk-in'}</div>
+                                            <div style="margin: 5px 0;"><strong>Started:</strong> ${new Date(homeService.startTime).toLocaleTimeString()}</div>
+                                            ${homeService.estimatedDuration ?
+                                                `<div style="margin: 5px 0;"><strong>Duration:</strong> ${homeService.estimatedDuration} mins</div>` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                                actionButtons = `
+                                    <button class="btn btn-danger" onclick="roomManager.endHomeService('${homeService._id || homeService.id}')" style="width: 100%; margin-bottom: 10px;">
+                                        <i class="fas fa-stop"></i> End Service
+                                    </button>
+                                `;
+                            }
+
+                            return `
+                            <div class="room-card ${isPending ? 'pending' : isActive ? 'occupied' : 'available'}" style="border-radius: 10px; padding: 0; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                <div class="room-header ${isPending ? 'pending' : isActive ? 'occupied' : 'available'}" style="padding: 20px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                        <h3 style="margin: 0; font-size: 1.5rem;">
+                                            <i class="fas fa-home"></i> Home Service
+                                        </h3>
+                                        ${statusBadge}
+                                    </div>
+                                </div>
+                                <div class="room-body" style="padding: 20px;">
+                                    ${statusInfo}
+
+                                    <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                                        <div style="font-weight: 600; color: #666; margin-bottom: 10px;">
+                                            <i class="fas fa-info-circle"></i> Service Details
+                                        </div>
+                                        <div style="color: #555;">
+                                            <div style="margin: 5px 0;">
+                                                <i class="fas fa-map-marker-alt" style="width: 20px; color: #2196F3;"></i>
+                                                Location: <strong>Home Service</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    ${actionButtons}
                                 </div>
                             </div>
                         `;
