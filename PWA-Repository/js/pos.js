@@ -444,9 +444,9 @@ class POSSystem {
                 if (window.roomManager && window.roomManager.getActiveServices) {
                     const activeServices = window.roomManager.getActiveServices();
                     console.log('🔧 [POS] Active services found:', activeServices);
-                    
+
                     assignedEmployeeIds = activeServices
-                        .filter(service => service.status === 'active')
+                        .filter(service => service.status === 'active' || service.status === 'pending')
                         .map(service => {
                             // Handle both string and number employee IDs
                             const empId = service.employeeId;
@@ -540,8 +540,8 @@ class POSSystem {
                     // })));
                     
                     const isAssigned = activeServices.some(service => {
-                        // Only proceed if this is an active service
-                        if (service.status !== 'active') return false;
+                        // Only proceed if this is an active or pending service
+                        if (service.status !== 'active' && service.status !== 'pending') return false;
                         
                         // FIXED: Strict matching logic
                         // If service has valid employeeId, use ID matching only
@@ -605,7 +605,7 @@ class POSSystem {
                     if (isAssigned) {
                         // Find which service they're assigned to using same strict matching logic
                         const assignedService = activeServices.find(service => {
-                            if (service.status !== 'active') return false;
+                            if (service.status !== 'active' && service.status !== 'pending') return false;
                             
                             // Use same logic as assignment check
                             if (service.employeeId && service.employeeId !== 'undefined' && service.employeeId !== null) {
