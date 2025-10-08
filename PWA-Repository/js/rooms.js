@@ -1170,7 +1170,7 @@ class RoomManager {
         }
     }
 
-    // Unassign a therapist from a room
+    // Unassign a therapist from a room (manager view)
     async unassignTherapist(assignmentId, roomName, therapistName) {
         if (!confirm(`Unassign ${therapistName} from ${roomName}?`)) {
             return;
@@ -1203,6 +1203,41 @@ class RoomManager {
         } catch (error) {
             console.error('Failed to unassign therapist:', error);
             showNotification('Failed to unassign therapist', 'error');
+        }
+    }
+
+    // Leave room (therapist view)
+    async leaveRoom(assignmentId, roomName) {
+        if (!confirm(`Are you sure you want to leave ${roomName}?`)) {
+            return;
+        }
+
+        try {
+            console.log(`🚪 [ROOMS] Therapist leaving room...`, {
+                assignmentId,
+                roomName
+            });
+
+            // Delete assignment via API (same endpoint as unassign)
+            const result = await window.HybridAPIClient.delete(
+                `/api/room-assignments/${assignmentId}`,
+                {
+                    critical: true
+                }
+            );
+
+            if (result.success) {
+                console.log('✅ [ROOMS] Left room successfully');
+                showNotification(`You have left ${roomName}`, 'success');
+
+                // Refresh therapist view
+                await this.showTherapistView();
+            } else {
+                throw new Error(result.error || 'Failed to leave room');
+            }
+        } catch (error) {
+            console.error('Failed to leave room:', error);
+            showNotification('Failed to leave room', 'error');
         }
     }
 
@@ -1725,6 +1760,12 @@ class RoomManager {
                                     </div>
 
                                     ${actionButtons}
+
+                                    <button class="btn btn-warning"
+                                            onclick="roomManager.leaveRoom('${group.assignments[0]._id}', '${group.roomName}')"
+                                            style="width: 100%; margin-top: 10px;">
+                                        <i class="fas fa-sign-out-alt"></i> Leave Room
+                                    </button>
                                 </div>
                             </div>
                         `;
