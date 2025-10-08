@@ -243,9 +243,9 @@ class RoomManager {
         return this.activeServices || [];
     }
 
-    async loadAdvanceBookings() {
+    async loadAdvanceBookings(caller = 'unknown') {
         try {
-            console.log('🔄 [ROOMS] Loading advance bookings...');
+            console.log(`🔄 [ROOMS] Loading advance bookings... (called by: ${caller})`);
             const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
             if (!authToken) {
                 console.warn('⚠️ [ROOMS] No auth token found for advance bookings');
@@ -310,7 +310,7 @@ class RoomManager {
 
         // 🔧 FIX: Reload active services and advance bookings to get latest data from database
         await this.loadActiveServices();
-        await this.loadAdvanceBookings();
+        await this.loadAdvanceBookings('displayRooms');
 
         const visibleRooms = this.showHiddenRooms ?
             this.rooms :
@@ -1972,7 +1972,9 @@ class RoomManager {
             // FIRST: Load room data, services, and advance bookings from MongoDB (not IndexedDB)
             console.log('📦 [THERAPIST] Loading rooms, services, and advance bookings from MongoDB...');
             await this.loadRooms();
-            await this.loadAdvanceBookings();
+            console.log('⏳ [THERAPIST] About to load advance bookings...');
+            await this.loadAdvanceBookings('showTherapistView');
+            console.log('✅ [THERAPIST] Advance bookings loaded, count:', this.advanceBookings?.length);
 
             // Declare servicesResult outside try block so it's accessible later
             let servicesResult = { success: false, data: [] };
