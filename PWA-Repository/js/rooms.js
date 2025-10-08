@@ -295,11 +295,27 @@ class RoomManager {
             roomsWithAssignments: new Set(allAssignments.map(a => a.roomName)).size
         });
 
+        // Get all therapists (employees with therapist roles)
+        const employeesResult = await window.HybridAPIClient.getEmployees();
+        const allEmployees = employeesResult.success ? (employeesResult.data || []) : [];
+
+        const therapistPositions = [
+            'Senior Therapist', 'Junior Therapist', 'Therapist',
+            'Massage Therapist', 'New Therapist',
+            'senior_therapist', 'junior_therapist', 'new_therapist'
+        ];
+
+        const therapists = allEmployees.filter(emp =>
+            therapistPositions.includes(emp.position)
+        );
+
+        console.log('👥 [ROOMS] Therapists found:', therapists.length);
+
         // Get home services (services without roomId)
         const homeServices = this.activeServices.filter(service =>
-            service.isHomeService === true || service.roomName === 'Home Service'
+            service.isHomeService === true || (service.roomName && service.roomName.includes('Home Service'))
         );
-        console.log('🏠 [ROOMS] Home services found:', homeServices.length);
+        console.log('🏠 [ROOMS] Active home services found:', homeServices.length);
 
         // Build room cards HTML
         let roomCardsHTML = visibleRooms.map(room => {
@@ -469,38 +485,50 @@ class RoomManager {
             `;
         }).join('');
 
-        // Add home service cards
-        const homeServiceCardsHTML = homeServices.map(service => {
-            const isPending = service.status === 'pending';
-            const isActive = service.status === 'active';
+        // Create permanent home service cards for each therapist
+        const homeServiceCardsHTML = therapists.map(therapist => {
+            // Get therapist ID
+            const therapistId = therapist._id || therapist.id;
+            const therapistName = therapist.firstName ?
+                `${therapist.firstName} ${therapist.lastName}`.trim() :
+                therapist.name;
+
+            // Find active/pending home service for this therapist
+            const activeService = homeServices.find(service =>
+                String(service.employeeId) === String(therapistId) ||
+                String(service.therapistId) === String(therapistId)
+            );
+
+            const isPending = activeService?.status === 'pending';
+            const isActive = activeService?.status === 'active';
+            const isAvailable = !isPending && !isActive;
 
             let timerDisplay = '';
             let serviceInfo = '';
             let actionButtons = '';
 
-            if (isPending) {
+            if (isPending && activeService) {
                 serviceInfo = `
                     <div class="service-info" style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #f39c12;">
                         <div style="color: #f39c12; font-weight: bold; margin-bottom: 8px;">
                             <i class="fas fa-hourglass-half"></i> PENDING - Service not started
                         </div>
-                        <div><strong>Service:</strong> ${service.serviceName}</div>
-                        <div><strong>Client:</strong> ${service.clientName || 'Walk-in'}</div>
-                        <div><strong>Therapist:</strong> ${service.employeeName}</div>
-                        ${service.estimatedDuration ?
-                            `<div><strong>Duration:</strong> ${service.estimatedDuration} mins</div>` : ''}
+                        <div><strong>Service:</strong> ${activeService.serviceName}</div>
+                        <div><strong>Client:</strong> ${activeService.clientName || 'Walk-in'}</div>
+                        ${activeService.estimatedDuration ?
+                            `<div><strong>Duration:</strong> ${activeService.estimatedDuration} mins</div>` : ''}
                     </div>
                 `;
                 actionButtons = `
-                    <button class="btn btn-success btn-sm" onclick="roomManager.startHomeService('${service._id || service.id}')">
+                    <button class="btn btn-success btn-sm" onclick="roomManager.startHomeService('${activeService._id || activeService.id}')">
                         <i class="fas fa-play"></i> Start
                     </button>
-                    <button class="btn btn-danger btn-sm" onclick="roomManager.cancelHomeService('${service._id || service.id}')">
+                    <button class="btn btn-danger btn-sm" onclick="roomManager.cancelHomeService('${activeService._id || activeService.id}')">
                         <i class="fas fa-times"></i> Cancel
                     </button>
                 `;
-            } else if (isActive) {
-                const elapsed = this.calculateElapsedTime(service.startTime);
+            } else if (isActive && activeService) {
+                const elapsed = this.calculateElapsedTime(activeService.startTime);
                 timerDisplay = `
                     <div class="room-timer" style="font-size: 1.5rem; font-weight: bold; color: #800020; margin: 10px 0;">
                         <i class="fas fa-clock"></i> ${elapsed}
@@ -508,19 +536,31 @@ class RoomManager {
                 `;
                 serviceInfo = `
                     <div class="service-info" style="background: #fff; padding: 10px; border-radius: 5px; margin-top: 10px;">
-                        <div><strong>Service:</strong> ${service.serviceName}</div>
-                        <div><strong>Client:</strong> ${service.clientName || 'Walk-in'}</div>
-                        <div><strong>Therapist:</strong> ${service.employeeName}</div>
-                        <div><strong>Started:</strong> ${new Date(service.startTime).toLocaleTimeString()}</div>
-                        ${service.estimatedDuration ?
-                            `<div><strong>Duration:</strong> ${service.estimatedDuration} mins</div>` : ''}
+                        <div><strong>Service:</strong> ${activeService.serviceName}</div>
+                        <div><strong>Client:</strong> ${activeService.clientName || 'Walk-in'}</div>
+                        <div><strong>Started:</strong> ${new Date(activeService.startTime).toLocaleTimeString()}</div>
+                        ${activeService.estimatedDuration ?
+                            `<div><strong>Duration:</strong> ${activeService.estimatedDuration} mins</div>` : ''}
                     </div>
                 `;
                 actionButtons = `
-                    <button class="btn btn-danger btn-sm" onclick="roomManager.endHomeService('${service._id || service.id}')">
+                    <button class="btn btn-danger btn-sm" onclick="roomManager.endHomeService('${activeService._id || activeService.id}')">
                         <i class="fas fa-stop"></i> End
                     </button>
                 `;
+            } else {
+                // Available - no active service
+                serviceInfo = `
+                    <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin-top: 10px; border-left: 3px solid #4CAF50;">
+                        <div style="font-weight: 600; color: #2e7d32; margin-bottom: 10px;">
+                            <i class="fas fa-check-circle"></i> Available for Home Service
+                        </div>
+                        <div style="color: #555;">
+                            No active home service
+                        </div>
+                    </div>
+                `;
+                actionButtons = '';
             }
 
             return `
@@ -528,7 +568,7 @@ class RoomManager {
                     <div class="room-header ${isPending ? 'pending' : isActive ? 'occupied' : 'available'}" style="padding: 10px; margin: -1px -1px 0 -1px;">
                         <h3 style="margin: 0; display: flex; justify-content: space-between; align-items: center;">
                             <span>
-                                <i class="fas fa-home"></i> ${service.therapistName || service.employeeName || 'Unknown'}
+                                <i class="fas fa-home"></i> ${therapistName}
                             </span>
                             <span style="font-size: 0.8rem;">
                                 <i class="fas fa-${isPending ? 'hourglass-half' : isActive ? 'clock' : 'check'}"></i> ${isPending ? 'PENDING' : isActive ? 'IN SERVICE' : 'AVAILABLE'}
@@ -538,14 +578,17 @@ class RoomManager {
                     <div class="room-body" style="padding: 15px;">
                         <div class="room-type" style="color: #666; margin-bottom: 10px;">
                             <i class="fas fa-map-marker-alt"></i> Home Service
+                            <span style="float: right;">
+                                <i class="fas fa-user"></i> ${therapist.position}
+                            </span>
                         </div>
 
                         ${timerDisplay}
                         ${serviceInfo}
 
-                        <div class="room-actions" style="margin-top: 15px;">
+                        ${actionButtons ? `<div class="room-actions" style="margin-top: 15px;">
                             ${actionButtons}
-                        </div>
+                        </div>` : ''}
                     </div>
                 </div>
             `;
