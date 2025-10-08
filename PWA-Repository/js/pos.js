@@ -1507,6 +1507,14 @@ class POSSystem {
                             name: selectedEmployeeName
                         });
 
+                        // 🔧 FIX: Don't override if user already selected home service
+                        const currentRoomSelection = roomSelect.value;
+                        if (currentRoomSelection === 'home-service') {
+                            console.log('🏠 [POS] Home service already selected - skipping auto room assignment');
+                            showNotification(`Home Service selected for ${selectedEmployeeName}`, 'success');
+                            return;
+                        }
+
                         try {
                             // Get room assignments from API
                             const assignmentsResult = await window.HybridAPIClient.get('/api/room-assignments', 'roomAssignments', {
