@@ -245,12 +245,15 @@ class RoomManager {
 
     async loadAdvanceBookings() {
         try {
+            console.log('🔄 [ROOMS] Loading advance bookings...');
             const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
             if (!authToken) {
+                console.warn('⚠️ [ROOMS] No auth token found for advance bookings');
                 this.advanceBookings = [];
                 return;
             }
 
+            console.log('🌐 [ROOMS] Fetching advance bookings from API...');
             const response = await fetch('https://daetspa-backend.onrender.com/api/advance-bookings', {
                 method: 'GET',
                 headers: {
@@ -259,8 +262,16 @@ class RoomManager {
                 }
             });
 
+            console.log('📡 [ROOMS] Advance bookings API response:', {
+                status: response.status,
+                ok: response.ok,
+                statusText: response.statusText
+            });
+
             if (response.ok) {
                 const result = await response.json();
+                console.log('📦 [ROOMS] Advance bookings API result:', result);
+
                 if (result.success && result.data) {
                     // Filter for today and future bookings only
                     const now = new Date();
@@ -268,15 +279,21 @@ class RoomManager {
                         const bookingDate = new Date(booking.bookingDateTime);
                         return bookingDate >= now || booking.status === 'in-progress';
                     });
-                    console.log('✅ [ROOMS] Loaded advance bookings:', this.advanceBookings);
+                    console.log('✅ [ROOMS] Loaded advance bookings:', {
+                        totalFromAPI: result.data.length,
+                        afterFiltering: this.advanceBookings.length,
+                        bookings: this.advanceBookings
+                    });
                 } else {
+                    console.warn('⚠️ [ROOMS] No advance bookings data in response');
                     this.advanceBookings = [];
                 }
             } else {
+                console.error('❌ [ROOMS] Failed to fetch advance bookings:', response.status);
                 this.advanceBookings = [];
             }
         } catch (error) {
-            console.error('Failed to load advance bookings:', error);
+            console.error('❌ [ROOMS] Failed to load advance bookings:', error);
             this.advanceBookings = [];
         }
     }
@@ -2448,12 +2465,37 @@ class RoomManager {
                             const now = new Date();
                             const next24Hours = new Date(now.getTime() + (24 * 60 * 60 * 1000));
 
+                            console.log('🔍 [THERAPIST] Checking advance bookings:', {
+                                totalBookings: this.advanceBookings?.length || 0,
+                                allBookings: this.advanceBookings,
+                                currentEmployeeId: employeeId,
+                                currentEmployeeIdType: typeof employeeId
+                            });
+
                             const myAdvanceBookings = (this.advanceBookings || []).filter(booking => {
                                 const bookingDate = new Date(booking.bookingDateTime);
-                                return (String(booking.employeeId) === String(employeeId)) &&
-                                       bookingDate >= now &&
-                                       bookingDate <= next24Hours &&
-                                       booking.status === 'scheduled';
+                                const bookingEmployeeId = String(booking.employeeId);
+                                const currentId = String(employeeId);
+
+                                const matchesEmployee = bookingEmployeeId === currentId;
+                                const isInTimeRange = bookingDate >= now && bookingDate <= next24Hours;
+                                const isScheduled = booking.status === 'scheduled';
+
+                                console.log('📋 [THERAPIST] Checking booking:', {
+                                    bookingId: booking._id || booking.id,
+                                    bookingEmployeeId,
+                                    currentEmployeeId: currentId,
+                                    matchesEmployee,
+                                    bookingDateTime: booking.bookingDateTime,
+                                    bookingDate,
+                                    now,
+                                    isInTimeRange,
+                                    status: booking.status,
+                                    isScheduled,
+                                    willInclude: matchesEmployee && isInTimeRange && isScheduled
+                                });
+
+                                return matchesEmployee && isInTimeRange && isScheduled;
                             });
 
                             console.log('📅 [THERAPIST] Advance bookings found:', {
