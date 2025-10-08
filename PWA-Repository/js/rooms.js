@@ -1952,9 +1952,10 @@ class RoomManager {
                 throw new Error(`No employee ID found for therapist. Available fields: ${userData ? Object.keys(userData).join(', ') : 'none'}`);
             }
 
-            // FIRST: Load room data and services from MongoDB (not IndexedDB)
-            console.log('📦 [THERAPIST] Loading rooms and services from MongoDB...');
+            // FIRST: Load room data, services, and advance bookings from MongoDB (not IndexedDB)
+            console.log('📦 [THERAPIST] Loading rooms, services, and advance bookings from MongoDB...');
             await this.loadRooms();
+            await this.loadAdvanceBookings();
 
             // Declare servicesResult outside try block so it's accessible later
             let servicesResult = { success: false, data: [] };
@@ -2440,6 +2441,96 @@ class RoomManager {
                             </div>
                         `;
                         }).join('')}
+
+                        ${/* Advance Bookings for this therapist */''}
+                        ${(() => {
+                            // Get advance bookings for this therapist (upcoming within next 24 hours)
+                            const now = new Date();
+                            const next24Hours = new Date(now.getTime() + (24 * 60 * 60 * 1000));
+
+                            const myAdvanceBookings = (this.advanceBookings || []).filter(booking => {
+                                const bookingDate = new Date(booking.bookingDateTime);
+                                return (String(booking.employeeId) === String(employeeId)) &&
+                                       bookingDate >= now &&
+                                       bookingDate <= next24Hours &&
+                                       booking.status === 'scheduled';
+                            });
+
+                            console.log('📅 [THERAPIST] Advance bookings found:', {
+                                total: this.advanceBookings?.length || 0,
+                                filtered: myAdvanceBookings.length,
+                                employeeId: employeeId,
+                                bookings: myAdvanceBookings
+                            });
+
+                            return myAdvanceBookings.map(booking => {
+                                const bookingDate = new Date(booking.bookingDateTime);
+                                const timeUntil = Math.floor((bookingDate - now) / (60 * 1000)); // minutes
+                                const isImminent = timeUntil <= 30; // Within 30 minutes
+
+                                const statusBadge = `<span style="background: #f39c12; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold;">
+                                    <i class="fas fa-calendar-plus"></i> ADVANCE BOOKING
+                                </span>`;
+
+                                const statusInfo = `
+                                    <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #f39c12;">
+                                        <div style="color: #856404; font-weight: bold; margin-bottom: 10px;">
+                                            <i class="fas fa-hourglass-half"></i> Scheduled: ${bookingDate.toLocaleString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </div>
+                                        <div style="color: #555; font-size: 0.9rem;">
+                                            <div style="margin: 5px 0;"><strong>Service:</strong> ${booking.serviceName}</div>
+                                            <div style="margin: 5px 0;"><strong>Client:</strong> ${booking.clientName}</div>
+                                            ${booking.clientAddress ? `<div style="margin: 5px 0;"><strong>Location:</strong> ${booking.clientAddress}</div>` : ''}
+                                            ${booking.estimatedDuration ? `<div style="margin: 5px 0;"><strong>Duration:</strong> ${booking.estimatedDuration} mins</div>` : ''}
+                                            <div style="margin-top: 10px; color: ${isImminent ? '#d32f2f' : '#856404'}; font-weight: bold;">
+                                                <i class="fas fa-stopwatch"></i> ${timeUntil > 60 ? `In ${Math.floor(timeUntil / 60)}h ${timeUntil % 60}m` : `In ${timeUntil} minutes`}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+
+                                const actionButtons = `
+                                    <button class="btn btn-success" onclick="roomManager.startAdvanceBooking('${booking._id || booking.id}')" style="width: 100%; margin-bottom: 10px;">
+                                        <i class="fas fa-play"></i> Start Now
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="window.app.showPage('appointments')" style="width: 100%;">
+                                        <i class="fas fa-info-circle"></i> View Details
+                                    </button>
+                                `;
+
+                                return `
+                                    <div class="room-card pending" style="border-radius: 10px; padding: 0; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); ${isImminent ? 'border-color: #f39c12; border-width: 3px;' : ''}">
+                                        <div class="room-header pending" style="padding: 20px;">
+                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                                <h3 style="margin: 0; font-size: 1.5rem;">
+                                                    <i class="fas fa-${booking.isHomeService ? 'home' : 'store'}"></i> ${booking.isHomeService ? 'Home Service' : booking.roomName}
+                                                </h3>
+                                                ${statusBadge}
+                                            </div>
+                                            ${isImminent ? '<div style="background: #f39c12; color: white; padding: 8px; border-radius: 5px; font-weight: bold; text-align: center; margin-top: 10px;"><i class="fas fa-exclamation-triangle"></i> STARTING SOON</div>' : ''}
+                                        </div>
+                                        <div class="room-body" style="padding: 20px;">
+                                            ${statusInfo}
+
+                                            <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                                                <div style="font-weight: 600; color: #666; margin-bottom: 10px;">
+                                                    <i class="fas fa-info-circle"></i> Booking Details
+                                                </div>
+                                            </div>
+
+                                            <div class="room-actions">
+                                                ${actionButtons}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+                        })()}
                     </div>
                 </div>
             `;
