@@ -2004,7 +2004,7 @@ class RoomManager {
             const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
             if (!authToken) return;
 
-            // Fetch from MongoDB
+            // Fetch active services
             const response = await fetch('https://daetspa-backend.onrender.com/api/room-services', {
                 method: 'GET',
                 headers: {
@@ -2016,6 +2016,30 @@ class RoomManager {
             if (!response.ok) return;
 
             const result = await response.json();
+
+            // Also check advance bookings for changes
+            const bookingsResponse = await fetch('https://daetspa-backend.onrender.com/api/advance-bookings', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+
+            let bookingsChanged = false;
+            if (bookingsResponse.ok) {
+                const bookingsResult = await bookingsResponse.json();
+                if (bookingsResult.success && bookingsResult.data) {
+                    const currentBookingIds = (this.advanceBookings || []).map(b => b._id).sort().join(',');
+                    const newBookingIds = bookingsResult.data
+                        .filter(b => b.status === 'scheduled' || b.status === 'confirmed')
+                        .map(b => b._id)
+                        .sort()
+                        .join(',');
+                    bookingsChanged = currentBookingIds !== newBookingIds;
+                }
+            }
+
             if (result.success && result.data) {
                 // Check if any service status changed
                 const currentServices = this.activeServices.map(s => ({
@@ -2034,10 +2058,14 @@ class RoomManager {
                 // Also check if services were added or removed
                 const countChanged = result.data.length !== this.activeServices.length;
 
-                if (hasChanges || countChanged) {
-                    console.log('✨ [MANAGER] Service status changed! Refreshing view...');
+                if (hasChanges || countChanged || bookingsChanged) {
+                    console.log('✨ [MANAGER] Changes detected! Refreshing view...', {
+                        serviceChanges: hasChanges || countChanged,
+                        bookingChanges: bookingsChanged
+                    });
                     await this.loadRooms();
                     await this.loadActiveServices();
+                    await this.loadAdvanceBookingsFromBackend(); // Force reload bookings
                     this.displayRooms();
                 }
             }
