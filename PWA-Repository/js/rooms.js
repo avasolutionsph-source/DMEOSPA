@@ -1215,9 +1215,20 @@ class RoomManager {
             advanceBookingId: advanceBookingId
         });
 
-        // Delete from IndexedDB
-        if (serviceLocalId) {
-            await window.db.delete('activeServices', serviceLocalId);
+        // CRITICAL: Delete from IndexedDB using BOTH IDs
+        // (the service might be stored with either the local ID or MongoDB ID as key)
+        try {
+            if (serviceLocalId) {
+                await window.db.delete('activeServices', serviceLocalId);
+                console.log('✅ [ROOM] Deleted from IndexedDB using local ID');
+            }
+            if (serviceMongoId && serviceMongoId !== serviceLocalId) {
+                await window.db.delete('activeServices', serviceMongoId);
+                await window.db.delete('activeServices', serviceMongoId.toString());
+                console.log('✅ [ROOM] Deleted from IndexedDB using Mongo ID');
+            }
+        } catch (idbError) {
+            console.warn('⚠️ [ROOM] IndexedDB deletion error:', idbError);
         }
 
         // ALSO delete from MongoDB (so other devices see the cancellation)
@@ -1286,6 +1297,11 @@ class RoomManager {
 
         // Give MongoDB a moment to process the deletion
         await new Promise(resolve => setTimeout(resolve, 500));
+
+        // FORCE reload from MongoDB (bypass IndexedDB cache)
+        console.log('🔄 [ROOM] Force reloading from MongoDB after cancellation');
+        await this.loadAdvanceBookings('cancelPendingService');
+        await this.loadActiveServices();
 
         // Refresh room list
         if (this.isTherapistView) {
