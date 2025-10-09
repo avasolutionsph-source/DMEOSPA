@@ -4320,6 +4320,24 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
     100% { box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2); }
 }
 
+/* Active service styling (blue for services with >10 mins remaining) */
+.room-card.active-service {
+    border-color: #2196F3;
+    background: #e3f2fd;
+    animation: pulse-active-service 2s infinite;
+}
+
+.room-header.active-service {
+    background: #2196F3;
+    color: white;
+}
+
+@keyframes pulse-active-service {
+    0% { box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2); }
+    50% { box-shadow: 0 2px 16px rgba(33, 150, 243, 0.4); }
+    100% { box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2); }
+}
+
 .room-body {
     padding: 15px;
 }

@@ -424,21 +424,7 @@ class RoomManager {
     async loadAdvanceBookings(caller = 'unknown') {
         console.log(`🔄 [ROOMS] Loading advance bookings... (called by: ${caller})`);
 
-        // SHORTCUT: Check if appointments manager already loaded them
-        if (window.appointmentsManager?.advanceBookings?.length > 0) {
-            console.log('✅ [ROOMS] Using advance bookings from appointments manager:', window.appointmentsManager.advanceBookings.length);
-            // Show only active bookings (exclude completed and cancelled)
-            this.advanceBookings = window.appointmentsManager.advanceBookings.filter(booking => {
-                const isActive = ['scheduled', 'confirmed', 'in-progress'].includes(booking.status);
-                return isActive;
-            });
-            console.log('✅ [ROOMS] Filtered cached bookings:', {
-                original: window.appointmentsManager.advanceBookings.length,
-                filtered: this.advanceBookings.length
-            });
-            return;
-        }
-
+        // Always load fresh data from backend - no stale cache
         // FALLBACK: Try IndexedDB first
         try {
             if (window.db) {
@@ -787,7 +773,7 @@ class RoomManager {
                 // Active service - show timer
                 const elapsed = this.calculateElapsedTime(room.currentService.startTime);
                 timerDisplay = `
-                    <div class="room-timer" style="font-size: 1.5rem; font-weight: bold; color: #800020; margin: 10px 0;">
+                    <div class="room-timer" style="font-size: 1.5rem; font-weight: bold; color: #800020; margin: 10px 0;" data-room-id="${room.id}">
                         <i class="fas fa-clock"></i> ${elapsed}
                     </div>
                 `;
@@ -948,7 +934,7 @@ class RoomManager {
                 const bgColor = isNearEnd ? '#ffebee' : '#e3f2fd'; // Light red or light blue
 
                 timerDisplay = `
-                    <div class="room-timer" style="font-size: 1.5rem; font-weight: bold; color: ${cardColor}; margin: 10px 0;">
+                    <div class="room-timer" style="font-size: 1.5rem; font-weight: bold; color: ${cardColor}; margin: 10px 0;" data-home-service-id="${activeService._id || activeService.id}">
                         <i class="fas fa-clock"></i> ${elapsed}
                     </div>
                 `;
@@ -2464,13 +2450,14 @@ class RoomManager {
         // Update room service timers
         this.rooms.forEach(room => {
             if (room.status === 'occupied' && room.currentService?.startTime) {
-                const timerElement = document.querySelector(`[data-room-id="${room.id}"] .service-timer`);
+                const timerElement = document.querySelector(`[data-room-id="${room.id}"]`);
                 if (timerElement) {
                     const duration = Math.floor((Date.now() - new Date(room.currentService.startTime)) / 1000);
                     const hours = Math.floor(duration / 3600);
                     const minutes = Math.floor((duration % 3600) / 60);
                     const seconds = duration % 60;
-                    timerElement.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    const elapsedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    timerElement.innerHTML = `<i class="fas fa-clock"></i> ${elapsedTime}`;
                 }
             }
         });
@@ -2502,6 +2489,34 @@ class RoomManager {
                 }
             });
         }
+
+        // Update home service timers
+        const homeServices = this.activeServices.filter(service =>
+            service.isHomeService === true && service.status === 'active'
+        );
+
+        homeServices.forEach(service => {
+            const timerElement = document.querySelector(`[data-home-service-id="${service._id || service.id}"]`);
+            if (timerElement && service.startTime) {
+                const startTime = new Date(service.startTime);
+                const duration = Math.floor((Date.now() - startTime.getTime()) / 1000);
+                const hours = Math.floor(duration / 3600);
+                const minutes = Math.floor((duration % 3600) / 60);
+                const seconds = duration % 60;
+                const elapsedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                // Calculate color based on remaining time
+                const elapsedMinutes = Math.floor(duration / 60);
+                const estimatedDuration = service.estimatedDuration || 60;
+                const remainingMinutes = estimatedDuration - elapsedMinutes;
+                const isNearEnd = remainingMinutes <= 10;
+                const cardColor = isNearEnd ? '#800020' : '#2196F3';
+
+                // Update timer text and color
+                timerElement.innerHTML = `<i class="fas fa-clock"></i> ${elapsedTime}`;
+                timerElement.style.color = cardColor;
+            }
+        });
     }
 
     // Check for new pending services from MongoDB
@@ -3169,7 +3184,8 @@ class RoomManager {
                                 const matchesEmployee = bookingEmployeeId === currentId ||
                                                        bookingEmployeeId === currentIdAlt ||
                                                        bookingEmployeeId === currentIdAlt2;
-                                const isScheduled = booking.status === 'scheduled';
+                                // Show both scheduled AND in-progress bookings
+                                const isRelevantStatus = ['scheduled', 'in-progress'].includes(booking.status);
 
                                 console.log('📋 [THERAPIST] Checking booking:', {
                                     bookingId: booking._id || booking.id,
@@ -3182,12 +3198,12 @@ class RoomManager {
                                     bookingDate,
                                     now,
                                     status: booking.status,
-                                    isScheduled,
-                                    willInclude: matchesEmployee && isScheduled,
+                                    isRelevantStatus,
+                                    willInclude: matchesEmployee && isRelevantStatus,
                                     fullBooking: booking
                                 });
 
-                                return matchesEmployee && isScheduled;
+                                return matchesEmployee && isRelevantStatus;
                             });
 
                             console.log('📅 [THERAPIST] Advance bookings found:', {
