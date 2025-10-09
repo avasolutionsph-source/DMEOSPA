@@ -1045,8 +1045,9 @@ class RoomManager {
 
                 // Calculate elapsed time if in progress
                 let elapsedTime = '';
-                if (isInProgress && booking.actualStartTime) {
-                    const startTime = new Date(booking.actualStartTime);
+                if (isInProgress) {
+                    // Use actualStartTime if available, otherwise use current time as fallback for newly started bookings
+                    const startTime = booking.actualStartTime ? new Date(booking.actualStartTime) : now;
                     const elapsed = Math.floor((now - startTime) / 1000); // seconds
                     const hours = Math.floor(elapsed / 3600);
                     const minutes = Math.floor((elapsed % 3600) / 60);
@@ -1054,8 +1055,9 @@ class RoomManager {
                     elapsedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 }
 
-                const cardClass = isInProgress ? 'occupied' : 'pending';
-                const headerClass = isInProgress ? 'occupied' : 'pending';
+                // Use green styling for in-progress, not the dark red 'occupied' class
+                const cardClass = isInProgress ? 'in-progress-booking' : 'pending';
+                const headerClass = isInProgress ? 'in-progress-booking' : 'pending';
                 const borderStyle = isInProgress ? 'border-color: #28a745; border-width: 3px;' : (isImminent ? 'border-color: #f39c12; border-width: 3px;' : '');
                 const statusBadge = isInProgress ? '<span class="badge badge-success" style="float: right; font-size: 0.7rem;">IN PROGRESS</span>' : (isImminent ? '<span class="badge badge-warning" style="float: right; font-size: 0.7rem;">IMMINENT</span>' : '');
 

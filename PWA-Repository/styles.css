@@ -4303,6 +4303,23 @@ input.form-input:focus, select.form-select:focus, textarea.form-input:focus {
     background: #f39c12;
 }
 
+/* In-progress advance booking styling (green) */
+.room-card.in-progress-booking {
+    border-color: #28a745;
+    background: #d4edda;
+    animation: pulse-in-progress 2s infinite;
+}
+
+.room-header.in-progress-booking {
+    background: #28a745;
+}
+
+@keyframes pulse-in-progress {
+    0% { box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2); }
+    50% { box-shadow: 0 2px 16px rgba(40, 167, 69, 0.4); }
+    100% { box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2); }
+}
+
 .room-body {
     padding: 15px;
 }
