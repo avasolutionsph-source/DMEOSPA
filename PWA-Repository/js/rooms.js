@@ -2188,8 +2188,13 @@ class RoomManager {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to start booking');
+                const errorData = await response.json().catch(() => ({}));
+                console.error('Backend error response:', errorData);
+                throw new Error(errorData.error || `Server error: ${response.status}`);
             }
+
+            const result = await response.json();
+            console.log('✅ Booking started successfully:', result);
 
             showSuccess('Booking started successfully!');
 

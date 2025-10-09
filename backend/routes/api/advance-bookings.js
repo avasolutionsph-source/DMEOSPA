@@ -243,6 +243,38 @@ router.post('/:id/convert', async (req, res) => {
         const bookingId = req.params.id;
         const { activeServiceId } = req.body;
 
+        // First check if booking exists and get its current status
+        const existingBooking = await AdvanceBooking.findOne({
+            _id: bookingId,
+            userId: userId
+        });
+
+        if (!existingBooking) {
+            return res.status(404).json({
+                success: false,
+                error: 'Booking not found'
+            });
+        }
+
+        // If already in-progress, return success (idempotent)
+        if (existingBooking.status === 'in-progress') {
+            console.log(`ℹ️ [ADVANCE-BOOKINGS] Booking ${bookingId} already in-progress`);
+            return res.json({
+                success: true,
+                data: existingBooking,
+                message: 'Booking is already in progress'
+            });
+        }
+
+        // If not in startable state, return error
+        if (!['scheduled', 'confirmed'].includes(existingBooking.status)) {
+            return res.status(400).json({
+                success: false,
+                error: `Cannot start booking with status: ${existingBooking.status}`
+            });
+        }
+
+        // Update to in-progress
         const booking = await AdvanceBooking.findOneAndUpdate(
             {
                 _id: bookingId,
@@ -261,9 +293,9 @@ router.post('/:id/convert', async (req, res) => {
         );
 
         if (!booking) {
-            return res.status(404).json({
+            return res.status(500).json({
                 success: false,
-                error: 'Booking not found or already converted'
+                error: 'Failed to update booking status'
             });
         }
 
