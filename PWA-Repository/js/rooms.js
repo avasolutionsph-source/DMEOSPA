@@ -548,9 +548,10 @@ class RoomManager {
         const container = document.getElementById('roomsGrid');
         if (!container) return;
 
-        // 🔧 FIX: Reload active services and advance bookings to get latest data from database
-        await this.loadActiveServices();
+        // 🔧 FIX: Reload advance bookings FIRST, then active services
+        // (loadActiveServices filters pending services based on advance bookings)
         await this.loadAdvanceBookings('displayRooms');
+        await this.loadActiveServices();
 
         const visibleRooms = this.showHiddenRooms ?
             this.rooms :
@@ -2114,8 +2115,8 @@ class RoomManager {
                         bookingChanges: bookingsChanged
                     });
                     await this.loadRooms();
-                    await this.loadActiveServices();
-                    await this.loadAdvanceBookingsFromBackend(); // Force reload bookings
+                    await this.loadAdvanceBookingsFromBackend(); // Load bookings FIRST
+                    await this.loadActiveServices(); // Then filter active services
                     this.displayRooms();
                 }
             }
