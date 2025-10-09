@@ -243,6 +243,56 @@ class RoomManager {
         return this.activeServices || [];
     }
 
+    // Load advance bookings directly from backend (bypass cache)
+    async loadAdvanceBookingsFromBackend() {
+        console.log('🔄 [ROOMS] Force loading advance bookings from backend...');
+
+        try {
+            const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+            if (!authToken) {
+                console.warn('⚠️ [ROOMS] No auth token found for advance bookings');
+                this.advanceBookings = [];
+                return;
+            }
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+            const response = await fetch('https://daetspa-backend.onrender.com/api/advance-bookings', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                signal: controller.signal,
+                cache: 'no-store' // Force bypass cache
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+
+            if (result.success && result.data) {
+                this.advanceBookings = result.data;
+                console.log('✅ [ROOMS] Loaded advance bookings from backend:', this.advanceBookings.length);
+
+                // Update IndexedDB cache
+                if (window.db && this.advanceBookings.length > 0) {
+                    await window.db.saveAll('advanceBookings', this.advanceBookings);
+                }
+            } else {
+                this.advanceBookings = [];
+            }
+        } catch (error) {
+            console.error('❌ [ROOMS] Error loading advance bookings from backend:', error);
+            this.advanceBookings = [];
+        }
+    }
+
     async loadAdvanceBookings(caller = 'unknown') {
         console.log(`🔄 [ROOMS] Loading advance bookings... (called by: ${caller})`);
 
@@ -1898,10 +1948,24 @@ class RoomManager {
 
             showSuccess('Advance booking started successfully!');
 
-            // Refresh display
+            // Force reload from backend to get updated status
+            // Clear cached bookings to ensure fresh data
+            if (window.appointmentsManager) {
+                window.appointmentsManager.advanceBookings = null;
+            }
+
+            // Refresh display with fresh data from backend
             await this.loadActiveServices();
-            await this.loadAdvanceBookings();
+            await this.loadAdvanceBookingsFromBackend(); // Force backend reload
             this.displayRooms();
+
+            // Also refresh appointments page if it's loaded
+            if (window.appointmentsManager && typeof window.appointmentsManager.loadAdvanceBookings === 'function') {
+                await window.appointmentsManager.loadAdvanceBookings();
+                if (typeof window.appointmentsManager.displayAdvanceBookings === 'function') {
+                    window.appointmentsManager.displayAdvanceBookings();
+                }
+            }
         } catch (error) {
             console.error('Error starting advance booking:', error);
             showError('Failed to start booking: ' + error.message);
