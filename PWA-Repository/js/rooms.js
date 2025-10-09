@@ -2496,8 +2496,28 @@ class RoomManager {
             service.isHomeService === true && service.status === 'active'
         );
 
+        console.log('🔍 [TIMER-UPDATE] Home services check:', {
+            totalActiveServices: this.activeServices.length,
+            homeServicesCount: homeServices.length,
+            homeServices: homeServices.map(s => ({
+                id: s._id || s.id,
+                name: s.serviceName,
+                startTime: s.startTime,
+                hasStartTime: !!s.startTime
+            }))
+        });
+
         homeServices.forEach(service => {
-            const timerElement = document.querySelector(`[data-home-service-id="${service._id || service.id}"]`);
+            const serviceId = service._id || service.id;
+            const timerElement = document.querySelector(`[data-home-service-id="${serviceId}"]`);
+
+            console.log('🔍 [TIMER-UPDATE] Checking service timer:', {
+                serviceId,
+                elementFound: !!timerElement,
+                hasStartTime: !!service.startTime,
+                startTime: service.startTime
+            });
+
             if (timerElement && service.startTime) {
                 const startTime = new Date(service.startTime);
                 const duration = Math.floor((Date.now() - startTime.getTime()) / 1000);
@@ -2513,9 +2533,20 @@ class RoomManager {
                 const isNearEnd = remainingMinutes <= 10;
                 const cardColor = isNearEnd ? '#800020' : '#2196F3';
 
+                console.log('✅ [TIMER-UPDATE] Updating timer:', {
+                    serviceId,
+                    elapsedTime,
+                    cardColor
+                });
+
                 // Update timer text and color
                 timerElement.innerHTML = `<i class="fas fa-clock"></i> ${elapsedTime}`;
                 timerElement.style.color = cardColor;
+            } else {
+                console.warn('⚠️ [TIMER-UPDATE] Timer not updated:', {
+                    serviceId,
+                    reason: !timerElement ? 'Element not found' : 'No start time'
+                });
             }
         });
     }
