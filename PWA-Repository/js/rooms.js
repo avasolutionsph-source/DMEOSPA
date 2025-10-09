@@ -2221,11 +2221,8 @@ class RoomManager {
 
             showSuccess('Advance booking started successfully!');
 
-            // Force reload from backend to get updated status
-            // Clear cached bookings to ensure fresh data
-            if (window.appointmentsManager) {
-                window.appointmentsManager.advanceBookings = null;
-            }
+            // Wait for MongoDB to propagate the status update
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
             // Refresh display with fresh data from backend
             await this.loadActiveServices();
