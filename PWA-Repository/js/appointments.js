@@ -1003,6 +1003,21 @@ class AppointmentsManager {
             });
 
             if (response.ok) {
+                console.log('✅ [APPOINTMENTS] Booking cancelled, clearing caches...');
+
+                // Clear IndexedDB cache for advance bookings
+                try {
+                    if (window.db && window.db.db) {
+                        console.log('🗑️ [APPOINTMENTS] Clearing IndexedDB cache...');
+                        const tx = window.db.db.transaction(['advanceBookings'], 'readwrite');
+                        await tx.objectStore('advanceBookings').clear();
+                        await tx.done;
+                        console.log('✅ [APPOINTMENTS] IndexedDB cache cleared');
+                    }
+                } catch (dbError) {
+                    console.warn('⚠️ [APPOINTMENTS] Failed to clear IndexedDB:', dbError);
+                }
+
                 showSuccess('Advance booking cancelled successfully');
                 await this.loadAdvanceBookings();
 
