@@ -2491,9 +2491,10 @@ class RoomManager {
             });
         }
 
-        // Update home service timers
+        // Update home service timers - use SAME filter as display logic
         const homeServices = this.activeServices.filter(service =>
-            service.isHomeService === true && service.status === 'active'
+            (service.isHomeService === true || (service.roomName && service.roomName.includes('Home Service'))) &&
+            service.status === 'active'
         );
 
         console.log('🔍 [TIMER-UPDATE] Home services check:', {
