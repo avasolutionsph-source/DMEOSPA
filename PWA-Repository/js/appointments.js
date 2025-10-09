@@ -932,6 +932,32 @@ class AppointmentsManager {
 
         try {
             const userToken = localStorage.getItem('authToken');
+
+            // First, find and delete any associated pending active service
+            // This happens when user clicked "Start Now" but didn't actually start the service
+            const booking = this.advanceBookings.find(b => b._id === bookingId || b.id === bookingId);
+            if (booking && booking.activeServiceId) {
+                console.log('🗑️ Deleting associated pending active service:', booking.activeServiceId);
+                try {
+                    await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/room-services/${booking.activeServiceId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${userToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    // Also remove from IndexedDB
+                    if (window.db) {
+                        await window.db.delete('activeServices', booking.activeServiceId);
+                    }
+                } catch (serviceError) {
+                    console.warn('⚠️ Could not delete active service:', serviceError);
+                    // Continue anyway - booking cancellation is more important
+                }
+            }
+
+            // Now cancel the booking itself
             const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/advance-bookings/${bookingId}`, {
                 method: 'DELETE',
                 headers: {
@@ -944,6 +970,14 @@ class AppointmentsManager {
             if (response.ok) {
                 showSuccess('Advance booking cancelled successfully');
                 await this.loadAdvanceBookings();
+
+                // Refresh rooms view if it's active
+                if (window.roomManager && typeof window.roomManager.loadActiveServices === 'function') {
+                    await window.roomManager.loadActiveServices();
+                    if (typeof window.roomManager.displayRooms === 'function') {
+                        window.roomManager.displayRooms();
+                    }
+                }
             } else {
                 showError('Failed to cancel booking');
             }
