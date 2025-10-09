@@ -84,6 +84,10 @@ class RoomManager {
 
             // Show manager/owner view
             await this.loadRooms();
+
+            // Clean up orphaned pending services on startup
+            await this.cleanupOrphanedPendingServices();
+
             await this.loadActiveServices();
             // Only setup event listeners once
             if (!this.listenersSetup) {
@@ -92,6 +96,92 @@ class RoomManager {
                 this.startManagerAutoRefresh(); // Add auto-refresh for manager view
                 this.listenersSetup = true;
             }
+        }
+    }
+
+    // Clean up orphaned pending services (services without matching bookings)
+    async cleanupOrphanedPendingServices() {
+        try {
+            console.log('🧹 [ROOMS] Cleaning up orphaned pending services...');
+            const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+            if (!authToken) return;
+
+            // Fetch all active services
+            const servicesResponse = await fetch('https://daetspa-backend.onrender.com/api/room-services', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+
+            if (!servicesResponse.ok) return;
+
+            const servicesData = await servicesResponse.json();
+            if (!servicesData.success || !servicesData.data) return;
+
+            // Fetch all advance bookings
+            const bookingsResponse = await fetch('https://daetspa-backend.onrender.com/api/advance-bookings', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+
+            let advanceBookings = [];
+            if (bookingsResponse.ok) {
+                const bookingsData = await bookingsResponse.json();
+                if (bookingsData.success && bookingsData.data) {
+                    advanceBookings = bookingsData.data;
+                }
+            }
+
+            // Find pending services without matching bookings
+            const orphanedServices = servicesData.data.filter(service => {
+                if (service.status !== 'pending') return false;
+
+                const hasMatchingBooking = advanceBookings.some(booking =>
+                    booking.status === 'in-progress' &&
+                    booking.serviceName === service.serviceName &&
+                    booking.clientName === service.clientName &&
+                    String(booking.employeeId) === String(service.employeeId)
+                );
+
+                return !hasMatchingBooking;
+            });
+
+            if (orphanedServices.length > 0) {
+                console.log(`🗑️ [ROOMS] Found ${orphanedServices.length} orphaned pending services to delete`);
+
+                // Delete each orphaned service
+                for (const service of orphanedServices) {
+                    console.log('🗑️ [ROOMS] Deleting orphaned service:', service._id, service.serviceName);
+                    try {
+                        await fetch(`https://daetspa-backend.onrender.com/api/room-services/${service._id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Authorization': `Bearer ${authToken}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        // Also remove from IndexedDB
+                        if (window.db) {
+                            await window.db.delete('activeServices', service._id);
+                        }
+                    } catch (delError) {
+                        console.warn('⚠️ [ROOMS] Could not delete orphaned service:', delError);
+                    }
+                }
+
+                console.log('✅ [ROOMS] Cleanup complete');
+            } else {
+                console.log('✅ [ROOMS] No orphaned pending services found');
+            }
+        } catch (error) {
+            console.warn('⚠️ [ROOMS] Cleanup failed:', error);
+            // Don't throw - cleanup is optional
         }
     }
 
@@ -999,6 +1089,9 @@ class RoomManager {
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="window.app.showPage('appointments')">
                                     <i class="fas fa-info-circle"></i> View Details
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="roomManager.cancelAdvanceBookingFromRooms('${booking._id || booking.id}')">
+                                    <i class="fas fa-times"></i> Cancel
                                 </button>
                             </div>
                         </div>
@@ -2036,6 +2129,110 @@ class RoomManager {
         }
     }
 
+    // Cancel advance booking from rooms view
+    async cancelAdvanceBookingFromRooms(bookingId) {
+        const reason = prompt('Enter cancellation reason:');
+        if (!reason) return;
+
+        try {
+            const userToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+
+            // Get booking details to find matching pending services
+            const booking = (this.advanceBookings || []).find(b => b._id === bookingId || b.id === bookingId);
+
+            // Search for and delete ANY pending active services that match this booking
+            if (booking) {
+                console.log('🔍 Searching for pending services matching booking:', booking);
+
+                try {
+                    // Fetch all active services
+                    const servicesResponse = await fetch('https://daetspa-backend.onrender.com/api/room-services', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${userToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (servicesResponse.ok) {
+                        const servicesData = await servicesResponse.json();
+                        if (servicesData.success && servicesData.data) {
+                            // Find pending services that match
+                            const matchingServices = servicesData.data.filter(service =>
+                                service.status === 'pending' &&
+                                service.serviceName === booking.serviceName &&
+                                service.clientName === booking.clientName &&
+                                String(service.employeeId) === String(booking.employeeId)
+                            );
+
+                            console.log('🗑️ Found matching pending services to delete:', matchingServices.length);
+
+                            // Delete each matching service
+                            for (const service of matchingServices) {
+                                console.log('🗑️ Deleting pending service:', service._id);
+                                try {
+                                    await fetch(`https://daetspa-backend.onrender.com/api/room-services/${service._id}`, {
+                                        method: 'DELETE',
+                                        headers: {
+                                            'Authorization': `Bearer ${userToken}`,
+                                            'Content-Type': 'application/json'
+                                        }
+                                    });
+
+                                    // Also remove from IndexedDB
+                                    if (window.db) {
+                                        await window.db.delete('activeServices', service._id);
+                                    }
+                                } catch (delError) {
+                                    console.warn('⚠️ Could not delete service:', delError);
+                                }
+                            }
+                        }
+                    }
+                } catch (serviceError) {
+                    console.warn('⚠️ Could not search/delete services:', serviceError);
+                }
+            }
+
+            // Cancel the booking
+            const response = await fetch(`https://daetspa-backend.onrender.com/api/advance-bookings/${bookingId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${userToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ reason })
+            });
+
+            if (response.ok) {
+                showSuccess('Booking cancelled successfully');
+
+                // Clear cached bookings
+                if (window.appointmentsManager) {
+                    window.appointmentsManager.advanceBookings = null;
+                }
+
+                // Refresh display
+                await this.loadAdvanceBookingsFromBackend();
+                await this.loadActiveServices();
+                this.displayRooms();
+
+                // Also refresh appointments page if loaded
+                if (window.appointmentsManager && typeof window.appointmentsManager.loadAdvanceBookings === 'function') {
+                    await window.appointmentsManager.loadAdvanceBookings();
+                    if (typeof window.appointmentsManager.displayAdvanceBookings === 'function') {
+                        window.appointmentsManager.displayAdvanceBookings();
+                    }
+                }
+            } else {
+                showError('Failed to cancel booking');
+            }
+        } catch (error) {
+            console.error('Error cancelling booking:', error);
+            showError('Failed to cancel booking: ' + error.message);
+        }
+    }
+
     // Start auto-refresh for manager view
     startManagerAutoRefresh() {
         // Check for service status changes from MongoDB every 5 seconds
@@ -2869,8 +3066,11 @@ class RoomManager {
                                     <button class="btn btn-success" onclick="roomManager.startAdvanceBooking('${booking._id || booking.id}')" style="width: 100%; margin-bottom: 10px;">
                                         <i class="fas fa-play"></i> Start Now
                                     </button>
-                                    <button class="btn btn-secondary" onclick="window.app.showPage('appointments')" style="width: 100%;">
+                                    <button class="btn btn-secondary" onclick="window.app.showPage('appointments')" style="width: 100%; margin-bottom: 10px;">
                                         <i class="fas fa-info-circle"></i> View Details
+                                    </button>
+                                    <button class="btn btn-danger" onclick="roomManager.cancelAdvanceBookingFromRooms('${booking._id || booking.id}')" style="width: 100%;">
+                                        <i class="fas fa-times"></i> Cancel Booking
                                     </button>
                                 `;
 
