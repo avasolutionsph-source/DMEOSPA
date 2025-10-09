@@ -389,7 +389,12 @@
                         sessionStorage.removeItem('returnToPage');
                         window.location.href = 'index.html' + returnTo;
                     } else {
-                        window.location.href = 'index.html#dashboard';
+                        // Get first allowed page for user's role
+                        const firstAllowedPage = window.authSystem ?
+                            window.authSystem.getFirstAllowedPage(userObj) :
+                            (userObj.type === 'employee' ? 'attendance' : 'dashboard');
+                        console.log('🔐 Already logged in, redirecting to first allowed page:', firstAllowedPage);
+                        window.location.href = 'index.html#' + firstAllowedPage;
                     }
                 }, 1500);
                 return;

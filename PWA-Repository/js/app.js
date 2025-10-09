@@ -4,12 +4,13 @@ class App {
         // Initialize with StateManager if available, fallback to local properties
         if (window.StateManager && window.StateManager.initialized) {
             // Properties will proxy to state
-            this.currentPage = window.StateManager.getState('ui.currentPage') || 'dashboard';
+            this.currentPage = window.StateManager.getState('ui.currentPage') || null;
             this.cart = window.StateManager.getState('pos.cart') || [];
             this.selectedEmployee = window.StateManager.getState('pos.selectedEmployee');
         } else {
             // Fallback to local properties (will proxy to state when StateManager loads)
-            this.currentPage = 'dashboard';
+            // Don't set default page yet - will be determined by user role
+            this.currentPage = null;
             this.cart = [];
             this.selectedEmployee = null;
         }
@@ -112,12 +113,17 @@ class App {
         // This prevents "No auth token found" errors during initial load
         const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
         if (!authToken) {
-            console.log('⏳ Waiting for authentication to complete before loading dashboard...');
+            console.log('⏳ Waiting for authentication to complete before loading page...');
             await new Promise(resolve => setTimeout(resolve, 2000));
         }
-        
-        // Initialize page
-        await this.showPage('dashboard');
+
+        // Initialize page - get first allowed page based on user role
+        let initialPage = 'dashboard';
+        if (window.authSystem && window.authSystem.currentUser) {
+            initialPage = window.authSystem.getFirstAllowedPage(window.authSystem.currentUser);
+            console.log('🔐 Loading first allowed page for user:', initialPage);
+        }
+        await this.showPage(initialPage);
         
         // Set up modal close handlers
         this.setupModalHandlers();
