@@ -1256,10 +1256,14 @@ class RoomManager {
                             );
                         }
 
-                        // Also notify appointments manager to reload if present
-                        if (window.appointmentsManager) {
-                            console.log('🔄 [ROOM] Triggering appointments reload');
-                            await window.appointmentsManager.loadAdvanceBookings();
+                        // CRITICAL: Also remove from appointmentsManager cache DIRECTLY
+                        // Otherwise displayRooms() will reload from stale cache
+                        if (window.appointmentsManager && window.appointmentsManager.advanceBookings) {
+                            console.log('🔄 [ROOM] Removing booking from appointmentsManager cache');
+                            window.appointmentsManager.advanceBookings = window.appointmentsManager.advanceBookings.filter(b =>
+                                b._id !== advanceBookingId && b.id !== advanceBookingId
+                            );
+                            console.log('✅ [ROOM] AppointmentsManager cache updated, remaining:', window.appointmentsManager.advanceBookings.length);
                         }
                     } else {
                         console.warn('⚠️ [ROOM] Failed to cancel advance booking');
