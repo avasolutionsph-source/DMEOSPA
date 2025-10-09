@@ -2449,10 +2449,37 @@ class RoomManager {
         });
 
         // Update advance booking timers
+        console.log('🔍 [TIMER-UPDATE] Advance bookings check:', {
+            hasBookings: !!this.advanceBookings,
+            totalBookings: this.advanceBookings?.length || 0,
+            inProgressCount: (this.advanceBookings || []).filter(b => b.status === 'in-progress').length,
+            allBookings: (this.advanceBookings || []).map(b => ({
+                id: b._id || b.id,
+                status: b.status,
+                actualStartTime: b.actualStartTime,
+                hasActualStartTime: !!b.actualStartTime
+            }))
+        });
+
         if (this.advanceBookings) {
             this.advanceBookings.forEach(booking => {
+                console.log('🔍 [TIMER-UPDATE] Checking booking:', {
+                    id: booking._id || booking.id,
+                    status: booking.status,
+                    isInProgress: booking.status === 'in-progress'
+                });
+
                 if (booking.status === 'in-progress') {
-                    const timerElement = document.querySelector(`[data-booking-id="${booking._id || booking.id}"]`);
+                    const bookingId = booking._id || booking.id;
+                    const timerElement = document.querySelector(`[data-booking-id="${bookingId}"]`);
+
+                    console.log('🔍 [TIMER-UPDATE] In-progress booking found:', {
+                        bookingId,
+                        elementFound: !!timerElement,
+                        actualStartTime: booking.actualStartTime,
+                        hasActualStartTime: !!booking.actualStartTime
+                    });
+
                     if (timerElement) {
                         const startTime = booking.actualStartTime ? new Date(booking.actualStartTime) : new Date();
                         const duration = Math.floor((Date.now() - startTime.getTime()) / 1000);
@@ -2460,6 +2487,13 @@ class RoomManager {
                         const minutes = Math.floor((duration % 3600) / 60);
                         const seconds = duration % 60;
                         const elapsedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                        console.log('✅ [TIMER-UPDATE] Updating booking timer:', {
+                            bookingId,
+                            startTime: startTime.toISOString(),
+                            duration,
+                            elapsedTime
+                        });
 
                         // Calculate color based on remaining time
                         const elapsedMinutes = Math.floor(duration / 60);
@@ -2471,6 +2505,8 @@ class RoomManager {
                         // Update timer text and color
                         timerElement.innerHTML = `<i class="fas fa-clock"></i> ${elapsedTime}`;
                         timerElement.style.color = cardColor;
+                    } else {
+                        console.warn('⚠️ [TIMER-UPDATE] Timer element not found for booking:', bookingId);
                     }
                 }
             });
