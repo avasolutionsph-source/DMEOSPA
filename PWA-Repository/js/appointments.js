@@ -879,49 +879,97 @@ class AppointmentsManager {
                 return;
             }
 
+            const userToken = localStorage.getItem('authToken');
+            const userData = localStorage.getItem('currentUser');
+            if (!userToken || !userData) {
+                showError('Please log in to start services');
+                return;
+            }
+
             // Create active service from booking
-            if (window.roomManager) {
-                const serviceData = {
-                    serviceName: booking.serviceName,
-                    clientName: booking.clientName,
-                    clientAddress: booking.clientAddress,
-                    clientPhone: booking.clientPhone,
-                    clientEmail: booking.clientEmail,
-                    employeeId: booking.employeeId,
-                    employeeName: booking.employeeName,
-                    estimatedDuration: booking.estimatedDuration,
-                    isHomeService: booking.isHomeService,
-                    roomId: booking.roomId,
-                    roomName: booking.roomName,
-                    status: 'active',
-                    startTime: new Date().toISOString()
-                };
+            const serviceData = {
+                serviceName: booking.serviceName,
+                clientName: booking.clientName,
+                clientAddress: booking.clientAddress,
+                clientPhone: booking.clientPhone,
+                clientEmail: booking.clientEmail,
+                employeeId: booking.employeeId,
+                employeeName: booking.employeeName,
+                estimatedDuration: booking.estimatedDuration,
+                isHomeService: booking.isHomeService,
+                roomId: booking.roomId,
+                roomName: booking.roomName,
+                status: 'active',
+                startTime: new Date().toISOString(),
+                advanceBookingId: bookingId // Link back to the booking
+            };
 
-                // Save active service
-                const serviceId = await window.db.add('activeServices', serviceData);
-                serviceData.id = serviceId;
+            console.log('🚀 [START-BOOKING] Creating active service:', serviceData);
 
-                // Update booking status to in-progress
-                const userToken = localStorage.getItem('authToken');
-                await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/advance-bookings/${bookingId}/convert`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${userToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ activeServiceId: serviceId })
-                });
+            // 1. Create service in MongoDB FIRST (single source of truth)
+            const serviceResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/room-services`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${userToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(serviceData)
+            });
 
-                showSuccess('Advance booking started successfully!');
-                await this.loadAdvanceBookings();
+            if (!serviceResponse.ok) {
+                throw new Error('Failed to create service in database');
+            }
 
-                // Navigate to rooms page if available
-                if (window.app && window.app.showPage) {
-                    window.app.showPage('rooms');
+            const serviceResult = await serviceResponse.json();
+            const mongoService = serviceResult.data;
+            console.log('✅ [START-BOOKING] Service created in MongoDB:', mongoService._id);
+
+            // 2. Save to IndexedDB with MongoDB ID
+            serviceData.id = mongoService._id.toString();
+            serviceData._id = mongoService._id;
+            await window.db.add('activeServices', serviceData);
+            console.log('✅ [START-BOOKING] Service saved to IndexedDB');
+
+            // 3. Update booking status to in-progress
+            const bookingResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/advance-bookings/${bookingId}/convert`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${userToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ activeServiceId: mongoService._id })
+            });
+
+            if (bookingResponse.ok) {
+                console.log('✅ [START-BOOKING] Booking status updated to in-progress');
+            } else {
+                console.warn('⚠️ [START-BOOKING] Failed to update booking status');
+            }
+
+            // 4. Update room status if applicable
+            if (booking.roomId && window.db) {
+                try {
+                    const room = await window.db.getById('rooms', booking.roomId);
+                    if (room) {
+                        room.status = 'occupied';
+                        room.currentService = serviceData;
+                        await window.db.update('rooms', room);
+                        console.log('✅ [START-BOOKING] Room status updated');
+                    }
+                } catch (roomError) {
+                    console.warn('⚠️ [START-BOOKING] Failed to update room:', roomError);
                 }
             }
+
+            showSuccess('Service started successfully!');
+            await this.loadAdvanceBookings();
+
+            // Navigate to rooms page if available
+            if (window.app && window.app.showPage) {
+                window.app.showPage('rooms');
+            }
         } catch (error) {
-            console.error('Error starting advance booking:', error);
+            console.error('❌ [START-BOOKING] Error starting advance booking:', error);
             showError('Failed to start booking: ' + error.message);
         }
     }

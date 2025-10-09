@@ -1315,6 +1315,7 @@ class RoomManager {
         // Update service record
         const serviceId = room.currentService.id;
         const serviceMongoId = room.currentService._id;
+        const advanceBookingId = room.currentService.advanceBookingId;
 
         room.currentService.endTime = endTime.toISOString();
         room.currentService.actualDuration = durationMinutes;
@@ -1339,6 +1340,30 @@ class RoomManager {
             }
         }
 
+        // If this service was created from an advance booking, mark the booking as completed
+        if (advanceBookingId) {
+            try {
+                const userToken = localStorage.getItem('authToken');
+                if (userToken) {
+                    await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/advance-bookings/${advanceBookingId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${userToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            status: 'completed',
+                            completedAt: endTime.toISOString(),
+                            actualDuration: durationMinutes
+                        })
+                    });
+                    console.log('✅ [ROOM] Advance booking marked as completed');
+                }
+            } catch (error) {
+                console.warn('⚠️ [ROOM] Failed to update advance booking status:', error);
+            }
+        }
+
         // Remove from active services array
         this.activeServices = this.activeServices.filter(service =>
             service.id !== serviceId && service._id !== serviceMongoId
@@ -1349,7 +1374,8 @@ class RoomManager {
             roomName: room.name,
             previousStatus: room.status,
             serviceId: serviceId,
-            serviceMongoId: serviceMongoId
+            serviceMongoId: serviceMongoId,
+            advanceBookingId: advanceBookingId
         });
 
         // Clear room - set to available
