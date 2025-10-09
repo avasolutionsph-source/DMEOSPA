@@ -2160,16 +2160,15 @@ class RoomManager {
                 roomId: booking.roomId,
                 roomName: booking.roomName,
                 status: 'active',
-                startTime: new Date().toISOString()
+                startTime: new Date().toISOString(),
+                advanceBookingId: bookingId // Link to original booking
             };
 
-            // Save active service to IndexedDB
-            const serviceId = await window.db.add('activeServices', serviceData);
-            serviceData.id = serviceId;
+            // 1. Create service in MongoDB FIRST (single source of truth)
+            const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+            let mongoServiceId;
 
-            // Save to MongoDB
             try {
-                const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
                 const apiResult = await fetch('https://daetspa-backend.onrender.com/api/room-services', {
                     method: 'POST',
                     headers: {
@@ -2179,30 +2178,45 @@ class RoomManager {
                     body: JSON.stringify(serviceData)
                 });
 
-                if (apiResult.ok) {
-                    const result = await apiResult.json();
-                    if (result.data && result.data._id) {
-                        serviceData._id = result.data._id;
-                        await window.db.update('activeServices', { ...serviceData, _id: result.data._id });
-                    }
+                if (!apiResult.ok) {
+                    throw new Error('Failed to create service in MongoDB');
+                }
+
+                const result = await apiResult.json();
+                if (result.data && result.data._id) {
+                    mongoServiceId = result.data._id;
+                    serviceData._id = result.data._id;
+                    serviceData.id = result.data._id.toString(); // Use MongoDB ID as local ID
+                } else {
+                    throw new Error('MongoDB service creation did not return ID');
                 }
             } catch (error) {
-                console.error('Failed to save to MongoDB:', error);
+                console.error('Failed to create service in MongoDB:', error);
+                showError('Failed to create service: ' + error.message);
+                return;
             }
 
-            // Update booking status to in-progress
+            // 2. Save to IndexedDB with MongoDB ID
             try {
-                const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+                await window.db.add('activeServices', serviceData);
+            } catch (error) {
+                console.warn('Failed to save service to IndexedDB:', error);
+                // Continue - MongoDB is the source of truth
+            }
+
+            // 3. Update booking status to in-progress
+            try {
                 await fetch(`https://daetspa-backend.onrender.com/api/advance-bookings/${bookingId}/convert`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${authToken}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ activeServiceId: serviceId })
+                    body: JSON.stringify({ activeServiceId: mongoServiceId })
                 });
             } catch (error) {
                 console.error('Failed to update booking status:', error);
+                // Non-critical - the service was created successfully
             }
 
             showSuccess('Advance booking started successfully!');
