@@ -445,17 +445,15 @@ class RoomManager {
                 const localBookings = await window.db.getAll('advanceBookings');
                 if (localBookings && localBookings.length > 0) {
                     console.log('✅ [ROOMS] Using advance bookings from IndexedDB:', localBookings.length);
-                    // Apply filter to IndexedDB data as well
-                    const now = new Date();
+                    // Show only active bookings (exclude completed and cancelled)
                     this.advanceBookings = localBookings.filter(booking => {
-                        const bookingDate = new Date(booking.bookingDateTime);
-                        const isFuture = bookingDate >= now;
-                        const isScheduled = booking.status === 'scheduled' || booking.status === 'confirmed';
-                        return isFuture && isScheduled;
+                        const isActive = ['scheduled', 'confirmed', 'in-progress'].includes(booking.status);
+                        return isActive;
                     });
                     console.log('✅ [ROOMS] Filtered IndexedDB bookings:', {
                         original: localBookings.length,
-                        filtered: this.advanceBookings.length
+                        filtered: this.advanceBookings.length,
+                        excluded: localBookings.filter(b => !['scheduled', 'confirmed', 'in-progress'].includes(b.status)).map(b => ({ id: b._id, status: b.status }))
                     });
                     return;
                 }
@@ -633,7 +631,12 @@ class RoomManager {
 
         // 🔧 FIX: Reload advance bookings FIRST, then active services
         // (loadActiveServices filters pending services based on advance bookings)
-        await this.loadAdvanceBookings('displayRooms');
+        if (forceRefresh) {
+            console.log('🔄 [ROOMS] Force refresh requested - loading from backend');
+            await this.loadAdvanceBookingsFromBackend();
+        } else {
+            await this.loadAdvanceBookings('displayRooms');
+        }
         await this.loadActiveServices();
 
         const visibleRooms = this.showHiddenRooms ?
