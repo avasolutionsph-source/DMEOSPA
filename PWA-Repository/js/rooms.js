@@ -2236,8 +2236,16 @@ class RoomManager {
             showSuccess('Booking started successfully!');
 
             // Refresh display to show updated booking status
+            // Load fresh data from backend, then render WITHOUT reloading
             await this.loadAdvanceBookingsFromBackend();
-            this.displayRooms();
+            await this.loadActiveServices(); // Also reload services
+
+            // Render directly without reloading data
+            const container = document.getElementById('roomsGrid');
+            if (container && !this.isTherapistView) {
+                // Just rebuild HTML with current data
+                await this.displayRooms(true);
+            }
 
             // Also refresh appointments page if it's loaded
             if (window.appointmentsManager && typeof window.appointmentsManager.loadAdvanceBookings === 'function') {
