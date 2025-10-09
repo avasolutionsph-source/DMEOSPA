@@ -406,11 +406,6 @@ class RoomManager {
                     filtered: this.advanceBookings.length,
                     excluded: result.data.length - this.advanceBookings.length
                 });
-
-                // Update IndexedDB cache with filtered bookings
-                if (window.db && this.advanceBookings.length > 0) {
-                    await window.db.saveAll('advanceBookings', this.advanceBookings);
-                }
             } else {
                 this.advanceBookings = [];
             }
@@ -2161,14 +2156,33 @@ class RoomManager {
     }
 
     async startAdvanceBooking(bookingId) {
-        if (!confirm('Start this advance booking now?')) {
-            return;
-        }
-
         try {
             const booking = (this.advanceBookings || []).find(b => b._id === bookingId || b.id === bookingId);
             if (!booking) {
                 showError('Booking not found');
+                return;
+            }
+
+            console.log('🔍 [START-BOOKING] Booking details:', {
+                id: bookingId,
+                status: booking.status,
+                serviceName: booking.serviceName,
+                clientName: booking.clientName
+            });
+
+            // Check if already in progress
+            if (booking.status === 'in-progress') {
+                showError('This booking is already in progress');
+                return;
+            }
+
+            // Check if not in startable state
+            if (!['scheduled', 'confirmed'].includes(booking.status)) {
+                showError(`Cannot start booking with status: ${booking.status}`);
+                return;
+            }
+
+            if (!confirm('Start this advance booking now?')) {
                 return;
             }
 
