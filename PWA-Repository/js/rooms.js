@@ -2401,13 +2401,14 @@ class RoomManager {
             if (bookingsResponse.ok) {
                 const bookingsResult = await bookingsResponse.json();
                 if (bookingsResult.success && bookingsResult.data) {
-                    const currentBookingIds = (this.advanceBookings || []).map(b => b._id).sort().join(',');
-                    const newBookingIds = bookingsResult.data
-                        .filter(b => b.status === 'scheduled' || b.status === 'confirmed')
-                        .map(b => b._id)
+                    // Compare both IDs and status to detect status changes
+                    const currentBookingsMap = (this.advanceBookings || []).map(b => `${b._id}:${b.status}`).sort().join(',');
+                    const newBookingsMap = bookingsResult.data
+                        .filter(b => ['scheduled', 'confirmed', 'in-progress'].includes(b.status))
+                        .map(b => `${b._id}:${b.status}`)
                         .sort()
                         .join(',');
-                    bookingsChanged = currentBookingIds !== newBookingIds;
+                    bookingsChanged = currentBookingsMap !== newBookingsMap;
                 }
             }
 
@@ -2852,7 +2853,7 @@ class RoomManager {
                 const matchesEmployee = bookingEmployeeId === currentId ||
                                        bookingEmployeeId === currentIdAlt ||
                                        bookingEmployeeId === currentIdAlt2;
-                const isScheduled = booking.status === 'scheduled';
+                const isRelevantStatus = ['scheduled', 'in-progress'].includes(booking.status);
 
                 console.log('📋 [THERAPIST] Pre-check booking:', {
                     bookingId: booking._id || booking.id,
@@ -2862,10 +2863,10 @@ class RoomManager {
                     currentIdAlt2,
                     matchesEmployee,
                     status: booking.status,
-                    isScheduled
+                    isRelevantStatus
                 });
 
-                return matchesEmployee && isScheduled;
+                return matchesEmployee && isRelevantStatus;
             });
 
             console.log('📅 [THERAPIST] Pre-check advance bookings:', {
@@ -3216,13 +3217,46 @@ class RoomManager {
                             return myAdvanceBookings.map(booking => {
                                 const bookingDate = new Date(booking.bookingDateTime);
                                 const timeUntil = Math.floor((bookingDate - now) / (60 * 1000)); // minutes
-                                const isImminent = timeUntil <= 30; // Within 30 minutes
+                                const isImminent = timeUntil <= 30 && booking.status !== 'in-progress'; // Within 30 minutes
+                                const isInProgress = booking.status === 'in-progress';
 
-                                const statusBadge = `<span style="background: #f39c12; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold;">
-                                    <i class="fas fa-calendar-plus"></i> ADVANCE BOOKING
-                                </span>`;
+                                // Timer and color logic for in-progress bookings
+                                let timerDisplay = '';
+                                let cardColor = '#f39c12'; // Default yellow for scheduled
+                                let bgColor = '#fff3cd';
+                                if (isInProgress) {
+                                    const startTime = booking.actualStartTime ? new Date(booking.actualStartTime) : now;
+                                    const elapsed = Math.floor((now - startTime) / 1000);
+                                    const hours = Math.floor(elapsed / 3600);
+                                    const minutes = Math.floor((elapsed % 3600) / 60);
+                                    const seconds = elapsed % 60;
+                                    const elapsedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-                                const statusInfo = `
+                                    const elapsedMinutes = Math.floor(elapsed / 60);
+                                    const estimatedDuration = booking.estimatedDuration || 60;
+                                    const remainingMinutes = estimatedDuration - elapsedMinutes;
+                                    const isNearEnd = remainingMinutes <= 10;
+
+                                    cardColor = isNearEnd ? '#800020' : '#2196F3';
+                                    bgColor = isNearEnd ? '#ffebee' : '#e3f2fd';
+
+                                    timerDisplay = `
+                                        <div style="font-size: 2rem; font-weight: bold; color: ${cardColor}; text-align: center; margin: 20px 0;" data-booking-id="${booking._id || booking.id}">
+                                            <i class="fas fa-clock"></i> ${elapsedTime}
+                                        </div>
+                                        ${isNearEnd ? `<div style="background: ${cardColor}; color: white; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 15px;"><i class="fas fa-exclamation-triangle"></i> ${remainingMinutes} MINUTES REMAINING</div>` : ''}
+                                    `;
+                                }
+
+                                const statusBadge = isInProgress ?
+                                    `<span style="background: ${cardColor}; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold;">
+                                        <i class="fas fa-clock"></i> IN SERVICE
+                                    </span>` :
+                                    `<span style="background: #f39c12; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold;">
+                                        <i class="fas fa-calendar-plus"></i> ADVANCE BOOKING
+                                    </span>`;
+
+                                const statusInfo = isInProgress ? timerDisplay : `
                                     <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #f39c12;">
                                         <div style="color: #856404; font-weight: bold; margin-bottom: 10px;">
                                             <i class="fas fa-hourglass-half"></i> Scheduled: ${bookingDate.toLocaleString('en-US', {
@@ -3244,7 +3278,14 @@ class RoomManager {
                                     </div>
                                 `;
 
-                                const actionButtons = `
+                                const actionButtons = isInProgress ? `
+                                    <button class="btn btn-primary" onclick="roomManager.endAdvanceBooking('${booking._id || booking.id}')" style="width: 100%; margin-bottom: 10px; background: ${cardColor}; border-color: ${cardColor};">
+                                        <i class="fas fa-stop"></i> End Service
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="window.app.showPage('appointments')" style="width: 100%;">
+                                        <i class="fas fa-info-circle"></i> View Details
+                                    </button>
+                                ` : `
                                     <button class="btn btn-success" onclick="roomManager.startAdvanceBooking('${booking._id || booking.id}')" style="width: 100%; margin-bottom: 10px;">
                                         <i class="fas fa-play"></i> Start Now
                                     </button>
@@ -3257,15 +3298,15 @@ class RoomManager {
                                 `;
 
                                 return `
-                                    <div class="room-card pending" style="border-radius: 10px; padding: 0; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); ${isImminent ? 'border-color: #f39c12; border-width: 3px;' : ''}">
-                                        <div class="room-header pending" style="padding: 20px;">
+                                    <div class="room-card ${isInProgress ? 'active-service' : 'pending'}" style="border-radius: 10px; padding: 0; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); ${isInProgress ? `border-color: ${cardColor}; border-width: 3px; background: ${bgColor};` : (isImminent ? 'border-color: #f39c12; border-width: 3px;' : '')}">
+                                        <div class="room-header ${isInProgress ? 'active-service' : 'pending'}" style="padding: 20px; ${isInProgress ? `background: ${cardColor}; color: white;` : ''}">
                                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                                 <h3 style="margin: 0; font-size: 1.5rem;">
                                                     <i class="fas fa-${booking.isHomeService ? 'home' : 'store'}"></i> ${booking.isHomeService ? 'Home Service' : booking.roomName}
                                                 </h3>
                                                 ${statusBadge}
                                             </div>
-                                            ${isImminent ? '<div style="background: #f39c12; color: white; padding: 8px; border-radius: 5px; font-weight: bold; text-align: center; margin-top: 10px;"><i class="fas fa-exclamation-triangle"></i> STARTING SOON</div>' : ''}
+                                            ${!isInProgress && isImminent ? '<div style="background: #f39c12; color: white; padding: 8px; border-radius: 5px; font-weight: bold; text-align: center; margin-top: 10px;"><i class="fas fa-exclamation-triangle"></i> STARTING SOON</div>' : ''}
                                         </div>
                                         <div class="room-body" style="padding: 20px;">
                                             ${statusInfo}
@@ -3293,13 +3334,14 @@ class RoomManager {
                 clearInterval(this.timerInterval);
             }
 
-            // Update timers every second for active services
+            // Update timers every second for active services AND in-progress bookings
             this.timerInterval = setInterval(() => {
                 const hasActiveServices = Object.values(roomGroups).some(group => {
                     const room = this.rooms.find(r => r.id === group.roomId);
                     return room?.status === 'occupied';
                 });
-                if (hasActiveServices) {
+                const hasInProgressBookings = (this.advanceBookings || []).some(b => b.status === 'in-progress');
+                if (hasActiveServices || hasInProgressBookings) {
                     // Just update the timer display, don't refresh everything
                     this.updateTimerDisplays();
                 }
