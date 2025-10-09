@@ -2136,73 +2136,24 @@ class RoomManager {
 
         try {
             const userToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
-
-            // Get booking details to find matching pending services
-            const booking = (this.advanceBookings || []).find(b => b._id === bookingId || b.id === bookingId);
-
-            // Search for and delete ANY pending active services that match this booking
-            if (booking) {
-                console.log('🔍 Searching for pending services matching booking:', booking);
-
-                try {
-                    // Fetch all active services
-                    const servicesResponse = await fetch('https://daetspa-backend.onrender.com/api/room-services', {
-                        method: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${userToken}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (servicesResponse.ok) {
-                        const servicesData = await servicesResponse.json();
-                        if (servicesData.success && servicesData.data) {
-                            // Find pending services that match
-                            const matchingServices = servicesData.data.filter(service =>
-                                service.status === 'pending' &&
-                                service.serviceName === booking.serviceName &&
-                                service.clientName === booking.clientName &&
-                                String(service.employeeId) === String(booking.employeeId)
-                            );
-
-                            console.log('🗑️ Found matching pending services to delete:', matchingServices.length);
-
-                            // Delete each matching service
-                            for (const service of matchingServices) {
-                                console.log('🗑️ Deleting pending service:', service._id);
-                                try {
-                                    await fetch(`https://daetspa-backend.onrender.com/api/room-services/${service._id}`, {
-                                        method: 'DELETE',
-                                        headers: {
-                                            'Authorization': `Bearer ${userToken}`,
-                                            'Content-Type': 'application/json'
-                                        }
-                                    });
-
-                                    // Also remove from IndexedDB
-                                    if (window.db) {
-                                        await window.db.delete('activeServices', service._id);
-                                    }
-                                } catch (delError) {
-                                    console.warn('⚠️ Could not delete service:', delError);
-                                }
-                            }
-                        }
-                    }
-                } catch (serviceError) {
-                    console.warn('⚠️ Could not search/delete services:', serviceError);
-                }
+            if (!userToken) {
+                showError('Authentication required');
+                return;
             }
 
-            // Cancel the booking
+            console.log('🗑️ [ROOMS] Cancelling booking:', bookingId);
+
+            // Cancel the booking directly (simplified approach)
             const response = await fetch(`https://daetspa-backend.onrender.com/api/advance-bookings/${bookingId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${userToken}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ reason })
+                body: JSON.stringify({ reason: reason })
             });
+
+            console.log('🗑️ [ROOMS] Delete response:', response.status);
 
             if (response.ok) {
                 showSuccess('Booking cancelled successfully');
@@ -2211,6 +2162,9 @@ class RoomManager {
                 if (window.appointmentsManager) {
                     window.appointmentsManager.advanceBookings = null;
                 }
+
+                // Run cleanup to remove orphaned services
+                await this.cleanupOrphanedPendingServices();
 
                 // Refresh display
                 await this.loadAdvanceBookingsFromBackend();
@@ -2225,11 +2179,13 @@ class RoomManager {
                     }
                 }
             } else {
+                const errorText = await response.text();
+                console.error('❌ [ROOMS] Failed to cancel:', errorText);
                 showError('Failed to cancel booking');
             }
         } catch (error) {
-            console.error('Error cancelling booking:', error);
-            showError('Failed to cancel booking: ' + error.message);
+            console.error('❌ [ROOMS] Error cancelling booking:', error);
+            showError('Failed to cancel booking');
         }
     }
 
