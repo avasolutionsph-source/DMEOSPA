@@ -311,7 +311,18 @@ class RoomManager {
         // SHORTCUT: Check if appointments manager already loaded them
         if (window.appointmentsManager?.advanceBookings?.length > 0) {
             console.log('✅ [ROOMS] Using advance bookings from appointments manager:', window.appointmentsManager.advanceBookings.length);
-            this.advanceBookings = window.appointmentsManager.advanceBookings;
+            // Apply the same filter to cached data to exclude cancelled/in-progress bookings
+            const now = new Date();
+            this.advanceBookings = window.appointmentsManager.advanceBookings.filter(booking => {
+                const bookingDate = new Date(booking.bookingDateTime);
+                const isFuture = bookingDate >= now;
+                const isScheduled = booking.status === 'scheduled' || booking.status === 'confirmed';
+                return isFuture && isScheduled;
+            });
+            console.log('✅ [ROOMS] Filtered cached bookings:', {
+                original: window.appointmentsManager.advanceBookings.length,
+                filtered: this.advanceBookings.length
+            });
             return;
         }
 
@@ -321,7 +332,18 @@ class RoomManager {
                 const localBookings = await window.db.getAll('advanceBookings');
                 if (localBookings && localBookings.length > 0) {
                     console.log('✅ [ROOMS] Using advance bookings from IndexedDB:', localBookings.length);
-                    this.advanceBookings = localBookings;
+                    // Apply filter to IndexedDB data as well
+                    const now = new Date();
+                    this.advanceBookings = localBookings.filter(booking => {
+                        const bookingDate = new Date(booking.bookingDateTime);
+                        const isFuture = bookingDate >= now;
+                        const isScheduled = booking.status === 'scheduled' || booking.status === 'confirmed';
+                        return isFuture && isScheduled;
+                    });
+                    console.log('✅ [ROOMS] Filtered IndexedDB bookings:', {
+                        original: localBookings.length,
+                        filtered: this.advanceBookings.length
+                    });
                     return;
                 }
             }
