@@ -1053,6 +1053,17 @@ class AppointmentsManager {
             if (response.ok) {
                 console.log('✅ [APPOINTMENTS] Booking cancelled successfully');
 
+                // Also notify rooms manager to reload if present
+                if (window.roomManager) {
+                    console.log('🔄 [APPOINTMENTS] Triggering rooms reload');
+                    if (window.roomManager.loadActiveServices) {
+                        await window.roomManager.loadActiveServices();
+                    }
+                    if (window.roomManager.displayRooms) {
+                        await window.roomManager.displayRooms();
+                    }
+                }
+
                 // Show success and reload page to clear all caches
                 showSuccess('Booking cancelled successfully. Refreshing...');
 

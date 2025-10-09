@@ -1205,6 +1205,15 @@ class RoomManager {
 
         const serviceMongoId = room.currentService._id;
         const serviceLocalId = room.currentService.id;
+        const advanceBookingId = room.currentService.advanceBookingId;
+
+        console.log('🗑️ [ROOM] Cancelling pending service:', {
+            roomId: room.id,
+            roomName: room.name,
+            serviceLocalId: serviceLocalId,
+            serviceMongoId: serviceMongoId,
+            advanceBookingId: advanceBookingId
+        });
 
         // Delete from IndexedDB
         if (serviceLocalId) {
@@ -1223,17 +1232,48 @@ class RoomManager {
             }
         }
 
+        // If this service was created from an advance booking, cancel the booking too
+        if (advanceBookingId) {
+            try {
+                const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+                if (authToken) {
+                    const response = await fetch(`https://daetspa-backend.onrender.com/api/advance-bookings/${advanceBookingId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({ reason: 'Cancelled from rooms view' })
+                    });
+
+                    if (response.ok) {
+                        console.log('✅ [ROOM] Associated advance booking cancelled');
+
+                        // Remove from local advance bookings array
+                        if (this.advanceBookings) {
+                            this.advanceBookings = this.advanceBookings.filter(b =>
+                                b._id !== advanceBookingId && b.id !== advanceBookingId
+                            );
+                        }
+
+                        // Also notify appointments manager to reload if present
+                        if (window.appointmentsManager) {
+                            console.log('🔄 [ROOM] Triggering appointments reload');
+                            await window.appointmentsManager.loadAdvanceBookings();
+                        }
+                    } else {
+                        console.warn('⚠️ [ROOM] Failed to cancel advance booking');
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ [ROOM] Error cancelling advance booking:', error);
+            }
+        }
+
         // Remove from active services array
         this.activeServices = this.activeServices.filter(service =>
             service.id !== serviceLocalId && service._id !== serviceMongoId
         );
-
-        console.log('🧹 [ROOM] Cancelled pending service:', {
-            roomId: room.id,
-            roomName: room.name,
-            serviceLocalId: serviceLocalId,
-            serviceMongoId: serviceMongoId
-        });
 
         // Clear room
         room.status = 'available';
