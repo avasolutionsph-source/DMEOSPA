@@ -1203,6 +1203,14 @@ class RoomManager {
 
         if (!confirm(`Cancel pending service in ${room.name}?`)) return;
 
+        // CRITICAL: Pause auto-refresh during cancellation to prevent race conditions
+        const wasAutoRefreshRunning = !!this.managerRefreshInterval;
+        if (wasAutoRefreshRunning) {
+            clearInterval(this.managerRefreshInterval);
+            this.managerRefreshInterval = null;
+            console.log('⏸️ [ROOM] Paused auto-refresh during cancellation');
+        }
+
         const serviceMongoId = room.currentService._id;
         const serviceLocalId = room.currentService.id;
         const advanceBookingId = room.currentService.advanceBookingId;
@@ -1295,8 +1303,8 @@ class RoomManager {
         room.currentService = null;
         await window.db.update('rooms', room);
 
-        // Give MongoDB a moment to process the deletion
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Give MongoDB a longer moment to process the deletion and propagate
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
         // FORCE reload from MongoDB (bypass IndexedDB cache)
         console.log('🔄 [ROOM] Force reloading from MongoDB after cancellation');
@@ -1308,6 +1316,14 @@ class RoomManager {
             await this.showTherapistView();
         } else {
             this.displayRooms();
+        }
+
+        // Resume auto-refresh after giving MongoDB time to propagate
+        if (wasAutoRefreshRunning) {
+            setTimeout(() => {
+                this.startManagerAutoRefresh();
+                console.log('▶️ [ROOM] Resumed auto-refresh after cancellation');
+            }, 2000); // Wait 2 more seconds before resuming auto-refresh
         }
 
         showNotification(`Pending service cancelled in ${room.name}`, 'info');
