@@ -2155,34 +2155,57 @@ class RoomManager {
 
             console.log('🗑️ [ROOMS] Delete response:', response.status);
 
-            if (response.ok) {
-                showSuccess('Booking cancelled successfully');
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ [ROOMS] Failed to cancel:', errorText);
+                showError('Failed to cancel booking');
+                return;
+            }
 
-                // Clear cached bookings
-                if (window.appointmentsManager) {
-                    window.appointmentsManager.advanceBookings = null;
-                }
+            // Booking cancelled successfully
+            console.log('✅ [ROOMS] Booking cancelled, now refreshing...');
 
+            // Clear cached bookings
+            if (window.appointmentsManager) {
+                window.appointmentsManager.advanceBookings = null;
+            }
+
+            try {
                 // Run cleanup to remove orphaned services
+                console.log('🧹 [ROOMS] Running cleanup...');
                 await this.cleanupOrphanedPendingServices();
+                console.log('✅ [ROOMS] Cleanup complete');
+            } catch (cleanupError) {
+                console.warn('⚠️ [ROOMS] Cleanup failed (non-critical):', cleanupError);
+            }
 
+            try {
                 // Refresh display
+                console.log('🔄 [ROOMS] Refreshing displays...');
                 await this.loadAdvanceBookingsFromBackend();
                 await this.loadActiveServices();
                 this.displayRooms();
+                console.log('✅ [ROOMS] Display refresh complete');
+            } catch (refreshError) {
+                console.error('❌ [ROOMS] Refresh failed:', refreshError);
+            }
 
+            try {
                 // Also refresh appointments page if loaded
                 if (window.appointmentsManager && typeof window.appointmentsManager.loadAdvanceBookings === 'function') {
+                    console.log('🔄 [ROOMS] Refreshing appointments page...');
                     await window.appointmentsManager.loadAdvanceBookings();
                     if (typeof window.appointmentsManager.displayAdvanceBookings === 'function') {
                         window.appointmentsManager.displayAdvanceBookings();
                     }
+                    console.log('✅ [ROOMS] Appointments refresh complete');
                 }
-            } else {
-                const errorText = await response.text();
-                console.error('❌ [ROOMS] Failed to cancel:', errorText);
-                showError('Failed to cancel booking');
+            } catch (apptError) {
+                console.warn('⚠️ [ROOMS] Appointments refresh failed (non-critical):', apptError);
             }
+
+            // Show success at the end
+            showSuccess('Booking cancelled successfully');
         } catch (error) {
             console.error('❌ [ROOMS] Error cancelling booking:', error);
             showError('Failed to cancel booking');
