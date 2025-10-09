@@ -277,10 +277,22 @@ class RoomManager {
             const result = await response.json();
 
             if (result.success && result.data) {
-                this.advanceBookings = result.data;
-                console.log('✅ [ROOMS] Loaded advance bookings from backend:', this.advanceBookings.length);
+                // Filter out in-progress bookings (they're now active services)
+                const now = new Date();
+                this.advanceBookings = result.data.filter(booking => {
+                    const bookingDate = new Date(booking.bookingDateTime);
+                    const isFuture = bookingDate >= now;
+                    const isScheduled = booking.status === 'scheduled' || booking.status === 'confirmed';
+                    return isFuture && isScheduled; // Only show future scheduled/confirmed bookings
+                });
 
-                // Update IndexedDB cache
+                console.log('✅ [ROOMS] Loaded advance bookings from backend:', {
+                    total: result.data.length,
+                    filtered: this.advanceBookings.length,
+                    excluded: result.data.length - this.advanceBookings.length
+                });
+
+                // Update IndexedDB cache with filtered bookings
                 if (window.db && this.advanceBookings.length > 0) {
                     await window.db.saveAll('advanceBookings', this.advanceBookings);
                 }
@@ -421,11 +433,12 @@ class RoomManager {
                         }))
                     });
 
+                    // Filter out in-progress bookings (they're now active services)
                     this.advanceBookings = allBookings.filter(booking => {
                         const bookingDate = new Date(booking.bookingDateTime);
                         const isFuture = bookingDate >= now;
-                        const isInProgress = booking.status === 'in-progress';
-                        return isFuture || isInProgress;
+                        const isScheduled = booking.status === 'scheduled' || booking.status === 'confirmed';
+                        return isFuture && isScheduled; // Only show future scheduled/confirmed bookings
                     });
 
                     console.log('✅ [ROOMS] Loaded advance bookings:', {
