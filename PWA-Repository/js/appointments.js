@@ -933,26 +933,61 @@ class AppointmentsManager {
         try {
             const userToken = localStorage.getItem('authToken');
 
-            // First, find and delete any associated pending active service
-            // This happens when user clicked "Start Now" but didn't actually start the service
+            // Get booking details to find matching active services
             const booking = this.advanceBookings.find(b => b._id === bookingId || b.id === bookingId);
-            if (booking && booking.activeServiceId) {
-                console.log('🗑️ Deleting associated pending active service:', booking.activeServiceId);
+
+            // Search for and delete ANY pending active services that match this booking
+            // (not just ones with activeServiceId, in case the link wasn't saved)
+            if (booking) {
+                console.log('🔍 Searching for pending active services matching booking:', booking);
+
                 try {
-                    await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/room-services/${booking.activeServiceId}`, {
-                        method: 'DELETE',
+                    // Fetch all active services
+                    const servicesResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/room-services`, {
+                        method: 'GET',
                         headers: {
                             'Authorization': `Bearer ${userToken}`,
                             'Content-Type': 'application/json'
                         }
                     });
 
-                    // Also remove from IndexedDB
-                    if (window.db) {
-                        await window.db.delete('activeServices', booking.activeServiceId);
+                    if (servicesResponse.ok) {
+                        const servicesData = await servicesResponse.json();
+                        if (servicesData.success && servicesData.data) {
+                            // Find pending services that match this booking's details
+                            const matchingServices = servicesData.data.filter(service =>
+                                service.status === 'pending' &&
+                                service.serviceName === booking.serviceName &&
+                                service.clientName === booking.clientName &&
+                                String(service.employeeId) === String(booking.employeeId)
+                            );
+
+                            console.log('🗑️ Found matching pending services to delete:', matchingServices.length);
+
+                            // Delete each matching service
+                            for (const service of matchingServices) {
+                                console.log('🗑️ Deleting pending service:', service._id);
+                                try {
+                                    await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/room-services/${service._id}`, {
+                                        method: 'DELETE',
+                                        headers: {
+                                            'Authorization': `Bearer ${userToken}`,
+                                            'Content-Type': 'application/json'
+                                        }
+                                    });
+
+                                    // Also remove from IndexedDB
+                                    if (window.db) {
+                                        await window.db.delete('activeServices', service._id);
+                                    }
+                                } catch (delError) {
+                                    console.warn('⚠️ Could not delete service:', delError);
+                                }
+                            }
+                        }
                     }
                 } catch (serviceError) {
-                    console.warn('⚠️ Could not delete active service:', serviceError);
+                    console.warn('⚠️ Could not search/delete active services:', serviceError);
                     // Continue anyway - booking cancellation is more important
                 }
             }
