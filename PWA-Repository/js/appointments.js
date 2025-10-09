@@ -1003,31 +1003,15 @@ class AppointmentsManager {
             });
 
             if (response.ok) {
-                console.log('✅ [APPOINTMENTS] Booking cancelled, clearing caches...');
+                console.log('✅ [APPOINTMENTS] Booking cancelled successfully');
 
-                // Clear IndexedDB cache for advance bookings
-                try {
-                    if (window.db && window.db.db) {
-                        console.log('🗑️ [APPOINTMENTS] Clearing IndexedDB cache...');
-                        const tx = window.db.db.transaction(['advanceBookings'], 'readwrite');
-                        await tx.objectStore('advanceBookings').clear();
-                        await tx.done;
-                        console.log('✅ [APPOINTMENTS] IndexedDB cache cleared');
-                    }
-                } catch (dbError) {
-                    console.warn('⚠️ [APPOINTMENTS] Failed to clear IndexedDB:', dbError);
-                }
+                // Show success and reload page to clear all caches
+                showSuccess('Booking cancelled successfully. Refreshing...');
 
-                showSuccess('Advance booking cancelled successfully');
-                await this.loadAdvanceBookings();
-
-                // Refresh rooms view if it's active
-                if (window.roomManager && typeof window.roomManager.loadActiveServices === 'function') {
-                    await window.roomManager.loadActiveServices();
-                    if (typeof window.roomManager.displayRooms === 'function') {
-                        window.roomManager.displayRooms();
-                    }
-                }
+                // Reload page after 1 second to clear all caches
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             } else {
                 showError('Failed to cancel booking');
             }
