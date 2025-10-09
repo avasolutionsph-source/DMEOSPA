@@ -1043,51 +1043,69 @@ class RoomManager {
                 const isImminent = timeUntil <= 30 && booking.status !== 'in-progress'; // Within 30 minutes
                 const isInProgress = booking.status === 'in-progress';
 
-                // Calculate elapsed time if in progress
+                // Calculate elapsed time and remaining time if in progress
                 let elapsedTime = '';
+                let isNearEnd = false;
+                let cardColor = '#2196F3'; // Default blue
+                let bgColor = '#e3f2fd'; // Light blue
+                let headerColor = '#2196F3';
+
                 if (isInProgress) {
-                    // Use actualStartTime if available, otherwise use current time as fallback for newly started bookings
+                    // Use actualStartTime if available, otherwise use current time as fallback
                     const startTime = booking.actualStartTime ? new Date(booking.actualStartTime) : now;
                     const elapsed = Math.floor((now - startTime) / 1000); // seconds
                     const hours = Math.floor(elapsed / 3600);
                     const minutes = Math.floor((elapsed % 3600) / 60);
                     const seconds = elapsed % 60;
                     elapsedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                    // Calculate remaining time
+                    const elapsedMinutes = Math.floor(elapsed / 60);
+                    const estimatedDuration = booking.estimatedDuration || 60;
+                    const remainingMinutes = estimatedDuration - elapsedMinutes;
+
+                    // Blue when more than 10 mins remaining, Red when 10 mins or less
+                    isNearEnd = remainingMinutes <= 10;
+                    cardColor = isNearEnd ? '#800020' : '#2196F3'; // Maroon or Blue
+                    bgColor = isNearEnd ? '#ffebee' : '#e3f2fd'; // Light red or light blue
+                    headerColor = isNearEnd ? '#800020' : '#2196F3';
                 }
 
-                // Use green styling for in-progress, not the dark red 'occupied' class
-                const cardClass = isInProgress ? 'in-progress-booking' : 'pending';
-                const headerClass = isInProgress ? 'in-progress-booking' : 'pending';
-                const borderStyle = isInProgress ? 'border-color: #28a745; border-width: 3px;' : (isImminent ? 'border-color: #f39c12; border-width: 3px;' : '');
+                // Use appropriate classes based on state
+                const cardClass = isInProgress ? (isNearEnd ? 'occupied' : 'active-service') : 'pending';
+                const headerClass = isInProgress ? (isNearEnd ? 'occupied' : 'active-service') : 'pending';
+                const borderStyle = isInProgress ? `border-color: ${cardColor}; border-width: 3px;` : (isImminent ? 'border-color: #f39c12; border-width: 3px;' : '');
+                const headerStyle = isInProgress ? `background: ${headerColor}; color: white;` : '';
                 const statusBadge = isInProgress ? '<span class="badge badge-success" style="float: right; font-size: 0.7rem;">IN PROGRESS</span>' : (isImminent ? '<span class="badge badge-warning" style="float: right; font-size: 0.7rem;">IMMINENT</span>' : '');
 
                 return `
                     <div class="room-card ${cardClass}" style="${borderStyle}">
-                        <div class="room-header ${headerClass}" style="padding: 10px; margin: -1px -1px 0 -1px;">
+                        <div class="room-header ${headerClass}" style="padding: 10px; margin: -1px -1px 0 -1px; ${headerStyle}">
                             <h3 style="margin: 0; display: flex; justify-content: space-between; align-items: center;">
                                 <span>
-                                    <i class="fas fa-${isInProgress ? 'play-circle' : 'calendar-plus'}"></i> ${therapistName}
+                                    <i class="fas fa-${isInProgress ? 'clock' : 'calendar-plus'}"></i> ${therapistName}
                                 </span>
                                 <span style="font-size: 0.8rem;">
-                                    <i class="fas fa-${isInProgress ? 'heartbeat' : 'clock'}"></i> ${isInProgress ? 'ACTIVE' : 'ADVANCE BOOKING'}
+                                    <i class="fas fa-${isInProgress ? 'clock' : 'hourglass-half'}"></i> ${isInProgress ? 'IN SERVICE' : 'ADVANCE BOOKING'}
                                 </span>
                             </h3>
                         </div>
                         <div class="room-body" style="padding: 15px;">
                             <div class="room-type" style="color: #666; margin-bottom: 10px;">
                                 <i class="fas fa-${booking.isHomeService ? 'home' : 'store'}"></i> ${booking.isHomeService ? 'Home Service' : booking.roomName}
-                                ${statusBadge}
                             </div>
 
                             ${isInProgress ? `
-                                <div class="service-info" style="background: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #28a745;">
-                                    <div style="color: #155724; font-weight: bold; margin-bottom: 8px; font-size: 1.2rem;">
-                                        <i class="fas fa-stopwatch"></i> ${elapsedTime}
-                                    </div>
+                                <div class="room-timer" style="font-size: 1.5rem; font-weight: bold; color: ${cardColor}; margin: 10px 0;" data-booking-id="${booking._id || booking.id}">
+                                    <i class="fas fa-clock"></i> ${elapsedTime}
+                                </div>
+                                <div class="service-info" style="background: ${bgColor}; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid ${cardColor};">
                                     <div><strong>Service:</strong> ${booking.serviceName}</div>
                                     <div><strong>Client:</strong> ${booking.clientName}</div>
                                     ${booking.clientAddress ? `<div><strong>Location:</strong> ${booking.clientAddress}</div>` : ''}
+                                    <div><strong>Started:</strong> ${booking.actualStartTime ? new Date(booking.actualStartTime).toLocaleTimeString() : 'Just now'}</div>
                                     ${booking.estimatedDuration ? `<div><strong>Duration:</strong> ${booking.estimatedDuration} mins</div>` : ''}
+                                    ${isNearEnd && booking.estimatedDuration ? `<div style="color: ${cardColor}; font-weight: bold; margin-top: 5px;"><i class="fas fa-exclamation-triangle"></i> ${Math.max(0, booking.estimatedDuration - Math.floor((now - (booking.actualStartTime ? new Date(booking.actualStartTime) : now)) / 60000))} mins remaining</div>` : ''}
                                 </div>
                             ` : `
                                 <div class="service-info" style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #f39c12;">
@@ -2442,6 +2460,7 @@ class RoomManager {
 
     // Helper method to update timer displays without full refresh
     updateTimerDisplays() {
+        // Update room service timers
         this.rooms.forEach(room => {
             if (room.status === 'occupied' && room.currentService?.startTime) {
                 const timerElement = document.querySelector(`[data-room-id="${room.id}"] .service-timer`);
@@ -2454,6 +2473,34 @@ class RoomManager {
                 }
             }
         });
+
+        // Update advance booking timers
+        if (this.advanceBookings) {
+            this.advanceBookings.forEach(booking => {
+                if (booking.status === 'in-progress') {
+                    const timerElement = document.querySelector(`[data-booking-id="${booking._id || booking.id}"]`);
+                    if (timerElement) {
+                        const startTime = booking.actualStartTime ? new Date(booking.actualStartTime) : new Date();
+                        const duration = Math.floor((Date.now() - startTime.getTime()) / 1000);
+                        const hours = Math.floor(duration / 3600);
+                        const minutes = Math.floor((duration % 3600) / 60);
+                        const seconds = duration % 60;
+                        const elapsedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                        // Calculate color based on remaining time
+                        const elapsedMinutes = Math.floor(duration / 60);
+                        const estimatedDuration = booking.estimatedDuration || 60;
+                        const remainingMinutes = estimatedDuration - elapsedMinutes;
+                        const isNearEnd = remainingMinutes <= 10;
+                        const cardColor = isNearEnd ? '#800020' : '#2196F3';
+
+                        // Update timer text and color
+                        timerElement.innerHTML = `<i class="fas fa-clock"></i> ${elapsedTime}`;
+                        timerElement.style.color = cardColor;
+                    }
+                }
+            });
+        }
     }
 
     // Check for new pending services from MongoDB
