@@ -195,8 +195,36 @@ class RoomManager {
                         if (response.ok) {
                             const result = await response.json();
                             if (result.success && result.data) {
-                                this.activeServices = result.data;
-                                console.log('✅ [ROOMS] Loaded active/pending services from MongoDB:', this.activeServices);
+                                // Filter out orphaned pending services (pending services without a matching advance booking)
+                                const allServices = result.data;
+                                this.activeServices = allServices.filter(service => {
+                                    // Keep all active services
+                                    if (service.status === 'active') return true;
+
+                                    // For pending services, check if there's a matching advance booking
+                                    if (service.status === 'pending') {
+                                        const hasMatchingBooking = (this.advanceBookings || []).some(booking =>
+                                            booking.status === 'in-progress' &&
+                                            booking.serviceName === service.serviceName &&
+                                            booking.clientName === service.clientName &&
+                                            String(booking.employeeId) === String(service.employeeId)
+                                        );
+
+                                        if (!hasMatchingBooking) {
+                                            console.log('🗑️ [ROOMS] Filtering out orphaned pending service:', service);
+                                        }
+
+                                        return hasMatchingBooking;
+                                    }
+
+                                    return false; // Filter out any other statuses
+                                });
+
+                                console.log('✅ [ROOMS] Loaded active/pending services from MongoDB:', {
+                                    total: allServices.length,
+                                    filtered: this.activeServices.length,
+                                    removed: allServices.length - this.activeServices.length
+                                });
 
                                 // Sync to IndexedDB for offline access
                                 for (const service of this.activeServices) {
