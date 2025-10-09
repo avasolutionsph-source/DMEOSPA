@@ -395,10 +395,16 @@ class RoomManager {
             const result = await response.json();
 
             if (result.success && result.data) {
-                // Show scheduled, confirmed, and in-progress bookings
+                // Show only active bookings (exclude completed and cancelled)
                 this.advanceBookings = result.data.filter(booking => {
                     const isActive = ['scheduled', 'confirmed', 'in-progress'].includes(booking.status);
-                    return isActive; // Show all active bookings (not completed or cancelled)
+                    return isActive;
+                });
+
+                console.log('📋 [ROOMS] Filtered bookings by status:', {
+                    total: result.data.length,
+                    active: this.advanceBookings.length,
+                    excluded: result.data.filter(b => !['scheduled', 'confirmed', 'in-progress'].includes(b.status)).map(b => ({ id: b._id, status: b.status }))
                 });
 
                 console.log('✅ [ROOMS] Loaded advance bookings from backend:', {
@@ -421,10 +427,10 @@ class RoomManager {
         // SHORTCUT: Check if appointments manager already loaded them
         if (window.appointmentsManager?.advanceBookings?.length > 0) {
             console.log('✅ [ROOMS] Using advance bookings from appointments manager:', window.appointmentsManager.advanceBookings.length);
-            // Show scheduled, confirmed, and in-progress bookings
+            // Show only active bookings (exclude completed and cancelled)
             this.advanceBookings = window.appointmentsManager.advanceBookings.filter(booking => {
                 const isActive = ['scheduled', 'confirmed', 'in-progress'].includes(booking.status);
-                return isActive; // Show all active bookings (not completed or cancelled)
+                return isActive;
             });
             console.log('✅ [ROOMS] Filtered cached bookings:', {
                 original: window.appointmentsManager.advanceBookings.length,
@@ -562,10 +568,10 @@ class RoomManager {
                         }))
                     });
 
-                    // Show scheduled, confirmed, and in-progress bookings
+                    // Show only active bookings (exclude completed and cancelled)
                     this.advanceBookings = allBookings.filter(booking => {
                         const isActive = ['scheduled', 'confirmed', 'in-progress'].includes(booking.status);
-                        return isActive; // Show all active bookings (not completed or cancelled)
+                        return isActive;
                     });
 
                     console.log('✅ [ROOMS] Loaded advance bookings:', {

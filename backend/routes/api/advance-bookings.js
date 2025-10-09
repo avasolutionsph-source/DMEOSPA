@@ -16,9 +16,9 @@ router.get('/', async (req, res) => {
         if (status) {
             query.status = status;
         } else {
-            // Default: exclude cancelled, completed, and in-progress bookings
-            // (in-progress bookings are already converted to active services)
-            query.status = { $in: ['scheduled', 'confirmed'] };
+            // Default: show active bookings only (exclude cancelled and completed)
+            // in-progress bookings maintain their advance booking card
+            query.status = { $in: ['scheduled', 'confirmed', 'in-progress'] };
         }
 
         // Filter by date range if provided
