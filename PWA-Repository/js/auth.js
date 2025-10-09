@@ -287,19 +287,17 @@ class AuthSystem {
                     if (window.showSuccess) {
                         window.showSuccess('Login successful! Redirecting...');
                     }
-                    
+
                     setTimeout(() => {
                         const returnTo = sessionStorage.getItem('returnToPage');
                         if (returnTo) {
                             sessionStorage.removeItem('returnToPage');
                             window.location.href = 'index.html' + returnTo;
                         } else {
-                            // Redirect based on user type
-                            if (data.user.type === 'employee') {
-                                window.location.href = 'index.html#attendance';
-                            } else {
-                                window.location.href = 'index.html#dashboard';
-                            }
+                            // Get first allowed page for user's role
+                            const firstAllowedPage = this.getFirstAllowedPage(data.user);
+                            console.log('🔐 Redirecting to first allowed page:', firstAllowedPage);
+                            window.location.href = 'index.html#' + firstAllowedPage;
                         }
                     }, 1500);
                 }
@@ -1029,15 +1027,15 @@ class AuthSystem {
     // Check if user has permission for a specific page
     hasPagePermission(page) {
         if (!this.currentUser) return false;
-        
+
         // Owners have all permissions
         if (this.currentUser.type !== 'employee') return true;
-        
+
         // Special handling for payroll-requests page - all employees can access
         if (page === 'payroll-requests' && this.currentUser.type === 'employee') {
             return true;
         }
-        
+
         // Define permissions (same as above)
         const rolePermissions = {
             'senior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
@@ -1048,11 +1046,36 @@ class AuthSystem {
                        'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
             'other_staff': ['attendance', 'payroll-requests']
         };
-        
+
         const userRole = this.currentUser.role;
         const allowedPages = rolePermissions[userRole] || [];
-        
+
         return allowedPages.includes(page);
+    }
+
+    // Get first allowed page for user's role
+    getFirstAllowedPage(user) {
+        // Owners always go to dashboard
+        if (user.type !== 'employee') {
+            return 'dashboard';
+        }
+
+        // Define permissions for each role
+        const rolePermissions = {
+            'senior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
+            'junior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
+            'new_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
+            'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll-requests', 'rooms', 'expenses'],
+            'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers',
+                       'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
+            'other_staff': ['attendance', 'payroll-requests']
+        };
+
+        const userRole = user.role;
+        const allowedPages = rolePermissions[userRole] || ['attendance']; // Default to attendance if role not found
+
+        // Return first allowed page
+        return allowedPages[0];
     }
 }
 
