@@ -1192,8 +1192,9 @@ class RoomManager {
         // Update timers every second
         this.timerInterval = setInterval(() => {
             const occupiedRooms = this.rooms.filter(r => r.status === 'occupied');
-            if (occupiedRooms.length > 0) {
-                this.displayRooms(); // Refresh display to update timers
+            const inProgressBookings = (this.advanceBookings || []).filter(b => b.status === 'in-progress');
+            if (occupiedRooms.length > 0 || inProgressBookings.length > 0) {
+                this.updateTimerDisplays(); // Only update timers, don't full refresh
             }
         }, 1000);
     }
