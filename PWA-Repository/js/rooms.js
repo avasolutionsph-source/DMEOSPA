@@ -2173,10 +2173,15 @@ class RoomManager {
             }
 
             const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+            console.log('🔑 [START-BOOKING] Auth token exists:', !!authToken);
+
             if (!authToken) {
                 showError('Authentication required');
                 return;
             }
+
+            console.log('📤 [START-BOOKING] Sending request to start booking:', bookingId);
+            console.log('📤 [START-BOOKING] Current booking status:', booking.status);
 
             // Simply update booking status to in-progress (no service creation)
             const response = await fetch(`https://daetspa-backend.onrender.com/api/advance-bookings/${bookingId}/convert`, {
@@ -2187,14 +2192,16 @@ class RoomManager {
                 }
             });
 
+            console.log('📥 [START-BOOKING] Response status:', response.status, response.statusText);
+
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                console.error('Backend error response:', errorData);
+                console.error('❌ [START-BOOKING] Backend error response:', errorData);
                 throw new Error(errorData.error || `Server error: ${response.status}`);
             }
 
             const result = await response.json();
-            console.log('✅ Booking started successfully:', result);
+            console.log('✅ [START-BOOKING] Booking started successfully:', result);
 
             showSuccess('Booking started successfully!');
 
