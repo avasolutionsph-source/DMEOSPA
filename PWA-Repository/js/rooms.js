@@ -395,13 +395,10 @@ class RoomManager {
             const result = await response.json();
 
             if (result.success && result.data) {
-                // Filter out in-progress bookings (they're now active services)
-                const now = new Date();
+                // Show scheduled, confirmed, and in-progress bookings
                 this.advanceBookings = result.data.filter(booking => {
-                    const bookingDate = new Date(booking.bookingDateTime);
-                    const isFuture = bookingDate >= now;
-                    const isScheduled = booking.status === 'scheduled' || booking.status === 'confirmed';
-                    return isFuture && isScheduled; // Only show future scheduled/confirmed bookings
+                    const isActive = ['scheduled', 'confirmed', 'in-progress'].includes(booking.status);
+                    return isActive; // Show all active bookings (not completed or cancelled)
                 });
 
                 console.log('✅ [ROOMS] Loaded advance bookings from backend:', {
@@ -429,13 +426,10 @@ class RoomManager {
         // SHORTCUT: Check if appointments manager already loaded them
         if (window.appointmentsManager?.advanceBookings?.length > 0) {
             console.log('✅ [ROOMS] Using advance bookings from appointments manager:', window.appointmentsManager.advanceBookings.length);
-            // Apply the same filter to cached data to exclude cancelled/in-progress bookings
-            const now = new Date();
+            // Show scheduled, confirmed, and in-progress bookings
             this.advanceBookings = window.appointmentsManager.advanceBookings.filter(booking => {
-                const bookingDate = new Date(booking.bookingDateTime);
-                const isFuture = bookingDate >= now;
-                const isScheduled = booking.status === 'scheduled' || booking.status === 'confirmed';
-                return isFuture && isScheduled;
+                const isActive = ['scheduled', 'confirmed', 'in-progress'].includes(booking.status);
+                return isActive; // Show all active bookings (not completed or cancelled)
             });
             console.log('✅ [ROOMS] Filtered cached bookings:', {
                 original: window.appointmentsManager.advanceBookings.length,
@@ -573,12 +567,10 @@ class RoomManager {
                         }))
                     });
 
-                    // Filter out in-progress bookings (they're now active services)
+                    // Show scheduled, confirmed, and in-progress bookings
                     this.advanceBookings = allBookings.filter(booking => {
-                        const bookingDate = new Date(booking.bookingDateTime);
-                        const isFuture = bookingDate >= now;
-                        const isScheduled = booking.status === 'scheduled' || booking.status === 'confirmed';
-                        return isFuture && isScheduled; // Only show future scheduled/confirmed bookings
+                        const isActive = ['scheduled', 'confirmed', 'in-progress'].includes(booking.status);
+                        return isActive; // Show all active bookings (not completed or cancelled)
                     });
 
                     console.log('✅ [ROOMS] Loaded advance bookings:', {
@@ -1030,14 +1022,13 @@ class RoomManager {
                 `${therapist.firstName} ${therapist.lastName}`.trim() :
                 therapist.name;
 
-            // Find ALL advance bookings for this therapist
+            // Find ALL advance bookings for this therapist (scheduled and in-progress)
             const now = new Date();
 
             const therapistBookings = (this.advanceBookings || []).filter(booking => {
                 const bookingDate = new Date(booking.bookingDateTime);
                 return (String(booking.employeeId) === String(therapistId)) &&
-                       bookingDate >= now &&
-                       booking.status === 'scheduled';
+                       (booking.status === 'scheduled' || booking.status === 'in-progress');
             });
 
             if (therapistBookings.length === 0) return '';
@@ -1045,54 +1036,91 @@ class RoomManager {
             return therapistBookings.map(booking => {
                 const bookingDate = new Date(booking.bookingDateTime);
                 const timeUntil = Math.floor((bookingDate - now) / (60 * 1000)); // minutes
-                const isImminent = timeUntil <= 30; // Within 30 minutes
+                const isImminent = timeUntil <= 30 && booking.status !== 'in-progress'; // Within 30 minutes
+                const isInProgress = booking.status === 'in-progress';
+
+                // Calculate elapsed time if in progress
+                let elapsedTime = '';
+                if (isInProgress && booking.actualStartTime) {
+                    const startTime = new Date(booking.actualStartTime);
+                    const elapsed = Math.floor((now - startTime) / 1000); // seconds
+                    const hours = Math.floor(elapsed / 3600);
+                    const minutes = Math.floor((elapsed % 3600) / 60);
+                    const seconds = elapsed % 60;
+                    elapsedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+
+                const cardClass = isInProgress ? 'occupied' : 'pending';
+                const headerClass = isInProgress ? 'occupied' : 'pending';
+                const borderStyle = isInProgress ? 'border-color: #28a745; border-width: 3px;' : (isImminent ? 'border-color: #f39c12; border-width: 3px;' : '');
+                const statusBadge = isInProgress ? '<span class="badge badge-success" style="float: right; font-size: 0.7rem;">IN PROGRESS</span>' : (isImminent ? '<span class="badge badge-warning" style="float: right; font-size: 0.7rem;">IMMINENT</span>' : '');
 
                 return `
-                    <div class="room-card pending" ${isImminent ? 'style="border-color: #f39c12; border-width: 3px;"' : ''}>
-                        <div class="room-header pending" style="padding: 10px; margin: -1px -1px 0 -1px;">
+                    <div class="room-card ${cardClass}" style="${borderStyle}">
+                        <div class="room-header ${headerClass}" style="padding: 10px; margin: -1px -1px 0 -1px;">
                             <h3 style="margin: 0; display: flex; justify-content: space-between; align-items: center;">
                                 <span>
-                                    <i class="fas fa-calendar-plus"></i> ${therapistName}
+                                    <i class="fas fa-${isInProgress ? 'play-circle' : 'calendar-plus'}"></i> ${therapistName}
                                 </span>
                                 <span style="font-size: 0.8rem;">
-                                    <i class="fas fa-clock"></i> ADVANCE BOOKING
+                                    <i class="fas fa-${isInProgress ? 'heartbeat' : 'clock'}"></i> ${isInProgress ? 'ACTIVE' : 'ADVANCE BOOKING'}
                                 </span>
                             </h3>
                         </div>
                         <div class="room-body" style="padding: 15px;">
                             <div class="room-type" style="color: #666; margin-bottom: 10px;">
                                 <i class="fas fa-${booking.isHomeService ? 'home' : 'store'}"></i> ${booking.isHomeService ? 'Home Service' : booking.roomName}
-                                ${isImminent ? '<span class="badge badge-warning" style="float: right; font-size: 0.7rem;">IMMINENT</span>' : ''}
+                                ${statusBadge}
                             </div>
 
-                            <div class="service-info" style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #f39c12;">
-                                <div style="color: #856404; font-weight: bold; margin-bottom: 8px;">
-                                    <i class="fas fa-hourglass-half"></i> Scheduled: ${bookingDate.toLocaleString('en-US', {
-                                        month: 'short',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    })}
+                            ${isInProgress ? `
+                                <div class="service-info" style="background: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #28a745;">
+                                    <div style="color: #155724; font-weight: bold; margin-bottom: 8px; font-size: 1.2rem;">
+                                        <i class="fas fa-stopwatch"></i> ${elapsedTime}
+                                    </div>
+                                    <div><strong>Service:</strong> ${booking.serviceName}</div>
+                                    <div><strong>Client:</strong> ${booking.clientName}</div>
+                                    ${booking.clientAddress ? `<div><strong>Location:</strong> ${booking.clientAddress}</div>` : ''}
+                                    ${booking.estimatedDuration ? `<div><strong>Duration:</strong> ${booking.estimatedDuration} mins</div>` : ''}
                                 </div>
-                                <div><strong>Service:</strong> ${booking.serviceName}</div>
-                                <div><strong>Client:</strong> ${booking.clientName}</div>
-                                ${booking.clientAddress ? `<div><strong>Location:</strong> ${booking.clientAddress}</div>` : ''}
-                                ${booking.estimatedDuration ? `<div><strong>Duration:</strong> ${booking.estimatedDuration} mins</div>` : ''}
-                                <div style="margin-top: 8px; color: ${isImminent ? '#d32f2f' : '#856404'}; font-weight: bold;">
-                                    <i class="fas fa-stopwatch"></i> ${timeUntil > 60 ? `In ${Math.floor(timeUntil / 60)}h ${timeUntil % 60}m` : `In ${timeUntil} minutes`}
+                            ` : `
+                                <div class="service-info" style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #f39c12;">
+                                    <div style="color: #856404; font-weight: bold; margin-bottom: 8px;">
+                                        <i class="fas fa-hourglass-half"></i> Scheduled: ${bookingDate.toLocaleString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        })}
+                                    </div>
+                                    <div><strong>Service:</strong> ${booking.serviceName}</div>
+                                    <div><strong>Client:</strong> ${booking.clientName}</div>
+                                    ${booking.clientAddress ? `<div><strong>Location:</strong> ${booking.clientAddress}</div>` : ''}
+                                    ${booking.estimatedDuration ? `<div><strong>Duration:</strong> ${booking.estimatedDuration} mins</div>` : ''}
+                                    <div style="margin-top: 8px; color: ${isImminent ? '#d32f2f' : '#856404'}; font-weight: bold;">
+                                        <i class="fas fa-stopwatch"></i> ${timeUntil > 60 ? `In ${Math.floor(timeUntil / 60)}h ${timeUntil % 60}m` : `In ${timeUntil} minutes`}
+                                    </div>
                                 </div>
-                            </div>
+                            `}
 
                             <div class="room-actions" style="margin-top: 15px;">
-                                <button class="btn btn-success btn-sm" onclick="roomManager.startAdvanceBooking('${booking._id || booking.id}')">
-                                    <i class="fas fa-play"></i> Start Now
-                                </button>
+                                ${!isInProgress ? `
+                                    <button class="btn btn-success btn-sm" onclick="roomManager.startAdvanceBooking('${booking._id || booking.id}')">
+                                        <i class="fas fa-play"></i> Start Now
+                                    </button>
+                                ` : `
+                                    <button class="btn btn-primary btn-sm" onclick="roomManager.endAdvanceBooking('${booking._id || booking.id}')">
+                                        <i class="fas fa-stop"></i> End Service
+                                    </button>
+                                `}
                                 <button class="btn btn-secondary btn-sm" onclick="window.app.showPage('appointments')">
                                     <i class="fas fa-info-circle"></i> View Details
                                 </button>
-                                <button class="btn btn-danger btn-sm" onclick="roomManager.cancelAdvanceBookingFromRooms('${booking._id || booking.id}')">
-                                    <i class="fas fa-times"></i> Cancel
-                                </button>
+                                ${!isInProgress ? `
+                                    <button class="btn btn-danger btn-sm" onclick="roomManager.cancelAdvanceBookingFromRooms('${booking._id || booking.id}')">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                ` : ''}
                             </div>
                         </div>
                     </div>
@@ -2133,7 +2161,7 @@ class RoomManager {
     }
 
     async startAdvanceBooking(bookingId) {
-        if (!confirm('Start this advance booking now? This will create an active service.')) {
+        if (!confirm('Start this advance booking now?')) {
             return;
         }
 
@@ -2144,89 +2172,29 @@ class RoomManager {
                 return;
             }
 
-            // Create active service from booking
-            const serviceData = {
-                serviceName: booking.serviceName,
-                clientName: booking.clientName,
-                clientAddress: booking.clientAddress,
-                clientPhone: booking.clientPhone,
-                clientEmail: booking.clientEmail,
-                employeeId: booking.employeeId,
-                employeeName: booking.employeeName,
-                therapistId: booking.employeeId,
-                therapistName: booking.employeeName,
-                estimatedDuration: booking.estimatedDuration,
-                isHomeService: booking.isHomeService,
-                roomId: booking.roomId,
-                roomName: booking.roomName,
-                status: 'active',
-                startTime: new Date().toISOString(),
-                advanceBookingId: bookingId // Link to original booking
-            };
-
-            // 1. Create service in MongoDB FIRST (single source of truth)
             const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
-            let mongoServiceId;
-
-            try {
-                const apiResult = await fetch('https://daetspa-backend.onrender.com/api/room-services', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify(serviceData)
-                });
-
-                if (!apiResult.ok) {
-                    throw new Error('Failed to create service in MongoDB');
-                }
-
-                const result = await apiResult.json();
-                if (result.data && result.data._id) {
-                    mongoServiceId = result.data._id;
-                    serviceData._id = result.data._id;
-                    serviceData.id = result.data._id.toString(); // Use MongoDB ID as local ID
-                } else {
-                    throw new Error('MongoDB service creation did not return ID');
-                }
-            } catch (error) {
-                console.error('Failed to create service in MongoDB:', error);
-                showError('Failed to create service: ' + error.message);
+            if (!authToken) {
+                showError('Authentication required');
                 return;
             }
 
-            // 2. Save to IndexedDB with MongoDB ID
-            try {
-                await window.db.add('activeServices', serviceData);
-            } catch (error) {
-                console.warn('Failed to save service to IndexedDB:', error);
-                // Continue - MongoDB is the source of truth
+            // Simply update booking status to in-progress (no service creation)
+            const response = await fetch(`https://daetspa-backend.onrender.com/api/advance-bookings/${bookingId}/convert`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to start booking');
             }
 
-            // 3. Update booking status to in-progress
-            try {
-                await fetch(`https://daetspa-backend.onrender.com/api/advance-bookings/${bookingId}/convert`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ activeServiceId: mongoServiceId })
-                });
-            } catch (error) {
-                console.error('Failed to update booking status:', error);
-                // Non-critical - the service was created successfully
-            }
+            showSuccess('Booking started successfully!');
 
-            showSuccess('Advance booking started successfully!');
-
-            // Wait for MongoDB to propagate the status update
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Refresh display with fresh data from backend
-            await this.loadActiveServices();
-            await this.loadAdvanceBookingsFromBackend(); // Force backend reload
+            // Refresh display to show updated booking status
+            await this.loadAdvanceBookingsFromBackend();
             this.displayRooms();
 
             // Also refresh appointments page if it's loaded
@@ -2239,6 +2207,61 @@ class RoomManager {
         } catch (error) {
             console.error('Error starting advance booking:', error);
             showError('Failed to start booking: ' + error.message);
+        }
+    }
+
+    // End an in-progress advance booking
+    async endAdvanceBooking(bookingId) {
+        if (!confirm('End this service? This will mark the booking as completed.')) {
+            return;
+        }
+
+        try {
+            const booking = (this.advanceBookings || []).find(b => b._id === bookingId || b.id === bookingId);
+            if (!booking) {
+                showError('Booking not found');
+                return;
+            }
+
+            const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+            if (!authToken) {
+                showError('Authentication required');
+                return;
+            }
+
+            // Update booking status to completed
+            const response = await fetch(`https://daetspa-backend.onrender.com/api/advance-bookings/${bookingId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: 'completed',
+                    actualEndTime: new Date().toISOString()
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to end booking');
+            }
+
+            showSuccess('Service completed successfully!');
+
+            // Refresh display to show updated booking status
+            await this.loadAdvanceBookingsFromBackend();
+            this.displayRooms();
+
+            // Also refresh appointments page if it's loaded
+            if (window.appointmentsManager && typeof window.appointmentsManager.loadAdvanceBookings === 'function') {
+                await window.appointmentsManager.loadAdvanceBookings();
+                if (typeof window.appointmentsManager.displayAdvanceBookings === 'function') {
+                    window.appointmentsManager.displayAdvanceBookings();
+                }
+            }
+        } catch (error) {
+            console.error('Error ending advance booking:', error);
+            showError('Failed to end booking: ' + error.message);
         }
     }
 
