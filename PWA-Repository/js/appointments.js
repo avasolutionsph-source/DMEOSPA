@@ -681,10 +681,14 @@ class AppointmentsManager {
         const container = document.getElementById('advanceBookingsList');
         if (!container) return;
 
+        // Filter out completed and cancelled bookings (they shouldn't show in active list)
+        let filteredBookings = this.advanceBookings.filter(booking =>
+            booking.status !== 'completed' && booking.status !== 'cancelled'
+        );
+
         // Filter by date if set
-        let filteredBookings = this.advanceBookings;
         if (this.currentDate) {
-            filteredBookings = this.advanceBookings.filter(booking => {
+            filteredBookings = filteredBookings.filter(booking => {
                 const bookingDate = new Date(booking.bookingDateTime).toISOString().split('T')[0];
                 return bookingDate === this.currentDate;
             });

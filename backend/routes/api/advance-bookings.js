@@ -251,7 +251,7 @@ router.post('/:id/convert', async (req, res) => {
             },
             {
                 $set: {
-                    status: 'in-progress',
+                    status: 'completed',
                     activeServiceId: activeServiceId,
                     convertedToActiveAt: new Date()
                 }
