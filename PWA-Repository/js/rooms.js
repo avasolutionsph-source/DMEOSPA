@@ -424,30 +424,7 @@ class RoomManager {
     async loadAdvanceBookings(caller = 'unknown') {
         console.log(`🔄 [ROOMS] Loading advance bookings... (called by: ${caller})`);
 
-        // Always load fresh data from backend - no stale cache
-        // FALLBACK: Try IndexedDB first
-        try {
-            if (window.db) {
-                const localBookings = await window.db.getAll('advanceBookings');
-                if (localBookings && localBookings.length > 0) {
-                    console.log('✅ [ROOMS] Using advance bookings from IndexedDB:', localBookings.length);
-                    // Show only active bookings (exclude completed and cancelled)
-                    this.advanceBookings = localBookings.filter(booking => {
-                        const isActive = ['scheduled', 'confirmed', 'in-progress'].includes(booking.status);
-                        return isActive;
-                    });
-                    console.log('✅ [ROOMS] Filtered IndexedDB bookings:', {
-                        original: localBookings.length,
-                        filtered: this.advanceBookings.length,
-                        excluded: localBookings.filter(b => !['scheduled', 'confirmed', 'in-progress'].includes(b.status)).map(b => ({ id: b._id, status: b.status }))
-                    });
-                    return;
-                }
-            }
-        } catch (dbError) {
-            console.warn('⚠️ [ROOMS] Could not load from IndexedDB:', dbError);
-        }
-
+        // ALWAYS load from backend for fresh data - critical for real-time status updates
         try {
             const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
             if (!authToken) {
