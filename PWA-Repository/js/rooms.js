@@ -2182,12 +2182,26 @@ class RoomManager {
             try {
                 // Refresh display
                 console.log('🔄 [ROOMS] Refreshing displays...');
+
+                // Load bookings first
                 await this.loadAdvanceBookingsFromBackend();
+                console.log('📊 [ROOMS] Advance bookings loaded:', this.advanceBookings?.length || 0);
+
+                // Then load services
                 await this.loadActiveServices();
-                this.displayRooms();
+                console.log('📊 [ROOMS] Active services loaded:', this.activeServices?.length || 0);
+
+                // Finally display
+                await this.displayRooms();
                 console.log('✅ [ROOMS] Display refresh complete');
             } catch (refreshError) {
                 console.error('❌ [ROOMS] Refresh failed:', refreshError);
+                // Try to display anyway
+                try {
+                    await this.displayRooms();
+                } catch (displayError) {
+                    console.error('❌ [ROOMS] Display also failed:', displayError);
+                }
             }
 
             try {
