@@ -1147,8 +1147,10 @@ class RoomManager {
     }
 
     startTimerUpdates() {
+        console.log('🎬 [TIMER] Starting timer updates...');
         // Prevent duplicate timers
         if (this.timerInterval) {
+            console.log('⚠️ [TIMER] Timer already running, skipping');
             return;
         }
 
@@ -1156,10 +1158,21 @@ class RoomManager {
         this.timerInterval = setInterval(() => {
             const occupiedRooms = this.rooms.filter(r => r.status === 'occupied');
             const inProgressBookings = (this.advanceBookings || []).filter(b => b.status === 'in-progress');
+
+            console.log('⏰ [TIMER] Timer tick:', {
+                occupiedRooms: occupiedRooms.length,
+                inProgressBookings: inProgressBookings.length,
+                totalBookings: (this.advanceBookings || []).length,
+                willUpdate: occupiedRooms.length > 0 || inProgressBookings.length > 0
+            });
+
             if (occupiedRooms.length > 0 || inProgressBookings.length > 0) {
+                console.log('🔄 [TIMER] Calling updateTimerDisplays()');
                 this.updateTimerDisplays(); // Only update timers, don't full refresh
             }
         }, 1000);
+
+        console.log('✅ [TIMER] Timer interval created');
     }
 
     async startPendingService(roomId) {
@@ -2433,6 +2446,8 @@ class RoomManager {
 
     // Helper method to update timer displays without full refresh
     updateTimerDisplays() {
+        console.log('🔄 [TIMER-UPDATE] updateTimerDisplays() called');
+
         // Update room service timers
         this.rooms.forEach(room => {
             if (room.status === 'occupied' && room.currentService?.startTime) {
