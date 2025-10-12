@@ -2717,6 +2717,13 @@ class RoomManager {
 
                 if (booking.status === 'in-progress') {
                     const bookingId = booking._id || booking.id;
+
+                    // CRITICAL: Skip if direct timer is already running for this booking
+                    if (this.activeTimers && this.activeTimers.has(bookingId)) {
+                        console.log('⏭️ [TIMER-UPDATE] Skipping booking - direct timer already running:', bookingId);
+                        return; // Skip this booking, direct timer handles it
+                    }
+
                     const timerElement = document.querySelector(`[data-booking-id="${bookingId}"]`);
 
                     console.log('🔍 [TIMER-UPDATE] In-progress booking found:', {
@@ -2726,8 +2733,8 @@ class RoomManager {
                         hasActualStartTime: !!booking.actualStartTime
                     });
 
-                    if (timerElement) {
-                        const startTime = booking.actualStartTime ? new Date(booking.actualStartTime) : new Date();
+                    if (timerElement && booking.actualStartTime) {
+                        const startTime = new Date(booking.actualStartTime);
                         const duration = Math.floor((Date.now() - startTime.getTime()) / 1000);
                         const hours = Math.floor(duration / 3600);
                         const minutes = Math.floor((duration % 3600) / 60);
@@ -2751,6 +2758,8 @@ class RoomManager {
                         // Update timer text and color
                         timerElement.innerHTML = `<i class="fas fa-clock"></i> ${elapsedTime}`;
                         timerElement.style.color = cardColor;
+                    } else if (!booking.actualStartTime) {
+                        console.warn('⚠️ [TIMER-UPDATE] Booking has no actualStartTime:', bookingId);
                     } else {
                         console.warn('⚠️ [TIMER-UPDATE] Timer element not found for booking:', bookingId);
                     }
