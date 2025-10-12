@@ -1178,6 +1178,91 @@ class RoomManager {
         }
     }
 
+    // Start a direct timer for a specific service/booking immediately
+    startDirectTimer(serviceId, startTime, type = 'home') {
+        console.log(`🚀 [DIRECT-TIMER] Starting immediate timer for ${type}:`, {
+            serviceId,
+            startTime,
+            type
+        });
+
+        // Store active timers in a map if not exists
+        if (!this.activeTimers) {
+            this.activeTimers = new Map();
+        }
+
+        // Clear any existing timer for this service
+        const existingTimer = this.activeTimers.get(serviceId);
+        if (existingTimer) {
+            clearInterval(existingTimer);
+            console.log(`🗑️ [DIRECT-TIMER] Cleared existing timer for ${serviceId}`);
+        }
+
+        // Create a dedicated timer for this service
+        const timerId = setInterval(() => {
+            const now = new Date();
+            const start = new Date(startTime);
+            const diffSeconds = Math.floor((now - start) / 1000);
+
+            const hours = Math.floor(diffSeconds / 3600);
+            const minutes = Math.floor((diffSeconds % 3600) / 60);
+            const seconds = diffSeconds % 60;
+
+            let displayTime;
+            if (hours > 0) {
+                displayTime = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            } else {
+                displayTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            // Find and update the timer element
+            let timerSelector;
+            if (type === 'advance') {
+                timerSelector = `#booking-timer-${serviceId}`;
+            } else {
+                timerSelector = `#service-timer-${serviceId}`;
+            }
+
+            const timerElement = document.querySelector(timerSelector);
+            if (timerElement) {
+                timerElement.innerHTML = `<i class="fas fa-clock"></i> ${displayTime}`;
+                console.log(`⏱️ [DIRECT-TIMER] Updated ${type} timer:`, {
+                    serviceId,
+                    displayTime,
+                    selector: timerSelector
+                });
+            } else {
+                console.warn(`⚠️ [DIRECT-TIMER] Timer element not found: ${timerSelector}`);
+            }
+        }, 1000); // Update every second
+
+        // Store the timer ID so we can clear it later
+        this.activeTimers.set(serviceId, timerId);
+        console.log(`✅ [DIRECT-TIMER] Timer started for ${type} service: ${serviceId}`);
+
+        // Trigger immediate first update
+        setTimeout(() => {
+            const timerSelector = type === 'advance' ? `#booking-timer-${serviceId}` : `#service-timer-${serviceId}`;
+            const timerElement = document.querySelector(timerSelector);
+            if (timerElement) {
+                timerElement.innerHTML = `<i class="fas fa-clock"></i> 0:01`;
+                console.log(`⚡ [DIRECT-TIMER] Immediate first update for ${type}:`, serviceId);
+            }
+        }, 100);
+    }
+
+    // Stop a direct timer
+    stopDirectTimer(serviceId) {
+        if (!this.activeTimers) return;
+
+        const timerId = this.activeTimers.get(serviceId);
+        if (timerId) {
+            clearInterval(timerId);
+            this.activeTimers.delete(serviceId);
+            console.log(`🛑 [DIRECT-TIMER] Stopped timer for service: ${serviceId}`);
+        }
+    }
+
     startTimerUpdates() {
         console.log('🎬 [TIMER] Starting timer updates...');
         // Prevent duplicate timers
@@ -2069,7 +2154,8 @@ class RoomManager {
             }
 
             // Update service with start time
-            service.startTime = new Date().toISOString();
+            const startTime = new Date().toISOString();
+            service.startTime = startTime;
             service.status = 'active';
 
             console.log('✅ [HOME SERVICE] Updated local service:', {
@@ -2097,6 +2183,9 @@ class RoomManager {
             }
 
             showNotification('Home service started', 'success');
+
+            // IMMEDIATELY start the timer display for this service
+            this.startDirectTimer(serviceId, startTime, 'home');
 
             // CRITICAL: Re-render WITHOUT reloading data from backend!
             // Pass skipReload=true to use current local data with fresh startTime
@@ -2299,6 +2388,10 @@ class RoomManager {
             }
 
             showSuccess('Booking started successfully!');
+
+            // IMMEDIATELY start the timer display for this booking
+            const actualStartTime = result.data?.actualStartTime || new Date().toISOString();
+            this.startDirectTimer(bookingId, actualStartTime, 'advance');
 
             // Render directly with updated data (includes actualStartTime from server)
             const container = document.getElementById('roomsGrid');
