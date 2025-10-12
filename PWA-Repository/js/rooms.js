@@ -2466,11 +2466,15 @@ class RoomManager {
             // Wait for DOM to update before starting timer
             await new Promise(resolve => setTimeout(resolve, 200));
 
-            // Start direct timer immediately for responsive feedback
-            // updateTimerDisplays will take over and keep it synchronized
-            const actualStartTime = result.data?.actualStartTime || new Date().toISOString();
-            this.startDirectTimer(bookingId, actualStartTime, 'advance');
-            console.log('🎬 [START-BOOKING] Timer started with actualStartTime:', actualStartTime);
+            // Only start direct timer if we have actualStartTime
+            // Otherwise let updateTimerDisplays handle it when data syncs
+            const actualStartTime = result.data?.actualStartTime;
+            if (actualStartTime) {
+                this.startDirectTimer(bookingId, actualStartTime, 'advance');
+                console.log('🎬 [START-BOOKING] Timer started with actualStartTime:', actualStartTime);
+            } else {
+                console.warn('⚠️ [START-BOOKING] No actualStartTime yet, timer will start after sync');
+            }
 
             // IMPORTANT: Do NOT reload from backend immediately!
             // The periodic refresh (every 5 seconds) will handle syncing
@@ -3464,6 +3468,15 @@ class RoomManager {
                                 <i class="fas fa-clock"></i> ${elapsedTime}
                             </div>
                             ${isNearEnd ? `<div style="background: ${cardColor}; color: white; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 15px;"><i class="fas fa-exclamation-triangle"></i> ${remainingMinutes} MINUTES REMAINING</div>` : ''}
+                            <div style="background: ${bgColor}; padding: 15px; border-radius: 5px; margin-top: 15px; border-left: 4px solid ${cardColor};">
+                                <div style="color: #555; font-size: 0.9rem;">
+                                    <div style="margin: 5px 0;"><strong>Service:</strong> ${booking.serviceName}</div>
+                                    <div style="margin: 5px 0;"><strong>Client:</strong> ${booking.clientName || 'Did not select customer'}</div>
+                                    ${booking.clientAddress ? `<div style="margin: 5px 0;"><strong>Location:</strong> ${booking.clientAddress}</div>` : ''}
+                                    <div style="margin: 5px 0;"><strong>Started:</strong> ${booking.actualStartTime ? new Date(booking.actualStartTime).toLocaleTimeString() : 'Just now'}</div>
+                                    ${booking.estimatedDuration ? `<div style="margin: 5px 0;"><strong>Duration:</strong> ${booking.estimatedDuration} mins</div>` : ''}
+                                </div>
+                            </div>
                         `;
                     }
 
