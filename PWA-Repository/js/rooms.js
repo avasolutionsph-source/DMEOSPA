@@ -3453,6 +3453,15 @@ class RoomManager {
                                 <i class="fas fa-clock"></i> ${elapsedTime}
                             </div>
                             ${isNearEnd ? `<div style="background: ${cardColor}; color: white; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 15px;"><i class="fas fa-exclamation-triangle"></i> ${remainingMinutes} MINUTES REMAINING</div>` : ''}
+                            <div style="background: ${bgColor}; padding: 15px; border-radius: 5px; margin-top: 15px; border-left: 4px solid ${cardColor};">
+                                <div style="color: #555; font-size: 0.9rem;">
+                                    <div style="margin: 5px 0;"><strong>Service:</strong> ${booking.serviceName}</div>
+                                    <div style="margin: 5px 0;"><strong>Client:</strong> ${booking.clientName || 'Did not select customer'}</div>
+                                    ${booking.clientAddress ? `<div style="margin: 5px 0;"><strong>Location:</strong> ${booking.clientAddress}</div>` : ''}
+                                    <div style="margin: 5px 0;"><strong>Started:</strong> ${booking.actualStartTime ? new Date(booking.actualStartTime).toLocaleTimeString() : 'Just now'}</div>
+                                    ${booking.estimatedDuration ? `<div style="margin: 5px 0;"><strong>Duration:</strong> ${booking.estimatedDuration} mins</div>` : ''}
+                                </div>
+                            </div>
                         `;
                     }
 
