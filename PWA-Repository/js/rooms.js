@@ -1220,13 +1220,24 @@ class RoomManager {
         room.status = 'occupied';
         await window.db.update('rooms', room);
 
-        // Refresh room list (for therapist or manager view)
+        console.log('✅ [ROOM] Local room updated with startTime:', {
+            roomId,
+            startTime: room.currentService.startTime,
+            status: room.currentService.status
+        });
+
+        showNotification(`Service started in ${room.name}`, 'success');
+
+        // CRITICAL: Give MongoDB 500ms to propagate the update before reloading
+        // This prevents race condition where local startTime is overwritten by stale backend data
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Now refresh display - backend should have the updated startTime
         if (this.isTherapistView) {
             await this.showTherapistView();
         } else {
             this.displayRooms();
         }
-        showNotification(`Service started in ${room.name}`, 'success');
     }
 
     async cancelPendingService(roomId) {
