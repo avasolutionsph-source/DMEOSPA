@@ -2389,16 +2389,17 @@ class RoomManager {
 
             showSuccess('Booking started successfully!');
 
-            // IMMEDIATELY start the timer display for this booking
-            const actualStartTime = result.data?.actualStartTime || new Date().toISOString();
-            this.startDirectTimer(bookingId, actualStartTime, 'advance');
-
             // Render directly with updated data (includes actualStartTime from server)
             const container = document.getElementById('roomsGrid');
             if (container && !this.isTherapistView) {
                 // Rebuild HTML with current data that has fresh actualStartTime
                 await this.displayRooms(true);
             }
+
+            // IMMEDIATELY start the timer display for this booking AFTER displayRooms() completes
+            // This ensures the timer element exists in the DOM before we try to update it
+            const actualStartTime = result.data?.actualStartTime || new Date().toISOString();
+            this.startDirectTimer(bookingId, actualStartTime, 'advance');
 
             // IMPORTANT: Do NOT reload from backend immediately!
             // The periodic refresh (every 5 seconds) will handle syncing
