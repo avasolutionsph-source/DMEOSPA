@@ -119,22 +119,40 @@ class RoomManager {
             if (action === 'booking-started') {
                 console.log('🎬 [BROADCAST] Manager view received booking-started event:', bookingId);
 
-                // Update local booking data
-                const bookingIndex = this.advanceBookings.findIndex(b => b._id === bookingId || b.id === bookingId);
-                if (bookingIndex !== -1 && bookingData) {
-                    this.advanceBookings[bookingIndex] = bookingData;
-                    console.log('✅ [BROADCAST] Updated local booking data');
+                // CRITICAL: Reload bookings from backend first to get latest data with actualStartTime
+                await this.loadAdvanceBookingsFromBackend();
+                console.log('✅ [BROADCAST] Reloaded bookings from backend');
+
+                // Find the updated booking
+                const updatedBooking = (this.advanceBookings || []).find(b => b._id === bookingId || b.id === bookingId);
+
+                if (!updatedBooking) {
+                    console.error('❌ [BROADCAST] Booking not found after reload:', bookingId);
+                    return;
                 }
 
-                // Refresh manager view immediately
-                await this.displayRooms(false, true);
-                console.log('✅ [BROADCAST] Manager view refreshed');
+                console.log('✅ [BROADCAST] Found updated booking:', {
+                    bookingId,
+                    status: updatedBooking.status,
+                    actualStartTime: updatedBooking.actualStartTime
+                });
 
-                // Start timer for this booking
-                if (bookingData?.actualStartTime) {
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                    this.startDirectTimer(bookingId, bookingData.actualStartTime, 'advance');
-                    console.log('✅ [BROADCAST] Timer started for booking:', bookingId);
+                // Refresh manager view with the fresh data
+                await this.displayRooms(false, false);
+                console.log('✅ [BROADCAST] Manager view refreshed with fresh data');
+
+                // Wait for DOM to update
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                // Start timer for this booking with the fresh actualStartTime
+                if (updatedBooking.actualStartTime) {
+                    this.startDirectTimer(bookingId, updatedBooking.actualStartTime, 'advance');
+                    console.log('✅ [BROADCAST] Timer started for booking:', {
+                        bookingId,
+                        actualStartTime: updatedBooking.actualStartTime
+                    });
+                } else {
+                    console.error('❌ [BROADCAST] No actualStartTime found for booking:', bookingId);
                 }
             } else if (action === 'booking-ended') {
                 console.log('🏁 [BROADCAST] Manager view received booking-ended event:', bookingId);
