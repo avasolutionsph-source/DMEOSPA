@@ -2237,9 +2237,9 @@ class RoomManager {
                 await this.displayRooms(false, true); // forceRefresh=false, skipReload=true
             }
 
-            // Timer will be handled by updateTimerDisplays() which runs every second
-            // This ensures synchronized timers across all views
-            console.log('⏰ [HOME SERVICE] Timer will be updated by updateTimerDisplays() loop');
+            // Start direct timer immediately for responsive feedback
+            this.startDirectTimer(serviceId, startTime, 'home');
+            console.log('⏰ [HOME SERVICE] Timer started with startTime:', startTime);
 
             // Start timer updates if not already running
             if (!this.timerInterval) {
@@ -2455,11 +2455,11 @@ class RoomManager {
             // Wait for DOM to update before starting timer
             await new Promise(resolve => setTimeout(resolve, 200));
 
-            // Timer will be handled by updateTimerDisplays() which runs every second
-            // This ensures synchronized timers across all views
+            // Start direct timer immediately for responsive feedback
+            // updateTimerDisplays will take over and keep it synchronized
             const actualStartTime = result.data?.actualStartTime || new Date().toISOString();
-            console.log('🎬 [START-BOOKING] Booking started with actualStartTime:', actualStartTime);
-            console.log('⏰ [START-BOOKING] Timer will be updated by updateTimerDisplays() loop');
+            this.startDirectTimer(bookingId, actualStartTime, 'advance');
+            console.log('🎬 [START-BOOKING] Timer started with actualStartTime:', actualStartTime);
 
             // IMPORTANT: Do NOT reload from backend immediately!
             // The periodic refresh (every 5 seconds) will handle syncing
@@ -2732,11 +2732,11 @@ class RoomManager {
                 if (booking.status === 'in-progress') {
                     const bookingId = booking._id || booking.id;
 
-                    // Use updateTimerDisplays as the single source of truth for timer updates
-                    // Stop any conflicting direct timer
+                    // Skip if direct timer is already running for this booking
+                    // Direct timers provide immediate feedback and updateTimerDisplays provides backup
                     if (this.activeTimers && this.activeTimers.has(bookingId)) {
-                        console.log('🛑 [TIMER-UPDATE] Stopping direct timer to prevent conflict:', bookingId);
-                        this.stopDirectTimer(bookingId);
+                        console.log('⏭️ [TIMER-UPDATE] Skipping booking - direct timer already running:', bookingId);
+                        return; // Skip this booking, direct timer handles it
                     }
 
                     const timerElement = document.querySelector(`[data-booking-id="${bookingId}"]`);
