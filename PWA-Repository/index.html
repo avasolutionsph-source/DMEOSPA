@@ -5756,9 +5756,14 @@
 
                     // Initialize service history if showing that page
                     if (pageName === 'service-history') {
+                        console.log('🔄 [INDEX] Service History page detected, initializing...');
                         setTimeout(() => {
+                            console.log('🔍 [INDEX] Checking window.serviceHistory:', window.serviceHistory);
                             if (window.serviceHistory) {
+                                console.log('✅ [INDEX] Calling serviceHistory.init()...');
                                 window.serviceHistory.init();
+                            } else {
+                                console.error('❌ [INDEX] window.serviceHistory is undefined!');
                             }
                         }, 100);
                     }
