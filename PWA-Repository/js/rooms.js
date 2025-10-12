@@ -2450,13 +2450,14 @@ class RoomManager {
             showSuccess('Booking started successfully!');
 
             // Render directly with updated data (includes actualStartTime from server)
-            // CRITICAL: Use false (not true) to avoid reloading from backend
+            // CRITICAL: Don't reload from backend - we already have fresh data
             // The local data already has fresh actualStartTime from server response
             const container = document.getElementById('roomsGrid');
             if (container) {
                 if (this.isTherapistView) {
-                    // Refresh therapist view
-                    await this.showTherapistView();
+                    // Refresh therapist view WITHOUT reloading data
+                    // Pass skipDataLoad=true to use current local data
+                    await this.showTherapistView(null, true);
                 } else {
                     // Rebuild HTML with current local data for manager view
                     await this.displayRooms(false, true); // forceRefresh=false, skipReload=true
@@ -2917,7 +2918,7 @@ class RoomManager {
     }
 
     // Therapist view - shows only their assigned rooms
-    async showTherapistView(userData = null) {
+    async showTherapistView(userData = null, skipDataLoad = false) {
         const container = document.getElementById('roomsGrid');
         if (!container) return;
 
@@ -2935,7 +2936,8 @@ class RoomManager {
 
         console.log('🔒 [ROOMS] Hiding management buttons for therapist view', {
             headerActionsFound: !!headerActions,
-            headerActionsDisplay: headerActions?.style?.display
+            headerActionsDisplay: headerActions?.style?.display,
+            skipDataLoad
         });
 
         try {
@@ -2985,12 +2987,17 @@ class RoomManager {
                 throw new Error(`No employee ID found for therapist. Available fields: ${userData ? Object.keys(userData).join(', ') : 'none'}`);
             }
 
-            // FIRST: Load room data, services, and advance bookings from MongoDB (not IndexedDB)
-            console.log('📦 [THERAPIST] Loading rooms, services, and advance bookings from MongoDB...');
-            await this.loadRooms();
-            console.log('⏳ [THERAPIST] About to load advance bookings...');
-            await this.loadAdvanceBookings('showTherapistView');
-            console.log('✅ [THERAPIST] Advance bookings loaded, count:', this.advanceBookings?.length);
+            // Load data from MongoDB ONLY if not skipping
+            // Skip when we just updated local data (e.g., after starting a booking)
+            if (!skipDataLoad) {
+                console.log('📦 [THERAPIST] Loading rooms, services, and advance bookings from MongoDB...');
+                await this.loadRooms();
+                console.log('⏳ [THERAPIST] About to load advance bookings...');
+                await this.loadAdvanceBookings('showTherapistView');
+                console.log('✅ [THERAPIST] Advance bookings loaded, count:', this.advanceBookings?.length);
+            } else {
+                console.log('⏭️ [THERAPIST] Skipping data load - using current local data with fresh actualStartTime');
+            }
 
             // Declare servicesResult outside try block so it's accessible later
             let servicesResult = { success: false, data: [] };
