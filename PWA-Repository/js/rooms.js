@@ -2035,6 +2035,12 @@ class RoomManager {
             service.startTime = new Date().toISOString();
             service.status = 'active';
 
+            console.log('✅ [HOME SERVICE] Updated local service:', {
+                serviceId,
+                startTime: service.startTime,
+                status: service.status
+            });
+
             // Update in IndexedDB
             await window.db.update('activeServices', service);
 
@@ -2053,10 +2059,13 @@ class RoomManager {
                 }
             }
 
-            // Refresh display
-            await this.loadActiveServices();
+            // CRITICAL: Render display FIRST with updated local data
+            // This ensures timer shows immediately with correct startTime
             this.displayRooms();
             showNotification('Home service started', 'success');
+
+            // Then refresh in background to sync with backend
+            await this.loadActiveServices();
         } catch (error) {
             console.error('Failed to start home service:', error);
             showNotification('Failed to start home service', 'error');
