@@ -588,7 +588,7 @@ class RoomManager {
         });
     }
 
-    async displayRooms(forceRefresh = false) {
+    async displayRooms(forceRefresh = false, skipReload = false) {
         // CRITICAL: Do not run displayRooms for therapists
         if (this.isTherapistView) {
             console.log('🚫 [ROOMS] displayRooms blocked - therapist view is active');
@@ -600,13 +600,18 @@ class RoomManager {
 
         // 🔧 FIX: Reload advance bookings FIRST, then active services
         // (loadActiveServices filters pending services based on advance bookings)
-        if (forceRefresh) {
-            console.log('🔄 [ROOMS] Force refresh requested - loading from backend');
-            await this.loadAdvanceBookingsFromBackend();
+        // BUT: If skipReload=true, don't reload - use current local data
+        if (!skipReload) {
+            if (forceRefresh) {
+                console.log('🔄 [ROOMS] Force refresh requested - loading from backend');
+                await this.loadAdvanceBookingsFromBackend();
+            } else {
+                await this.loadAdvanceBookings('displayRooms');
+            }
+            await this.loadActiveServices();
         } else {
-            await this.loadAdvanceBookings('displayRooms');
+            console.log('⏭️ [ROOMS] Skipping data reload - using current local data with fresh startTime');
         }
-        await this.loadActiveServices();
 
         const visibleRooms = this.showHiddenRooms ?
             this.rooms :
@@ -2091,14 +2096,17 @@ class RoomManager {
                 }
             }
 
-            // CRITICAL: Render display with updated local data (has fresh startTime)
-            // This ensures timer shows immediately with correct startTime
-            this.displayRooms();
             showNotification('Home service started', 'success');
 
-            // IMPORTANT: Do NOT reload from backend immediately!
-            // The periodic refresh will handle syncing
-            // Immediate reload causes race condition that overwrites startTime
+            // CRITICAL: Re-render WITHOUT reloading data from backend!
+            // Pass skipReload=true to use current local data with fresh startTime
+            // This prevents race condition where backend data overwrites our changes
+            await this.displayRooms(false, true); // forceRefresh=false, skipReload=true
+
+            // Start timer updates if not already running
+            if (!this.timerInterval) {
+                this.startTimerUpdates();
+            }
         } catch (error) {
             console.error('Failed to start home service:', error);
             showNotification('Failed to start home service', 'error');
