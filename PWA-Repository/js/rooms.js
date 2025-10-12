@@ -2437,15 +2437,25 @@ class RoomManager {
             // CRITICAL: Use false (not true) to avoid reloading from backend
             // The local data already has fresh actualStartTime from server response
             const container = document.getElementById('roomsGrid');
-            if (container && !this.isTherapistView) {
-                // Rebuild HTML with current local data (skipReload not available here, but forceRefresh=false uses cache)
-                await this.displayRooms(false, true); // forceRefresh=false, skipReload=true
+            if (container) {
+                if (this.isTherapistView) {
+                    // Refresh therapist view
+                    await this.showTherapistView();
+                } else {
+                    // Rebuild HTML with current local data for manager view
+                    await this.displayRooms(false, true); // forceRefresh=false, skipReload=true
+                }
             }
 
-            // IMMEDIATELY start the timer display for this booking AFTER displayRooms() completes
+            // Wait for DOM to update before starting timer
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+            // IMMEDIATELY start the timer display for this booking AFTER display completes
             // This ensures the timer element exists in the DOM before we try to update it
             const actualStartTime = result.data?.actualStartTime || new Date().toISOString();
             this.startDirectTimer(bookingId, actualStartTime, 'advance');
+
+            console.log('🎬 [START-BOOKING] Timer started with actualStartTime:', actualStartTime);
 
             // IMPORTANT: Do NOT reload from backend immediately!
             // The periodic refresh (every 5 seconds) will handle syncing
