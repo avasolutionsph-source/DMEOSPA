@@ -118,30 +118,31 @@ class RoomManager {
 
             if (action === 'booking-started') {
                 console.log('🎬 [BROADCAST] Manager view received booking-started event:', bookingId);
-
-                // CRITICAL: Reload bookings from backend first to get latest data with actualStartTime
-                await this.loadAdvanceBookingsFromBackend();
-                console.log('✅ [BROADCAST] Reloaded bookings from backend');
-
-                // Find the updated booking
-                const updatedBooking = (this.advanceBookings || []).find(b => b._id === bookingId || b.id === bookingId);
-
-                if (!updatedBooking) {
-                    console.error('❌ [BROADCAST] Booking not found after reload:', bookingId);
-                    return;
-                }
-
-                console.log('✅ [BROADCAST] Found updated booking:', {
+                console.log('🎬 [BROADCAST] Received booking data:', {
                     bookingId,
-                    status: updatedBooking.status,
-                    actualStartTime: updatedBooking.actualStartTime,
-                    fullBooking: updatedBooking
+                    actualStartTime: bookingData?.actualStartTime,
+                    status: bookingData?.status,
+                    fullData: bookingData
                 });
 
-                // CRITICAL: Use skipReload=true to preserve the data we just loaded
-                // Otherwise displayRooms will reload again and might cause race conditions
+                // CRITICAL: Use the broadcast data directly (don't reload from backend - might be stale)
+                // Update local booking array with the fresh data from broadcast
+                const bookingIndex = (this.advanceBookings || []).findIndex(b => b._id === bookingId || b.id === bookingId);
+                if (bookingIndex !== -1 && bookingData) {
+                    this.advanceBookings[bookingIndex] = bookingData;
+                    console.log('✅ [BROADCAST] Updated local booking with broadcast data:', {
+                        bookingId,
+                        actualStartTime: bookingData.actualStartTime
+                    });
+                } else if (bookingData) {
+                    // If not found, add it
+                    this.advanceBookings.push(bookingData);
+                    console.log('✅ [BROADCAST] Added new booking from broadcast data');
+                }
+
+                // CRITICAL: Use skipReload=true to use the data we just updated locally
                 await this.displayRooms(false, true);
-                console.log('✅ [BROADCAST] Manager view refreshed with fresh data');
+                console.log('✅ [BROADCAST] Manager view refreshed with broadcast data');
 
                 // Wait for DOM to update
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -154,16 +155,16 @@ class RoomManager {
                     elementHTML: timerElement?.innerHTML
                 });
 
-                // Start timer for this booking with the fresh actualStartTime
-                if (updatedBooking.actualStartTime) {
-                    this.startDirectTimer(bookingId, updatedBooking.actualStartTime, 'advance');
+                // Start timer for this booking with the actualStartTime from broadcast
+                if (bookingData?.actualStartTime) {
+                    this.startDirectTimer(bookingId, bookingData.actualStartTime, 'advance');
                     console.log('✅ [BROADCAST] Timer started for booking:', {
                         bookingId,
-                        actualStartTime: updatedBooking.actualStartTime,
-                        parsedDate: new Date(updatedBooking.actualStartTime).toISOString()
+                        actualStartTime: bookingData.actualStartTime,
+                        parsedDate: new Date(bookingData.actualStartTime).toISOString()
                     });
                 } else {
-                    console.error('❌ [BROADCAST] No actualStartTime found for booking:', bookingId);
+                    console.error('❌ [BROADCAST] No actualStartTime in broadcast data:', bookingId);
                 }
             } else if (action === 'booking-ended') {
                 console.log('🏁 [BROADCAST] Manager view received booking-ended event:', bookingId);
@@ -2560,7 +2561,17 @@ class RoomManager {
 
             // Broadcast booking-started event to manager view for real-time update
             if (this.isTherapistView) {
+                // Wait a bit to ensure backend has persisted the data
+                await new Promise(resolve => setTimeout(resolve, 500));
+
                 console.log('📡 [BROADCAST] Therapist view sending booking-started event');
+                console.log('📡 [BROADCAST] Broadcasting booking data:', {
+                    bookingId,
+                    actualStartTime: result.data.actualStartTime,
+                    status: result.data.status,
+                    fullData: result.data
+                });
+
                 this.bookingChannel.postMessage({
                     action: 'booking-started',
                     bookingId: bookingId,
