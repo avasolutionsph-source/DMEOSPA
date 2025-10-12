@@ -1223,7 +1223,18 @@ class RoomManager {
                 timerSelector = `#service-timer-${serviceId}`;
             }
 
-            const timerElement = document.querySelector(timerSelector);
+            let timerElement = document.querySelector(timerSelector);
+
+            // If advance booking timer not found, try home service timer
+            // (advance bookings convert to home services when started)
+            if (!timerElement && type === 'advance') {
+                const altSelector = `#service-timer-${serviceId}`;
+                timerElement = document.querySelector(altSelector);
+                if (timerElement) {
+                    console.log(`🔄 [DIRECT-TIMER] Found element with alternate selector: ${altSelector}`);
+                }
+            }
+
             if (timerElement) {
                 timerElement.innerHTML = `<i class="fas fa-clock"></i> ${displayTime}`;
                 console.log(`⏱️ [DIRECT-TIMER] Updated ${type} timer:`, {
@@ -3358,7 +3369,7 @@ class RoomManager {
                                         <div style="color: ${cardColor}; font-weight: bold; margin-bottom: 10px;">
                                             <i class="fas fa-clock"></i> Active Home Service
                                         </div>
-                                        <div style="font-size: 1.5rem; font-weight: bold; color: ${cardColor}; margin: 10px 0;" class="service-timer" data-home-service-id="${homeService._id || homeService.id}">
+                                        <div id="service-timer-${homeService._id || homeService.id}" style="font-size: 1.5rem; font-weight: bold; color: ${cardColor}; margin: 10px 0;" class="service-timer" data-home-service-id="${homeService._id || homeService.id}">
                                             <i class="fas fa-clock"></i> ${elapsed}
                                         </div>
                                         <div style="color: #555; font-size: 0.9rem;">
