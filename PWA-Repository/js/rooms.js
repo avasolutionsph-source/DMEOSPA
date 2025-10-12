@@ -3201,20 +3201,8 @@ class RoomManager {
                 bookings: myAdvanceBookings
             });
 
-            if (myAssignments.length === 0 && myHomeServices.length === 0 && myAdvanceBookings.length === 0) {
-                // No rooms, home services, or advance bookings
-                container.innerHTML = `
-                    <div class="empty-state" style="text-align: center; padding: 60px 20px;">
-                        <i class="fas fa-door-closed" style="font-size: 4rem; color: #ddd; margin-bottom: 20px;"></i>
-                        <h2 style="color: #666; margin-bottom: 10px;">No Assignments</h2>
-                        <p style="color: #999; font-size: 1.1rem;">
-                            You don't have any room assignments or upcoming bookings yet.<br>
-                            Please contact your manager for assignments.
-                        </p>
-                    </div>
-                `;
-                return;
-            }
+            // REMOVED: No longer showing empty state - always show permanent cards
+            // Even if no room assignments, therapist should see home service and advance booking cards
 
             // Group assignments by room
             const roomGroups = {};
@@ -3531,7 +3519,7 @@ class RoomManager {
                 <div style="max-width: 1200px; margin: 0 auto;">
                     <div class="info-banner" style="background: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; margin-bottom: 30px; border-radius: 5px;">
                         <i class="fas fa-info-circle" style="color: #2196F3; margin-right: 10px;"></i>
-                        <strong>Your Assignments:</strong> ${Object.keys(roomGroups).length} room(s) + Home Service + Advance Bookings
+                        <strong>Your Work:</strong> ${Object.keys(roomGroups).length > 0 ? `${Object.keys(roomGroups).length} room(s) + ` : ''}Home Service + Advance Bookings
                     </div>
 
                     <div class="rooms-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
