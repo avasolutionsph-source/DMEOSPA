@@ -1,5 +1,5 @@
 // Service Worker for Offline Functionality - Enhanced Auto-Update System
-const VERSION = '2.8.1'; // ROOM SERVICES - Cross-device MongoDB sync for pending services
+const VERSION = '2.9.0'; // TIMER FIX - Fixed displayRooms() reloading from backend
 const CACHE_NAME = `ava-solutions-v${VERSION}-${Date.now()}`; // Time-based cache busting
 const urlsToCache = [
     // Core app files
