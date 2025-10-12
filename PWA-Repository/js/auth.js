@@ -950,11 +950,11 @@ class AuthSystem {
             'new_therapist': ['appointments', 'attendance', 'payroll', 'rooms', 'service-history'],
 
             // Receptionist has broader access - also uses payroll-requests
-            'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll', 'rooms', 'expenses'],
+            'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll', 'rooms', 'service-history', 'expenses'],
 
             // Manager can read everything - uses full payroll page
             'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers',
-                       'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
+                       'appointments', 'attendance', 'payroll', 'rooms', 'service-history', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
 
             // Other staff limited access - uses payroll-requests
             'other_staff': ['attendance', 'payroll']
@@ -1041,9 +1041,9 @@ class AuthSystem {
             'senior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
             'junior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
             'new_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
-            'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll-requests', 'rooms', 'expenses'],
+            'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history', 'expenses'],
             'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers',
-                       'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
+                       'appointments', 'attendance', 'payroll', 'rooms', 'service-history', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
             'other_staff': ['attendance', 'payroll-requests']
         };
 
@@ -1065,9 +1065,9 @@ class AuthSystem {
             'senior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
             'junior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
             'new_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
-            'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll-requests', 'rooms', 'expenses'],
+            'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history', 'expenses'],
             'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers',
-                       'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
+                       'appointments', 'attendance', 'payroll', 'rooms', 'service-history', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
             'other_staff': ['attendance', 'payroll-requests']
         };
 

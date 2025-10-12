@@ -3,10 +3,36 @@ class ServiceHistoryManager {
     constructor() {
         this.services = [];
         this.filteredServices = [];
+        this.selectedTherapistId = null;
+        this.isManagerView = false;
     }
 
     async init() {
         console.log('📋 [SERVICE-HISTORY] Initializing...');
+
+        // Check user role
+        const userData = window.app?.userData || JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const userRole = userData.role;
+        const userType = userData.type;
+
+        // Determine if this is a manager/owner view
+        this.isManagerView = userType !== 'employee' || userRole === 'manager' || userRole === 'receptionist';
+
+        console.log('👤 [SERVICE-HISTORY] User role:', {
+            userRole,
+            userType,
+            isManagerView: this.isManagerView
+        });
+
+        // Show therapist selector for managers/owners
+        if (this.isManagerView) {
+            await this.loadTherapists();
+            document.getElementById('therapistSelector').style.display = 'block';
+        } else {
+            document.getElementById('therapistSelector').style.display = 'none';
+            // For therapists, load their own history
+            this.selectedTherapistId = userData.employeeId || userData.id;
+        }
 
         // Create IndexedDB store if it doesn't exist
         await this.ensureStore();
@@ -18,6 +44,65 @@ class ServiceHistoryManager {
         this.displayHistory();
 
         console.log('✅ [SERVICE-HISTORY] Initialized');
+    }
+
+    async loadTherapists() {
+        console.log('👥 [SERVICE-HISTORY] Loading therapists...');
+
+        try {
+            const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
+            if (!authToken) {
+                console.warn('⚠️ [SERVICE-HISTORY] No auth token');
+                return;
+            }
+
+            const response = await fetch('https://daetspa-backend.onrender.com/api/business/employees', {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                console.error('❌ [SERVICE-HISTORY] Failed to load employees');
+                return;
+            }
+
+            const result = await response.json();
+            const employees = result.data || [];
+
+            // Filter for therapists only
+            const therapists = employees.filter(emp =>
+                emp.role && (
+                    emp.role === 'senior_therapist' ||
+                    emp.role === 'junior_therapist' ||
+                    emp.role === 'new_therapist' ||
+                    emp.role === 'therapist'
+                )
+            );
+
+            console.log('✅ [SERVICE-HISTORY] Loaded therapists:', therapists.length);
+
+            // Populate dropdown
+            const dropdown = document.getElementById('therapistDropdown');
+            dropdown.innerHTML = '<option value="">-- Select a Therapist --</option>';
+
+            therapists.forEach(therapist => {
+                const option = document.createElement('option');
+                option.value = therapist._id || therapist.id;
+                option.textContent = `${therapist.name} (${therapist.role.replace(/_/g, ' ')})`;
+                dropdown.appendChild(option);
+            });
+
+        } catch (error) {
+            console.error('❌ [SERVICE-HISTORY] Error loading therapists:', error);
+        }
+    }
+
+    selectTherapist(therapistId) {
+        console.log('👤 [SERVICE-HISTORY] Therapist selected:', therapistId);
+        this.selectedTherapistId = therapistId;
+        this.loadHistory();
     }
 
     async ensureStore() {
@@ -138,14 +223,24 @@ class ServiceHistoryManager {
             const allServices = await window.db.getAll('serviceHistory');
 
             if (allServices && allServices.length > 0) {
-                this.services = allServices;
-                console.log('✅ [SERVICE-HISTORY] Loaded services:', allServices.length);
+                // Filter by selected therapist if in manager view
+                if (this.selectedTherapistId) {
+                    this.services = allServices.filter(s => s.therapistId === this.selectedTherapistId);
+                    console.log('✅ [SERVICE-HISTORY] Loaded services for therapist:', {
+                        therapistId: this.selectedTherapistId,
+                        count: this.services.length
+                    });
+                } else {
+                    this.services = allServices;
+                    console.log('✅ [SERVICE-HISTORY] Loaded all services:', allServices.length);
+                }
             } else {
                 console.log('📭 [SERVICE-HISTORY] No service history found');
                 this.services = [];
             }
 
             this.filteredServices = [...this.services];
+            this.displayHistory();
 
         } catch (error) {
             console.error('❌ [SERVICE-HISTORY] Error loading history:', error);
@@ -228,10 +323,10 @@ class ServiceHistoryManager {
 
         if (sortedServices.length === 0) {
             container.innerHTML = `
-                <div style="text-align: center; padding: 4rem 2rem; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <div style="text-align: center; padding: 4rem 2rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                     <i class="fas fa-clipboard-list" style="font-size: 4rem; color: #ddd; margin-bottom: 1rem;"></i>
                     <h3 style="color: #666; margin-bottom: 0.5rem;">No Service History</h3>
-                    <p style="color: #999;">Your completed services will appear here</p>
+                    <p style="color: #999;">${this.isManagerView && !this.selectedTherapistId ? 'Please select a therapist to view their service history' : 'Completed services will appear here'}</p>
                 </div>
             `;
             return;
@@ -239,7 +334,8 @@ class ServiceHistoryManager {
 
         container.innerHTML = sortedServices.map(service => {
             const isInProgress = service.status === 'in-progress';
-            const statusColor = isInProgress ? '#2196F3' : '#4CAF50';
+            const statusColor = isInProgress ? '#800020' : '#2e7d32';
+            const statusBg = isInProgress ? '#fff0f3' : '#e8f5e9';
             const statusIcon = isInProgress ? 'spinner fa-spin' : 'check-circle';
             const statusText = isInProgress ? 'In Progress' : 'Completed';
 
@@ -262,44 +358,53 @@ class ServiceHistoryManager {
 
             const typeIcon = service.type === 'home' ? 'home' : 'calendar-check';
             const typeText = service.type === 'home' ? 'Home Service' : 'Advance Booking';
+            const typeBadgeColor = service.type === 'home' ? '#1976d2' : '#800020';
 
             return `
-                <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid ${statusColor};">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                        <div>
-                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                <i class="fas fa-${typeIcon}" style="color: ${statusColor};"></i>
-                                <span style="font-size: 0.875rem; color: #666; font-weight: 600;">${typeText}</span>
+                <div style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid ${statusColor}; transition: transform 0.2s;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                                <span style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.375rem 0.75rem; background: ${typeBadgeColor}15; color: ${typeBadgeColor}; border-radius: 6px; font-size: 0.875rem; font-weight: 600;">
+                                    <i class="fas fa-${typeIcon}"></i>
+                                    ${typeText}
+                                </span>
                             </div>
-                            <h3 style="margin: 0; color: #333; font-size: 1.25rem;">${service.serviceName}</h3>
+                            <h3 style="margin: 0; color: #333; font-size: 1.125rem; font-weight: 600;">${service.serviceName}</h3>
                         </div>
                         <div style="text-align: right;">
-                            <div style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: ${statusColor}20; color: ${statusColor}; border-radius: 20px; font-size: 0.875rem; font-weight: 600;">
+                            <div style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: ${statusBg}; color: ${statusColor}; border-radius: 20px; font-size: 0.875rem; font-weight: 600; border: 1px solid ${statusColor};">
                                 <i class="fas fa-${statusIcon}"></i>
                                 ${statusText}
                             </div>
                         </div>
                     </div>
 
-                    <div style="display: grid; gap: 0.75rem; color: #666;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="fas fa-user" style="width: 20px; color: ${statusColor};"></i>
-                            <span><strong>Client:</strong> ${service.clientName}</span>
-                        </div>
-                        ${service.clientAddress ? `
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="fas fa-map-marker-alt" style="width: 20px; color: ${statusColor};"></i>
-                            <span><strong>Location:</strong> ${service.clientAddress}</span>
+                    <div style="display: grid; gap: 0.625rem; color: #555; font-size: 0.9375rem;">
+                        ${this.isManagerView ? `
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <i class="fas fa-user-md" style="width: 18px; color: #800020;"></i>
+                            <span><strong style="color: #333;">Therapist:</strong> ${service.therapistName || 'Unknown'}</span>
                         </div>
                         ` : ''}
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="fas fa-clock" style="width: 20px; color: ${statusColor};"></i>
-                            <span><strong>Started:</strong> ${formattedStart}</span>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <i class="fas fa-user" style="width: 18px; color: #800020;"></i>
+                            <span><strong style="color: #333;">Client:</strong> ${service.clientName}</span>
+                        </div>
+                        ${service.clientAddress ? `
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <i class="fas fa-map-marker-alt" style="width: 18px; color: #800020;"></i>
+                            <span><strong style="color: #333;">Location:</strong> ${service.clientAddress}</span>
+                        </div>
+                        ` : ''}
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <i class="fas fa-clock" style="width: 18px; color: #800020;"></i>
+                            <span><strong style="color: #333;">Started:</strong> ${formattedStart}</span>
                         </div>
                         ${durationText ? `
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="fas fa-hourglass-half" style="width: 20px; color: ${statusColor};"></i>
-                            <span><strong>Duration:</strong> ${durationText}</span>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <i class="fas fa-hourglass-half" style="width: 18px; color: #800020;"></i>
+                            <span><strong style="color: #333;">Duration:</strong> ${durationText}</span>
                         </div>
                         ` : ''}
                     </div>
