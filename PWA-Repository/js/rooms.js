@@ -2059,13 +2059,14 @@ class RoomManager {
                 }
             }
 
-            // CRITICAL: Render display FIRST with updated local data
+            // CRITICAL: Render display with updated local data (has fresh startTime)
             // This ensures timer shows immediately with correct startTime
             this.displayRooms();
             showNotification('Home service started', 'success');
 
-            // Then refresh in background to sync with backend
-            await this.loadActiveServices();
+            // IMPORTANT: Do NOT reload from backend immediately!
+            // The periodic refresh will handle syncing
+            // Immediate reload causes race condition that overwrites startTime
         } catch (error) {
             console.error('Failed to start home service:', error);
             showNotification('Failed to start home service', 'error');
@@ -2259,16 +2260,16 @@ class RoomManager {
 
             showSuccess('Booking started successfully!');
 
-            // Render directly with updated data (don't reload from backend yet)
+            // Render directly with updated data (includes actualStartTime from server)
             const container = document.getElementById('roomsGrid');
             if (container && !this.isTherapistView) {
-                // Just rebuild HTML with current data that includes actualStartTime
+                // Rebuild HTML with current data that has fresh actualStartTime
                 await this.displayRooms(true);
             }
 
-            // Then reload in background to ensure sync with other potential changes
-            await this.loadAdvanceBookingsFromBackend();
-            await this.loadActiveServices(); // Also reload services
+            // IMPORTANT: Do NOT reload from backend immediately!
+            // The periodic refresh (every 5 seconds) will handle syncing
+            // Immediate reload causes race condition that overwrites actualStartTime
 
             // Also refresh appointments page if it's loaded
             if (window.appointmentsManager && typeof window.appointmentsManager.loadAdvanceBookings === 'function') {
