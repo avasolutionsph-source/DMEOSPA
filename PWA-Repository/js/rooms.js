@@ -8,6 +8,10 @@ class RoomManager {
         this.listenersSetup = false; // Track if event listeners are already setup
         this.timerInterval = null; // Track timer interval to prevent duplicates
         this.isTherapistView = false; // Flag to prevent manager view from showing for therapists
+
+        // BroadcastChannel for real-time cross-view communication
+        this.bookingChannel = new BroadcastChannel('advance-booking-updates');
+        this.setupBroadcastListener();
     }
 
     async init() {
@@ -97,6 +101,57 @@ class RoomManager {
                 this.listenersSetup = true;
             }
         }
+    }
+
+    // Setup BroadcastChannel listener for cross-view communication
+    setupBroadcastListener() {
+        this.bookingChannel.onmessage = async (event) => {
+            console.log('📡 [BROADCAST] Received message:', event.data);
+
+            const { action, bookingId, bookingData } = event.data;
+
+            // Only manager view should react to broadcasts from therapist view
+            if (this.isTherapistView) {
+                console.log('🚫 [BROADCAST] Ignoring message - therapist view');
+                return;
+            }
+
+            if (action === 'booking-started') {
+                console.log('🎬 [BROADCAST] Manager view received booking-started event:', bookingId);
+
+                // Update local booking data
+                const bookingIndex = this.advanceBookings.findIndex(b => b._id === bookingId || b.id === bookingId);
+                if (bookingIndex !== -1 && bookingData) {
+                    this.advanceBookings[bookingIndex] = bookingData;
+                    console.log('✅ [BROADCAST] Updated local booking data');
+                }
+
+                // Refresh manager view immediately
+                await this.displayRooms(false, true);
+                console.log('✅ [BROADCAST] Manager view refreshed');
+
+                // Start timer for this booking
+                if (bookingData?.actualStartTime) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    this.startDirectTimer(bookingId, bookingData.actualStartTime, 'advance');
+                    console.log('✅ [BROADCAST] Timer started for booking:', bookingId);
+                }
+            } else if (action === 'booking-ended') {
+                console.log('🏁 [BROADCAST] Manager view received booking-ended event:', bookingId);
+
+                // Stop timer
+                this.stopDirectTimer(bookingId);
+
+                // Reload bookings from backend to get latest status
+                await this.loadAdvanceBookingsFromBackend();
+
+                // Refresh manager view
+                await this.displayRooms(false, true);
+                console.log('✅ [BROADCAST] Manager view updated after booking end');
+            }
+        };
+
+        console.log('📡 [BROADCAST] Listener setup complete');
     }
 
     // Clean up orphaned pending services (services without matching bookings)
@@ -2465,6 +2520,16 @@ class RoomManager {
             // The periodic refresh (every 5 seconds) will handle syncing
             // Immediate reload causes race condition that overwrites actualStartTime
 
+            // Broadcast booking-started event to manager view for real-time update
+            if (this.isTherapistView) {
+                console.log('📡 [BROADCAST] Therapist view sending booking-started event');
+                this.bookingChannel.postMessage({
+                    action: 'booking-started',
+                    bookingId: bookingId,
+                    bookingData: result.data
+                });
+            }
+
             // Also refresh appointments page if it's loaded
             if (window.appointmentsManager && typeof window.appointmentsManager.loadAdvanceBookings === 'function') {
                 await window.appointmentsManager.loadAdvanceBookings();
@@ -2516,9 +2581,26 @@ class RoomManager {
 
             showSuccess('Service completed successfully!');
 
+            // Stop the timer
+            this.stopDirectTimer(bookingId);
+
             // Refresh display to show updated booking status
             await this.loadAdvanceBookingsFromBackend();
-            this.displayRooms();
+
+            if (this.isTherapistView) {
+                await this.showTherapistView();
+            } else {
+                this.displayRooms();
+            }
+
+            // Broadcast booking-ended event to manager view for real-time update
+            if (this.isTherapistView) {
+                console.log('📡 [BROADCAST] Therapist view sending booking-ended event');
+                this.bookingChannel.postMessage({
+                    action: 'booking-ended',
+                    bookingId: bookingId
+                });
+            }
 
             // Also refresh appointments page if it's loaded
             if (window.appointmentsManager && typeof window.appointmentsManager.loadAdvanceBookings === 'function') {
