@@ -1066,24 +1066,35 @@ class RoomManager {
                 let headerColor = '#2196F3';
 
                 if (isInProgress) {
-                    // Use actualStartTime if available, otherwise use current time as fallback
-                    const startTime = booking.actualStartTime ? new Date(booking.actualStartTime) : now;
-                    const elapsed = Math.floor((now - startTime) / 1000); // seconds
-                    const hours = Math.floor(elapsed / 3600);
-                    const minutes = Math.floor((elapsed % 3600) / 60);
-                    const seconds = elapsed % 60;
-                    elapsedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    // CRITICAL: Only calculate elapsed time if actualStartTime is available
+                    // Otherwise show loading state
+                    if (booking.actualStartTime) {
+                        const startTime = new Date(booking.actualStartTime);
+                        const elapsed = Math.floor((now - startTime) / 1000); // seconds
+                        const hours = Math.floor(elapsed / 3600);
+                        const minutes = Math.floor((elapsed % 3600) / 60);
+                        const seconds = elapsed % 60;
+                        elapsedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-                    // Calculate remaining time
-                    const elapsedMinutes = Math.floor(elapsed / 60);
-                    const estimatedDuration = booking.estimatedDuration || 60;
-                    const remainingMinutes = estimatedDuration - elapsedMinutes;
+                        // Calculate remaining time
+                        const elapsedMinutes = Math.floor(elapsed / 60);
+                        const estimatedDuration = booking.estimatedDuration || 60;
+                        const remainingMinutes = estimatedDuration - elapsedMinutes;
 
-                    // Blue when more than 10 mins remaining, Red when 10 mins or less
-                    isNearEnd = remainingMinutes <= 10;
-                    cardColor = isNearEnd ? '#800020' : '#2196F3'; // Maroon or Blue
-                    bgColor = isNearEnd ? '#ffebee' : '#e3f2fd'; // Light red or light blue
-                    headerColor = isNearEnd ? '#800020' : '#2196F3';
+                        // Blue when more than 10 mins remaining, Red when 10 mins or less
+                        isNearEnd = remainingMinutes <= 10;
+                        cardColor = isNearEnd ? '#800020' : '#2196F3'; // Maroon or Blue
+                        bgColor = isNearEnd ? '#ffebee' : '#e3f2fd'; // Light red or light blue
+                        headerColor = isNearEnd ? '#800020' : '#2196F3';
+                    } else {
+                        // No actualStartTime yet - show loading/syncing message
+                        elapsedTime = 'Syncing...';
+                        console.warn('⚠️ [MANAGER] In-progress booking missing actualStartTime:', booking._id);
+                        // Keep default blue color while syncing
+                        cardColor = '#2196F3';
+                        bgColor = '#e3f2fd';
+                        headerColor = '#2196F3';
+                    }
                 }
 
                 // Use appropriate classes based on state
