@@ -50,26 +50,22 @@ class ServiceHistoryManager {
         console.log('👥 [SERVICE-HISTORY] Loading therapists...');
 
         try {
-            const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
-            if (!authToken) {
-                console.warn('⚠️ [SERVICE-HISTORY] No auth token');
+            // Use HybridAPIClient for offline support (same as POS)
+            const result = await window.HybridAPIClient.getEmployees();
+
+            if (!result.success) {
+                console.error('❌ [SERVICE-HISTORY] Failed to load employees:', result.error);
                 return;
             }
 
-            const response = await fetch('https://daetspa-backend.onrender.com/api/business/employees', {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const rawEmployees = result.data || [];
+            console.log(`✅ [SERVICE-HISTORY] Loaded ${rawEmployees.length} employees from ${result.source || 'API'}`);
 
-            if (!response.ok) {
-                console.error('❌ [SERVICE-HISTORY] Failed to load employees');
-                return;
-            }
-
-            const result = await response.json();
-            const employees = result.data || [];
+            // Convert firstName/lastName back to name for PWA compatibility (same as POS)
+            const employees = rawEmployees.map(emp => ({
+                ...emp,
+                name: emp.firstName ? `${emp.firstName} ${emp.lastName}`.trim() : emp.name
+            }));
 
             // Filter for therapists only
             const therapists = employees.filter(emp =>
@@ -85,14 +81,21 @@ class ServiceHistoryManager {
 
             // Populate dropdown
             const dropdown = document.getElementById('therapistDropdown');
+            if (!dropdown) {
+                console.warn('⚠️ [SERVICE-HISTORY] Therapist dropdown not found');
+                return;
+            }
+
             dropdown.innerHTML = '<option value="">-- Select a Therapist --</option>';
 
             therapists.forEach(therapist => {
                 const option = document.createElement('option');
                 option.value = therapist._id || therapist.id;
-                option.textContent = `${therapist.name} (${therapist.role.replace(/_/g, ' ')})`;
+                option.textContent = `${therapist.name} - ${(therapist.role || '').replace(/_/g, ' ')}`;
                 dropdown.appendChild(option);
             });
+
+            console.log('✅ [SERVICE-HISTORY] Populated dropdown with', therapists.length, 'therapists');
 
         } catch (error) {
             console.error('❌ [SERVICE-HISTORY] Error loading therapists:', error);
