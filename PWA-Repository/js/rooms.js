@@ -903,6 +903,14 @@ class RoomManager {
             let isNearEnd = false;
 
             if (isActive && activeService) {
+                console.log('🏠 [HOME-SERVICE] Rendering active home service:', {
+                    serviceId: activeService._id || activeService.id,
+                    serviceName: activeService.serviceName,
+                    startTime: activeService.startTime,
+                    hasStartTime: !!activeService.startTime,
+                    status: activeService.status
+                });
+
                 const elapsed = this.calculateElapsedTime(activeService.startTime);
 
                 // Calculate remaining time to determine card color
@@ -1137,14 +1145,27 @@ class RoomManager {
     }
 
     calculateElapsedTime(startTime) {
+        if (!startTime) {
+            console.warn('⚠️ [TIMER] calculateElapsedTime called with no startTime');
+            return '0:00';
+        }
+
         const start = new Date(startTime);
         const now = new Date();
         const diff = Math.floor((now - start) / 1000); // in seconds
-        
+
+        console.log('⏱️ [TIMER] calculateElapsedTime:', {
+            startTime,
+            start: start.toISOString(),
+            now: now.toISOString(),
+            diffSeconds: diff,
+            isValidStart: !isNaN(start.getTime())
+        });
+
         const hours = Math.floor(diff / 3600);
         const minutes = Math.floor((diff % 3600) / 60);
         const seconds = diff % 60;
-        
+
         if (hours > 0) {
             return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         } else {
