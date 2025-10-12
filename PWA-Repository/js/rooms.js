@@ -2623,7 +2623,19 @@ class RoomManager {
 
             if (timerElement && service.startTime) {
                 const startTime = new Date(service.startTime);
-                const duration = Math.floor((Date.now() - startTime.getTime()) / 1000);
+                const now = Date.now();
+                const startMs = startTime.getTime();
+                const duration = Math.floor((now - startMs) / 1000);
+
+                console.log('⏱️ [TIMER-UPDATE] Calculating home service elapsed time:', {
+                    serviceId,
+                    startTime: service.startTime,
+                    startMs,
+                    now,
+                    durationSeconds: duration,
+                    isValidStartTime: !isNaN(startMs)
+                });
+
                 const hours = Math.floor(duration / 3600);
                 const minutes = Math.floor((duration % 3600) / 60);
                 const seconds = duration % 60;
@@ -2636,18 +2648,24 @@ class RoomManager {
                 const isNearEnd = remainingMinutes <= 10;
                 const cardColor = isNearEnd ? '#800020' : '#2196F3';
 
-                console.log('✅ [TIMER-UPDATE] Updating timer:', {
+                console.log('✅ [TIMER-UPDATE] Updating home service timer to:', {
                     serviceId,
                     elapsedTime,
-                    cardColor
+                    cardColor,
+                    previousHTML: timerElement.innerHTML
                 });
 
                 // Update timer text and color
                 timerElement.innerHTML = `<i class="fas fa-clock"></i> ${elapsedTime}`;
                 timerElement.style.color = cardColor;
+
+                console.log('✅ [TIMER-UPDATE] Timer updated, new HTML:', timerElement.innerHTML);
             } else {
-                console.warn('⚠️ [TIMER-UPDATE] Timer not updated:', {
+                console.warn('⚠️ [TIMER-UPDATE] Home service timer not updated:', {
                     serviceId,
+                    elementFound: !!timerElement,
+                    hasStartTime: !!service.startTime,
+                    startTime: service.startTime,
                     reason: !timerElement ? 'Element not found' : 'No start time'
                 });
             }
