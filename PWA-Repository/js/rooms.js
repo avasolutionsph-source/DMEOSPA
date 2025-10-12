@@ -2793,26 +2793,40 @@ class RoomManager {
                         bookingChanges: bookingsChanged
                     });
 
-                    // CRITICAL: Preserve actualStartTime from in-progress bookings before reload
-                    // The backend might not have propagated the actualStartTime yet
-                    const inProgressBookings = (this.advanceBookings || [])
-                        .filter(b => b.status === 'in-progress' && b.actualStartTime)
-                        .map(b => ({id: b._id, actualStartTime: b.actualStartTime}));
+                    // Track current in-progress bookings BEFORE reload
+                    const previousInProgressIds = (this.advanceBookings || [])
+                        .filter(b => b.status === 'in-progress')
+                        .map(b => b._id);
 
                     await this.loadRooms();
                     await this.loadAdvanceBookingsFromBackend(); // Load bookings FIRST
                     await this.loadActiveServices(); // Then filter active services
 
-                    // Restore actualStartTime for in-progress bookings if backend data doesn't have it
-                    inProgressBookings.forEach(preserved => {
-                        const booking = this.advanceBookings.find(b => b._id === preserved.id);
-                        if (booking && booking.status === 'in-progress' && !booking.actualStartTime) {
-                            console.log('🔧 [MANAGER] Restoring actualStartTime for booking:', preserved.id);
-                            booking.actualStartTime = preserved.actualStartTime;
-                        }
-                    });
+                    // Check for NEWLY started bookings and start their timers
+                    const newlyStartedBookings = (this.advanceBookings || [])
+                        .filter(b => b.status === 'in-progress' && !previousInProgressIds.includes(b._id));
+
+                    if (newlyStartedBookings.length > 0) {
+                        console.log('🎬 [MANAGER] Detected newly started bookings:', newlyStartedBookings.map(b => ({
+                            id: b._id,
+                            actualStartTime: b.actualStartTime,
+                            status: b.status
+                        })));
+                    }
 
                     this.displayRooms();
+
+                    // Start timers for newly started bookings after display renders
+                    await new Promise(resolve => setTimeout(resolve, 500));
+
+                    newlyStartedBookings.forEach(booking => {
+                        if (booking.actualStartTime) {
+                            console.log('🚀 [MANAGER] Starting timer for newly detected booking:', booking._id);
+                            this.startDirectTimer(booking._id, booking.actualStartTime, 'advance');
+                        } else {
+                            console.warn('⚠️ [MANAGER] Newly started booking missing actualStartTime:', booking._id);
+                        }
+                    });
                 }
             }
         } catch (error) {
