@@ -2560,6 +2560,13 @@ class RoomManager {
             // Immediate reload causes race condition that overwrites actualStartTime
 
             // Broadcast booking-started event to manager view for real-time update
+            console.log('📡 [BROADCAST-CHECK] Checking if should broadcast:', {
+                isTherapistView: this.isTherapistView,
+                hasBookingChannel: !!this.bookingChannel,
+                bookingId,
+                actualStartTime: result.data?.actualStartTime
+            });
+
             if (this.isTherapistView) {
                 // Wait a bit to ensure backend has persisted the data
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -2572,11 +2579,18 @@ class RoomManager {
                     fullData: result.data
                 });
 
-                this.bookingChannel.postMessage({
-                    action: 'booking-started',
-                    bookingId: bookingId,
-                    bookingData: result.data
-                });
+                try {
+                    this.bookingChannel.postMessage({
+                        action: 'booking-started',
+                        bookingId: bookingId,
+                        bookingData: result.data
+                    });
+                    console.log('✅ [BROADCAST] Message sent successfully');
+                } catch (error) {
+                    console.error('❌ [BROADCAST] Failed to send message:', error);
+                }
+            } else {
+                console.log('⚠️ [BROADCAST] NOT broadcasting - not in therapist view');
             }
 
             // Also refresh appointments page if it's loaded
