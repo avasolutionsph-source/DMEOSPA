@@ -3494,7 +3494,7 @@ class RoomManager {
                                     bgColor = isNearEnd ? '#ffebee' : '#e3f2fd';
 
                                     timerDisplay = `
-                                        <div style="font-size: 2rem; font-weight: bold; color: ${cardColor}; text-align: center; margin: 20px 0;" data-booking-id="${booking._id || booking.id}">
+                                        <div id="booking-timer-${booking._id || booking.id}" style="font-size: 2rem; font-weight: bold; color: ${cardColor}; text-align: center; margin: 20px 0;" data-booking-id="${booking._id || booking.id}">
                                             <i class="fas fa-clock"></i> ${elapsedTime}
                                         </div>
                                         ${isNearEnd ? `<div style="background: ${cardColor}; color: white; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 15px;"><i class="fas fa-exclamation-triangle"></i> ${remainingMinutes} MINUTES REMAINING</div>` : ''}
