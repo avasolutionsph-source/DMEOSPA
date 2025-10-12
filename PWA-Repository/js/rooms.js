@@ -410,7 +410,13 @@ class RoomManager {
                 console.log('✅ [ROOMS] Loaded advance bookings from backend:', {
                     total: result.data.length,
                     filtered: this.advanceBookings.length,
-                    excluded: result.data.length - this.advanceBookings.length
+                    excluded: result.data.length - this.advanceBookings.length,
+                    inProgressBookings: this.advanceBookings.filter(b => b.status === 'in-progress').map(b => ({
+                        id: b._id,
+                        status: b.status,
+                        actualStartTime: b.actualStartTime,
+                        hasActualStartTime: !!b.actualStartTime
+                    }))
                 });
             } else {
                 this.advanceBookings = [];
@@ -2222,20 +2228,38 @@ class RoomManager {
 
             const result = await response.json();
             console.log('✅ [START-BOOKING] Booking started successfully:', result);
+            console.log('✅ [START-BOOKING] Updated booking actualStartTime:', result.data?.actualStartTime);
+
+            // CRITICAL: Update the local booking object IMMEDIATELY with the server response
+            // This ensures we have the fresh actualStartTime before any rendering
+            const bookingIndex = this.advanceBookings.findIndex(b => b._id === bookingId || b.id === bookingId);
+            if (bookingIndex !== -1 && result.data) {
+                // Replace entire booking object with server response
+                this.advanceBookings[bookingIndex] = result.data;
+                console.log('✅ [START-BOOKING] Updated local booking with server data:', {
+                    bookingId,
+                    actualStartTime: result.data.actualStartTime,
+                    status: result.data.status,
+                    timestamp: new Date().toISOString()
+                });
+            } else if (result.data) {
+                // If not found in array (shouldn't happen), add it
+                this.advanceBookings.push(result.data);
+                console.log('⚠️ [START-BOOKING] Booking not found in local array, added:', bookingId);
+            }
 
             showSuccess('Booking started successfully!');
 
-            // Refresh display to show updated booking status
-            // Load fresh data from backend, then render WITHOUT reloading
-            await this.loadAdvanceBookingsFromBackend();
-            await this.loadActiveServices(); // Also reload services
-
-            // Render directly without reloading data
+            // Render directly with updated data (don't reload from backend yet)
             const container = document.getElementById('roomsGrid');
             if (container && !this.isTherapistView) {
-                // Just rebuild HTML with current data
+                // Just rebuild HTML with current data that includes actualStartTime
                 await this.displayRooms(true);
             }
+
+            // Then reload in background to ensure sync with other potential changes
+            await this.loadAdvanceBookingsFromBackend();
+            await this.loadActiveServices(); // Also reload services
 
             // Also refresh appointments page if it's loaded
             if (window.appointmentsManager && typeof window.appointmentsManager.loadAdvanceBookings === 'function') {
