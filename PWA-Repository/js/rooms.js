@@ -2451,6 +2451,12 @@ class RoomManager {
 
     async startAdvanceBooking(bookingId) {
         try {
+            console.log('🎬 [START-BOOKING] Function called:', {
+                bookingId,
+                isTherapistView: this.isTherapistView,
+                hasBookingChannel: !!this.bookingChannel
+            });
+
             const booking = (this.advanceBookings || []).find(b => b._id === bookingId || b.id === bookingId);
             if (!booking) {
                 showError('Booking not found');
