@@ -945,9 +945,9 @@ class AuthSystem {
         // Define what pages each role can access
         const rolePermissions = {
             // Therapist roles can only see their own data - they use payroll-requests instead of payroll
-            'senior_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
-            'junior_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
-            'new_therapist': ['appointments', 'attendance', 'payroll', 'rooms'],
+            'senior_therapist': ['appointments', 'attendance', 'payroll', 'rooms', 'service-history'],
+            'junior_therapist': ['appointments', 'attendance', 'payroll', 'rooms', 'service-history'],
+            'new_therapist': ['appointments', 'attendance', 'payroll', 'rooms', 'service-history'],
 
             // Receptionist has broader access - also uses payroll-requests
             'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll', 'rooms', 'expenses'],
@@ -1038,9 +1038,9 @@ class AuthSystem {
 
         // Define permissions (same as above)
         const rolePermissions = {
-            'senior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
-            'junior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
-            'new_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
+            'senior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
+            'junior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
+            'new_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
             'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll-requests', 'rooms', 'expenses'],
             'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers',
                        'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
@@ -1062,9 +1062,9 @@ class AuthSystem {
 
         // Define permissions for each role
         const rolePermissions = {
-            'senior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
-            'junior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
-            'new_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms'],
+            'senior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
+            'junior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
+            'new_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
             'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll-requests', 'rooms', 'expenses'],
             'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers',
                        'appointments', 'attendance', 'payroll', 'rooms', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
