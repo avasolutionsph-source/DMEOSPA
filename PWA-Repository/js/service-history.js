@@ -50,8 +50,18 @@ class ServiceHistoryManager {
         console.log('👥 [SERVICE-HISTORY] Loading therapists...');
 
         try {
+            // Check if HybridAPIClient is available
+            if (!window.HybridAPIClient) {
+                console.error('❌ [SERVICE-HISTORY] HybridAPIClient not loaded yet');
+                setTimeout(() => this.loadTherapists(), 500);
+                return;
+            }
+
             // Use HybridAPIClient for offline support (same as POS)
+            console.log('📡 [SERVICE-HISTORY] Calling HybridAPIClient.getEmployees()...');
             const result = await window.HybridAPIClient.getEmployees();
+
+            console.log('📡 [SERVICE-HISTORY] getEmployees result:', result);
 
             if (!result.success) {
                 console.error('❌ [SERVICE-HISTORY] Failed to load employees:', result.error);
@@ -60,12 +70,15 @@ class ServiceHistoryManager {
 
             const rawEmployees = result.data || [];
             console.log(`✅ [SERVICE-HISTORY] Loaded ${rawEmployees.length} employees from ${result.source || 'API'}`);
+            console.log('📋 [SERVICE-HISTORY] Raw employees:', rawEmployees);
 
             // Convert firstName/lastName back to name for PWA compatibility (same as POS)
             const employees = rawEmployees.map(emp => ({
                 ...emp,
                 name: emp.firstName ? `${emp.firstName} ${emp.lastName}`.trim() : emp.name
             }));
+
+            console.log('📋 [SERVICE-HISTORY] Converted employees:', employees);
 
             // Filter for therapists only
             const therapists = employees.filter(emp =>
@@ -77,7 +90,8 @@ class ServiceHistoryManager {
                 )
             );
 
-            console.log('✅ [SERVICE-HISTORY] Loaded therapists:', therapists.length);
+            console.log('✅ [SERVICE-HISTORY] Filtered therapists:', therapists.length);
+            console.log('👥 [SERVICE-HISTORY] Therapist details:', therapists);
 
             // Populate dropdown
             const dropdown = document.getElementById('therapistDropdown');
@@ -93,12 +107,15 @@ class ServiceHistoryManager {
                 option.value = therapist._id || therapist.id;
                 option.textContent = `${therapist.name} - ${(therapist.role || '').replace(/_/g, ' ')}`;
                 dropdown.appendChild(option);
+                console.log('➕ [SERVICE-HISTORY] Added option:', option.textContent, 'value:', option.value);
             });
 
             console.log('✅ [SERVICE-HISTORY] Populated dropdown with', therapists.length, 'therapists');
+            console.log('📋 [SERVICE-HISTORY] Dropdown HTML:', dropdown.innerHTML.substring(0, 200));
 
         } catch (error) {
             console.error('❌ [SERVICE-HISTORY] Error loading therapists:', error);
+            console.error('❌ [SERVICE-HISTORY] Error stack:', error.stack);
         }
     }
 
