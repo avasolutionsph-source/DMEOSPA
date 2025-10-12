@@ -2614,9 +2614,26 @@ class RoomManager {
                         serviceChanges: hasChanges || countChanged,
                         bookingChanges: bookingsChanged
                     });
+
+                    // CRITICAL: Preserve actualStartTime from in-progress bookings before reload
+                    // The backend might not have propagated the actualStartTime yet
+                    const inProgressBookings = (this.advanceBookings || [])
+                        .filter(b => b.status === 'in-progress' && b.actualStartTime)
+                        .map(b => ({id: b._id, actualStartTime: b.actualStartTime}));
+
                     await this.loadRooms();
                     await this.loadAdvanceBookingsFromBackend(); // Load bookings FIRST
                     await this.loadActiveServices(); // Then filter active services
+
+                    // Restore actualStartTime for in-progress bookings if backend data doesn't have it
+                    inProgressBookings.forEach(preserved => {
+                        const booking = this.advanceBookings.find(b => b._id === preserved.id);
+                        if (booking && booking.status === 'in-progress' && !booking.actualStartTime) {
+                            console.log('🔧 [MANAGER] Restoring actualStartTime for booking:', preserved.id);
+                            booking.actualStartTime = preserved.actualStartTime;
+                        }
+                    });
+
                     this.displayRooms();
                 }
             }
