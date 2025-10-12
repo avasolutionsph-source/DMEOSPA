@@ -1000,7 +1000,7 @@ class RoomManager {
             `;
         }).join('');
 
-        // Generate advance booking cards for therapists
+        // Generate advance booking cards for therapists (ALWAYS show - permanent cards)
         const advanceBookingCardsHTML = therapists.map(therapist => {
             // Get therapist ID
             const therapistId = therapist._id || therapist.id;
@@ -1017,7 +1017,40 @@ class RoomManager {
                        (booking.status === 'scheduled' || booking.status === 'in-progress');
             });
 
-            if (therapistBookings.length === 0) return '';
+            // If no bookings, show "Available for Advance Booking" card
+            if (therapistBookings.length === 0) {
+                return `
+                    <div class="room-card available">
+                        <div class="room-header available" style="padding: 10px; margin: -1px -1px 0 -1px;">
+                            <h3 style="margin: 0; display: flex; justify-content: space-between; align-items: center;">
+                                <span>
+                                    <i class="fas fa-calendar-plus"></i> ${therapistName}
+                                </span>
+                                <span style="font-size: 0.8rem;">
+                                    <i class="fas fa-check"></i> AVAILABLE
+                                </span>
+                            </h3>
+                        </div>
+                        <div class="room-body" style="padding: 15px;">
+                            <div class="room-type" style="color: #666; margin-bottom: 10px;">
+                                <i class="fas fa-calendar-check"></i> Advance Booking
+                                <span style="float: right;">
+                                    <i class="fas fa-user"></i> ${therapist.position}
+                                </span>
+                            </div>
+
+                            <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; margin-top: 10px; border-left: 3px solid #4CAF50;">
+                                <div style="font-weight: 600; color: #2e7d32; margin-bottom: 10px;">
+                                    <i class="fas fa-check-circle"></i> Available for Advance Booking
+                                </div>
+                                <div style="color: #555;">
+                                    No scheduled bookings
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
 
             return therapistBookings.map(booking => {
                 const bookingDate = new Date(booking.bookingDateTime);
