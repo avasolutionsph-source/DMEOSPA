@@ -1066,35 +1066,24 @@ class RoomManager {
                 let headerColor = '#2196F3';
 
                 if (isInProgress) {
-                    // CRITICAL: Only calculate elapsed time if actualStartTime is available
-                    // Otherwise show loading state
-                    if (booking.actualStartTime) {
-                        const startTime = new Date(booking.actualStartTime);
-                        const elapsed = Math.floor((now - startTime) / 1000); // seconds
-                        const hours = Math.floor(elapsed / 3600);
-                        const minutes = Math.floor((elapsed % 3600) / 60);
-                        const seconds = elapsed % 60;
-                        elapsedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    // Use actualStartTime if available, otherwise use current time as fallback
+                    const startTime = booking.actualStartTime ? new Date(booking.actualStartTime) : now;
+                    const elapsed = Math.floor((now - startTime) / 1000); // seconds
+                    const hours = Math.floor(elapsed / 3600);
+                    const minutes = Math.floor((elapsed % 3600) / 60);
+                    const seconds = elapsed % 60;
+                    elapsedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-                        // Calculate remaining time
-                        const elapsedMinutes = Math.floor(elapsed / 60);
-                        const estimatedDuration = booking.estimatedDuration || 60;
-                        const remainingMinutes = estimatedDuration - elapsedMinutes;
+                    // Calculate remaining time
+                    const elapsedMinutes = Math.floor(elapsed / 60);
+                    const estimatedDuration = booking.estimatedDuration || 60;
+                    const remainingMinutes = estimatedDuration - elapsedMinutes;
 
-                        // Blue when more than 10 mins remaining, Red when 10 mins or less
-                        isNearEnd = remainingMinutes <= 10;
-                        cardColor = isNearEnd ? '#800020' : '#2196F3'; // Maroon or Blue
-                        bgColor = isNearEnd ? '#ffebee' : '#e3f2fd'; // Light red or light blue
-                        headerColor = isNearEnd ? '#800020' : '#2196F3';
-                    } else {
-                        // No actualStartTime yet - show loading/syncing message
-                        elapsedTime = 'Syncing...';
-                        console.warn('⚠️ [MANAGER] In-progress booking missing actualStartTime:', booking._id);
-                        // Keep default blue color while syncing
-                        cardColor = '#2196F3';
-                        bgColor = '#e3f2fd';
-                        headerColor = '#2196F3';
-                    }
+                    // Blue when more than 10 mins remaining, Red when 10 mins or less
+                    isNearEnd = remainingMinutes <= 10;
+                    cardColor = isNearEnd ? '#800020' : '#2196F3'; // Maroon or Blue
+                    bgColor = isNearEnd ? '#ffebee' : '#e3f2fd'; // Light red or light blue
+                    headerColor = isNearEnd ? '#800020' : '#2196F3';
                 }
 
                 // Use appropriate classes based on state
@@ -2450,14 +2439,13 @@ class RoomManager {
             showSuccess('Booking started successfully!');
 
             // Render directly with updated data (includes actualStartTime from server)
-            // CRITICAL: Don't reload from backend - we already have fresh data
+            // CRITICAL: Use false (not true) to avoid reloading from backend
             // The local data already has fresh actualStartTime from server response
             const container = document.getElementById('roomsGrid');
             if (container) {
                 if (this.isTherapistView) {
-                    // Refresh therapist view WITHOUT reloading data
-                    // Pass skipDataLoad=true to use current local data
-                    await this.showTherapistView(null, true);
+                    // Refresh therapist view
+                    await this.showTherapistView();
                 } else {
                     // Rebuild HTML with current local data for manager view
                     await this.displayRooms(false, true); // forceRefresh=false, skipReload=true
@@ -2467,15 +2455,11 @@ class RoomManager {
             // Wait for DOM to update before starting timer
             await new Promise(resolve => setTimeout(resolve, 200));
 
-            // Only start direct timer if we have actualStartTime
-            // Otherwise let updateTimerDisplays handle it when data syncs
-            const actualStartTime = result.data?.actualStartTime;
-            if (actualStartTime) {
-                this.startDirectTimer(bookingId, actualStartTime, 'advance');
-                console.log('🎬 [START-BOOKING] Timer started with actualStartTime:', actualStartTime);
-            } else {
-                console.warn('⚠️ [START-BOOKING] No actualStartTime yet, timer will start after sync');
-            }
+            // Start direct timer immediately for responsive feedback
+            // updateTimerDisplays will take over and keep it synchronized
+            const actualStartTime = result.data?.actualStartTime || new Date().toISOString();
+            this.startDirectTimer(bookingId, actualStartTime, 'advance');
+            console.log('🎬 [START-BOOKING] Timer started with actualStartTime:', actualStartTime);
 
             // IMPORTANT: Do NOT reload from backend immediately!
             // The periodic refresh (every 5 seconds) will handle syncing
@@ -2918,7 +2902,7 @@ class RoomManager {
     }
 
     // Therapist view - shows only their assigned rooms
-    async showTherapistView(userData = null, skipDataLoad = false) {
+    async showTherapistView(userData = null) {
         const container = document.getElementById('roomsGrid');
         if (!container) return;
 
@@ -2936,8 +2920,7 @@ class RoomManager {
 
         console.log('🔒 [ROOMS] Hiding management buttons for therapist view', {
             headerActionsFound: !!headerActions,
-            headerActionsDisplay: headerActions?.style?.display,
-            skipDataLoad
+            headerActionsDisplay: headerActions?.style?.display
         });
 
         try {
@@ -2987,17 +2970,12 @@ class RoomManager {
                 throw new Error(`No employee ID found for therapist. Available fields: ${userData ? Object.keys(userData).join(', ') : 'none'}`);
             }
 
-            // Load data from MongoDB ONLY if not skipping
-            // Skip when we just updated local data (e.g., after starting a booking)
-            if (!skipDataLoad) {
-                console.log('📦 [THERAPIST] Loading rooms, services, and advance bookings from MongoDB...');
-                await this.loadRooms();
-                console.log('⏳ [THERAPIST] About to load advance bookings...');
-                await this.loadAdvanceBookings('showTherapistView');
-                console.log('✅ [THERAPIST] Advance bookings loaded, count:', this.advanceBookings?.length);
-            } else {
-                console.log('⏭️ [THERAPIST] Skipping data load - using current local data with fresh actualStartTime');
-            }
+            // FIRST: Load room data, services, and advance bookings from MongoDB (not IndexedDB)
+            console.log('📦 [THERAPIST] Loading rooms, services, and advance bookings from MongoDB...');
+            await this.loadRooms();
+            console.log('⏳ [THERAPIST] About to load advance bookings...');
+            await this.loadAdvanceBookings('showTherapistView');
+            console.log('✅ [THERAPIST] Advance bookings loaded, count:', this.advanceBookings?.length);
 
             // Declare servicesResult outside try block so it's accessible later
             let servicesResult = { success: false, data: [] };
@@ -3475,15 +3453,6 @@ class RoomManager {
                                 <i class="fas fa-clock"></i> ${elapsedTime}
                             </div>
                             ${isNearEnd ? `<div style="background: ${cardColor}; color: white; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 15px;"><i class="fas fa-exclamation-triangle"></i> ${remainingMinutes} MINUTES REMAINING</div>` : ''}
-                            <div style="background: ${bgColor}; padding: 15px; border-radius: 5px; margin-top: 15px; border-left: 4px solid ${cardColor};">
-                                <div style="color: #555; font-size: 0.9rem;">
-                                    <div style="margin: 5px 0;"><strong>Service:</strong> ${booking.serviceName}</div>
-                                    <div style="margin: 5px 0;"><strong>Client:</strong> ${booking.clientName || 'Did not select customer'}</div>
-                                    ${booking.clientAddress ? `<div style="margin: 5px 0;"><strong>Location:</strong> ${booking.clientAddress}</div>` : ''}
-                                    <div style="margin: 5px 0;"><strong>Started:</strong> ${booking.actualStartTime ? new Date(booking.actualStartTime).toLocaleTimeString() : 'Just now'}</div>
-                                    ${booking.estimatedDuration ? `<div style="margin: 5px 0;"><strong>Duration:</strong> ${booking.estimatedDuration} mins</div>` : ''}
-                                </div>
-                            </div>
                         `;
                     }
 
