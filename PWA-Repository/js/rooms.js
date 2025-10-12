@@ -134,22 +134,33 @@ class RoomManager {
                 console.log('✅ [BROADCAST] Found updated booking:', {
                     bookingId,
                     status: updatedBooking.status,
-                    actualStartTime: updatedBooking.actualStartTime
+                    actualStartTime: updatedBooking.actualStartTime,
+                    fullBooking: updatedBooking
                 });
 
-                // Refresh manager view with the fresh data
-                await this.displayRooms(false, false);
+                // CRITICAL: Use skipReload=true to preserve the data we just loaded
+                // Otherwise displayRooms will reload again and might cause race conditions
+                await this.displayRooms(false, true);
                 console.log('✅ [BROADCAST] Manager view refreshed with fresh data');
 
                 // Wait for DOM to update
-                await new Promise(resolve => setTimeout(resolve, 300));
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Verify the timer element exists
+                const timerElement = document.querySelector(`#booking-timer-${bookingId}`);
+                console.log('🔍 [BROADCAST] Timer element check:', {
+                    bookingId,
+                    elementFound: !!timerElement,
+                    elementHTML: timerElement?.innerHTML
+                });
 
                 // Start timer for this booking with the fresh actualStartTime
                 if (updatedBooking.actualStartTime) {
                     this.startDirectTimer(bookingId, updatedBooking.actualStartTime, 'advance');
                     console.log('✅ [BROADCAST] Timer started for booking:', {
                         bookingId,
-                        actualStartTime: updatedBooking.actualStartTime
+                        actualStartTime: updatedBooking.actualStartTime,
+                        parsedDate: new Date(updatedBooking.actualStartTime).toISOString()
                     });
                 } else {
                     console.error('❌ [BROADCAST] No actualStartTime found for booking:', bookingId);
@@ -1146,6 +1157,15 @@ class RoomManager {
                     const minutes = Math.floor((elapsed % 3600) / 60);
                     const seconds = elapsed % 60;
                     elapsedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                    console.log('⏱️ [RENDER] Advance booking timer calculation:', {
+                        bookingId: booking._id || booking.id,
+                        actualStartTime: booking.actualStartTime,
+                        startTime: startTime.toISOString(),
+                        elapsed,
+                        elapsedTime,
+                        now: now.toISOString()
+                    });
 
                     // Calculate remaining time
                     const elapsedMinutes = Math.floor(elapsed / 60);
