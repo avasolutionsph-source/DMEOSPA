@@ -1078,7 +1078,7 @@ class RoomManager {
                             </div>
 
                             ${isInProgress ? `
-                                <div class="room-timer" style="font-size: 1.5rem; font-weight: bold; color: ${cardColor}; margin: 10px 0;" data-booking-id="${booking._id || booking.id}">
+                                <div id="booking-timer-${booking._id || booking.id}" class="room-timer" style="font-size: 1.5rem; font-weight: bold; color: ${cardColor}; margin: 10px 0;" data-booking-id="${booking._id || booking.id}">
                                     <i class="fas fa-clock"></i> ${elapsedTime}
                                 </div>
                                 <div class="service-info" style="background: ${bgColor}; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid ${cardColor};">
