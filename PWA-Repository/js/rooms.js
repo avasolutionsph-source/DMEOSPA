@@ -2401,10 +2401,12 @@ class RoomManager {
             showSuccess('Booking started successfully!');
 
             // Render directly with updated data (includes actualStartTime from server)
+            // CRITICAL: Use false (not true) to avoid reloading from backend
+            // The local data already has fresh actualStartTime from server response
             const container = document.getElementById('roomsGrid');
             if (container && !this.isTherapistView) {
-                // Rebuild HTML with current data that has fresh actualStartTime
-                await this.displayRooms(true);
+                // Rebuild HTML with current local data (skipReload not available here, but forceRefresh=false uses cache)
+                await this.displayRooms(false, true); // forceRefresh=false, skipReload=true
             }
 
             // IMMEDIATELY start the timer display for this booking AFTER displayRooms() completes
