@@ -2561,6 +2561,23 @@ class RoomManager {
             this.startDirectTimer(bookingId, actualStartTime, 'advance');
             console.log('🎬 [START-BOOKING] Timer started with actualStartTime:', actualStartTime);
 
+            // Record service start in history (for therapists)
+            if (this.isTherapistView && window.serviceHistory) {
+                const userData = window.app?.userData || JSON.parse(localStorage.getItem('currentUser') || '{}');
+                await window.serviceHistory.recordServiceStart({
+                    id: bookingId,
+                    type: 'advance',
+                    serviceName: result.data.serviceName,
+                    clientName: result.data.clientName || 'Did not select customer',
+                    clientAddress: result.data.clientAddress,
+                    startTime: actualStartTime,
+                    estimatedDuration: result.data.estimatedDuration,
+                    therapistId: userData.employeeId || userData.id,
+                    therapistName: userData.name || userData.email
+                });
+                console.log('📝 [START-BOOKING] Service recorded in history');
+            }
+
             // IMPORTANT: Do NOT reload from backend immediately!
             // The periodic refresh (every 5 seconds) will handle syncing
             // Immediate reload causes race condition that overwrites actualStartTime
@@ -2652,6 +2669,13 @@ class RoomManager {
 
             // Stop the timer
             this.stopDirectTimer(bookingId);
+
+            // Record service end in history (for therapists)
+            const endTime = new Date().toISOString();
+            if (this.isTherapistView && window.serviceHistory) {
+                await window.serviceHistory.recordServiceEnd(bookingId, endTime);
+                console.log('📝 [END-BOOKING] Service end recorded in history');
+            }
 
             // Refresh display to show updated booking status
             await this.loadAdvanceBookingsFromBackend();

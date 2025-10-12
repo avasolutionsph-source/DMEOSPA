@@ -564,6 +564,7 @@
                 <li><a href="#" data-page="attendance" class="nav-link"><i class="fas fa-clock"></i> Attendance</a></li>
                 <li><a href="#" data-page="payroll" class="nav-link"><i class="fas fa-money-bill-wave"></i> Payroll</a></li>
                 <li><a href="#" data-page="rooms" class="nav-link"><i class="fas fa-door-open"></i> Rooms</a></li>
+                <li><a href="#" data-page="service-history" class="nav-link" data-roles="therapist,senior_therapist,junior_therapist,new_therapist"><i class="fas fa-clipboard-list"></i> Service History</a></li>
                 <li><a href="#" data-page="gift-certificates" class="nav-link"><i class="fas fa-gift"></i> Gift Certificates</a></li>
                 <li><a href="#" data-page="expenses" class="nav-link"><i class="fas fa-receipt"></i> Expenses</a></li>
                 <li><a href="#" data-page="cash-drawer-history" class="nav-link"><i class="fas fa-history"></i> Cash Drawer History</a></li>
@@ -1690,6 +1691,78 @@
                     </div>
                 </div>
                 <div class="rooms-grid" id="roomsGrid"></div>
+            </div>
+
+            <!-- Service History Page -->
+            <div id="service-history" class="page">
+                <div class="page-header">
+                    <h1><i class="fas fa-history"></i> My Service History</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-success" onclick="serviceHistory.refreshHistory()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="service-history-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <i class="fas fa-list" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                            <div>
+                                <div style="font-size: 2rem; font-weight: bold;" id="totalServicesCount">0</div>
+                                <div style="opacity: 0.9;">Total Services</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <i class="fas fa-clock" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                            <div>
+                                <div style="font-size: 2rem; font-weight: bold;" id="totalHoursWorked">0h</div>
+                                <div style="opacity: 0.9;">Hours Worked Today</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <i class="fas fa-calendar-day" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                            <div>
+                                <div style="font-size: 2rem; font-weight: bold;" id="todayServicesCount">0</div>
+                                <div style="opacity: 0.9;">Services Today</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="service-history-filters" style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Date Filter:</label>
+                            <select id="historyDateFilter" onchange="serviceHistory.filterHistory()" style="padding: 0.5rem; border-radius: 6px; border: 1px solid #ddd;">
+                                <option value="today">Today</option>
+                                <option value="yesterday">Yesterday</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="all">All Time</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Service Type:</label>
+                            <select id="historyServiceFilter" onchange="serviceHistory.filterHistory()" style="padding: 0.5rem; border-radius: 6px; border: 1px solid #ddd;">
+                                <option value="all">All Services</option>
+                                <option value="home">Home Service</option>
+                                <option value="advance">Advance Booking</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="serviceHistoryList" style="display: grid; gap: 1rem;">
+                    <!-- Service history items will be loaded here -->
+                </div>
             </div>
 
             <!-- Gift Certificates Page -->
@@ -4938,6 +5011,7 @@
         }
     </script>
     <script defer src="js/rooms.js"></script>
+    <script defer src="js/service-history.js"></script>
     <script defer src="js/expense-manager.js"></script>
     <script defer src="js/gift-certificates.js"></script>
     <script defer src="js/auto-updater.js"></script>
@@ -5651,10 +5725,19 @@
                 window.app.showPage = async function(pageName) {
                     // Call original showPage
                     await originalShowPage(pageName);
-                    
+
                     // Initialize activity logs if showing that page
                     if (pageName === 'activity-logs') {
                         setTimeout(() => initializeActivityLogs(), 100);
+                    }
+
+                    // Initialize service history if showing that page
+                    if (pageName === 'service-history') {
+                        setTimeout(() => {
+                            if (window.serviceHistory) {
+                                window.serviceHistory.init();
+                            }
+                        }, 100);
                     }
                 };
             } else {
