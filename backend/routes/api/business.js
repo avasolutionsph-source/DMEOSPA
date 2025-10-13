@@ -203,8 +203,12 @@ router.get('/employees', async (req, res) => {
       
       return {
         id: emp._id,
+        _id: emp._id, // Include both id and _id for compatibility
         name: emp.fullName || `${emp.firstName} ${emp.lastName}`,
+        firstName: emp.firstName, // Include firstName for name construction
+        lastName: emp.lastName, // Include lastName for name construction
         position: emp.position,
+        role: emp.role, // CRITICAL FIX: Include role field for filtering
         email: emp.email,
         phone: emp.phone,
         hiredDate: emp.hireDate || emp.hiredDate,
