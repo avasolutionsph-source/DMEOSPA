@@ -80,13 +80,10 @@ class ServiceHistoryManager {
 
             console.log('📋 [SERVICE-HISTORY] Converted employees:', employees);
 
-            // Filter for therapists only
+            // Filter for therapists only - include all roles containing 'therapist'
             const therapists = employees.filter(emp =>
                 emp.role && (
-                    emp.role === 'senior_therapist' ||
-                    emp.role === 'junior_therapist' ||
-                    emp.role === 'new_therapist' ||
-                    emp.role === 'therapist'
+                    emp.role.toLowerCase().includes('therapist')
                 )
             );
 
