@@ -4,10 +4,19 @@ class CashDrawerManager {
         this.currentSession = null;
         this.isInitialized = false;
         this.isOnline = navigator.onLine;
-        
+        this.statusPollInterval = null;
+        this.pollFrequency = 30000; // 30 seconds
+        this.lastKnownDrawerState = null;
+
         // Listen for online/offline changes
-        window.addEventListener('online', () => this.isOnline = true);
-        window.addEventListener('offline', () => this.isOnline = false);
+        window.addEventListener('online', () => {
+            this.isOnline = true;
+            this.startStatusPolling(); // Resume polling when coming online
+        });
+        window.addEventListener('offline', () => {
+            this.isOnline = false;
+            this.stopStatusPolling(); // Stop polling when offline
+        });
     }
 
     async init() {
@@ -30,15 +39,168 @@ class CashDrawerManager {
             
             this.isInitialized = true;
             console.log('✅ Cash Drawer Manager initialized successfully');
-            
+
             // Update UI with current status
             this.updateUI();
             console.log('✅ UI updated');
-            
+
+            // Start real-time status polling for cross-device awareness
+            this.startStatusPolling();
+            console.log('✅ Status polling started');
+
         } catch (error) {
             console.error('❌ Failed to initialize Cash Drawer Manager:', error);
             console.error('❌ Error details:', error.stack);
             throw error;
+        }
+    }
+
+    startStatusPolling() {
+        // Clear any existing polling interval
+        if (this.statusPollInterval) {
+            clearInterval(this.statusPollInterval);
+        }
+
+        // Only start polling if online
+        if (!this.isOnline) {
+            console.log('📡 Status polling skipped - currently offline');
+            return;
+        }
+
+        console.log('📡 Starting drawer status polling (every 30 seconds)...');
+
+        // Immediate first check
+        this.checkDrawerStatus();
+
+        // Set up recurring polling
+        this.statusPollInterval = setInterval(async () => {
+            if (this.isOnline && window.HybridAPIClient) {
+                await this.checkDrawerStatus();
+            }
+        }, this.pollFrequency);
+
+        console.log('✅ Drawer status polling started');
+    }
+
+    stopStatusPolling() {
+        if (this.statusPollInterval) {
+            clearInterval(this.statusPollInterval);
+            this.statusPollInterval = null;
+            console.log('⏹️ Drawer status polling stopped');
+        }
+    }
+
+    async checkDrawerStatus() {
+        try {
+            console.log('🔍 Checking drawer status from server...');
+
+            const availability = await window.HybridAPIClient.get('/api/cash-drawer/availability');
+
+            if (!availability.success) {
+                console.warn('⚠️ Failed to check drawer status:', availability.error);
+                return;
+            }
+
+            const currentState = {
+                available: availability.available,
+                openedBy: availability.openSession?.openedByName || null,
+                sessionId: availability.openSession?.sessionId || null,
+                openedAt: availability.openSession?.openedAt || null
+            };
+
+            // Check if state changed from last check
+            if (this.hasDrawerStateChanged(currentState)) {
+                console.log('🔄 Drawer state changed:', currentState);
+
+                // If drawer is open by someone else and we don't have a local session
+                if (!currentState.available && !this.isDrawerOpen()) {
+                    this.showDrawerInUseWarning(availability.openSession);
+                }
+
+                // If drawer is now available but we thought it was open, sync
+                if (currentState.available && this.isDrawerOpen()) {
+                    console.warn('⚠️ Drawer closed remotely - syncing local state');
+                    await this.loadCurrentSession();
+                    this.hideDrawerInUseWarning();
+                    this.updateUI();
+                }
+
+                // If drawer is open by us, hide any warnings
+                if (!currentState.available && this.isDrawerOpen()) {
+                    this.hideDrawerInUseWarning();
+                }
+
+                this.lastKnownDrawerState = currentState;
+            }
+
+        } catch (error) {
+            console.warn('⚠️ Error checking drawer status:', error);
+        }
+    }
+
+    hasDrawerStateChanged(newState) {
+        if (!this.lastKnownDrawerState) {
+            this.lastKnownDrawerState = newState;
+            return true;
+        }
+
+        const changed =
+            this.lastKnownDrawerState.available !== newState.available ||
+            this.lastKnownDrawerState.sessionId !== newState.sessionId ||
+            this.lastKnownDrawerState.openedBy !== newState.openedBy;
+
+        return changed;
+    }
+
+    showDrawerInUseWarning(openSession) {
+        console.log('⚠️ Showing drawer in use warning:', openSession);
+
+        // Create warning banner if it doesn't exist
+        let warningBanner = document.getElementById('drawer-in-use-warning');
+
+        if (!warningBanner) {
+            warningBanner = document.createElement('div');
+            warningBanner.id = 'drawer-in-use-warning';
+            warningBanner.style.cssText = `
+                position: fixed;
+                top: 60px;
+                left: 0;
+                right: 0;
+                background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+                color: white;
+                padding: 12px 20px;
+                text-align: center;
+                font-size: 14px;
+                font-weight: 500;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                z-index: 9998;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                animation: slideDown 0.3s ease-out;
+            `;
+
+            document.body.appendChild(warningBanner);
+        }
+
+        const openedAt = new Date(openSession.openedAt).toLocaleString();
+
+        warningBanner.innerHTML = `
+            <i class="fas fa-exclamation-triangle" style="font-size: 18px;"></i>
+            <span>
+                <strong>Cash Drawer In Use:</strong> Currently opened by
+                <strong>${openSession.openedByName}</strong> since ${openedAt}
+            </span>
+        `;
+
+        warningBanner.style.display = 'flex';
+    }
+
+    hideDrawerInUseWarning() {
+        const warningBanner = document.getElementById('drawer-in-use-warning');
+        if (warningBanner) {
+            warningBanner.style.display = 'none';
         }
     }
 
@@ -114,9 +276,47 @@ class CashDrawerManager {
                 throw new Error('Opening float must be a positive number');
             }
 
-            // Check if drawer is already open
+            // CRITICAL: Check backend for ANY open sessions (cross-device check)
+            console.log('🔍 Checking drawer availability across all devices...');
+
+            if (this.isOnline && window.HybridAPIClient) {
+                try {
+                    const availability = await window.HybridAPIClient.get('/api/cash-drawer/availability');
+
+                    if (availability.success && !availability.available) {
+                        const openedBy = availability.openSession.openedByName;
+                        const openedAt = new Date(availability.openSession.openedAt).toLocaleString();
+                        const sessionId = availability.openSession.sessionId;
+
+                        console.error('❌ Drawer already open by another device:', availability.openSession);
+
+                        throw new Error(
+                            `Cash drawer is already open!\n\n` +
+                            `Opened by: ${openedBy}\n` +
+                            `Since: ${openedAt}\n` +
+                            `Session: ${sessionId}\n\n` +
+                            `Please ask them to close the drawer first, or use Force Close if you have manager permissions.`
+                        );
+                    }
+
+                    console.log('✅ Drawer availability confirmed - proceeding with opening');
+                } catch (availError) {
+                    // If availability check fails, warn but allow local check to proceed
+                    console.warn('⚠️ Could not check drawer availability from server:', availError);
+
+                    // If it's a clear "drawer open" error, re-throw it
+                    if (availError.message && availError.message.includes('already open')) {
+                        throw availError;
+                    }
+
+                    // Otherwise, continue with local check
+                    console.log('📱 Falling back to local drawer check...');
+                }
+            }
+
+            // Check if drawer is already open locally (backup check)
             if (this.currentSession && this.currentSession.status === 'open') {
-                throw new Error('Cash drawer is already open');
+                throw new Error('Cash drawer is already open on this device');
             }
 
             const currentUser = this.getCurrentUser();

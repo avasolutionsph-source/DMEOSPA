@@ -38,6 +38,61 @@ router.get('/current', async (req, res) => {
   }
 });
 
+// Check drawer availability (prevents multiple devices from opening simultaneously)
+router.get('/availability', async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const terminal = req.query.terminal || 'POS Terminal';
+
+    console.log('🔍 Checking drawer availability for:', { userId, terminal });
+
+    // Check for ANY open session for this user+terminal combination
+    const openSession = await CashDrawerSession.findOne({
+      userId,
+      terminal,
+      status: 'open'
+    });
+
+    if (openSession) {
+      console.log('⚠️ Drawer already open:', {
+        sessionId: openSession.sessionId,
+        openedBy: openSession.openedByName,
+        openedAt: openSession.openedAt
+      });
+
+      return res.json({
+        success: true,
+        available: false,
+        reason: 'drawer_already_open',
+        openSession: {
+          sessionId: openSession.sessionId,
+          openedBy: openSession.openedBy,
+          openedByName: openSession.openedByName,
+          openedAt: openSession.openedAt,
+          expectedBalance: openSession.expectedBalance,
+          transactionCount: openSession.transactionCount
+        }
+      });
+    }
+
+    console.log('✅ Drawer available for opening');
+
+    res.json({
+      success: true,
+      available: true,
+      message: 'Cash drawer is available to open'
+    });
+
+  } catch (error) {
+    console.error('Error checking drawer availability:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check drawer availability',
+      details: error.message
+    });
+  }
+});
+
 // Create new cash drawer session (open drawer)
 router.post('/sessions', async (req, res) => {
   try {

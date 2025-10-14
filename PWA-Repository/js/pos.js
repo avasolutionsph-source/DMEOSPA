@@ -2534,14 +2534,50 @@ class POSSystem {
                 await window.db.update('giftCertificates', this.appliedGiftCertificate);
             }
 
-            // Add cash transaction to drawer session if payment is cash
-            if (paymentMethod === 'cash' && window.cashDrawerManager && window.cashDrawerManager.isDrawerOpen()) {
-                try {
-                    await window.cashDrawerManager.addCashTransaction(total);
-                    console.log('💰 Cash transaction added to drawer session');
-                } catch (drawerError) {
-                    console.warn('⚠️ Failed to add transaction to cash drawer session:', drawerError);
-                    // Don't fail the entire checkout for this error
+            // CRITICAL: Add cash transaction to drawer session if payment is cash
+            if (paymentMethod === 'cash') {
+                console.log('💵 Processing cash payment - checking drawer status...');
+
+                if (window.cashDrawerManager && window.cashDrawerManager.isDrawerOpen()) {
+                    try {
+                        console.log('💰 Adding cash transaction to drawer session:', {
+                            transactionId,
+                            amount: total,
+                            currentDrawerBalance: window.cashDrawerManager.getExpectedBalance()
+                        });
+
+                        await window.cashDrawerManager.addCashTransaction(total);
+
+                        const newBalance = window.cashDrawerManager.getExpectedBalance();
+                        console.log('✅ Cash transaction added to drawer session', {
+                            transactionId,
+                            addedAmount: total,
+                            newExpectedBalance: newBalance,
+                            totalTransactions: window.cashDrawerManager.getTotalTransactions()
+                        });
+
+                        // Show success message with updated drawer balance
+                        if (window.showSuccess) {
+                            window.showSuccess(`Cash sale recorded! Drawer balance: ₱${newBalance.toFixed(2)}`);
+                        }
+
+                    } catch (drawerError) {
+                        console.error('❌ Failed to add transaction to cash drawer session:', drawerError);
+                        // Show warning but don't fail the checkout
+                        if (window.showWarning) {
+                            window.showWarning('Sale completed but drawer update failed. Please verify drawer balance manually.');
+                        }
+                    }
+                } else {
+                    console.warn('⚠️ Cash payment processed but drawer is not open!', {
+                        drawerManagerExists: !!window.cashDrawerManager,
+                        isDrawerOpen: window.cashDrawerManager?.isDrawerOpen()
+                    });
+
+                    // Show warning that drawer should be open
+                    if (window.showWarning) {
+                        window.showWarning('Cash sale completed, but cash drawer is not open. Please open drawer and add ₱' + total.toFixed(2) + ' manually.');
+                    }
                 }
             }
             
