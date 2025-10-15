@@ -27,8 +27,45 @@ class CustomerManager {
         // Check if customers table exists, if not trigger database upgrade
         await this.ensureCustomersTable();
         await this.loadCustomers();
+
+        // Migrate existing customers to add syncStatus
+        await this.migrateCustomerSyncStatus();
+
         this.setupEventListeners();
         this.updateCustomerStats();
+    }
+
+    // Migration function: Add syncStatus to existing customers
+    async migrateCustomerSyncStatus() {
+        try {
+            console.log('🔄 Checking customers for syncStatus migration...');
+
+            let migrated = 0;
+            for (const customer of this.customers) {
+                if (!customer.syncStatus) {
+                    customer.syncStatus = 'pending'; // Mark for upload on next sync
+                    await window.db.update('customers', customer);
+                    migrated++;
+                }
+            }
+
+            if (migrated > 0) {
+                console.log(`✅ Migrated ${migrated} customer records with syncStatus`);
+
+                // Trigger immediate sync if online to upload existing customers
+                if (window.syncManager?.isOnline) {
+                    console.log('🔄 Triggering sync to upload migrated customers');
+                    setTimeout(() => {
+                        window.syncManager.triggerSync();
+                    }, 2000); // Delay to avoid blocking init
+                }
+            } else {
+                console.log('✅ All customers already have syncStatus');
+            }
+        } catch (error) {
+            console.error('❌ Customer migration failed:', error);
+            // Don't throw - migration failure shouldn't break the app
+        }
     }
 
     async waitForDatabaseReady() {
@@ -818,15 +855,29 @@ class CustomerManager {
             return;
         }
 
-        // CHECK FOR DUPLICATE PHONE NUMBER
+        // CHECK FOR DUPLICATE PHONE NUMBER (Local)
         if (this.isDuplicatePhone(phone)) {
             const existingCustomer = this.customers.find(c => c.phone === phone);
             const confirmAdd = confirm(
-                `A customer with phone ${phone} already exists:\n` +
+                `A customer with phone ${phone} already exists locally:\n` +
                 `${existingCustomer.firstName} ${existingCustomer.lastName}\n\n` +
                 `Do you still want to add this customer?`
             );
-            
+
+            if (!confirmAdd) {
+                return;
+            }
+        }
+
+        // CHECK FOR DUPLICATE PHONE NUMBER (Backend - cross-device)
+        const backendDuplicate = await this.isDuplicatePhoneOnBackend(phone);
+        if (backendDuplicate) {
+            const confirmAdd = confirm(
+                `A customer with phone ${phone} already exists on another device:\n` +
+                `${backendDuplicate.firstName} ${backendDuplicate.lastName}\n\n` +
+                `Do you still want to add this customer?`
+            );
+
             if (!confirmAdd) {
                 return;
             }
@@ -848,24 +899,32 @@ class CustomerManager {
                 totalSpent: 0
             };
 
+            // Set syncStatus before saving
+            customer.syncStatus = 'pending';
             await window.db.add('customers', customer);
-            
+
             // Update customers array directly instead of reloading to prevent initialization loops
             this.customers.push(customer);
             this.filteredCustomers = [...this.customers];
-            
+
             // Update displays
             this.displayCustomers();
             this.updateCustomerStats();
-            
+
             // Update dropdown options if it's initialized
             if (this.isDropdownInitialized) {
                 this.renderCustomerOptions();
             }
-            
+
             this.closeAddCustomerModal();
-            
+
             showSuccess('Customer added successfully!');
+
+            // Trigger immediate sync if online
+            if (window.syncManager?.isOnline) {
+                console.log('🔄 Triggering customer sync after add');
+                window.syncManager.triggerSync();
+            }
         } catch (error) {
             console.error('Error saving customer:', error);
             showError('Failed to save customer. Please try again.');
@@ -899,12 +958,21 @@ class CustomerManager {
                 throw new Error('Phone number must be in format 09XXXXXXXXX');
             }
 
-            // CHECK FOR DUPLICATE IN CHECKOUT TOO
+            // CHECK FOR DUPLICATE IN CHECKOUT (Local)
             if (this.isDuplicatePhone(phone)) {
                 const existingCustomer = this.customers.find(c => c.phone === phone);
                 throw new Error(
                     `Customer with phone ${phone} already exists: ${existingCustomer.firstName} ${existingCustomer.lastName}. ` +
                     `Please select them from the dropdown instead.`
+                );
+            }
+
+            // CHECK FOR DUPLICATE IN CHECKOUT (Backend - cross-device)
+            const backendDuplicate = await this.isDuplicatePhoneOnBackend(phone);
+            if (backendDuplicate) {
+                throw new Error(
+                    `Customer with phone ${phone} already exists on another device: ${backendDuplicate.firstName} ${backendDuplicate.lastName}. ` +
+                    `Please sync your data first.`
                 );
             }
 
@@ -918,7 +986,8 @@ class CustomerManager {
                 dateAdded: new Date().toISOString(),
                 lastVisit: new Date().toISOString(),
                 totalVisits: 1,
-                totalSpent: 0
+                totalSpent: 0,
+                syncStatus: 'pending' // Mark for sync
             };
 
             // Save to database
@@ -926,17 +995,23 @@ class CustomerManager {
                 await window.db.add('customers', customer);
                 // Invalidate cache when new data is added
                 this.transactionsCache = null;
-                
+
                 // Update customers array directly instead of reloading
                 this.customers.push(customer);
                 this.filteredCustomers = [...this.customers];
                 this.updateCustomerStats();
-                
+
                 // Update dropdown options if it's initialized
                 if (this.isDropdownInitialized) {
                     this.renderCustomerOptions();
                 }
-                
+
+                // Trigger immediate sync if online
+                if (window.syncManager?.isOnline) {
+                    console.log('🔄 Triggering customer sync after checkout add');
+                    window.syncManager.triggerSync();
+                }
+
                 return customer;
             } catch (dbError) {
                 console.warn('Customer database not available, proceeding without saving:', dbError);
@@ -970,21 +1045,27 @@ class CustomerManager {
 
         try {
             await window.db.delete('customers', customerId);
-            
+
             // Update customers array directly instead of reloading
             this.customers = this.customers.filter(c => c.id !== customerId);
             this.filteredCustomers = [...this.customers];
-            
+
             // Update displays
             this.displayCustomers();
             this.updateCustomerStats();
-            
+
             // Update dropdown options if it's initialized
             if (this.isDropdownInitialized) {
                 this.renderCustomerOptions();
             }
-            
+
             showSuccess('Customer deleted successfully!');
+
+            // Trigger immediate sync if online
+            if (window.syncManager?.isOnline) {
+                console.log('🔄 Triggering customer sync after delete');
+                window.syncManager.triggerSync();
+            }
         } catch (error) {
             console.error('Error deleting customer:', error);
             showError('Failed to delete customer. Please try again.');
@@ -1471,11 +1552,40 @@ class CustomerManager {
         return values;
     }
 
-    // Check for duplicate phone number
+    // Check for duplicate phone number (local check)
     isDuplicatePhone(phone, excludeId = null) {
-        return this.customers.some(customer => 
+        return this.customers.some(customer =>
             customer.phone === phone && customer.id !== excludeId
         );
+    }
+
+    // Check for duplicate phone number on backend (cross-device check)
+    async isDuplicatePhoneOnBackend(phone) {
+        if (!navigator.onLine || !window.syncManager) {
+            return false; // Offline - skip backend check
+        }
+
+        try {
+            const response = await fetch(
+                `${window.syncManager.apiUrl}/api/customers?phone=${encodeURIComponent(phone)}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${window.syncManager.getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    timeout: 5000 // 5 second timeout
+                }
+            );
+
+            if (response.ok) {
+                const result = await response.json();
+                return result.data && result.data.length > 0 ? result.data[0] : null;
+            }
+        } catch (error) {
+            console.warn('Could not check for duplicate on backend (offline?):', error);
+        }
+
+        return null;
     }
 }
 
