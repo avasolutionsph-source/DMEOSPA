@@ -173,6 +173,60 @@ const payrollRecordSchema = new mongoose.Schema({
     }]
   },
 
+  // Shift Schedule Information - NEW
+  scheduleInfo: {
+    hasSchedule: {
+      type: Boolean,
+      default: false
+    },
+    scheduleId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ShiftSchedule'
+    },
+    scheduledDaysInPeriod: {
+      type: Number,
+      default: 0,
+      comment: "Total days employee was scheduled to work in this period"
+    },
+    scheduledHoursInPeriod: {
+      type: Number,
+      default: 0,
+      comment: "Total hours employee was scheduled to work in this period"
+    },
+    dayShiftDays: {
+      type: Number,
+      default: 0,
+      comment: "Number of day shifts in period"
+    },
+    nightShiftDays: {
+      type: Number,
+      default: 0,
+      comment: "Number of night shifts in period"
+    },
+    shiftType: {
+      type: String,
+      enum: ['day', 'night', 'mixed', 'none'],
+      default: 'none',
+      comment: "Primary shift type for this payroll period"
+    },
+    scheduleUtilization: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+      comment: "Percentage of scheduled shifts actually worked"
+    },
+    weeklySchedule: {
+      type: Map,
+      of: {
+        shift: String,
+        startTime: String,
+        endTime: String
+      },
+      comment: "Copy of weekly schedule during this period"
+    }
+  },
+
   // Status and processing information
   status: {
     type: String,

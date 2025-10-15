@@ -3,11 +3,176 @@ import PayrollRecord from '../../models/PayrollRecord.js';
 import Employee from '../../models/Employee.js';
 import { authenticateJWT, requireBusinessUser } from '../../middleware/auth.js';
 import logger from '../../utils/logger.js';
+import {
+  getEmployeeScheduleSummary,
+  validateEmployeeSchedule,
+  calculateScheduleUtilization
+} from '../../services/payroll-schedule-integration.js';
 
 const router = express.Router();
 
 // Apply authentication to all payroll routes
 router.use(authenticateJWT, requireBusinessUser);
+
+// ============================================================================
+// SCHEDULE INTEGRATION ENDPOINTS
+// ============================================================================
+
+// Get employee schedule summary for payroll period
+router.get('/schedule-summary/:employeeId/:periodStart/:periodEnd', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { employeeId, periodStart, periodEnd } = req.params;
+
+    const summary = await getEmployeeScheduleSummary(
+      userId,
+      employeeId,
+      new Date(periodStart),
+      new Date(periodEnd)
+    );
+
+    logger.info('Schedule summary retrieved for payroll', {
+      category: 'PAYROLL_SCHEDULE',
+      operation: 'get_summary',
+      userId,
+      employeeId
+    });
+
+    res.json({
+      success: true,
+      data: summary
+    });
+
+  } catch (error) {
+    logger.error('Failed to get schedule summary', {
+      category: 'PAYROLL_SCHEDULE',
+      operation: 'get_summary',
+      error: error.message
+    });
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get schedule summary'
+    });
+  }
+});
+
+// Validate schedules for all employees before payroll processing
+router.post('/validate-schedules', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { employeeIds, periodStart, periodEnd } = req.body;
+
+    if (!Array.isArray(employeeIds)) {
+      return res.status(400).json({
+        success: false,
+        error: 'employeeIds must be an array'
+      });
+    }
+
+    const validations = [];
+
+    for (const employeeId of employeeIds) {
+      const validation = await validateEmployeeSchedule(
+        userId,
+        employeeId,
+        new Date(periodStart),
+        new Date(periodEnd)
+      );
+
+      validations.push({
+        employeeId,
+        ...validation
+      });
+    }
+
+    const allValid = validations.every(v => v.isValid);
+    const hasWarnings = validations.some(v => v.hasWarnings);
+
+    logger.info('Schedule validation completed', {
+      category: 'PAYROLL_SCHEDULE',
+      operation: 'validate_schedules',
+      userId,
+      employeeCount: employeeIds.length,
+      allValid,
+      hasWarnings
+    });
+
+    res.json({
+      success: true,
+      allValid,
+      hasWarnings,
+      validations
+    });
+
+  } catch (error) {
+    logger.error('Failed to validate schedules', {
+      category: 'PAYROLL_SCHEDULE',
+      operation: 'validate_schedules',
+      error: error.message
+    });
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to validate schedules'
+    });
+  }
+});
+
+// Get schedule conflicts before payroll processing
+router.get('/schedule-conflicts/:periodStart/:periodEnd', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { periodStart, periodEnd } = req.params;
+
+    // Get all active employees
+    const employees = await Employee.find({ userId, isActive: { $ne: false } }).lean();
+    const conflicts = [];
+
+    for (const employee of employees) {
+      const validation = await validateEmployeeSchedule(
+        userId,
+        employee._id.toString(),
+        new Date(periodStart),
+        new Date(periodEnd)
+      );
+
+      if (!validation.isValid || validation.hasWarnings) {
+        conflicts.push({
+          employeeId: employee._id,
+          employeeName: `${employee.firstName} ${employee.lastName}`,
+          issues: [...validation.errors, ...validation.warnings]
+        });
+      }
+    }
+
+    logger.info('Schedule conflicts check completed', {
+      category: 'PAYROLL_SCHEDULE',
+      operation: 'check_conflicts',
+      userId,
+      totalEmployees: employees.length,
+      conflictCount: conflicts.length
+    });
+
+    res.json({
+      success: true,
+      hasConflicts: conflicts.length > 0,
+      conflicts
+    });
+
+  } catch (error) {
+    logger.error('Failed to check schedule conflicts', {
+      category: 'PAYROLL_SCHEDULE',
+      operation: 'check_conflicts',
+      error: error.message
+    });
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check schedule conflicts'
+    });
+  }
+});
 
 // ============================================================================
 // PAYROLL SYNC ENDPOINTS FOR PWA
