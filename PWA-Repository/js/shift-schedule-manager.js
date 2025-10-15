@@ -431,6 +431,9 @@ class ShiftScheduleManager {
     }
 
     async saveShiftConfiguration() {
+        const saveBtn = document.getElementById('saveShiftConfigBtn');
+        const originalContent = saveBtn.innerHTML;
+
         try {
             console.log('💾 Saving shift configuration...');
 
@@ -451,6 +454,12 @@ class ShiftScheduleManager {
                 this.showError('Authentication required. Please log in again.');
                 return;
             }
+
+            // Show loading state
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            saveBtn.style.opacity = '0.7';
+            saveBtn.style.cursor = 'not-allowed';
 
             const apiUrl = this.getApiUrl();
             const url = `${apiUrl}/api/shift-configuration`;
@@ -486,11 +495,41 @@ class ShiftScheduleManager {
             this.shiftConfiguration = result.data;
 
             console.log('✅ Shift configuration saved successfully');
-            this.showSuccess('Shift configuration saved! New times will be used for future schedules.');
+
+            // Show success state
+            saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+            saveBtn.style.background = 'linear-gradient(135deg, #10B981 0%, #059669 100%)';
+
+            // Show success notification
+            this.showSuccess('✅ Configuration saved successfully! Times will auto-fill when creating schedules.');
+
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalContent;
+                saveBtn.style.background = 'linear-gradient(135deg, #800020 0%, #600015 100%)';
+                saveBtn.style.opacity = '1';
+                saveBtn.style.cursor = 'pointer';
+            }, 2000);
 
         } catch (error) {
             console.error('❌ Error saving shift configuration:', error);
-            this.showError(`Failed to save shift configuration: ${error.message}`);
+
+            // Show error state
+            saveBtn.innerHTML = '<i class="fas fa-times"></i> Failed';
+            saveBtn.style.background = 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)';
+
+            // Show error notification
+            this.showError(`❌ Failed to save: ${error.message}`);
+
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalContent;
+                saveBtn.style.background = 'linear-gradient(135deg, #800020 0%, #600015 100%)';
+                saveBtn.style.opacity = '1';
+                saveBtn.style.cursor = 'pointer';
+            }, 2000);
         }
     }
     
