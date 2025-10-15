@@ -2475,12 +2475,24 @@ class POSSystem {
                             isOffline: true,
                             createdAt: transactionData.createdAt || new Date().toISOString()
                         };
-                        
+
                         try {
                             await window.db.add('transactions', localTransaction);
-                            console.log('💾 [POS] Transaction saved locally for offline access');
+                            console.log('💾 [POS-SAVE] ✅ Transaction saved to IndexedDB:', {
+                                transactionId,
+                                total: localTransaction.total,
+                                syncStatus: localTransaction.syncStatus,
+                                isOffline: localTransaction.isOffline,
+                                timestamp: new Date().toISOString()
+                            });
+
+                            // Trigger immediate sync
+                            if (window.syncManager?.isOnline) {
+                                console.log('🔄 [POS-SAVE] Triggering immediate sync...');
+                                setTimeout(() => window.syncManager.triggerSync(), 1000);
+                            }
                         } catch (localSaveError) {
-                            console.error('❌ [POS] Failed to save transaction locally:', localSaveError);
+                            console.error('❌ [POS-SAVE] Failed to save transaction locally:', localSaveError);
                         }
                         
                     } else {
@@ -2502,20 +2514,47 @@ class POSSystem {
                             isOffline: true,
                             createdAt: transactionData.createdAt || new Date().toISOString()
                         };
-                        
+
                         try {
                             await window.db.add('transactions', localTransaction);
-                            console.log('💾 [POS] Transaction saved locally for offline access');
+                            console.log('💾 [POS-SAVE] ✅ Transaction saved to IndexedDB:', {
+                                transactionId,
+                                total: localTransaction.total,
+                                syncStatus: localTransaction.syncStatus,
+                                isOffline: localTransaction.isOffline,
+                                timestamp: new Date().toISOString()
+                            });
+
+                            // Trigger immediate sync
+                            if (window.syncManager?.isOnline) {
+                                console.log('🔄 [POS-SAVE] Triggering immediate sync...');
+                                setTimeout(() => window.syncManager.triggerSync(), 1000);
+                            }
                         } catch (localSaveError) {
-                            console.error('❌ [POS] Failed to save transaction locally:', localSaveError);
+                            console.error('❌ [POS-SAVE] Failed to save transaction locally:', localSaveError);
                         }
                         
                     } else {
                         // Normal online save
                         transactionId = result.data?._id || result.data?.id;
+                        console.log('💾 [POS-SAVE] ✅ Transaction saved to MongoDB (ONLINE):', {
+                            transactionId,
+                            total: transactionData.total,
+                            syncStatus: 'synced',
+                            backend: 'MongoDB',
+                            timestamp: new Date().toISOString()
+                        });
+
+                        // Trigger dashboard refresh after successful online save
+                        if (window.enhancedDashboardManager) {
+                            console.log('🔄 [POS-SAVE] Refreshing dashboard after online sale...');
+                            setTimeout(() => {
+                                window.enhancedDashboardManager.loadFinancialPerformance();
+                            }, 500);
+                        }
                     }
                 }
-                
+
                 if (!transactionId) {
                     throw new Error('Transaction could not be saved - no ID returned');
                 }

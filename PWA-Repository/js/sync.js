@@ -1066,30 +1066,42 @@ class SyncManager {
 
     async syncTransactions() {
         try {
+            console.log('🔄 [TRANSACTION-SYNC] ===== STARTING TRANSACTION SYNC =====');
+
             // Get ALL transactions to sync to backend
             const allTransactions = await window.db.getAll('transactions');
-            
-            console.log(`📋 Found ${allTransactions.length} total transactions for sync`);
-            
+
+            console.log(`📋 [TRANSACTION-SYNC] Found ${allTransactions.length} total transactions in IndexedDB`);
+
             if (window.logger) {
-                window.logger.info('Transactions ready for sync', { 
-                    category: 'SYNC', 
+                window.logger.info('Transactions ready for sync', {
+                    category: 'SYNC',
                     operation: 'sync_transactions',
                     data: { count: allTransactions.length }
                 });
             }
 
             if (allTransactions.length === 0) {
-                console.log('⚠️ No transactions to sync');
+                console.log('⚠️ [TRANSACTION-SYNC] No transactions to sync (IndexedDB empty)');
                 return;
             }
 
             // Filter out transactions that are already synced
-            const pendingTransactions = allTransactions.filter(t => 
+            const pendingTransactions = allTransactions.filter(t =>
                 !t.syncStatus || t.syncStatus === 'pending' || t.syncStatus === 'failed'
             );
 
-            console.log(`📤 Syncing ${pendingTransactions.length} pending transactions`);
+            console.log(`📤 [TRANSACTION-SYNC] Found ${pendingTransactions.length} pending transactions`);
+            console.log(`✅ [TRANSACTION-SYNC] Already synced: ${allTransactions.length - pendingTransactions.length} transactions`);
+
+            if (pendingTransactions.length > 0) {
+                console.log('📊 [TRANSACTION-SYNC] Sample pending transaction:', {
+                    id: pendingTransactions[0].id,
+                    total: pendingTransactions[0].total,
+                    syncStatus: pendingTransactions[0].syncStatus,
+                    date: pendingTransactions[0].date || pendingTransactions[0].createdAt
+                });
+            }
 
             if (pendingTransactions.length === 0) {
                 console.log('✅ All transactions already synced');
@@ -1135,27 +1147,47 @@ class SyncManager {
             );
 
             if (response && response.success) {
-                console.log('✅ Transactions sync successful');
-                
+                console.log('✅ [TRANSACTION-SYNC] Backend sync successful!');
+                console.log(`📤 [TRANSACTION-SYNC] ${pendingTransactions.length} transactions uploaded to MongoDB`);
+
                 // Mark transactions as synced in IndexedDB
+                let markedCount = 0;
                 for (const transaction of pendingTransactions) {
                     await window.db.update('transactions', {
                         ...transaction,
                         syncStatus: 'synced',
                         lastSyncDate: new Date().toISOString()
                     });
+                    markedCount++;
                 }
 
+                console.log(`✅ [TRANSACTION-SYNC] ${markedCount} transactions marked as synced in IndexedDB`);
+
                 if (window.logger) {
-                    window.logger.info('Transaction sync completed', { 
-                        category: 'SYNC', 
+                    window.logger.info('Transaction sync completed', {
+                        category: 'SYNC',
                         operation: 'sync_transactions_complete',
                         data: { syncedCount: pendingTransactions.length }
                     });
                 }
+
+                // Trigger dashboard refresh
+                if (window.enhancedDashboardManager) {
+                    console.log('🔄 [TRANSACTION-SYNC] Triggering dashboard refresh...');
+                    setTimeout(() => {
+                        window.enhancedDashboardManager.loadFinancialPerformance();
+                    }, 1000);
+                }
+
+                console.log('✅ [TRANSACTION-SYNC] ===== TRANSACTION SYNC COMPLETE =====');
             } else {
-                console.error('❌ Transactions sync failed:', response);
-                
+                console.error('❌ [TRANSACTION-SYNC] Backend sync failed:', response);
+                console.error('❌ [TRANSACTION-SYNC] Error details:', {
+                    success: response?.success,
+                    error: response?.error,
+                    status: response?.status
+                });
+
                 // Mark failed transactions
                 for (const transaction of pendingTransactions) {
                     await window.db.update('transactions', {
