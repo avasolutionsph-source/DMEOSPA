@@ -1322,12 +1322,53 @@ class PayrollManager {
         }
     }
 
+    // Fetch employee schedule summary from backend
+    async getEmployeeScheduleSummary(employeeId, periodStart, periodEnd) {
+        try {
+            const token = this.getAuthToken();
+            if (!token) {
+                console.warn('⚠️ [PAYROLL] No auth token for schedule fetch');
+                return null;
+            }
+
+            const apiUrl = this.getApiUrl();
+            const startDate = new Date(periodStart).toISOString().split('T')[0];
+            const endDate = new Date(periodEnd).toISOString().split('T')[0];
+            const url = `${apiUrl}/api/payroll/schedule-summary/${employeeId}/${startDate}/${endDate}`;
+
+            console.log('📅 [PAYROLL] Fetching schedule summary:', url);
+
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                console.warn('⚠️ [PAYROLL] Schedule fetch failed:', response.status);
+                return null;
+            }
+
+            const result = await response.json();
+            console.log('✅ [PAYROLL] Schedule summary loaded:', result.data);
+            return result.data;
+
+        } catch (error) {
+            console.error('❌ [PAYROLL] Error fetching schedule summary:', error);
+            return null;
+        }
+    }
+
     // Calculate payroll for an employee for a period
     async calculatePayroll(employeeId, periodStart, periodEnd) {
         const employee = this.employees.find(e => e.id === employeeId);
         if (!employee) {
             throw new Error('Employee not found');
         }
+
+        // Get employee's shift schedule for the period
+        const scheduleSummary = await this.getEmployeeScheduleSummary(employeeId, periodStart, periodEnd);
 
         // Get attendance records for the period
         const attendanceRecords = await this.getAttendanceForPeriod(employeeId, periodStart, periodEnd);
@@ -1350,12 +1391,44 @@ class PayrollManager {
         const earlyDepartureDeduction = this.calculateEarlyDepartureDeductions(employee, attendanceRecords);
         const tips = await this.calculateTipsCommissions(employeeId, periodStart, periodEnd);
         
-        // Government deductions
-        const sss = this.calculateSSS(basePay);
-        const philHealth = this.calculatePhilHealth(basePay);
-        const pagIbig = this.calculatePagIbig(basePay);
-        const tax = this.calculateWithholdingTax(basePay);
-        
+        // Government deductions - with schedule-based proration
+        let sss, philHealth, pagIbig, tax;
+        let scheduleUtilization = 0;
+
+        if (scheduleSummary && scheduleSummary.hasSchedule && scheduleSummary.scheduledHoursInPeriod > 0) {
+            // Calculate proration ratio based on scheduled hours
+            const fullTimeHours = 160; // Standard full-time hours per month
+            const prorationRatio = Math.min(scheduleSummary.scheduledHoursInPeriod / fullTimeHours, 1.0);
+
+            // Apply prorated deductions
+            sss = this.calculateSSS(basePay) * prorationRatio;
+            philHealth = this.calculatePhilHealth(basePay) * prorationRatio;
+            pagIbig = this.calculatePagIbig(basePay) * prorationRatio;
+            tax = this.calculateWithholdingTax(basePay) * prorationRatio;
+
+            // Calculate schedule utilization
+            if (scheduleSummary.scheduledDaysInPeriod > 0) {
+                scheduleUtilization = (attendanceRecords.length / scheduleSummary.scheduledDaysInPeriod) * 100;
+            }
+
+            console.log(`📊 [PAYROLL] Schedule-based calculations for ${employee.name}:`, {
+                scheduledHours: scheduleSummary.scheduledHoursInPeriod,
+                scheduledDays: scheduleSummary.scheduledDaysInPeriod,
+                workedDays: attendanceRecords.length,
+                prorationRatio: prorationRatio.toFixed(2),
+                scheduleUtilization: scheduleUtilization.toFixed(1) + '%',
+                shiftType: scheduleSummary.shiftType
+            });
+        } else {
+            // No schedule found - use full deductions (backward compatibility)
+            sss = this.calculateSSS(basePay);
+            philHealth = this.calculatePhilHealth(basePay);
+            pagIbig = this.calculatePagIbig(basePay);
+            tax = this.calculateWithholdingTax(basePay);
+
+            console.warn(`⚠️ [PAYROLL] No schedule found for ${employee.name}, using full deductions`);
+        }
+
         const grossPay = basePay + overtime + nightDiff + holidayPay + tips - latePenalty - earlyDepartureDeduction;
         const totalDeductions = sss + philHealth + pagIbig + tax + employee.deductions;
         const netPay = grossPay - totalDeductions + employee.allowances;
@@ -1406,6 +1479,27 @@ class PayrollManager {
                 totalLateMinutes: attendanceRecords.reduce((sum, a) => sum + (a.lateMinutes || 0), 0),
                 earlyDepartureCount: attendanceRecords.filter(a => a.checkOutDeduction && a.checkOutDeduction > 0).length,
                 totalEarlyDepartureHours: attendanceRecords.reduce((sum, a) => sum + (a.checkOutDeduction || 0), 0)
+            },
+            // NEW: Schedule information
+            scheduleInfo: scheduleSummary ? {
+                hasSchedule: scheduleSummary.hasSchedule,
+                scheduleId: scheduleSummary.scheduleId,
+                scheduledDaysInPeriod: scheduleSummary.scheduledDaysInPeriod || 0,
+                scheduledHoursInPeriod: scheduleSummary.scheduledHoursInPeriod || 0,
+                dayShiftDays: scheduleSummary.dayShiftDays || 0,
+                nightShiftDays: scheduleSummary.nightShiftDays || 0,
+                shiftType: scheduleSummary.shiftType || 'none',
+                scheduleUtilization: Math.round(scheduleUtilization * 10) / 10,
+                weeklySchedule: scheduleSummary.weeklySchedule || null
+            } : {
+                hasSchedule: false,
+                scheduledDaysInPeriod: 0,
+                scheduledHoursInPeriod: 0,
+                dayShiftDays: 0,
+                nightShiftDays: 0,
+                shiftType: 'none',
+                scheduleUtilization: 0,
+                weeklySchedule: null
             }
         };
     }
