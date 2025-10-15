@@ -1391,42 +1391,32 @@ class PayrollManager {
         const earlyDepartureDeduction = this.calculateEarlyDepartureDeductions(employee, attendanceRecords);
         const tips = await this.calculateTipsCommissions(employeeId, periodStart, periodEnd);
         
-        // Government deductions - with schedule-based proration
+        // Government deductions - based on actual basePay
+        // NOTE: NO proration needed because basePay is already calculated
+        // based on days actually worked. Deductions should be based on actual earnings.
         let sss, philHealth, pagIbig, tax;
         let scheduleUtilization = 0;
 
-        if (scheduleSummary && scheduleSummary.hasSchedule && scheduleSummary.scheduledHoursInPeriod > 0) {
-            // Calculate proration ratio based on scheduled hours
-            const fullTimeHours = 160; // Standard full-time hours per month
-            const prorationRatio = Math.min(scheduleSummary.scheduledHoursInPeriod / fullTimeHours, 1.0);
+        // Calculate deductions based on actual base pay earned
+        sss = this.calculateSSS(basePay);
+        philHealth = this.calculatePhilHealth(basePay);
+        pagIbig = this.calculatePagIbig(basePay);
+        tax = this.calculateWithholdingTax(basePay);
 
-            // Apply prorated deductions
-            sss = this.calculateSSS(basePay) * prorationRatio;
-            philHealth = this.calculatePhilHealth(basePay) * prorationRatio;
-            pagIbig = this.calculatePagIbig(basePay) * prorationRatio;
-            tax = this.calculateWithholdingTax(basePay) * prorationRatio;
+        // Calculate schedule utilization for tracking purposes
+        if (scheduleSummary && scheduleSummary.hasSchedule && scheduleSummary.scheduledDaysInPeriod > 0) {
+            scheduleUtilization = (attendanceRecords.length / scheduleSummary.scheduledDaysInPeriod) * 100;
 
-            // Calculate schedule utilization
-            if (scheduleSummary.scheduledDaysInPeriod > 0) {
-                scheduleUtilization = (attendanceRecords.length / scheduleSummary.scheduledDaysInPeriod) * 100;
-            }
-
-            console.log(`📊 [PAYROLL] Schedule-based calculations for ${employee.name}:`, {
+            console.log(`📊 [PAYROLL] Schedule tracking for ${employee.name}:`, {
                 scheduledHours: scheduleSummary.scheduledHoursInPeriod,
                 scheduledDays: scheduleSummary.scheduledDaysInPeriod,
                 workedDays: attendanceRecords.length,
-                prorationRatio: prorationRatio.toFixed(2),
                 scheduleUtilization: scheduleUtilization.toFixed(1) + '%',
-                shiftType: scheduleSummary.shiftType
+                shiftType: scheduleSummary.shiftType,
+                note: 'Deductions based on actual earnings (basePay already proportional to days worked)'
             });
         } else {
-            // No schedule found - use full deductions (backward compatibility)
-            sss = this.calculateSSS(basePay);
-            philHealth = this.calculatePhilHealth(basePay);
-            pagIbig = this.calculatePagIbig(basePay);
-            tax = this.calculateWithholdingTax(basePay);
-
-            console.warn(`⚠️ [PAYROLL] No schedule found for ${employee.name}, using full deductions`);
+            console.log(`📊 [PAYROLL] No schedule found for ${employee.name}, deductions based on actual basePay`);
         }
 
         const grossPay = basePay + overtime + nightDiff + holidayPay + tips - latePenalty - earlyDepartureDeduction;
