@@ -232,7 +232,13 @@ class ShiftScheduleManager {
         // Shift configuration save button
         const saveConfigBtn = document.getElementById('saveShiftConfigBtn');
         if (saveConfigBtn) {
-            saveConfigBtn.addEventListener('click', () => this.saveShiftConfiguration());
+            console.log('✅ Save Configuration button found, attaching listener');
+            saveConfigBtn.addEventListener('click', () => {
+                console.log('🔘 Save Configuration button clicked');
+                this.saveShiftConfiguration();
+            });
+        } else {
+            console.warn('⚠️ Save Configuration button not found');
         }
     }
     
@@ -1276,19 +1282,19 @@ class ShiftScheduleManager {
     // Ensure event listeners are attached
     ensureEventListeners() {
         console.log('🔧 Ensuring event listeners are attached...');
-        
+
         // Reset button state and try to attach again
         this.buttonAttached = false;
         this.retryCount = 0;
-        
+
         // Clear any existing interval
         if (this.buttonCheckInterval) {
             clearInterval(this.buttonCheckInterval);
         }
-        
+
         // Try to attach the button listener
         this.attachButtonListener();
-        
+
         // Set up the retry mechanism again if needed
         if (!this.buttonAttached) {
             this.buttonCheckInterval = setInterval(() => {
@@ -1298,6 +1304,21 @@ class ShiftScheduleManager {
                     clearInterval(this.buttonCheckInterval);
                 }
             }, 500);
+        }
+
+        // Also re-attach the configuration save button
+        this.attachConfigSaveButton();
+    }
+
+    attachConfigSaveButton() {
+        const saveConfigBtn = document.getElementById('saveShiftConfigBtn');
+        if (saveConfigBtn && !saveConfigBtn.dataset.listenerAttached) {
+            console.log('✅ Attaching Save Configuration button listener');
+            saveConfigBtn.addEventListener('click', () => {
+                console.log('🔘 Save Configuration button clicked');
+                this.saveShiftConfiguration();
+            });
+            saveConfigBtn.dataset.listenerAttached = 'true';
         }
     }
 }
