@@ -5,7 +5,7 @@ import logger from '../../utils/logger.js';
 
 const router = express.Router();
 
-// Middleware to ensure only managers and owners can access
+// Middleware to ensure only managers, owners, and branch users can access
 const requireManagerOrOwner = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
@@ -15,10 +15,12 @@ const requireManagerOrOwner = (req, res, next) => {
   }
 
   const userRole = req.user.role;
-  if (!['owner', 'manager'].includes(userRole)) {
+  // Accept owner, manager, branch, and admin roles
+  if (!['owner', 'manager', 'branch', 'admin'].includes(userRole)) {
     return res.status(403).json({
       success: false,
-      error: 'Access denied. Only managers and owners can manage shift configurations.'
+      error: 'Access denied. Only business users can manage shift configurations.',
+      receivedRole: userRole // Help debug role issues
     });
   }
 

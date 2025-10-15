@@ -7,7 +7,7 @@ import logger from '../../utils/logger.js';
 
 const router = express.Router();
 
-// Middleware to ensure only managers and owners can access shift schedules
+// Middleware to ensure only managers, owners, branch users, and admins can access shift schedules
 const requireManagerOrOwner = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
@@ -15,16 +15,17 @@ const requireManagerOrOwner = (req, res, next) => {
       error: 'Authentication required'
     });
   }
-  
-  // Check if user is manager or owner (from employee login) or direct owner
+
+  // Check if user is manager, owner, branch user, or admin
   const userRole = req.user.role;
-  if (!['owner', 'manager'].includes(userRole)) {
+  if (!['owner', 'manager', 'branch', 'admin'].includes(userRole)) {
     return res.status(403).json({
       success: false,
-      error: 'Access denied. Only managers and owners can manage shift schedules.'
+      error: 'Access denied. Only business users can manage shift schedules.',
+      receivedRole: userRole // Help debug role issues
     });
   }
-  
+
   next();
 };
 
