@@ -188,19 +188,19 @@ class ShiftScheduleManager {
         if (searchInput) {
             searchInput.addEventListener('input', (e) => this.filterSchedules(e.target.value));
         }
-        
+
         // Clear search button
         const clearSearchBtn = document.getElementById('clearScheduleSearch');
         if (clearSearchBtn) {
             clearSearchBtn.addEventListener('click', () => this.clearSearch());
         }
-        
+
         // Filter dropdown
         const shiftTypeFilter = document.getElementById('shiftTypeFilter');
         if (shiftTypeFilter) {
             shiftTypeFilter.addEventListener('change', (e) => this.filterByShiftType(e.target.value));
         }
-        
+
         // Template buttons
         document.querySelectorAll('.template-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -208,13 +208,13 @@ class ShiftScheduleManager {
                 this.applyTemplate(template);
             });
         });
-        
+
         // Schedule form submission
         const scheduleForm = document.getElementById('shiftScheduleForm');
         if (scheduleForm) {
             scheduleForm.addEventListener('submit', (e) => this.handleSaveSchedule(e));
         }
-        
+
         // Quick template buttons in modal
         document.querySelectorAll('.quick-template-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -223,11 +223,17 @@ class ShiftScheduleManager {
                 this.applyQuickTemplate(template);
             });
         });
-        
+
         // Day shift change handlers
         document.querySelectorAll('.day-shift-select').forEach(select => {
             select.addEventListener('change', (e) => this.handleShiftTypeChange(e));
         });
+
+        // Shift configuration save button
+        const saveConfigBtn = document.getElementById('saveShiftConfigBtn');
+        if (saveConfigBtn) {
+            saveConfigBtn.addEventListener('click', () => this.saveShiftConfiguration());
+        }
     }
     
     async loadSchedules() {
@@ -377,6 +383,9 @@ class ShiftScheduleManager {
 
             console.log('✅ Loaded shift configuration:', this.shiftConfiguration);
 
+            // Populate the configuration form fields
+            this.populateShiftConfigurationForm();
+
         } catch (error) {
             console.error('❌ Error loading shift configuration:', error);
             // Use default configuration on error
@@ -384,6 +393,98 @@ class ShiftScheduleManager {
                 dayShift: { startTime: '09:00', endTime: '17:00' },
                 nightShift: { startTime: '18:00', endTime: '02:00' }
             };
+        }
+    }
+
+    populateShiftConfigurationForm() {
+        if (!this.shiftConfiguration) return;
+
+        // Populate day shift fields
+        const dayShiftStartInput = document.getElementById('dayShiftStartTime');
+        const dayShiftEndInput = document.getElementById('dayShiftEndTime');
+
+        if (dayShiftStartInput && this.shiftConfiguration.dayShift) {
+            dayShiftStartInput.value = this.shiftConfiguration.dayShift.startTime;
+        }
+        if (dayShiftEndInput && this.shiftConfiguration.dayShift) {
+            dayShiftEndInput.value = this.shiftConfiguration.dayShift.endTime;
+        }
+
+        // Populate night shift fields
+        const nightShiftStartInput = document.getElementById('nightShiftStartTime');
+        const nightShiftEndInput = document.getElementById('nightShiftEndTime');
+
+        if (nightShiftStartInput && this.shiftConfiguration.nightShift) {
+            nightShiftStartInput.value = this.shiftConfiguration.nightShift.startTime;
+        }
+        if (nightShiftEndInput && this.shiftConfiguration.nightShift) {
+            nightShiftEndInput.value = this.shiftConfiguration.nightShift.endTime;
+        }
+
+        console.log('✅ Populated shift configuration form fields');
+    }
+
+    async saveShiftConfiguration() {
+        try {
+            console.log('💾 Saving shift configuration...');
+
+            // Get values from form
+            const dayShiftStartTime = document.getElementById('dayShiftStartTime').value;
+            const dayShiftEndTime = document.getElementById('dayShiftEndTime').value;
+            const nightShiftStartTime = document.getElementById('nightShiftStartTime').value;
+            const nightShiftEndTime = document.getElementById('nightShiftEndTime').value;
+
+            // Validate inputs
+            if (!dayShiftStartTime || !dayShiftEndTime || !nightShiftStartTime || !nightShiftEndTime) {
+                this.showError('Please fill in all shift time fields');
+                return;
+            }
+
+            const token = this.getAuthToken();
+            if (!token) {
+                this.showError('Authentication required. Please log in again.');
+                return;
+            }
+
+            const apiUrl = this.getApiUrl();
+            const url = `${apiUrl}/api/shift-configuration`;
+
+            const configData = {
+                dayShift: {
+                    startTime: dayShiftStartTime,
+                    endTime: dayShiftEndTime
+                },
+                nightShift: {
+                    startTime: nightShiftStartTime,
+                    endTime: nightShiftEndTime
+                }
+            };
+
+            console.log('🌐 Saving configuration:', configData);
+
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(configData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Failed to save configuration: ${response.status}`);
+            }
+
+            const result = await response.json();
+            this.shiftConfiguration = result.data;
+
+            console.log('✅ Shift configuration saved successfully');
+            this.showSuccess('Shift configuration saved! New times will be used for future schedules.');
+
+        } catch (error) {
+            console.error('❌ Error saving shift configuration:', error);
+            this.showError(`Failed to save shift configuration: ${error.message}`);
         }
     }
     
