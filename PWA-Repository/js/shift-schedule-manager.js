@@ -6,6 +6,7 @@ class ShiftScheduleManager {
         this.schedules = [];
         this.employees = [];
         this.currentSchedule = null;
+        this.shiftConfiguration = null; // Store shift time configuration
         this.initialized = false;
         this.buttonAttached = false;
         this.retryCount = 0;
@@ -278,33 +279,33 @@ class ShiftScheduleManager {
     async loadEmployees() {
         try {
             console.log('👥 Loading employees...');
-            
+
             const token = this.getAuthToken();
             if (!token) {
                 console.error('❌ No authentication token found for employees');
                 this.showError('Authentication required. Please log in again.');
                 return;
             }
-            
+
             const apiUrl = this.getApiUrl();
             const url = `${apiUrl}/api/employees`;
-            
+
             console.log('🌐 Making employees API request to:', url);
             console.log('🔑 Using token for employees:', token.substring(0, 20) + '...');
-            
+
             const response = await fetch(url, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             console.log('📡 Employees response status:', response.status);
-            
+
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('❌ Employees API Error:', response.status, errorText);
-                
+
                 if (response.status === 401) {
                     this.showError('Authentication expired. Please log in again.');
                     return;
@@ -312,20 +313,77 @@ class ShiftScheduleManager {
                     this.showError('Access denied. Manager or owner role required.');
                     return;
                 }
-                
+
                 throw new Error(`Failed to load employees: ${response.status} - ${errorText}`);
             }
-            
+
             const result = await response.json();
             this.employees = result.data || [];
-            
+
             console.log(`✅ Loaded ${this.employees.length} employees`);
-            
+
             this.populateEmployeeDropdown();
-            
+
         } catch (error) {
             console.error('❌ Error loading employees:', error);
             this.showError(`Failed to load employees: ${error.message}`);
+        }
+    }
+
+    async loadShiftConfiguration() {
+        try {
+            console.log('⚙️ Loading shift configuration...');
+
+            const token = this.getAuthToken();
+            if (!token) {
+                console.error('❌ No authentication token found for shift configuration');
+                // Use default configuration
+                this.shiftConfiguration = {
+                    dayShift: { startTime: '09:00', endTime: '17:00' },
+                    nightShift: { startTime: '18:00', endTime: '02:00' }
+                };
+                return;
+            }
+
+            const apiUrl = this.getApiUrl();
+            const url = `${apiUrl}/api/shift-configuration`;
+
+            console.log('🌐 Making shift configuration API request to:', url);
+
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('📡 Shift configuration response status:', response.status);
+
+            if (!response.ok) {
+                console.warn('⚠️ Failed to load shift configuration, using defaults');
+                // Use default configuration
+                this.shiftConfiguration = {
+                    dayShift: { startTime: '09:00', endTime: '17:00' },
+                    nightShift: { startTime: '18:00', endTime: '02:00' }
+                };
+                return;
+            }
+
+            const result = await response.json();
+            this.shiftConfiguration = result.data || {
+                dayShift: { startTime: '09:00', endTime: '17:00' },
+                nightShift: { startTime: '18:00', endTime: '02:00' }
+            };
+
+            console.log('✅ Loaded shift configuration:', this.shiftConfiguration);
+
+        } catch (error) {
+            console.error('❌ Error loading shift configuration:', error);
+            // Use default configuration on error
+            this.shiftConfiguration = {
+                dayShift: { startTime: '09:00', endTime: '17:00' },
+                nightShift: { startTime: '18:00', endTime: '02:00' }
+            };
         }
     }
     
@@ -856,42 +914,48 @@ class ShiftScheduleManager {
     }
     
     applyQuickTemplate(template) {
+        // Use configured shift times or defaults
+        const dayStart = this.shiftConfiguration?.dayShift?.startTime || '09:00';
+        const dayEnd = this.shiftConfiguration?.dayShift?.endTime || '17:00';
+        const nightStart = this.shiftConfiguration?.nightShift?.startTime || '18:00';
+        const nightEnd = this.shiftConfiguration?.nightShift?.endTime || '02:00';
+
         const templates = {
             'weekday-day': {
-                monday: { shift: 'day', startTime: '09:00', endTime: '17:00' },
-                tuesday: { shift: 'day', startTime: '09:00', endTime: '17:00' },
-                wednesday: { shift: 'day', startTime: '09:00', endTime: '17:00' },
-                thursday: { shift: 'day', startTime: '09:00', endTime: '17:00' },
-                friday: { shift: 'day', startTime: '09:00', endTime: '17:00' },
-                saturday: { shift: 'off', startTime: '09:00', endTime: '17:00' },
-                sunday: { shift: 'off', startTime: '09:00', endTime: '17:00' }
+                monday: { shift: 'day', startTime: dayStart, endTime: dayEnd },
+                tuesday: { shift: 'day', startTime: dayStart, endTime: dayEnd },
+                wednesday: { shift: 'day', startTime: dayStart, endTime: dayEnd },
+                thursday: { shift: 'day', startTime: dayStart, endTime: dayEnd },
+                friday: { shift: 'day', startTime: dayStart, endTime: dayEnd },
+                saturday: { shift: 'off', startTime: dayStart, endTime: dayEnd },
+                sunday: { shift: 'off', startTime: dayStart, endTime: dayEnd }
             },
             'weekday-night': {
-                monday: { shift: 'night', startTime: '18:00', endTime: '02:00' },
-                tuesday: { shift: 'night', startTime: '18:00', endTime: '02:00' },
-                wednesday: { shift: 'night', startTime: '18:00', endTime: '02:00' },
-                thursday: { shift: 'night', startTime: '18:00', endTime: '02:00' },
-                friday: { shift: 'night', startTime: '18:00', endTime: '02:00' },
-                saturday: { shift: 'off', startTime: '09:00', endTime: '17:00' },
-                sunday: { shift: 'off', startTime: '09:00', endTime: '17:00' }
+                monday: { shift: 'night', startTime: nightStart, endTime: nightEnd },
+                tuesday: { shift: 'night', startTime: nightStart, endTime: nightEnd },
+                wednesday: { shift: 'night', startTime: nightStart, endTime: nightEnd },
+                thursday: { shift: 'night', startTime: nightStart, endTime: nightEnd },
+                friday: { shift: 'night', startTime: nightStart, endTime: nightEnd },
+                saturday: { shift: 'off', startTime: dayStart, endTime: dayEnd },
+                sunday: { shift: 'off', startTime: dayStart, endTime: dayEnd }
             },
             'weekend': {
-                monday: { shift: 'off', startTime: '09:00', endTime: '17:00' },
-                tuesday: { shift: 'off', startTime: '09:00', endTime: '17:00' },
-                wednesday: { shift: 'off', startTime: '09:00', endTime: '17:00' },
-                thursday: { shift: 'off', startTime: '09:00', endTime: '17:00' },
-                friday: { shift: 'off', startTime: '09:00', endTime: '17:00' },
-                saturday: { shift: 'day', startTime: '09:00', endTime: '17:00' },
-                sunday: { shift: 'day', startTime: '09:00', endTime: '17:00' }
+                monday: { shift: 'off', startTime: dayStart, endTime: dayEnd },
+                tuesday: { shift: 'off', startTime: dayStart, endTime: dayEnd },
+                wednesday: { shift: 'off', startTime: dayStart, endTime: dayEnd },
+                thursday: { shift: 'off', startTime: dayStart, endTime: dayEnd },
+                friday: { shift: 'off', startTime: dayStart, endTime: dayEnd },
+                saturday: { shift: 'day', startTime: dayStart, endTime: dayEnd },
+                sunday: { shift: 'day', startTime: dayStart, endTime: dayEnd }
             },
             'clear': {
-                monday: { shift: 'off', startTime: '09:00', endTime: '17:00' },
-                tuesday: { shift: 'off', startTime: '09:00', endTime: '17:00' },
-                wednesday: { shift: 'off', startTime: '09:00', endTime: '17:00' },
-                thursday: { shift: 'off', startTime: '09:00', endTime: '17:00' },
-                friday: { shift: 'off', startTime: '09:00', endTime: '17:00' },
-                saturday: { shift: 'off', startTime: '09:00', endTime: '17:00' },
-                sunday: { shift: 'off', startTime: '09:00', endTime: '17:00' }
+                monday: { shift: 'off', startTime: dayStart, endTime: dayEnd },
+                tuesday: { shift: 'off', startTime: dayStart, endTime: dayEnd },
+                wednesday: { shift: 'off', startTime: dayStart, endTime: dayEnd },
+                thursday: { shift: 'off', startTime: dayStart, endTime: dayEnd },
+                friday: { shift: 'off', startTime: dayStart, endTime: dayEnd },
+                saturday: { shift: 'off', startTime: dayStart, endTime: dayEnd },
+                sunday: { shift: 'off', startTime: dayStart, endTime: dayEnd }
             }
         };
         
@@ -914,6 +978,30 @@ class ShiftScheduleManager {
     }
     
     handleShiftTypeChange(event) {
+        const select = event.target;
+        const day = select.getAttribute('data-day');
+        const shiftType = select.value;
+
+        // Get the time inputs for this day
+        const startTimeInput = document.querySelector(`.day-start-time[data-day="${day}"]`);
+        const endTimeInput = document.querySelector(`.day-end-time[data-day="${day}"]`);
+
+        if (!startTimeInput || !endTimeInput) {
+            this.updateTimeInputStates();
+            return;
+        }
+
+        // Auto-populate times based on shift type and configuration
+        if (shiftType === 'day' && this.shiftConfiguration) {
+            startTimeInput.value = this.shiftConfiguration.dayShift.startTime;
+            endTimeInput.value = this.shiftConfiguration.dayShift.endTime;
+            console.log(`✅ Auto-populated ${day} day shift: ${startTimeInput.value} - ${endTimeInput.value}`);
+        } else if (shiftType === 'night' && this.shiftConfiguration) {
+            startTimeInput.value = this.shiftConfiguration.nightShift.startTime;
+            endTimeInput.value = this.shiftConfiguration.nightShift.endTime;
+            console.log(`✅ Auto-populated ${day} night shift: ${startTimeInput.value} - ${endTimeInput.value}`);
+        }
+
         this.updateTimeInputStates();
     }
     
@@ -1075,7 +1163,8 @@ class ShiftScheduleManager {
         try {
             await Promise.all([
                 this.loadSchedules(),
-                this.loadEmployees()
+                this.loadEmployees(),
+                this.loadShiftConfiguration()
             ]);
         } catch (error) {
             console.error('❌ Error during page initialization:', error);
