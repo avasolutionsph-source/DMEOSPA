@@ -177,39 +177,92 @@ class EnhancedDashboardManager {
                 }
             }
             
-            // FALLBACK: Get recent transactions from MongoDB API instead of IndexedDB
+            // FALLBACK: Get recent transactions - try multiple sources
             let allTransactions = [];
+            console.log('🔄 [DASHBOARD] Attempting to load transactions...');
+
             try {
-                // Use HybridAPIClient for offline support
-                const result = await window.HybridAPIClient.getTransactions();
-                
-                if (result.success) {
-                    // MEMORY OPTIMIZATION: Only keep last 30 days of transactions
-                    const thirtyDaysAgo = new Date();
-                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                    
-                    allTransactions = (result.data || []).filter(t => {
-                        const transactionDate = new Date(t.createdAt || t.date);
-                        return transactionDate >= thirtyDaysAgo;
-                    });
-                    
+                // Try HybridAPIClient first (handles online/offline automatically)
+                if (window.HybridAPIClient) {
+                    console.log('🌐 [DASHBOARD] Using HybridAPIClient...');
+                    const result = await window.HybridAPIClient.getTransactions();
+
+                    if (result.success && result.data && result.data.length > 0) {
+                        console.log(`✅ [DASHBOARD] Loaded ${result.data.length} transactions from HybridAPIClient`);
+
+                        // MEMORY OPTIMIZATION: Only keep last 30 days of transactions
+                        const thirtyDaysAgo = new Date();
+                        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+                        allTransactions = (result.data || []).filter(t => {
+                            const transactionDate = new Date(t.createdAt || t.date);
+                            return transactionDate >= thirtyDaysAgo;
+                        });
+
+                        console.log(`📊 [DASHBOARD] After filtering: ${allTransactions.length} transactions (last 30 days)`);
+                    } else {
+                        console.warn('⚠️ [DASHBOARD] HybridAPIClient returned no data:', result);
+                        // Don't set to empty array yet - try IndexedDB fallback
+                    }
                 } else {
-                    console.error('❌ [DASHBOARD] Failed to load transactions:', result.error);
-                    allTransactions = [];
+                    console.warn('⚠️ [DASHBOARD] HybridAPIClient not available');
+                }
+
+                // CRITICAL FIX: If we got no data, try IndexedDB directly
+                if (allTransactions.length === 0) {
+                    console.log('📦 [DASHBOARD] Falling back to direct IndexedDB access...');
+                    const localTransactions = await this.safeGetAll('transactions');
+                    console.log(`📊 [DASHBOARD] Found ${localTransactions.length} transactions in IndexedDB`);
+
+                    if (localTransactions.length > 0) {
+                        // Filter to last 30 days
+                        const thirtyDaysAgo = new Date();
+                        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+                        allTransactions = localTransactions.filter(t => {
+                            const transactionDate = new Date(t.createdAt || t.date);
+                            return transactionDate >= thirtyDaysAgo;
+                        });
+
+                        console.log(`✅ [DASHBOARD] Loaded ${allTransactions.length} transactions from IndexedDB`);
+                    } else {
+                        console.warn('⚠️ [DASHBOARD] No transactions found in IndexedDB');
+                        allTransactions = [];
+                    }
                 }
             } catch (error) {
                 console.error('❌ [DASHBOARD] Error fetching transactions:', error);
-                allTransactions = [];
+                // Last resort: try IndexedDB one more time
+                try {
+                    console.log('🔄 [DASHBOARD] Final attempt: direct IndexedDB...');
+                    const localTransactions = await this.safeGetAll('transactions');
+                    if (localTransactions.length > 0) {
+                        allTransactions = localTransactions;
+                        console.log(`✅ [DASHBOARD] Recovered ${allTransactions.length} transactions from IndexedDB`);
+                    }
+                } catch (fallbackError) {
+                    console.error('❌ [DASHBOARD] All attempts failed:', fallbackError);
+                    allTransactions = [];
+                }
             }
-            
+
+            console.log(`📈 [DASHBOARD] Final transaction count: ${allTransactions.length}`);
+
             // Today's data
             const today = new Date().toISOString().split('T')[0];
-            const todayTransactions = allTransactions.filter(t => 
-                new Date(t.createdAt || t.date).toISOString().split('T')[0] === today
-            );
-            
+            console.log(`📅 [DASHBOARD] Today's date: ${today}`);
+
+            const todayTransactions = allTransactions.filter(t => {
+                const txnDate = new Date(t.createdAt || t.date).toISOString().split('T')[0];
+                return txnDate === today;
+            });
+
+            console.log(`📊 [DASHBOARD] Today's transactions: ${todayTransactions.length}`);
+
             this.stats.todayRevenue = todayTransactions.reduce((sum, t) => sum + (t.total || 0), 0);
             this.stats.todayTransactions = todayTransactions.length;
+
+            console.log(`💰 [DASHBOARD] Today's revenue calculated: ₱${this.stats.todayRevenue.toFixed(2)}`);
             
             // Weekly data (last 7 days)
             const weekAgo = new Date();
@@ -617,11 +670,21 @@ class EnhancedDashboardManager {
     
     updateAllStatsDisplay() {
         try {
+            console.log('🎨 [DASHBOARD] Updating UI with stats:', {
+                todayRevenue: this.stats.todayRevenue,
+                weeklyRevenue: this.stats.weeklyRevenue,
+                monthlyRevenue: this.stats.monthlyRevenue,
+                avgTransaction: this.stats.avgTransaction,
+                todayTransactions: this.stats.todayTransactions
+            });
+
             // Financial Performance
             this.updateElement('todayRevenue', this.formatCurrency(this.stats.todayRevenue));
             this.updateElement('weeklyRevenue', this.formatCurrency(this.stats.weeklyRevenue));
             this.updateElement('monthlyRevenue', this.formatCurrency(this.stats.monthlyRevenue));
             this.updateElement('avgTransaction', this.formatCurrency(this.stats.avgTransaction));
+
+            console.log('✅ [DASHBOARD] UI update complete');
             
             // Optional elements that might not exist in all dashboard versions
             this.updateElementSafe('cardPayments', this.formatCurrency(this.stats.cardPayments));
