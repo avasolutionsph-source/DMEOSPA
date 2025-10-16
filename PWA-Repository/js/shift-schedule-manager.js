@@ -955,7 +955,13 @@ class ShiftScheduleManager {
             
             // Remove from local array
             this.schedules = this.schedules.filter(s => s._id !== scheduleId);
-            
+
+            // Trigger sync for cross-device updates
+            if (window.syncManager?.isOnline) {
+                console.log('🔄 [SHIFT-SCHEDULE] Triggering sync after schedule delete...');
+                setTimeout(() => window.syncManager.triggerSync(), 1000);
+            }
+
             this.updateAnalytics();
             this.renderScheduleGrid();
             this.showSuccess('Shift schedule deleted successfully');
@@ -1015,7 +1021,13 @@ class ShiftScheduleManager {
             this.updateAnalytics();
             this.renderScheduleGrid();
             this.showSuccess(scheduleId ? 'Schedule updated successfully' : 'Schedule created successfully');
-            
+
+            // Trigger sync for cross-device updates
+            if (window.syncManager?.isOnline) {
+                console.log('🔄 [SHIFT-SCHEDULE] Triggering sync after schedule save...');
+                setTimeout(() => window.syncManager.triggerSync(), 1000);
+            }
+
             // Close modal
             if (typeof closeModal === 'function') {
                 closeModal('shiftScheduleModal');

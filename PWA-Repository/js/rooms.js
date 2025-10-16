@@ -1840,6 +1840,12 @@ class RoomManager {
                 await window.db.update('rooms', roomData);
                 showNotification('Room updated successfully', 'success');
 
+                // Trigger sync for cross-device updates
+                if (window.syncManager?.isOnline) {
+                    console.log('🔄 [ROOMS] Triggering sync after room update...');
+                    setTimeout(() => window.syncManager.triggerSync(), 1000);
+                }
+
                 // Reset form to prevent confusion if modal reopens
                 document.getElementById('roomForm').reset();
                 document.getElementById('roomName').value = '';
@@ -1855,6 +1861,12 @@ class RoomManager {
                 // Add new room
                 await window.db.add('rooms', roomData);
                 showNotification('Room added successfully', 'success');
+
+                // Trigger sync for cross-device updates
+                if (window.syncManager?.isOnline) {
+                    console.log('🔄 [ROOMS] Triggering sync after room add...');
+                    setTimeout(() => window.syncManager.triggerSync(), 1000);
+                }
             }
 
             // Reset form to prevent confusion if modal reopens
@@ -1900,7 +1912,13 @@ class RoomManager {
         try {
             room.hidden = !room.hidden;
             await window.db.update('rooms', room);
-            
+
+            // Trigger sync for cross-device updates
+            if (window.syncManager?.isOnline) {
+                console.log('🔄 [ROOMS] Triggering sync after room visibility change...');
+                setTimeout(() => window.syncManager.triggerSync(), 1000);
+            }
+
             showNotification(`Room "${room.name}" ${room.hidden ? 'hidden' : 'shown'} successfully`, 'success');
             this.displayRooms();
         } catch (error) {
@@ -1935,6 +1953,13 @@ class RoomManager {
         try {
             await window.db.delete('rooms', roomId);
             showNotification('Room deleted successfully', 'success');
+
+            // Trigger sync for cross-device updates
+            if (window.syncManager?.isOnline) {
+                console.log('🔄 [ROOMS] Triggering sync after room delete...');
+                setTimeout(() => window.syncManager.triggerSync(), 1000);
+            }
+
             await this.loadRooms();
         } catch (error) {
             if (window.logger) {

@@ -451,7 +451,13 @@ class AppointmentsManager {
                 console.log('✅ Appointment confirmed successfully');
                 this.showNotification('Appointment confirmed successfully', 'success');
                 await this.loadAppointments();
-                
+
+                // Trigger sync for cross-device updates
+                if (window.syncManager?.isOnline) {
+                    console.log('🔄 [APPOINTMENTS] Triggering sync after confirm...');
+                    setTimeout(() => window.syncManager.triggerSync(), 1000);
+                }
+
                 // Log to activity system
                 if (window.activityLogger) {
                     window.activityLogger.logActivity(
@@ -494,7 +500,13 @@ class AppointmentsManager {
                 console.log('✅ Appointment cancelled successfully');
                 this.showNotification('Appointment cancelled successfully', 'success');
                 await this.loadAppointments();
-                
+
+                // Trigger sync for cross-device updates
+                if (window.syncManager?.isOnline) {
+                    console.log('🔄 [APPOINTMENTS] Triggering sync after cancel...');
+                    setTimeout(() => window.syncManager.triggerSync(), 1000);
+                }
+
                 // Log to activity system
                 if (window.activityLogger) {
                     window.activityLogger.logActivity(
@@ -541,7 +553,13 @@ class AppointmentsManager {
                 console.log('✅ Appointment marked as completed');
                 this.showNotification('Appointment completed successfully', 'success');
                 this.filterAndDisplayAppointments();
-                
+
+                // Trigger sync for cross-device updates
+                if (window.syncManager?.isOnline) {
+                    console.log('🔄 [APPOINTMENTS] Triggering sync after complete...');
+                    setTimeout(() => window.syncManager.triggerSync(), 1000);
+                }
+
                 // Log to activity system
                 if (window.activityLogger) {
                     window.activityLogger.logActivity(

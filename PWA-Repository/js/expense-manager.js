@@ -937,12 +937,18 @@
     saveExpenses(expenses) {
         // Always save to localStorage for persistence
         localStorage.setItem('expenses', JSON.stringify(expenses));
-        
+
         // Also update state manager if available
         if (this.stateManager) {
             this.stateManager.setState('expenses', expenses);
         }
-        
+
+        // Trigger sync for cross-device updates
+        if (window.syncManager?.isOnline) {
+            console.log('🔄 [EXPENSES] Triggering sync after save...');
+            setTimeout(() => window.syncManager.triggerSync(), 1000);
+        }
+
         console.log('Expenses saved to localStorage:', expenses);
     }
     

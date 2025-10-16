@@ -725,10 +725,34 @@ class SyncManager {
             // Sync attendance data
             await this.syncAttendance();
             await this.yieldControl();
-            
+
+            // Sync appointments (scheduling)
+            await this.syncAppointments();
+            await this.yieldControl();
+
+            // Sync rooms (availability and assignments)
+            await this.syncRooms();
+            await this.yieldControl();
+
+            // Sync gift certificates
+            await this.syncGiftCertificates();
+            await this.yieldControl();
+
+            // Sync shift schedules
+            await this.syncShiftSchedules();
+            await this.yieldControl();
+
+            // Sync service history
+            await this.syncServiceHistory();
+            await this.yieldControl();
+
+            // Sync expenses
+            await this.syncExpenses();
+            await this.yieldControl();
+
             // Removed chatbot sync - AI assistant is local to PWA only
             await this.yieldControl();
-            
+
             // Process sync queue
             await this.processSyncQueue();
             

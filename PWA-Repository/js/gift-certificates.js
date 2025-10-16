@@ -168,9 +168,15 @@ class GiftCertificateManager {
             // Use the correct giftCertificates store that POS validation expects
             await window.db.add('giftCertificates', certificate);
             this.certificates.push(certificate);
-            
+
             // Save to localStorage as backup
             localStorage.setItem('giftCertificates', JSON.stringify(this.certificates));
+
+            // Trigger sync for cross-device updates
+            if (window.syncManager?.isOnline) {
+                console.log('🔄 [GIFT-CERT] Triggering sync after certificate add...');
+                setTimeout(() => window.syncManager.triggerSync(), 1000);
+            }
             
             this.updateDashboard();
             this.renderCertificatesList();
@@ -260,6 +266,13 @@ class GiftCertificateManager {
 
         try {
             await window.db.update('products', certificate);
+
+            // Trigger sync for cross-device updates
+            if (window.syncManager?.isOnline) {
+                console.log('🔄 [GIFT-CERT] Triggering sync after status update...');
+                setTimeout(() => window.syncManager.triggerSync(), 1000);
+            }
+
             this.updateDashboard();
             return certificate;
         } catch (error) {
@@ -298,6 +311,13 @@ class GiftCertificateManager {
 
         try {
             await window.db.update('products', certificate);
+
+            // Trigger sync for cross-device updates
+            if (window.syncManager?.isOnline) {
+                console.log('🔄 [GIFT-CERT] Triggering sync after redeem...');
+                setTimeout(() => window.syncManager.triggerSync(), 1000);
+            }
+
             return certificate;
         } catch (error) {
             console.error('Error redeeming certificate:', error);
@@ -1207,14 +1227,20 @@ class GiftCertificateManager {
         try {
             // Remove from database
             await window.db.delete('products', parseInt(certificateId));
-            
+
+            // Trigger sync for cross-device updates
+            if (window.syncManager?.isOnline) {
+                console.log('🔄 [GIFT-CERT] Triggering sync after delete...');
+                setTimeout(() => window.syncManager.triggerSync(), 1000);
+            }
+
             // Remove from local array
             this.certificates = this.certificates.filter(c => c.id != certificateId);
-            
+
             // Update UI
             this.updateDashboard();
             this.renderCertificatesList();
-            
+
             console.log('Certificate deleted successfully');
             return true;
         } catch (error) {
