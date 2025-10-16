@@ -148,9 +148,9 @@ class CustomerManager {
             console.log('⏳ Already loading customers, skipping...');
             return;
         }
-
+        
         this.isInitializing = true;
-
+        
         try {
             // Show loading state
             const customersGrid = document.getElementById('customersGrid');
@@ -163,43 +163,22 @@ class CustomerManager {
                 `;
             }
 
-            console.log('👥 [CUSTOMER-MANAGER] Loading customers using HybridAPIClient...');
-            console.log('👥 [CUSTOMER-MANAGER] HybridAPIClient available:', !!window.HybridAPIClient);
-            console.log('👥 [CUSTOMER-MANAGER] Online status:', navigator.onLine);
-
-            // HYBRID APPROACH: Use HybridAPIClient for automatic online/offline handling
-            if (!window.HybridAPIClient) {
-                console.warn('⚠️ [CUSTOMER-MANAGER] HybridAPIClient not available, falling back to IndexedDB');
-                // Fallback to IndexedDB if HybridAPIClient not available
-                if (window.db && window.db.db && window.db.db.objectStoreNames.contains('customers')) {
-                    this.customers = await window.db.getAll('customers') || [];
-                } else {
-                    this.customers = [];
-                }
-            } else {
-                // Use HybridAPIClient (handles online/offline automatically)
-                const result = await window.HybridAPIClient.get('/api/customers');
-
-                console.log('👥 [CUSTOMER-MANAGER] HybridAPIClient response:', {
-                    success: result.success,
-                    source: result.source,
-                    dataCount: result.data?.length || 0
-                });
-
-                if (result.success) {
-                    // Map MongoDB _id to frontend id (like employees)
-                    this.customers = (result.data || []).map(customer => ({
-                        ...customer,
-                        id: customer._id || customer.id
-                    }));
-
-                    console.log(`✅ [CUSTOMER-MANAGER] Loaded ${this.customers.length} customers from ${result.source}`);
-                } else {
-                    console.warn('⚠️ [CUSTOMER-MANAGER] Failed to load customers, using empty array');
-                    this.customers = [];
-                }
+            // Check if database and customers table are ready
+            if (!window.db || !window.db.db) {
+                throw new Error('Database not initialized');
             }
 
+            if (!window.db.db.objectStoreNames.contains('customers')) {
+                console.log('⚠️ Customers table not available yet, showing empty state');
+                this.customers = [];
+                this.filteredCustomers = [];
+                this.customersLoaded = true;
+                this.displayCustomers();
+                this.updateCustomerStats();
+                return;
+            }
+
+            this.customers = await window.db.getAll('customers') || [];
             this.filteredCustomers = [...this.customers];
             this.customersLoaded = true;
             
@@ -905,11 +884,9 @@ class CustomerManager {
         }
 
         try {
-            console.log('💾 [CUSTOMER-MANAGER] Saving customer...');
-            console.log('💾 [CUSTOMER-MANAGER] HybridAPIClient available:', !!window.HybridAPIClient);
-            console.log('💾 [CUSTOMER-MANAGER] Online status:', navigator.onLine);
-
-            const customerData = {
+            // Better ID generation to avoid collisions
+            const customer = {
+                id: Date.now() + Math.random(),
                 firstName,
                 lastName,
                 phone,
@@ -922,47 +899,13 @@ class CustomerManager {
                 totalSpent: 0
             };
 
-            // HYBRID APPROACH: Use HybridAPIClient for automatic online/offline handling
-            if (!window.HybridAPIClient) {
-                console.warn('⚠️ [CUSTOMER-MANAGER] HybridAPIClient not available, falling back to IndexedDB');
-                // Fallback to IndexedDB
-                customerData.id = Date.now() + Math.random();
-                customerData.syncStatus = 'pending';
-                await window.db.add('customers', customerData);
+            // Set syncStatus before saving
+            customer.syncStatus = 'pending';
+            await window.db.add('customers', customer);
 
-                this.customers.push(customerData);
-                this.filteredCustomers = [...this.customers];
-
-                // Trigger sync if possible
-                if (window.syncManager?.isOnline) {
-                    console.log('🔄 Triggering customer sync after add');
-                    window.syncManager.triggerSync();
-                }
-            } else {
-                // Use HybridAPIClient (handles online/offline automatically)
-                const result = await window.HybridAPIClient.post('/api/customers', customerData);
-
-                console.log('💾 [CUSTOMER-MANAGER] Save result:', {
-                    success: result.success,
-                    source: result.source,
-                    hasData: !!result.data
-                });
-
-                if (result.success) {
-                    // Map MongoDB _id to frontend id (like employees)
-                    const savedCustomer = {
-                        ...result.data,
-                        id: result.data._id || result.data.id
-                    };
-
-                    this.customers.push(savedCustomer);
-                    this.filteredCustomers = [...this.customers];
-
-                    console.log(`✅ [CUSTOMER-MANAGER] Customer saved via ${result.source}`);
-                } else {
-                    throw new Error(result.error || 'Failed to save customer');
-                }
-            }
+            // Update customers array directly instead of reloading to prevent initialization loops
+            this.customers.push(customer);
+            this.filteredCustomers = [...this.customers];
 
             // Update displays
             this.displayCustomers();
@@ -974,10 +917,16 @@ class CustomerManager {
             }
 
             this.closeAddCustomerModal();
+
             showSuccess('Customer added successfully!');
 
+            // Trigger immediate sync if online
+            if (window.syncManager?.isOnline) {
+                console.log('🔄 Triggering customer sync after add');
+                window.syncManager.triggerSync();
+            }
         } catch (error) {
-            console.error('❌ [CUSTOMER-MANAGER] Error saving customer:', error);
+            console.error('Error saving customer:', error);
             showError('Failed to save customer. Please try again.');
         }
     }
@@ -1087,269 +1036,18 @@ class CustomerManager {
     }
 
     async editCustomer(customerId) {
-        console.log('✏️ [CUSTOMER-MANAGER] Editing customer:', customerId);
-
-        try {
-            // Find customer (check both id and _id fields)
-            let customer = this.customers.find(c =>
-                String(c.id) === String(customerId) ||
-                String(c._id) === String(customerId)
-            );
-
-            if (!customer) {
-                console.error('❌ Customer not found for editing');
-                showError('Customer not found');
-                return;
-            }
-
-            // Map MongoDB _id to frontend id for consistency
-            customer = {
-                ...customer,
-                id: customer._id || customer.id
-            };
-
-            console.log('📝 Opening edit modal for customer:', customer);
-
-            // Show edit modal with customer data
-            this.showEditCustomerModal(customer);
-
-        } catch (error) {
-            console.error('❌ [CUSTOMER-MANAGER] Error editing customer:', error);
-            showError('Failed to open customer for editing');
-        }
-    }
-
-    showEditCustomerModal(customer) {
-        // Create and show modal for editing customer
-        const modalHtml = `
-            <div id="editCustomerModal" class="modal active">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2><i class="fas fa-user-edit"></i> Edit Customer</h2>
-                        <button class="modal-close" onclick="window.customerManager.closeEditCustomerModal()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="editCustomerForm">
-                            <input type="hidden" id="editCustomerId" value="${customer.id}">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>First Name *</label>
-                                    <input type="text" id="editCustomerFirstName" class="form-input" value="${customer.firstName || ''}" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Last Name *</label>
-                                    <input type="text" id="editCustomerLastName" class="form-input" value="${customer.lastName || ''}" required>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Phone Number *</label>
-                                <input type="tel" id="editCustomerPhone" class="form-input" placeholder="09XXXXXXXXX" value="${customer.phone || ''}" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Email (optional)</label>
-                                <input type="email" id="editCustomerEmail" class="form-input" placeholder="customer@email.com" value="${customer.email || ''}">
-                            </div>
-                            <div class="form-group">
-                                <label>Address (optional)</label>
-                                <textarea id="editCustomerAddress" class="form-input" rows="3" placeholder="Customer address">${customer.address || ''}</textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>Notes (optional)</label>
-                                <textarea id="editCustomerNotes" class="form-input" rows="2" placeholder="Special notes about the customer">${customer.notes || ''}</textarea>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-actions">
-                        <button type="button" class="btn btn-secondary" onclick="window.customerManager.closeEditCustomerModal()">Cancel</button>
-                        <button type="button" class="btn btn-primary" onclick="window.customerManager.updateCustomer()">
-                            <i class="fas fa-save"></i> Update Customer
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Remove existing modal if any
-        const existingModal = document.getElementById('editCustomerModal');
-        if (existingModal) existingModal.remove();
-
-        // Add modal to body
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-    }
-
-    closeEditCustomerModal() {
-        const modal = document.getElementById('editCustomerModal');
-        if (modal) modal.remove();
-    }
-
-    async updateCustomer() {
-        const customerId = document.getElementById('editCustomerId').value;
-        const firstName = document.getElementById('editCustomerFirstName').value.trim();
-        const lastName = document.getElementById('editCustomerLastName').value.trim();
-        const phone = document.getElementById('editCustomerPhone').value.trim();
-        const email = document.getElementById('editCustomerEmail').value.trim();
-        const address = document.getElementById('editCustomerAddress').value.trim();
-        const notes = document.getElementById('editCustomerNotes').value.trim();
-
-        // Validation
-        if (!firstName || !lastName || !phone) {
-            showError('Please fill in all required fields (First Name, Last Name, Phone)');
-            return;
-        }
-
-        // Phone validation (simple)
-        if (!/^09\d{9}$/.test(phone)) {
-            showError('Phone number must be in format 09XXXXXXXXX');
-            return;
-        }
-
-        // Check for duplicate phone (excluding current customer)
-        if (this.isDuplicatePhone(phone, customerId)) {
-            const existingCustomer = this.customers.find(c => c.phone === phone && c.id !== customerId);
-            showError(`Phone number ${phone} is already used by ${existingCustomer.firstName} ${existingCustomer.lastName}`);
-            return;
-        }
-
-        try {
-            console.log('💾 [CUSTOMER-MANAGER] Updating customer...');
-            console.log('💾 [CUSTOMER-MANAGER] HybridAPIClient available:', !!window.HybridAPIClient);
-            console.log('💾 [CUSTOMER-MANAGER] Online status:', navigator.onLine);
-
-            const customerData = {
-                firstName,
-                lastName,
-                phone,
-                email: email || null,
-                address: address || null,
-                notes: notes || null,
-                modifiedAt: new Date().toISOString()
-            };
-
-            // HYBRID APPROACH: Use HybridAPIClient for automatic online/offline handling
-            if (!window.HybridAPIClient) {
-                console.warn('⚠️ [CUSTOMER-MANAGER] HybridAPIClient not available, falling back to IndexedDB');
-                // Fallback to IndexedDB
-                const customer = this.customers.find(c =>
-                    String(c.id) === String(customerId) ||
-                    String(c._id) === String(customerId)
-                );
-
-                if (customer) {
-                    Object.assign(customer, customerData);
-                    customer.syncStatus = 'pending';
-                    await window.db.update('customers', customer);
-
-                    // Update local array
-                    const index = this.customers.findIndex(c =>
-                        String(c.id) === String(customerId) ||
-                        String(c._id) === String(customerId)
-                    );
-                    if (index !== -1) {
-                        this.customers[index] = customer;
-                    }
-
-                    // Trigger sync if possible
-                    if (window.syncManager?.isOnline) {
-                        console.log('🔄 Triggering customer sync after update');
-                        window.syncManager.triggerSync();
-                    }
-                } else {
-                    throw new Error('Customer not found');
-                }
-            } else {
-                // Use HybridAPIClient (handles online/offline automatically)
-                const result = await window.HybridAPIClient.put(`/api/customers/${customerId}`, customerData);
-
-                console.log('💾 [CUSTOMER-MANAGER] Update result:', {
-                    success: result.success,
-                    source: result.source,
-                    hasData: !!result.data
-                });
-
-                if (result.success) {
-                    // Map MongoDB _id to frontend id (like employees)
-                    const updatedCustomer = {
-                        ...result.data,
-                        id: result.data._id || result.data.id
-                    };
-
-                    // Update local array
-                    const index = this.customers.findIndex(c =>
-                        String(c.id) === String(customerId) ||
-                        String(c._id) === String(customerId)
-                    );
-
-                    if (index !== -1) {
-                        this.customers[index] = updatedCustomer;
-                        this.filteredCustomers = [...this.customers];
-                    }
-
-                    console.log(`✅ [CUSTOMER-MANAGER] Customer updated via ${result.source}`);
-                } else {
-                    throw new Error(result.error || 'Failed to update customer');
-                }
-            }
-
-            // Update displays
-            this.displayCustomers();
-            this.updateCustomerStats();
-
-            // Update dropdown options if it's initialized
-            if (this.isDropdownInitialized) {
-                this.renderCustomerOptions();
-            }
-
-            this.closeEditCustomerModal();
-            showSuccess('Customer updated successfully!');
-
-        } catch (error) {
-            console.error('❌ [CUSTOMER-MANAGER] Error updating customer:', error);
-            showError('Failed to update customer. Please try again.');
-        }
+        // Implementation for editing customer
+        console.log('Edit customer:', customerId);
     }
 
     async deleteCustomer(customerId) {
         if (!confirm('Are you sure you want to delete this customer?')) return;
 
         try {
-            console.log('🗑️ [CUSTOMER-MANAGER] Deleting customer:', customerId);
-            console.log('🗑️ [CUSTOMER-MANAGER] HybridAPIClient available:', !!window.HybridAPIClient);
-            console.log('🗑️ [CUSTOMER-MANAGER] Online status:', navigator.onLine);
-
-            // HYBRID APPROACH: Use HybridAPIClient for automatic online/offline handling
-            if (!window.HybridAPIClient) {
-                console.warn('⚠️ [CUSTOMER-MANAGER] HybridAPIClient not available, falling back to IndexedDB');
-                // Fallback to IndexedDB
-                await window.db.delete('customers', customerId);
-
-                // Trigger sync if possible
-                if (window.syncManager?.isOnline) {
-                    console.log('🔄 Triggering customer sync after delete');
-                    window.syncManager.triggerSync();
-                }
-            } else {
-                // Use HybridAPIClient (handles online/offline automatically)
-                const result = await window.HybridAPIClient.delete(`/api/customers/${customerId}`);
-
-                console.log('🗑️ [CUSTOMER-MANAGER] Delete result:', {
-                    success: result.success,
-                    source: result.source
-                });
-
-                if (!result.success) {
-                    throw new Error(result.error || 'Failed to delete customer');
-                }
-
-                console.log(`✅ [CUSTOMER-MANAGER] Customer deleted via ${result.source}`);
-            }
+            await window.db.delete('customers', customerId);
 
             // Update customers array directly instead of reloading
-            this.customers = this.customers.filter(c =>
-                String(c.id) !== String(customerId) &&
-                String(c._id) !== String(customerId)
-            );
+            this.customers = this.customers.filter(c => c.id !== customerId);
             this.filteredCustomers = [...this.customers];
 
             // Update displays
@@ -1363,8 +1061,13 @@ class CustomerManager {
 
             showSuccess('Customer deleted successfully!');
 
+            // Trigger immediate sync if online
+            if (window.syncManager?.isOnline) {
+                console.log('🔄 Triggering customer sync after delete');
+                window.syncManager.triggerSync();
+            }
         } catch (error) {
-            console.error('❌ [CUSTOMER-MANAGER] Error deleting customer:', error);
+            console.error('Error deleting customer:', error);
             showError('Failed to delete customer. Please try again.');
         }
     }
