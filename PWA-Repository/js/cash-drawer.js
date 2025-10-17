@@ -7,6 +7,7 @@ class CashDrawerManager {
         this.statusPollInterval = null;
         this.pollFrequency = 30000; // 30 seconds
         this.lastKnownDrawerState = null;
+        this.lastCloseTimestamp = null; // Track when drawer was closed to prevent false warnings
 
         // Listen for online/offline changes
         window.addEventListener('online', () => {
@@ -114,7 +115,16 @@ class CashDrawerManager {
 
                 // If drawer is open by someone else and we don't have a local session
                 if (!currentState.available && !this.isDrawerOpen()) {
-                    this.showDrawerInUseWarning(availability.openSession);
+                    // FIX: Don't show warning if we just closed drawer in last 60 seconds
+                    // This prevents false warnings during the backend sync delay period
+                    const recentlyClosedByUs = this.lastCloseTimestamp &&
+                                               (Date.now() - this.lastCloseTimestamp) < 60000; // 60 seconds
+
+                    if (!recentlyClosedByUs) {
+                        this.showDrawerInUseWarning(availability.openSession);
+                    } else {
+                        console.log('⏭️ [STATUS CHECK] Skipping warning - drawer recently closed by us, waiting for backend sync');
+                    }
                 }
 
                 // If drawer is now available but we thought it was open, sync
@@ -531,9 +541,31 @@ class CashDrawerManager {
             console.log('🔒 [CLOSE DEBUG] Step 10: Final cleanup...');
             const closedSession = { ...this.currentSession };
             this.currentSession = null;
+            this.lastCloseTimestamp = Date.now(); // FIX: Track when drawer was closed
 
             // Update UI
             this.updateUI();
+
+            // FIX: Immediately hide the warning banner after closing drawer
+            this.hideDrawerInUseWarning();
+            console.log('✅ [CLOSE DEBUG] Warning banner hidden after drawer close');
+
+            // FIX: Reset last known state to force fresh check on next poll
+            this.lastKnownDrawerState = {
+                available: true,  // We just closed it
+                openedBy: null,
+                sessionId: null,
+                openedAt: null
+            };
+            console.log('✅ [CLOSE DEBUG] Local drawer state reset to available');
+
+            // FIX: Trigger immediate status check (don't wait 30 seconds)
+            setTimeout(async () => {
+                if (this.isOnline && window.HybridAPIClient) {
+                    await this.checkDrawerStatus();
+                    console.log('✅ [CLOSE DEBUG] Immediate post-close status check completed');
+                }
+            }, 2000); // Wait 2 seconds for backend sync to complete
 
             const totalTime = Date.now() - startTime;
             console.log('✅ [CLOSE DEBUG] Cash drawer closed successfully', {
@@ -544,7 +576,7 @@ class CashDrawerManager {
                 variance: closedSession.variance,
                 closedBy: closedSession.closedByName
             });
-            
+
             if (window.showSuccess) {
                 const varianceText = variance !== 0 ? ` (Variance: ₱${this.formatCurrency(Math.abs(variance))})` : '';
                 window.showSuccess(`✅ Cash drawer closed successfully with ₱${this.formatCurrency(closingBalance)}${varianceText}`);

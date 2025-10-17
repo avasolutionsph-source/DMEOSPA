@@ -27,20 +27,22 @@ class ShiftScheduleManager {
     
     async init() {
         console.log('🗓️ Initializing Shift Schedule Manager...');
-        
+
         // Check if user has permission (manager or owner only)
         if (!this.hasPermission()) {
-            console.warn('⚠️ User does not have permission to access shift schedules');
+            console.warn('⚠️ User does not have permission to access shift schedules - SILENTLY DISABLING');
+            // Don't initialize anything if no permission
+            this.initialized = false;
             return;
         }
-        
+
         // Wait for utilities to be available
         await this.waitForUtilities();
-        
+
         this.setupEventListeners();
         this.setupOtherEventListeners();
         this.initialized = true;
-        
+
         console.log('✅ Shift Schedule Manager initialized');
     }
     
@@ -129,7 +131,13 @@ class ShiftScheduleManager {
     
     setupEventListeners() {
         console.log('🗓️ Setting up event listeners...');
-        
+
+        // FIX: Don't set up listeners if not initialized
+        if (!this.initialized && !this.hasPermission()) {
+            console.warn('⚠️ Skipping event listener setup - no permission');
+            return;
+        }
+
         // Global event delegation for maximum reliability
         document.addEventListener('click', (e) => {
             if (e.target && (e.target.id === 'addShiftScheduleBtn' || e.target.closest('#addShiftScheduleBtn'))) {
@@ -140,10 +148,10 @@ class ShiftScheduleManager {
                 return false;
             }
         });
-        
+
         // Try to attach directly to button with retry mechanism
         this.attachButtonListener();
-        
+
         // Set up a periodic check to ensure button is attached
         this.buttonCheckInterval = setInterval(() => {
             if (!this.buttonAttached && this.retryCount < this.maxRetries) {
