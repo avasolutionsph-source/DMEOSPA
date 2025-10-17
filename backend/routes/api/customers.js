@@ -9,10 +9,10 @@ const router = express.Router();
 // Create base route handler for customers
 const customerHandler = new BaseRouteHandler(Customer, {
     populate: [], // Add population fields if needed
-    searchFields: ['name', 'email', 'phone'],
-    sortField: 'name',
+    searchFields: ['firstName', 'lastName', 'email', 'phone'],
+    sortField: 'firstName',
     sortOrder: 1,
-    requiredFields: ['name'],
+    requiredFields: ['firstName', 'lastName'],
     uniqueFields: ['email'], // Email should be unique per user
     ownerField: 'userId'
 });
@@ -28,14 +28,15 @@ router.get('/search/:query', withErrorHandling(async (req, res) => {
     const searchQuery = {
         userId: req.user._id,
         $or: [
-            { name: new RegExp(query, 'i') },
+            { firstName: new RegExp(query, 'i') },
+            { lastName: new RegExp(query, 'i') },
             { email: new RegExp(query, 'i') },
             { phone: new RegExp(query, 'i') }
         ]
     };
-    
+
     const customers = await Customer.find(searchQuery)
-        .sort({ name: 1 })
+        .sort({ firstName: 1, lastName: 1 })
         .limit(limit * 1)
         .skip((page - 1) * limit)
         .exec();
