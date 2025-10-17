@@ -99,7 +99,7 @@ const corsOptions = {
   origin: function(origin, callback) {
     const allowedOrigins = [
       'http://localhost:3000',
-      'http://localhost:3001', 
+      'http://localhost:3001',
       'http://localhost:3002',
       'http://localhost:3003',
       'http://localhost:8080',
@@ -114,7 +114,9 @@ const corsOptions = {
       'https://daetspa-pwa.netlify.app',
       'https://daet-netlify-app.com',
       'https://daetipa-marketing.netlify.app',
-      'https://daetspa-marketing.netlify.app'
+      'https://daetspa-marketing.netlify.app',
+      'https://app.daetmassage.com',
+      'http://app.daetmassage.com'
     ];
     
     // Add environment-specific origins
