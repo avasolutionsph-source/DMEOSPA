@@ -2491,6 +2491,14 @@ class POSSystem {
                                 console.log('🔄 [POS-SAVE] Triggering immediate sync...');
                                 setTimeout(() => window.syncManager.triggerSync(), 1000);
                             }
+
+                            // FIX: Trigger dashboard refresh for queued transactions too
+                            if (window.enhancedDashboardManager) {
+                                console.log('🔄 [POS-SAVE] Refreshing dashboard after queued transaction...');
+                                setTimeout(() => {
+                                    window.enhancedDashboardManager.loadFinancialPerformance();
+                                }, 500);
+                            }
                         } catch (localSaveError) {
                             console.error('❌ [POS-SAVE] Failed to save transaction locally:', localSaveError);
                         }
@@ -2529,6 +2537,14 @@ class POSSystem {
                             if (window.syncManager?.isOnline) {
                                 console.log('🔄 [POS-SAVE] Triggering immediate sync...');
                                 setTimeout(() => window.syncManager.triggerSync(), 1000);
+                            }
+
+                            // FIX: Trigger dashboard refresh for queued transactions too
+                            if (window.enhancedDashboardManager) {
+                                console.log('🔄 [POS-SAVE] Refreshing dashboard after queued transaction...');
+                                setTimeout(() => {
+                                    window.enhancedDashboardManager.loadFinancialPerformance();
+                                }, 500);
                             }
                         } catch (localSaveError) {
                             console.error('❌ [POS-SAVE] Failed to save transaction locally:', localSaveError);
