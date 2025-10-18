@@ -419,13 +419,13 @@ class CustomerManager {
                     </div>
                 </div>
                 <div class="customer-actions">
-                    <button class="btn btn-sm btn-secondary" onclick="window.customerManager.viewCustomerHistory(${customer.id})">
+                    <button class="btn btn-sm btn-secondary" onclick="window.customerManager.viewCustomerHistory('${customer.id}')">
                         <i class="fas fa-history"></i> History
                     </button>
-                    <button class="btn btn-sm btn-primary" onclick="window.customerManager.editCustomer(${customer.id})">
+                    <button class="btn btn-sm btn-primary" onclick="window.customerManager.editCustomer('${customer.id}')">
                         <i class="fas fa-edit"></i> Edit
                     </button>
-                    <button class="btn btn-sm btn-danger" onclick="window.customerManager.deleteCustomer(${customer.id})">
+                    <button class="btn btn-sm btn-danger" onclick="window.customerManager.deleteCustomer('${customer.id}')">
                         <i class="fas fa-trash"></i> Delete
                     </button>
                 </div>
