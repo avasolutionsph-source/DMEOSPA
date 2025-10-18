@@ -919,7 +919,9 @@ class CustomerManager {
                 dateAdded: new Date().toISOString(),
                 lastVisit: null,
                 totalVisits: 0,
-                totalSpent: 0
+                totalSpent: 0,
+                // FIX: Generate unique localId to prevent duplicate key error on compound unique index
+                localId: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
             };
 
             // HYBRID APPROACH: Use HybridAPIClient for automatic online/offline handling
