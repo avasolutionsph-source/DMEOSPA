@@ -1010,8 +1010,22 @@ class ShiftScheduleManager {
             });
             
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `Failed to save schedule: ${response.status}`);
+                let errorMessage = `Failed to save schedule: ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    console.error('❌ Backend error response:', errorData);
+                    errorMessage = errorData.error || errorData.message || errorMessage;
+                    if (errorData.details) {
+                        console.error('❌ Error details:', errorData.details);
+                        errorMessage += ` - ${errorData.details}`;
+                    }
+                } catch (jsonError) {
+                    // Response might not be JSON (could be HTML error page)
+                    const textResponse = await response.text();
+                    console.error('❌ Non-JSON error response:', textResponse.substring(0, 500));
+                    errorMessage += ' - See console for details';
+                }
+                throw new Error(errorMessage);
             }
             
             const result = await response.json();
