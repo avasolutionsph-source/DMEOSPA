@@ -149,12 +149,23 @@ class CashDrawerManager {
                     this.updateUI();
                 }
 
-                // If drawer is now available but we thought it was open, sync
+                // If drawer is now available but we thought it was open, clear local session
                 if (currentState.available && this.isDrawerOpen()) {
-                    console.warn('⚠️ Drawer closed remotely - syncing local state');
-                    await this.loadCurrentSession();
+                    console.warn('⚠️ Drawer closed remotely - clearing local session');
+
+                    // Clear the session from memory
+                    this.currentSession = null;
+
+                    // Update state manager
+                    if (window.StateManager) {
+                        window.StateManager.setState('cashDrawer.currentSession', null);
+                        window.StateManager.setState('cashDrawer.isDrawerOpen', false);
+                    }
+
                     this.hideDrawerInUseWarning();
                     this.updateUI();
+
+                    console.log('✅ Local session cleared due to remote closure');
                 }
 
                 // If drawer is open by us (either locally or by same user remotely), hide any warnings
