@@ -113,8 +113,24 @@ class CashDrawerManager {
             if (this.hasDrawerStateChanged(currentState)) {
                 console.log('🔄 Drawer state changed:', currentState);
 
-                // If drawer is open by someone else and we don't have a local session
-                if (!currentState.available && !this.isDrawerOpen()) {
+                // FIX: Check if the drawer is open by the SAME USER (not just same device)
+                const currentUser = this.getCurrentUser();
+                const currentUserIdentifier = currentUser?.email || currentUser?.userId || currentUser?.name;
+                const drawerOpenByCurrentUser = currentState.openedBy &&
+                                               currentUserIdentifier &&
+                                               (currentState.openedBy === currentUserIdentifier ||
+                                                currentState.openedBy === currentUser?.email ||
+                                                currentState.openedBy === currentUser?.userId);
+
+                console.log('🔍 [SAME USER CHECK]', {
+                    currentUserIdentifier,
+                    drawerOpenedBy: currentState.openedBy,
+                    isSameUser: drawerOpenByCurrentUser,
+                    hasLocalSession: this.isDrawerOpen()
+                });
+
+                // If drawer is open by someone else (different user) and we don't have a local session
+                if (!currentState.available && !this.isDrawerOpen() && !drawerOpenByCurrentUser) {
                     // FIX: Don't show warning if we just closed drawer in last 60 seconds
                     // This prevents false warnings during the backend sync delay period
                     const recentlyClosedByUs = this.lastCloseTimestamp &&
@@ -125,6 +141,12 @@ class CashDrawerManager {
                     } else {
                         console.log('⏭️ [STATUS CHECK] Skipping warning - drawer recently closed by us, waiting for backend sync');
                     }
+                } else if (!currentState.available && !this.isDrawerOpen() && drawerOpenByCurrentUser) {
+                    // FIX: Drawer is open by SAME USER on different device/browser - load the session locally
+                    console.log('✅ [SAME USER] Drawer is open by same user on different device - syncing session locally');
+                    await this.loadCurrentSession();
+                    this.hideDrawerInUseWarning();
+                    this.updateUI();
                 }
 
                 // If drawer is now available but we thought it was open, sync
@@ -135,8 +157,8 @@ class CashDrawerManager {
                     this.updateUI();
                 }
 
-                // If drawer is open by us, hide any warnings
-                if (!currentState.available && this.isDrawerOpen()) {
+                // If drawer is open by us (either locally or by same user remotely), hide any warnings
+                if (!currentState.available && (this.isDrawerOpen() || drawerOpenByCurrentUser)) {
                     this.hideDrawerInUseWarning();
                 }
 
