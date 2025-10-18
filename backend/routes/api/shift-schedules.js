@@ -75,6 +75,68 @@ router.get('/', requireManagerOrOwner, withErrorHandling(async (req, res) => {
   });
 }));
 
+// Get current user's own shift schedule (employee self-access)
+router.get('/my-schedule', withErrorHandling(async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'Authentication required'
+    });
+  }
+
+  // Find the employee record for the current user
+  // Try both employeeId (from employee login) and userId (from business owner login)
+  const employeeId = req.user.employeeId || req.user.id || req.user._id;
+
+  // First, try to find employee by their own _id (if they logged in as employee)
+  let employee = await Employee.findOne({ _id: employeeId });
+
+  // If not found, try to find by userId (for business owner viewing their own schedule)
+  if (!employee) {
+    employee = await Employee.findOne({
+      userId: req.user.id || req.user._id,
+      email: req.user.email
+    });
+  }
+
+  if (!employee) {
+    return res.status(404).json({
+      success: false,
+      error: 'Employee record not found. Only employees with schedules can access this feature.',
+      hint: 'This feature is for staff members to view their work schedule'
+    });
+  }
+
+  // Find the active schedule for this employee
+  const schedule = await ShiftSchedule.findOne({
+    employeeId: employee._id,
+    isActive: true
+  }).populate('employeeId', 'firstName lastName position role email');
+
+  logger.info(`Employee viewed their own schedule: ${employee._id}`, {
+    category: 'DATABASE',
+    operation: 'get_my_shift_schedule',
+    data: {
+      employeeId: employee._id,
+      hasSchedule: !!schedule,
+      userId: req.user.id
+    }
+  });
+
+  res.json({
+    success: true,
+    data: schedule,
+    employee: {
+      id: employee._id,
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      position: employee.position || employee.role,
+      email: employee.email
+    },
+    message: schedule ? 'Your shift schedule retrieved successfully' : 'No active shift schedule found for you'
+  });
+}));
+
 // Get shift schedule for a specific employee
 router.get('/employee/:employeeId', requireManagerOrOwner, withErrorHandling(async (req, res) => {
   const { employeeId } = req.params;

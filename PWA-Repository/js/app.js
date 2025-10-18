@@ -492,6 +492,14 @@ class App {
                     }, 100);
                 }
                 break;
+            case 'my-schedule':
+                if (window.myScheduleManager && window.myScheduleManager.onPageShow) {
+                    // Load employee's own schedule asynchronously without blocking
+                    setTimeout(() => {
+                        window.myScheduleManager.onPageShow().catch(e => console.warn('My Schedule load failed:', e));
+                    }, 100);
+                }
+                break;
             case 'attendance':
                 if (window.attendanceManager) {
                     // Load asynchronously without blocking

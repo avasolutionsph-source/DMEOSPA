@@ -559,6 +559,7 @@
                 <li><a href="#" data-page="inventory" class="nav-link"><i class="fas fa-boxes"></i> Inventory</a></li>
                 <li><a href="#" data-page="employees" class="nav-link"><i class="fas fa-user-md"></i> Employees</a></li>
                 <li><a href="#" data-page="shift-schedule" class="nav-link" data-roles="owner,manager"><i class="fas fa-calendar-week"></i> Shift Schedule</a></li>
+                <li><a href="#" data-page="my-schedule" class="nav-link"><i class="fas fa-calendar-check"></i> My Schedule</a></li>
                 <li><a href="#" data-page="customers" class="nav-link"><i class="fas fa-users"></i> Customers</a></li>
                 <li><a href="#" data-page="appointments" class="nav-link"><i class="fas fa-calendar-alt"></i> Appointments</a></li>
                 <li><a href="#" data-page="attendance" class="nav-link"><i class="fas fa-clock"></i> Attendance</a></li>
@@ -1097,6 +1098,31 @@
                 </div>
                 
                 <div class="employees-grid" id="employeesGrid"></div>
+            </div>
+
+            <!-- My Schedule Page (Employee Self-View) -->
+            <div id="my-schedule" class="page">
+                <div class="page-header" style="
+                    margin-bottom: 2rem;
+                    padding: 1.5rem 0;
+                ">
+                    <h1 style="
+                        font-size: 2.25rem;
+                        font-weight: 800;
+                        color: #1f2937;
+                        margin: 0 0 0.5rem 0;
+                        line-height: 1.2;
+                    "><i class="fas fa-calendar-check"></i> My Schedule</h1>
+                    <p style="
+                        color: #6b7280;
+                        margin: 0;
+                        font-size: 1.1rem;
+                        font-weight: 400;
+                    ">View your weekly work schedule</p>
+                </div>
+
+                <!-- Schedule Container - Content loaded by my-schedule.js -->
+                <div id="myScheduleContainer"></div>
             </div>
 
             <!-- Shift Schedule Page -->
@@ -5094,6 +5120,7 @@
     <script src="js/inventory.js"></script>
     <script src="js/employees.js"></script>
     <script src="js/shift-schedule-manager.js"></script>
+    <script src="js/my-schedule.js"></script>
     <script src="js/cash-drawer.js"></script>
     <script src="js/cash-drawer-history.js"></script>
     <script src="js/customers.js"></script>
