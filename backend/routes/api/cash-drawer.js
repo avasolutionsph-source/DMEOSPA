@@ -403,13 +403,22 @@ router.post('/sessions/:sessionId/force-close', async (req, res) => {
     // TODO: Add manager authorization check
     // For now, allow any authenticated user to force close
 
-    const session = await CashDrawerSession.findOne({
-      $or: [
-        { sessionId },
-        { _id: sessionId }
-      ],
+    // FIX: Try sessionId field first (drawer_XXXXX format), then _id if it looks like ObjectId
+    let session;
+
+    // First, always try sessionId field (this handles drawer_XXXXX format)
+    session = await CashDrawerSession.findOne({
+      sessionId,
       userId
     });
+
+    // If not found and the param looks like a valid ObjectId (24 hex chars), try _id
+    if (!session && /^[0-9a-fA-F]{24}$/.test(sessionId)) {
+      session = await CashDrawerSession.findOne({
+        _id: sessionId,
+        userId
+      });
+    }
 
     if (!session) {
       return res.status(404).json({
