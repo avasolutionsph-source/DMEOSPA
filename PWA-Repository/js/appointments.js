@@ -13,8 +13,9 @@ class AppointmentsManager {
         this.authCheckInterval = null;
 
         // Track login state for automatic refresh
-        const userData = localStorage.getItem('currentUser');
-        const userToken = localStorage.getItem('authToken');
+        // Check multiple possible storage locations for compatibility
+        const userData = localStorage.getItem('userData') || localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+        const userToken = localStorage.getItem('userToken') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
         this.wasLoggedIn = !!(userData && userToken);
 
         console.log('🗓️ Appointments Manager initialized');
@@ -93,10 +94,11 @@ class AppointmentsManager {
         // Also check periodically for auth state changes in same window
         // (storage event doesn't fire for same window changes)
         this.authCheckInterval = setInterval(() => {
-            const userData = localStorage.getItem('currentUser');
-            const userToken = localStorage.getItem('authToken');
+            // Check multiple possible storage locations for compatibility
+            const userData = localStorage.getItem('userData') || localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+            const userToken = localStorage.getItem('userToken') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
             const isCurrentlyLoggedIn = !!(userData && userToken);
-            
+
             if (isCurrentlyLoggedIn !== this.wasLoggedIn) {
                 console.log('🔄 Auth state changed in same window, reloading appointments...');
                 this.wasLoggedIn = isCurrentlyLoggedIn;
@@ -110,8 +112,9 @@ class AppointmentsManager {
             console.log('📥 Loading appointments from server...');
 
             // Get current user info for branch ID (using PWA auth system keys)
-            const userData = localStorage.getItem('currentUser');
-            const userToken = localStorage.getItem('authToken');
+            // Check multiple possible storage locations for compatibility
+            const userData = localStorage.getItem('userData') || localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+            const userToken = localStorage.getItem('userToken') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
 
             console.log('🔍 [APPOINTMENTS] Auth check:', {
                 hasUserData: !!userData,
@@ -637,8 +640,9 @@ class AppointmentsManager {
             console.log('📥 Loading advance bookings from server...');
 
             // Get current user info
-            const userData = localStorage.getItem('currentUser');
-            const userToken = localStorage.getItem('authToken');
+            // Check multiple possible storage locations for compatibility
+            const userData = localStorage.getItem('userData') || localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+            const userToken = localStorage.getItem('userToken') || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
 
             console.log('🔍 [ADVANCE-BOOKINGS] Auth check:', {
                 hasUserData: !!userData,
