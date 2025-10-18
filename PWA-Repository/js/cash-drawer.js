@@ -1074,11 +1074,19 @@ class CashDrawerManager {
                     try {
                         apiEndpoint = `/api/cash-drawer/sessions/${tryId}`;
                         console.log(`🔒 [SYNC ${operation.toUpperCase()}] Trying PUT ${apiEndpoint}...`);
-                        
+                        console.log(`🔒 [SYNC ${operation.toUpperCase()}] Sending session data:`, {
+                            status: session.status,
+                            closingBalance: session.closingBalance,
+                            closedBy: session.closedBy,
+                            closedByName: session.closedByName,
+                            closedAt: session.closedAt
+                        });
+
                         result = await window.HybridAPIClient.put(apiEndpoint, session);
-                        
+
                         if (result.success) {
                             console.log(`✅ [SYNC ${operation.toUpperCase()}] Success with ID: ${tryId}`);
+                            console.log(`✅ [SYNC ${operation.toUpperCase()}] Backend confirmed:`, result.data);
                             syncSuccess = true;
                             break;
                         } else {
