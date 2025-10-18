@@ -945,15 +945,15 @@ class AuthSystem {
         // Define what pages each role can access
         const rolePermissions = {
             // Therapist roles can only see their own data - they use payroll-requests instead of payroll
-            'senior_therapist': ['appointments', 'attendance', 'payroll', 'rooms', 'service-history'],
-            'junior_therapist': ['appointments', 'attendance', 'payroll', 'rooms', 'service-history'],
-            'new_therapist': ['appointments', 'attendance', 'payroll', 'rooms', 'service-history'],
+            'senior_therapist': ['appointments', 'attendance', 'payroll', 'rooms', 'service-history', 'my-schedule'],
+            'junior_therapist': ['appointments', 'attendance', 'payroll', 'rooms', 'service-history', 'my-schedule'],
+            'new_therapist': ['appointments', 'attendance', 'payroll', 'rooms', 'service-history', 'my-schedule'],
 
             // Receptionist has broader access - also uses payroll-requests
-            'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll', 'rooms', 'service-history', 'expenses'],
+            'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll', 'rooms', 'service-history', 'expenses', 'my-schedule'],
 
             // Manager can read everything - uses full payroll page
-            'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers',
+            'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'shift-schedule', 'my-schedule', 'customers',
                        'appointments', 'attendance', 'payroll', 'rooms', 'service-history', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
 
             // Other staff limited access - uses payroll-requests
@@ -1038,11 +1038,11 @@ class AuthSystem {
 
         // Define permissions (same as above)
         const rolePermissions = {
-            'senior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
-            'junior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
-            'new_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
-            'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history', 'expenses'],
-            'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers',
+            'senior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history', 'my-schedule'],
+            'junior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history', 'my-schedule'],
+            'new_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history', 'my-schedule'],
+            'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history', 'expenses', 'my-schedule'],
+            'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'shift-schedule', 'my-schedule', 'customers',
                        'appointments', 'attendance', 'payroll', 'rooms', 'service-history', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
             'other_staff': ['attendance', 'payroll-requests']
         };
@@ -1062,11 +1062,11 @@ class AuthSystem {
 
         // Define permissions for each role
         const rolePermissions = {
-            'senior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
-            'junior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
-            'new_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history'],
-            'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history', 'expenses'],
-            'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'customers',
+            'senior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history', 'my-schedule'],
+            'junior_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history', 'my-schedule'],
+            'new_therapist': ['appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history', 'my-schedule'],
+            'receptionist': ['pos', 'products', 'inventory', 'customers', 'appointments', 'attendance', 'payroll-requests', 'rooms', 'service-history', 'expenses', 'my-schedule'],
+            'manager': ['dashboard', 'pos', 'products', 'inventory', 'employees', 'shift-schedule', 'my-schedule', 'customers',
                        'appointments', 'attendance', 'payroll', 'rooms', 'service-history', 'gift-certificates', 'expenses', 'chatbot', 'settings'],
             'other_staff': ['attendance', 'payroll-requests']
         };
