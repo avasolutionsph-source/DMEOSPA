@@ -190,11 +190,15 @@ shiftScheduleSchema.pre('save', function(next) {
     }
     
     // Validate that end time is after start time
+    // Note: For night shifts that span midnight (e.g., 18:00 to 02:00),
+    // endMinutes will be less than startMinutes, which is valid
     const startMinutes = this.timeToMinutes(daySchedule.startTime);
     const endMinutes = this.timeToMinutes(daySchedule.endTime);
-    
-    if (endMinutes <= startMinutes) {
-      return next(new Error(`End time must be after start time for ${day}.`));
+
+    // Allow overnight shifts (night shift crossing midnight)
+    // Only reject if both times are identical
+    if (startMinutes === endMinutes) {
+      return next(new Error(`Start time and end time cannot be the same for ${day}.`));
     }
   }
   
