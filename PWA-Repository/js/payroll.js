@@ -631,18 +631,38 @@ class PayrollManager {
             return;
         }
         
-        const requestsHTML = requests.map(request => `
-            <div class="request-item">
-                <div>
-                    <strong>${request.type.replace(/_/g, ' ').toUpperCase()}</strong><br>
-                    <small>${new Date(request.createdAt).toLocaleDateString()}</small>
-                    ${request.details ? `<br><small>${request.details}</small>` : ''}
+        const requestsHTML = requests.map(request => {
+            // Format details based on request type
+            let detailsHTML = '';
+            if (request.type === 'leave' && request.details) {
+                detailsHTML = `<br><small><strong>Type:</strong> ${request.details.leaveType || 'N/A'}</small>
+                               <br><small><strong>From:</strong> ${request.details.startDate ? new Date(request.details.startDate).toLocaleDateString() : 'N/A'}
+                               <strong>To:</strong> ${request.details.endDate ? new Date(request.details.endDate).toLocaleDateString() : 'N/A'}</small>
+                               <br><small><strong>Reason:</strong> ${request.details.reason || 'N/A'}</small>`;
+            } else if (request.type === 'overtime' && request.details) {
+                detailsHTML = `<br><small><strong>Date:</strong> ${request.details.date ? new Date(request.details.date).toLocaleDateString() : 'N/A'}</small>
+                               <br><small><strong>Time:</strong> ${request.details.startTime || 'N/A'} to ${request.details.endTime || 'N/A'}</small>
+                               <br><small><strong>Reason:</strong> ${request.details.reason || 'N/A'}</small>`;
+            } else if (request.type === 'payroll' && request.details) {
+                detailsHTML = `<br><small><strong>Type:</strong> ${request.details.requestType || 'N/A'}</small>
+                               <br><small><strong>Amount:</strong> ${request.details.amount ? `₱${parseFloat(request.details.amount).toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : 'N/A'}</small>`;
+            } else if (typeof request.details === 'string') {
+                detailsHTML = `<br><small>${request.details}</small>`;
+            }
+
+            return `
+                <div class="request-item">
+                    <div>
+                        <strong>${request.type.replace(/_/g, ' ').toUpperCase()}</strong><br>
+                        <small>${new Date(request.createdAt).toLocaleDateString()}</small>
+                        ${detailsHTML}
+                    </div>
+                    <span class="request-status status-${request.status}">
+                        ${request.status.toUpperCase()}
+                    </span>
                 </div>
-                <span class="request-status status-${request.status}">
-                    ${request.status.toUpperCase()}
-                </span>
-            </div>
-        `).join('');
+            `;
+        }).join('');
         
         requestsContainer.innerHTML = requestsHTML;
     }
