@@ -269,25 +269,92 @@ class CashDrawerManager {
                 return;
             }
 
-            // Check for active session
+            // Step 1: Check for active session in local IndexedDB
             const sessions = await window.db.getAll('cashDrawerSessions');
-            const activeSession = sessions.find(session => session.status === 'open');
-            
+            let activeSession = sessions.find(session => session.status === 'open');
+
             if (activeSession) {
                 this.currentSession = activeSession;
-                console.log('📝 Found active cash drawer session:', activeSession.id);
-                
+                console.log('📝 Found active cash drawer session in IndexedDB:', activeSession.id);
+
                 // Update state manager if available
                 if (window.StateManager) {
                     window.StateManager.setState('cashDrawer.currentSession', activeSession);
                     window.StateManager.setState('cashDrawer.isDrawerOpen', true);
                 }
-            } else {
-                console.log('📪 No active cash drawer session found');
-                if (window.StateManager) {
-                    window.StateManager.setState('cashDrawer.isDrawerOpen', false);
+                return; // Session found locally, we're done
+            }
+
+            // Step 2: No local session found - check backend if online
+            if (this.isOnline && window.HybridAPIClient) {
+                console.log('📡 No local session found - checking backend for active session...');
+
+                try {
+                    const availability = await window.HybridAPIClient.get('/api/cash-drawer/availability');
+
+                    if (availability.success && !availability.available && availability.openSession) {
+                        // There's an active session on the backend
+                        const currentUser = this.getCurrentUser();
+                        const currentUserIdentifier = currentUser?.email || currentUser?.userId || currentUser?.name;
+                        const sessionOpenedBy = availability.openSession.openedByName;
+
+                        // Check if it belongs to the current user
+                        const isMySession = currentUserIdentifier &&
+                                          (sessionOpenedBy === currentUserIdentifier ||
+                                           sessionOpenedBy === currentUser?.email ||
+                                           sessionOpenedBy === currentUser?.userId ||
+                                           sessionOpenedBy === currentUser?.name);
+
+                        if (isMySession) {
+                            console.log('✅ Found my active session on backend - syncing locally');
+
+                            // Create local copy of the remote session
+                            const remoteSession = {
+                                id: availability.openSession.sessionId || availability.openSession.id,
+                                serverId: availability.openSession._id || availability.openSession.id,
+                                openedBy: currentUser.userId || currentUser.email,
+                                openedByName: currentUser.name || currentUser.email,
+                                openedAt: availability.openSession.openedAt,
+                                openingFloat: availability.openSession.openingFloat || 0,
+                                expectedBalance: availability.openSession.expectedBalance || availability.openSession.openingFloat || 0,
+                                transactionCount: availability.openSession.transactionCount || 0,
+                                totalCashSales: availability.openSession.totalCashSales || 0,
+                                status: 'open',
+                                notes: availability.openSession.notes || '',
+                                syncStatus: 'synced',
+                                createdAt: availability.openSession.createdAt || availability.openSession.openedAt
+                            };
+
+                            // Save to local IndexedDB
+                            await window.db.add('cashDrawerSessions', remoteSession);
+                            this.currentSession = remoteSession;
+
+                            // Update state manager
+                            if (window.StateManager) {
+                                window.StateManager.setState('cashDrawer.currentSession', remoteSession);
+                                window.StateManager.setState('cashDrawer.isDrawerOpen', true);
+                            }
+
+                            console.log('✅ Remote session synced to local storage');
+                            return;
+                        } else {
+                            console.log('📪 Backend has active session but it belongs to different user:', sessionOpenedBy);
+                        }
+                    } else {
+                        console.log('📪 No active session on backend either');
+                    }
+                } catch (backendError) {
+                    console.warn('⚠️ Could not check backend for active session:', backendError);
                 }
             }
+
+            // Step 3: No session found anywhere
+            console.log('📪 No active cash drawer session found (local or remote)');
+            this.currentSession = null;
+            if (window.StateManager) {
+                window.StateManager.setState('cashDrawer.isDrawerOpen', false);
+            }
+
         } catch (error) {
             console.error('❌ Error loading current session:', error);
             console.log('💡 This might be normal if the database is still upgrading or the store doesn\'t exist yet');
