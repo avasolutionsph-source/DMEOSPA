@@ -86,6 +86,11 @@ PWA-Repository/check-*.html
 PWA-Repository/clear-*.html
 PWA-Repository/customer-diagnostic.html
 
+# MongoDB Credentials (NEVER commit these!)
+MONGODB-CREDENTIALS.txt
+*credentials*
+*CREDENTIALS*
+
 # Keep important files
 !README.md
 !CLAUDE.md
