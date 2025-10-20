@@ -1,4 +1,4 @@
-// Shift Schedule Manager for DAETSPA PWA
+// Shift Schedule Manager for SPA PWA
 // Handles shift scheduling for managers and owners only
 
 class ShiftScheduleManager {
@@ -1251,7 +1251,7 @@ class ShiftScheduleManager {
         const isLocalhost = window.location.hostname === 'localhost' || 
                            window.location.hostname === '127.0.0.1';
         
-        const apiUrl = isLocalhost ? 'http://localhost:4001' : 'https://daetspa-backend.onrender.com';
+        const apiUrl = isLocalhost ? 'http://localhost:4001' : 'http://localhost:4001';
         console.log('🌐 Using fallback API URL:', apiUrl, '(localhost:', isLocalhost, ')');
         
         return apiUrl;

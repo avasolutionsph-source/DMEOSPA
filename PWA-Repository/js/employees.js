@@ -678,7 +678,7 @@ class EmployeeManager {
                 // API fetch promise
                 if (token) {
                     fetchPromises.push(
-                        fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/transactions`, {
+                        fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/transactions`, {
                             headers: {
                                 'Authorization': `Bearer ${token}`,
                                 'Content-Type': 'application/json'
@@ -761,7 +761,7 @@ class EmployeeManager {
             let totalDays = 0;
             if (token) {
                 try {
-                    const attResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance?employeeId=${employee.id}`, {
+                    const attResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/attendance?employeeId=${employee.id}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
@@ -1083,7 +1083,7 @@ class EmployeeManager {
             console.log('🔄 Fetching fresh employee data from API for editing...');
             try {
                 // Fetch employee from MongoDB
-                const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/employees/${id}`, {
+                const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/employees/${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -1321,7 +1321,7 @@ class EmployeeManager {
             for (const endpoint of endpoints) {
                 try {
                     console.log(`🗑️ Attempting DELETE at ${endpoint}...`);
-                    const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}${endpoint}`, {
+                    const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}${endpoint}`, {
                         method: 'DELETE',
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -1582,7 +1582,7 @@ class EmployeeManager {
                 for (const updateEndpoint of updateEndpoints) {
                     try {
                         console.log(`📝 Attempting PUT at ${updateEndpoint}...`);
-                        const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}${updateEndpoint}`, {
+                        const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}${updateEndpoint}`, {
                             method: 'PUT',
                             headers: {
                                 'Authorization': `Bearer ${token}`,
@@ -1700,7 +1700,7 @@ class EmployeeManager {
                         hasAllRequired: !!(employeeData.firstName && employeeData.lastName && employeeData.role)
                     });
                     
-                    response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}${endpoint}`, {
+                    response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}${endpoint}`, {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -1713,7 +1713,7 @@ class EmployeeManager {
                     if (response.status === 404) {
                         console.log('🔄 First endpoint returned 404, trying /api/business/employees...');
                         endpoint = '/api/business/employees';
-                        response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}${endpoint}`, {
+                        response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}${endpoint}`, {
                             method: 'POST',
                             headers: {
                                 'Authorization': `Bearer ${token}`,
@@ -1798,7 +1798,7 @@ class EmployeeManager {
                         await new Promise(resolve => setTimeout(resolve, 1000 * retry));
                         
                         try {
-                            const retryResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/employees`, {
+                            const retryResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/employees`, {
                                 method: 'POST',
                                 headers: {
                                     'Authorization': `Bearer ${token}`,
@@ -1860,7 +1860,7 @@ class EmployeeManager {
                             const syncInterval = setInterval(async () => {
                                 console.log('🔄 Attempting critical background sync...');
                                 try {
-                                    const syncResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/employees`, {
+                                    const syncResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/employees`, {
                                         method: 'POST',
                                         headers: {
                                             'Authorization': `Bearer ${token}`,
@@ -2033,7 +2033,7 @@ class EmployeeManager {
                     delete syncData.localOnly;
                     delete syncData.syncStatus;
                     
-                    const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/employees`, {
+                    const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/employees`, {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -2083,7 +2083,7 @@ class EmployeeManager {
         
         try {
             // Get all transactions from MongoDB API
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/transactions`, {
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/transactions`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'

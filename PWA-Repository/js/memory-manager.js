@@ -163,7 +163,7 @@ class MemoryManager {
         if ('caches' in window) {
             caches.keys().then(names => {
                 names.forEach(name => {
-                    if (name.includes('ava-solutions')) {
+                    if (name.includes('spa')) {
                         caches.delete(name);
                     }
                 });

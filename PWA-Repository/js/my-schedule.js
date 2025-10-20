@@ -1,4 +1,4 @@
-// My Schedule Manager for DAETSPA PWA
+// My Schedule Manager for SPA PWA
 // Allows employees to view their own shift schedule (read-only)
 
 class MyScheduleManager {
@@ -519,7 +519,7 @@ class MyScheduleManager {
         const isLocalhost = window.location.hostname === 'localhost' ||
                            window.location.hostname === '127.0.0.1';
 
-        return isLocalhost ? 'http://localhost:4001' : 'https://daetspa-backend.onrender.com';
+        return isLocalhost ? 'http://localhost:4001' : 'http://localhost:4001';
     }
 
     getAuthToken() {

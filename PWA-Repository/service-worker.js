@@ -1,6 +1,6 @@
 // Service Worker for Offline Functionality - Enhanced Auto-Update System
-const VERSION = '2.9.0'; // TIMER FIX - Fixed displayRooms() reloading from backend
-const CACHE_NAME = `ava-solutions-v${VERSION}-${Date.now()}`; // Time-based cache busting
+const VERSION = '3.0.5'; // FIXED appointments stat cards - added grid layout
+const CACHE_NAME = `spa-v${VERSION}-${Date.now()}`; // Time-based cache busting
 const urlsToCache = [
     // Core app files
     './',
@@ -8,7 +8,14 @@ const urlsToCache = [
     './login.html',
     './register.html',
     './manifest.json',
-    
+
+    // PWA Icons (PNG required for installation)
+    './icons/icon-192.png',
+    './icons/icon-512.png',
+    './icons/icon-512-maskable.png',
+    './icons/apple-touch-icon.png',
+    './icons/icon.svg',
+
     // CSS files
     './styles.css',
     
@@ -110,7 +117,7 @@ self.addEventListener('fetch', (event) => {
     const isPWAPort = requestUrl.port === '8080' || requestUrl.port === '8082' || requestUrl.port === '5500' || requestUrl.protocol === 'file:';
     const isSameOriginDifferentPort = requestUrl.hostname === 'localhost' && !['8080', '8082', '5500'].includes(requestUrl.port);
     const isNetlify = /netlify\.app$/.test(requestUrl.hostname);
-    const isCustomDomain = requestUrl.hostname === 'app.daetmassage.com' || requestUrl.hostname === 'www.daetmassage.com' || requestUrl.hostname === 'daetmassage.com';
+    const isCustomDomain = requestUrl.hostname === 'app.localhost:8082' || requestUrl.hostname === 'www.localhost:8082' || requestUrl.hostname === 'localhost:8082';
     
     if (isSameOriginDifferentPort) {
         return; // Don't handle requests for other localhost ports
@@ -128,7 +135,7 @@ self.addEventListener('fetch', (event) => {
         }
 
         // Check if it's a unified backend URL
-        const isUnifiedBackend = event.request.url.includes('daetspa-backend.onrender.com') ||
+        const isUnifiedBackend = event.request.url.includes('localhost:4001') ||
                                 event.request.url.includes('localhost:4001');
 
         event.respondWith(
@@ -333,7 +340,7 @@ async function syncDataWithServer() {
 // Helper function to open IndexedDB
 function openDB() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open('AvaSolutionsDB', 1);
+        const request = indexedDB.open('SPADB', 1);
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
     });

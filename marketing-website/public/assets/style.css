@@ -1,42 +1,42 @@
-/* Daet Massage and Spa Website Styles - Refined Maroon Theme */
+/* ABC Massage and Spa Website Styles - Professional Dark Gray Theme (Matching PWA) */
 :root {
-  /* Refined Maroon + Spa Color Palette */
-  --primary: #9d4855;           /* Lighter, softer maroon - less intense */
-  --primary-dark: #800020;      /* Original deep maroon for accents only */
-  --primary-light: #c5556b;     /* Light rose maroon for subtle elements */
-  --primary-ultra-light: #f7f0f2; /* Ultra light maroon tint */
-  --secondary: #f8f6f0;         /* Warm cream - spa-like, clean */
-  --accent: #d4af37;            /* Gold - luxury, warmth, complements maroon */
-  --accent-light: #e8c368;      /* Light gold for hover states */
-  --accent-green: #7c9885;      /* Sage green - wellness, natural, calming */
-  --accent-blue: #8b9dc3;       /* Soft blue - trust, calm, professional */
-  --success: #7c9885;           /* Use sage green for success */
-  --warning: #d4af37;           /* Use gold for warnings */
-  --error: #dc2626;             /* Keep red for errors */
-  --text-dark: #2d1b1f;         /* Deep brown-maroon for text */
-  --text-medium: #6b4c57;       /* Medium maroon-brown for secondary text */
-  --text-light: #8a7579;        /* Light maroon-gray for subtle text */
-  --text-muted: #a89296;        /* Muted maroon-gray for disabled text */
-  --bg-light: #fdfcfb;          /* Warm white background */
-  --bg-white: #ffffff;
-  --bg-dark: #2d1b1f;           /* Deep maroon-brown for dark sections */
-  --bg-cream: #f8f6f0;          /* Warm cream background */
-  --border: #e8ddd4;            /* Warm light border */
-  --border-light: #f4f0ed;      /* Very light warm border */
-  
-  /* Warm Professional Shadows */
-  --shadow: 0 1px 3px 0 rgba(157, 72, 85, 0.1), 0 1px 2px 0 rgba(157, 72, 85, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(157, 72, 85, 0.1), 0 4px 6px -2px rgba(157, 72, 85, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(157, 72, 85, 0.1), 0 10px 10px -5px rgba(157, 72, 85, 0.04);
-  --shadow-2xl: 0 25px 50px -12px rgba(157, 72, 85, 0.25);
-  --shadow-glow: 0 0 20px rgba(212, 175, 55, 0.4);
-  --shadow-hover: 0 20px 25px -5px rgba(157, 72, 85, 0.1), 0 10px 10px -5px rgba(157, 72, 85, 0.04);
-  
-  /* Refined Maroon Gradients with Complementary Colors */
-  --gradient: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  /* Professional Dark Gray Design - Matching PWA */
+  --primary: #2C2C2E;           /* Professional Dark Gray */
+  --primary-dark: #1C1C1E;      /* Very Dark Gray */
+  --primary-light: #48484A;     /* Medium Gray */
+  --primary-ultra-light: #F2F2F7; /* Very light gray */
+  --secondary: #FFFFFF;         /* Pure white */
+  --accent: #F5F5F7;            /* Light gray */
+  --accent-light: #FAFAFA;      /* Ultra light gray */
+  --accent-green: #2C2C2E;      /* Dark gray for success */
+  --accent-blue: #48484A;       /* Medium gray for info */
+  --success: #2C2C2E;           /* Dark gray for success */
+  --warning: #636366;           /* Medium gray for warnings */
+  --error: #1C1C1E;             /* Very dark for errors */
+  --text-dark: #1D1D1F;         /* Dark gray text (readable) */
+  --text-medium: #86868B;       /* Medium gray text */
+  --text-light: #A1A1A6;        /* Light gray text */
+  --text-muted: #C7C7CC;        /* Muted gray for disabled text */
+  --bg-light: #FFFFFF;          /* White background */
+  --bg-white: #FFFFFF;
+  --bg-dark: #1D1D1F;           /* Dark gray for dark sections */
+  --bg-cream: #F2F2F7;          /* Light gray background */
+  --border: #D2D2D7;            /* Border gray */
+  --border-light: #E5E5EA;      /* Very light border */
+
+  /* Professional Shadows */
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-glow: 0 0 20px rgba(44, 44, 46, 0.2);
+  --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* Professional Gray Gradients */
+  --gradient: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
   --gradient-light: linear-gradient(135deg, var(--primary-ultra-light) 0%, var(--secondary) 100%);
-  --gradient-success: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-light) 100%);
-  --gradient-luxury: linear-gradient(135deg, var(--primary-dark) 0%, var(--accent) 100%);
+  --gradient-success: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  --gradient-luxury: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
   --gradient-hero: linear-gradient(135deg, var(--bg-cream) 0%, var(--primary-ultra-light) 100%);
   
   /* Animation Variables */
@@ -135,7 +135,7 @@ p {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+  background: var(--primary);
   color: white;
   box-shadow: var(--shadow);
 }

@@ -1,4 +1,4 @@
-// Unified Backend Server for Ava Solutions
+// Unified Backend Server for ABC Massage and Spa
 // Consolidates marketing-website, pwa-backend, and redirect backend into one cohesive system
 
 import 'dotenv/config';
@@ -43,7 +43,7 @@ const server = createServer(app);
 app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
-    service: 'Ava Solutions Unified Backend',
+    service: 'ABC Massage and Spa Unified Backend',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     version: process.env.npm_package_version || '2.0.0',
@@ -809,7 +809,7 @@ const HOST = process.env.HOST || '0.0.0.0';
 
 server.listen(PORT, HOST, () => {
   logger.info('='.repeat(60));
-  logger.info('🚀 Ava Solutions Unified Backend Started');
+  logger.info('🚀 ABC Massage and Spa Unified Backend Started');
   logger.info('='.repeat(60));
   logger.info(`📍 Server: http://${HOST}:${PORT}`);
   logger.info(`🏥 Health: http://${HOST}:${PORT}/health`);

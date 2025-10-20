@@ -92,7 +92,7 @@ class AttendanceManager {
                     createdAt: record.createdAt
                 };
 
-                const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
+                const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/attendance`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -1284,7 +1284,7 @@ class AttendanceManager {
                     const serverRecord = { ...record };
                     delete serverRecord.id;
                     
-                    const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
+                    const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/attendance`, {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -1386,7 +1386,7 @@ class AttendanceManager {
             }
 
             try {
-                const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
+                const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/attendance`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -1562,7 +1562,7 @@ class AttendanceManager {
 
             while (retryCount < maxRetries && !mongoResult) {
                 try {
-                    const mongoResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
+                    const mongoResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/attendance`, {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -1727,7 +1727,7 @@ class AttendanceManager {
             // Only try to update MongoDB if it's not a local record
             if (recordId && !recordId.startsWith('local_')) {
                 console.log('📤 Trying to update MongoDB...');
-                const mongoResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance/${recordId}`, {
+                const mongoResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/attendance/${recordId}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -1768,7 +1768,7 @@ class AttendanceManager {
         let mongoRecords = [];
         try {
             console.log('📤 Checking MongoDB for updates...');
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/attendance`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -2788,8 +2788,8 @@ window.testAttendanceSave = function() {
 window.checkEmployeesInDB = async function() {
     console.log('🔍 Checking employees in database...');
     
-    // Try the actual database name: AvaSolutionsDB
-    const dbRequest = indexedDB.open('AvaSolutionsDB');
+    // Try the actual database name: SPADB
+    const dbRequest = indexedDB.open('SPADB');
     
     dbRequest.onsuccess = () => {
         const db = dbRequest.result;
@@ -2799,7 +2799,7 @@ window.checkEmployeesInDB = async function() {
         
         getAllRequest.onsuccess = () => {
             const employees = getAllRequest.result;
-            console.log('📊 Employees found in AvaSolutionsDB:', employees.length);
+            console.log('📊 Employees found in SPADB:', employees.length);
             console.log('📊 Raw employee data from IndexedDB:', employees);
             
             // Inspect each employee's structure
@@ -2840,7 +2840,7 @@ window.checkEmployeesInDB = async function() {
     };
     
     dbRequest.onerror = (e) => {
-        console.error('❌ Failed to open AvaSolutionsDB:', e);
+        console.error('❌ Failed to open SPADB:', e);
     };
 };
 
@@ -2850,7 +2850,7 @@ window.fixAttendanceDropdown = async function() {
     
     // Direct IndexedDB access
     return new Promise((resolve) => {
-        const dbRequest = indexedDB.open('AvaSolutionsDB');
+        const dbRequest = indexedDB.open('SPADB');
         
         dbRequest.onsuccess = () => {
             const db = dbRequest.result;

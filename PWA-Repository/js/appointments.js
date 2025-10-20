@@ -141,7 +141,7 @@ class AppointmentsManager {
             const branchId = user.userId || user.id;
             
             // Fetch appointments from the unified backend API
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/bookings/${branchId}`, {
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/bookings/${branchId}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${userToken}`,
@@ -664,7 +664,7 @@ class AppointmentsManager {
             });
 
             // Fetch advance bookings from the unified backend API
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/advance-bookings`, {
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/advance-bookings`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${userToken}`,
@@ -933,7 +933,7 @@ class AppointmentsManager {
             console.log('🚀 [START-BOOKING] Creating active service:', serviceData);
 
             // 1. Create service in MongoDB FIRST (single source of truth)
-            const serviceResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/room-services`, {
+            const serviceResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/room-services`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${userToken}`,
@@ -957,7 +957,7 @@ class AppointmentsManager {
             console.log('✅ [START-BOOKING] Service saved to IndexedDB');
 
             // 3. Update booking status to in-progress
-            const bookingResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/advance-bookings/${bookingId}/convert`, {
+            const bookingResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/advance-bookings/${bookingId}/convert`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${userToken}`,
@@ -1017,7 +1017,7 @@ class AppointmentsManager {
 
                 try {
                     // Fetch all active services
-                    const servicesResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/room-services`, {
+                    const servicesResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/room-services`, {
                         method: 'GET',
                         headers: {
                             'Authorization': `Bearer ${userToken}`,
@@ -1042,7 +1042,7 @@ class AppointmentsManager {
                             for (const service of matchingServices) {
                                 console.log('🗑️ Deleting pending service:', service._id);
                                 try {
-                                    await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/room-services/${service._id}`, {
+                                    await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/room-services/${service._id}`, {
                                         method: 'DELETE',
                                         headers: {
                                             'Authorization': `Bearer ${userToken}`,
@@ -1067,7 +1067,7 @@ class AppointmentsManager {
             }
 
             // Now cancel the booking itself
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/advance-bookings/${bookingId}`, {
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/advance-bookings/${bookingId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${userToken}`,
@@ -1125,7 +1125,7 @@ class AppointmentsManager {
             }
 
             const userToken = localStorage.getItem('authToken');
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/advance-bookings/${bookingId}`, {
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/advance-bookings/${bookingId}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${userToken}`,

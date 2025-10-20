@@ -346,7 +346,7 @@ class InventoryManager {
             }
             
             // Get item from MongoDB API
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/inventory/${id}`, {
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/inventory/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -408,7 +408,7 @@ class InventoryManager {
             }
             
             // Delete item via MongoDB API
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/inventory/${id}`, {
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/inventory/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -683,7 +683,7 @@ class InventoryManager {
         }
         
         // Get item from MongoDB API
-        const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/inventory/${id}`, {
+        const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/inventory/${id}`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -765,7 +765,7 @@ class InventoryManager {
         }
 
         // Update item via MongoDB API
-        const updateResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/inventory/${item._id || item.id}`, {
+        const updateResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/inventory/${item._id || item.id}`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -897,7 +897,7 @@ class InventoryManager {
         }
         
         // Get low stock items from MongoDB API
-        const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/inventory/low-stock`, {
+        const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/inventory/low-stock`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'

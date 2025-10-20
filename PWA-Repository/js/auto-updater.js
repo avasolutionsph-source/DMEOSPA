@@ -1,4 +1,4 @@
-// Ava Solutions Auto-Updater System
+// SPA Auto-Updater System
 // Automatically checks for and applies updates
 
 class AutoUpdater {

@@ -1,37 +1,37 @@
 {
-    "name": "Ava Solutions AI Business Assistant",
-    "short_name": "AvaSolutions",
-    "description": "Intelligent offline-first business management system with AI assistant, POS, inventory tracking, and employee management for any service-based business",
-    "version": "1.7.0",
+    "name": "ABC Massage and Spa",
+    "short_name": "ABC Spa",
+    "description": "ABC Massage and Spa - Professional spa management system",
+    "version": "2.0.0",
     "start_url": "./",
     "display": "standalone",
-    "background_color": "#F9FAFB",
-    "theme_color": "#1E3A8A",
+    "background_color": "#FFFFFF",
+    "theme_color": "#FFFFFF",
     "orientation": "portrait-primary",
     "icons": [
+        {
+            "src": "icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/icon-512-maskable.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
         {
             "src": "icons/icon.svg",
             "sizes": "any",
             "type": "image/svg+xml",
             "purpose": "any"
-        },
-        {
-            "src": "icons/icon.svg",
-            "sizes": "144x144",
-            "type": "image/svg+xml",
-            "purpose": "any"
-        },
-        {
-            "src": "icons/icon.svg",
-            "sizes": "192x192",
-            "type": "image/svg+xml",
-            "purpose": "any"
-        },
-        {
-            "src": "icons/icon.svg",
-            "sizes": "512x512",
-            "type": "image/svg+xml",
-            "purpose": "maskable"
         }
     ],
     "categories": ["business", "productivity", "finance"],

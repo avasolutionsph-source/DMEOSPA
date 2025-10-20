@@ -173,7 +173,7 @@ router.post('/login', async (req, res) => {
           password: 'Ava12345',
           firstName: 'Super',
           lastName: 'Admin',
-          businessName: 'Ava Solutions PH',
+          businessName: 'ABC Massage and Spa',
           role: 'superAdmin',
         });
       } else if (superAdmin.role !== 'superAdmin') {

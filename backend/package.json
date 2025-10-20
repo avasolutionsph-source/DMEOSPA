@@ -1,7 +1,7 @@
 {
-  "name": "ava-solutions-unified-backend",
+  "name": "abc-massage-spa-unified-backend",
   "version": "2.0.0",
-  "description": "Unified backend for Ava Solutions - consolidating marketing, PWA, and admin services",
+  "description": "Unified backend for ABC Massage and Spa - consolidating marketing, PWA, and admin services",
   "type": "module",
   "main": "server.js",
   "scripts": {
@@ -14,8 +14,8 @@
     "migrate": "node scripts/migrate.js",
     "seed": "node scripts/seed.js",
     "build": "echo 'Build completed - no linting required'",
-    "docker:build": "docker build -t ava-solutions-backend .",
-    "docker:run": "docker run -p 4000:4000 --env-file .env ava-solutions-backend",
+    "docker:build": "docker build -t abc-massage-spa-backend .",
+    "docker:run": "docker run -p 4000:4000 --env-file .env abc-massage-spa-backend",
     "pm2:start": "pm2 start ecosystem.config.js",
     "pm2:stop": "pm2 stop ecosystem.config.js",
     "pm2:restart": "pm2 restart ecosystem.config.js",
@@ -61,11 +61,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ava-solutions/unified-backend"
+    "url": "https://github.com/abc-massage-spa/unified-backend"
   },
   "keywords": [
-    "ava-solutions",
+    "abc-massage-spa",
     "spa",
+    "massage",
     "pwa",
     "backend",
     "api",
@@ -73,7 +74,7 @@
     "express",
     "socket.io"
   ],
-  "author": "Ava Solutions Team",
+  "author": "ABC Massage and Spa Team",
   "license": "MIT",
   "nodemonConfig": {
     "watch": [

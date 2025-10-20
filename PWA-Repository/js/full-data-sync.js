@@ -3,7 +3,7 @@
 
 class FullDataSync {
     constructor() {
-        this.backendUrl = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
+        this.backendUrl = window.API_CONFIG?.BASE_URL || 'http://localhost:4001';
         this.syncStatus = {
             users: false,
             transactions: false,

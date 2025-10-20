@@ -5,8 +5,8 @@
 
 class HybridAPIClient {
     constructor() {
-        this.baseURL = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
-        this.localBaseURL = 'https://daetspa-backend.onrender.com';
+        this.baseURL = window.API_CONFIG?.BASE_URL || 'http://localhost:4001';
+        this.localBaseURL = 'http://localhost:4001';
         this.isOnline = navigator.onLine;
         this.requestQueue = [];
         this.cache = new Map(); // In-memory cache for quick access

@@ -1303,52 +1303,94 @@ class App {
 
     setupPWAInstall() {
         this.deferredPrompt = null;
-        
+
         // Listen for the beforeinstallprompt event
         window.addEventListener('beforeinstallprompt', (e) => {
             // Prevent the mini-infobar from appearing on mobile
             e.preventDefault();
             this.deferredPrompt = e;
-            
-            // Show install banner after a delay
+
+            console.log('PWA install prompt available');
+
+            // Show install banner immediately (user can dismiss if not interested)
+            // Only show after initial page load is complete
             setTimeout(() => {
                 this.showInstallBanner(this.deferredPrompt);
-            }, 30000); // Show after 30 seconds
+            }, 3000); // Show after 3 seconds (enough time to see the app)
         });
-        
+
         // Handle app install
         window.addEventListener('appinstalled', () => {
             this.hideInstallBanner();
             showNotification('App installed successfully! You can now use it offline.', 'success');
-            deferredPrompt = null;
+            this.deferredPrompt = null;
+
+            // Save install state to localStorage
+            localStorage.setItem('pwa-installed', 'true');
         });
+
+        // Check if app is already installed or user dismissed
+        const isInstalled = window.matchMedia('(display-mode: standalone)').matches ||
+                           localStorage.getItem('pwa-installed') === 'true';
+
+        if (isInstalled) {
+            console.log('PWA is already installed');
+        }
     }
 
     showInstallBanner(prompt) {
+        // Don't show if user already dismissed it in this session
+        if (sessionStorage.getItem('install-banner-dismissed')) {
+            return;
+        }
+
         // Create install banner if it doesn't exist
         let banner = document.getElementById('installBanner');
         if (!banner) {
+            // Detect iOS
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
             banner = document.createElement('div');
             banner.id = 'installBanner';
             banner.className = 'install-banner';
-            banner.innerHTML = `
-                <div class="install-banner-content">
-                    <div class="install-info">
-                        <i class="fas fa-mobile-alt"></i>
-                        <div>
-                            <strong>Install Ava Solutions</strong>
-                            <p>Get faster access and work offline!</p>
+
+            if (isIOS) {
+                // iOS-specific instructions
+                banner.innerHTML = `
+                    <div class="install-banner-content">
+                        <div class="install-info">
+                            <i class="fas fa-mobile-alt"></i>
+                            <div>
+                                <strong>Install SPA</strong>
+                                <p>Tap <i class="fas fa-share"></i> then "Add to Home Screen"</p>
+                            </div>
+                        </div>
+                        <div class="install-actions">
+                            <button class="btn-secondary" onclick="app.hideInstallBanner()">Got it</button>
                         </div>
                     </div>
-                    <div class="install-actions">
-                        <button class="btn-secondary" onclick="app.hideInstallBanner()">Not Now</button>
-                        <button class="btn-primary" onclick="app.installApp()">Install</button>
+                `;
+            } else {
+                // Android/Desktop
+                banner.innerHTML = `
+                    <div class="install-banner-content">
+                        <div class="install-info">
+                            <i class="fas fa-download"></i>
+                            <div>
+                                <strong>Install SPA</strong>
+                                <p>Get faster access and work offline!</p>
+                            </div>
+                        </div>
+                        <div class="install-actions">
+                            <button class="btn-secondary" onclick="app.hideInstallBanner()">Not Now</button>
+                            <button class="btn-primary" onclick="app.installApp()">Install</button>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
             document.body.appendChild(banner);
         }
-        
+
         banner.style.display = 'block';
         this.deferredPrompt = prompt;
     }
@@ -1357,6 +1399,8 @@ class App {
         const banner = document.getElementById('installBanner');
         if (banner) {
             banner.style.display = 'none';
+            // Remember dismissal for this session
+            sessionStorage.setItem('install-banner-dismissed', 'true');
         }
     }
 

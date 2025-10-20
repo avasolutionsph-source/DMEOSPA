@@ -1,7 +1,7 @@
 // IndexedDB Database Management
 class Database {
     constructor() {
-        this.dbName = 'AvaSolutionsDB';
+        this.dbName = 'SPADB';
         this.version = 17; // Incremented to add advanceBookings store
         this.db = null;
         this.userId = null;
@@ -330,7 +330,7 @@ class Database {
                     const settingsStore = this.db.createObjectStore('settings', { keyPath: 'key' });
                     // Add default settings
                     settingsStore.add({ key: 'businessName', value: 'Business' });
-                    const defaultUrl = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
+                    const defaultUrl = window.API_CONFIG?.BASE_URL || 'http://localhost:4001';
                     settingsStore.add({ key: 'apiUrl', value: defaultUrl }); // Unified Backend URL
                     settingsStore.add({ key: 'lastSync', value: null });
                     settingsStore.add({ key: 'currency', value: 'PHP' });
@@ -1080,7 +1080,7 @@ window.diagnoseDatabase = async function() {
     
     try {
         const databases = await indexedDB.databases();
-        const avaDatabases = databases.filter(db => db.name.includes('AvaSolutions'));
+        const avaDatabases = databases.filter(db => db.name.includes('SPA'));
         
         console.log('📊 Found databases:', avaDatabases);
         

@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 import Product from './models/Product.js';
 
-// Connect to MongoDB
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://avasolutionsph:Ava12345@avasolutions.impyywn.mongodb.net/ava-marketing-website?retryWrites=true&w=majority&appName=Avasolutions';
+// Connect to MongoDB - Use environment variable from .env file
+const MONGODB_URI = process.env.MONGODB_URI;
 
 async function seedProducts() {
     try {

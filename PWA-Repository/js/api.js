@@ -35,7 +35,7 @@ class APIClient {
                 this.baseUrl = window.API_CONFIG.BASE_URL;
             } else {
                 // Fallback to unified backend URL
-                this.baseUrl = 'https://daetspa-backend.onrender.com';
+                this.baseUrl = 'http://localhost:4001';
             }
             
             // Load token from auth system or API_CONFIG
@@ -50,7 +50,7 @@ class APIClient {
                 operation: 'load_settings',
                 error
             });
-            this.baseUrl = 'https://daetspa-backend.onrender.com'; // Unified backend
+            this.baseUrl = 'http://localhost:4001'; // Unified backend
         }
     }
 

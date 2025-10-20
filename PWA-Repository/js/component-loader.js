@@ -283,7 +283,7 @@ function createFallbackDashboard() {
             </div>
             <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
                 <div class="stat-card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <h3>Welcome to Ava Solutions</h3>
+                    <h3>Welcome to SPA</h3>
                     <p>Your spa management system is starting up...</p>
                 </div>
             </div>
@@ -309,7 +309,7 @@ function createFallbackSidebar() {
     const fallbackHTML = `
         <aside class="sidebar" style="width: 250px; background: #2c3e50; color: white; height: 100vh; padding: 20px;">
             <div class="logo" style="margin-bottom: 30px;">
-                <h2>Ava Solutions</h2>
+                <h2>SPA</h2>
             </div>
             <nav class="nav-menu">
                 <a href="#" class="nav-item active" style="display: block; padding: 10px; color: white; text-decoration: none; margin-bottom: 10px;">

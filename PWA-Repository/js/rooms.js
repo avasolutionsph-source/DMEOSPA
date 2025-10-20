@@ -192,7 +192,7 @@ class RoomManager {
             if (!authToken) return;
 
             // Fetch all active services
-            const servicesResponse = await fetch('https://daetspa-backend.onrender.com/api/room-services', {
+            const servicesResponse = await fetch('http://localhost:4001/api/room-services', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -206,7 +206,7 @@ class RoomManager {
             if (!servicesData.success || !servicesData.data) return;
 
             // Fetch all advance bookings
-            const bookingsResponse = await fetch('https://daetspa-backend.onrender.com/api/advance-bookings', {
+            const bookingsResponse = await fetch('http://localhost:4001/api/advance-bookings', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -243,7 +243,7 @@ class RoomManager {
                 for (const service of orphanedServices) {
                     console.log('🗑️ [ROOMS] Deleting orphaned service:', service._id, service.serviceName);
                     try {
-                        await fetch(`https://daetspa-backend.onrender.com/api/room-services/${service._id}`, {
+                        await fetch(`http://localhost:4001/api/room-services/${service._id}`, {
                             method: 'DELETE',
                             headers: {
                                 'Authorization': `Bearer ${authToken}`,
@@ -359,7 +359,7 @@ class RoomManager {
                 try {
                     const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
                     if (authToken) {
-                        const response = await fetch('https://daetspa-backend.onrender.com/api/room-services', {
+                        const response = await fetch('http://localhost:4001/api/room-services', {
                             method: 'GET',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -461,7 +461,7 @@ class RoomManager {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-            const response = await fetch('https://daetspa-backend.onrender.com/api/advance-bookings', {
+            const response = await fetch('http://localhost:4001/api/advance-bookings', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -525,7 +525,7 @@ class RoomManager {
             }
 
             console.log('🌐 [ROOMS] Fetching advance bookings from API...', {
-                url: 'https://daetspa-backend.onrender.com/api/advance-bookings',
+                url: 'http://localhost:4001/api/advance-bookings',
                 hasToken: !!authToken,
                 tokenPreview: authToken.substring(0, 20) + '...'
             });
@@ -546,7 +546,7 @@ class RoomManager {
                 console.log('🚀 [ROOMS] Calling fetch NOW...');
 
                 // Create a race between fetch and manual timeout
-                const fetchPromise = fetch('https://daetspa-backend.onrender.com/api/advance-bookings', {
+                const fetchPromise = fetch('http://localhost:4001/api/advance-bookings', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1551,7 +1551,7 @@ class RoomManager {
             try {
                 const authToken = localStorage.getItem('authToken') || localStorage.getItem('jwtToken');
                 if (authToken) {
-                    const response = await fetch(`https://daetspa-backend.onrender.com/api/advance-bookings/${advanceBookingId}`, {
+                    const response = await fetch(`http://localhost:4001/api/advance-bookings/${advanceBookingId}`, {
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1716,7 +1716,7 @@ class RoomManager {
             try {
                 const userToken = localStorage.getItem('authToken');
                 if (userToken) {
-                    await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/advance-bookings/${advanceBookingId}`, {
+                    await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/advance-bookings/${advanceBookingId}`, {
                         method: 'PUT',
                         headers: {
                             'Authorization': `Bearer ${userToken}`,
@@ -2523,7 +2523,7 @@ class RoomManager {
             console.log('📤 [START-BOOKING] Current booking status:', booking.status);
 
             // Simply update booking status to in-progress (no service creation)
-            const response = await fetch(`https://daetspa-backend.onrender.com/api/advance-bookings/${bookingId}/convert`, {
+            const response = await fetch(`http://localhost:4001/api/advance-bookings/${bookingId}/convert`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
@@ -2674,7 +2674,7 @@ class RoomManager {
             }
 
             // Update booking status to completed
-            const response = await fetch(`https://daetspa-backend.onrender.com/api/advance-bookings/${bookingId}`, {
+            const response = await fetch(`http://localhost:4001/api/advance-bookings/${bookingId}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
@@ -2748,7 +2748,7 @@ class RoomManager {
             console.log('🗑️ [ROOMS] Cancelling booking:', bookingId);
 
             // Cancel the booking directly (simplified approach)
-            const response = await fetch(`https://daetspa-backend.onrender.com/api/advance-bookings/${bookingId}`, {
+            const response = await fetch(`http://localhost:4001/api/advance-bookings/${bookingId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${userToken}`,
@@ -2802,7 +2802,7 @@ class RoomManager {
             if (!authToken) return;
 
             // Fetch active services
-            const response = await fetch('https://daetspa-backend.onrender.com/api/room-services', {
+            const response = await fetch('http://localhost:4001/api/room-services', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2815,7 +2815,7 @@ class RoomManager {
             const result = await response.json();
 
             // Also check advance bookings for changes
-            const bookingsResponse = await fetch('https://daetspa-backend.onrender.com/api/advance-bookings', {
+            const bookingsResponse = await fetch('http://localhost:4001/api/advance-bookings', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -3083,7 +3083,7 @@ class RoomManager {
             if (!authToken) return;
 
             // Fetch from MongoDB
-            const response = await fetch('https://daetspa-backend.onrender.com/api/room-services', {
+            const response = await fetch('http://localhost:4001/api/room-services', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -3208,7 +3208,7 @@ class RoomManager {
                 }
 
                 console.log('🌐 [THERAPIST] Creating fetch request...');
-                const apiUrl = 'https://daetspa-backend.onrender.com/api/room-services';
+                const apiUrl = 'http://localhost:4001/api/room-services';
                 console.log('🎯 [THERAPIST] Target URL:', apiUrl);
 
                 // Make direct fetch with timeout using Promise.race

@@ -1,4 +1,4 @@
-// Automated Data Backup System for Ava Solutions PWA
+// Automated Data Backup System for SPA PWA
 class BackupSystem {
     constructor() {
         this.dbName = 'AvaBackupsDB';

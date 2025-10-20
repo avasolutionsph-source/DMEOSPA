@@ -1,4 +1,4 @@
-// Customer Management System for Daet Massage & Spa
+// Customer Management System for SPA & Spa
 class CustomerManager {
     constructor() {
         this.customers = [];

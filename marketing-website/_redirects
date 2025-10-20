@@ -1,5 +1,0 @@
-# Proxy ALL /api/* requests to the backend on Render
-/api/*  https://daetspa-backend.onrender.com/api/:splat  200
-
-# Serve all other routes as static files
-# Marketing website is a static site, not a SPA, so no catch-all redirect needed

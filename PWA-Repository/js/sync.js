@@ -54,7 +54,7 @@ class SyncManager {
                     this.initializeWebSocket();
                 } else {
                     // Fallback to direct URL if API_CONFIG not loaded
-                    this.apiUrl = 'https://daetspa-backend.onrender.com';
+                    this.apiUrl = 'http://localhost:4001';
                 }
                 
                 logInfo('Using unified backend API', { 

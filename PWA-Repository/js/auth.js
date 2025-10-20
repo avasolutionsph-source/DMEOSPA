@@ -233,7 +233,7 @@ class AuthSystem {
 
         try {
             // Use unified backend URL from API_CONFIG
-            const serverUrl = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
+            const serverUrl = window.API_CONFIG?.BASE_URL || 'http://localhost:4001';
             
             // Auto-detection: Try owner login first, then employee if it fails
             console.log('🔐 Attempting auto-detection login for:', email);
@@ -338,7 +338,7 @@ class AuthSystem {
                 const modal = document.getElementById('authModal');
                 if (modal) modal.style.display = 'none';
 
-                showSuccess(`Welcome back to Daet Massage and Spa, ${data.user.firstName}!`);
+                showSuccess(`Welcome back to SPA, ${data.user.firstName}!`);
                 
                 // Update UI
                 this.updateAuthUI();
@@ -389,7 +389,7 @@ class AuthSystem {
 
         try {
             // Use unified backend URL from API_CONFIG
-            const serverUrl = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
+            const serverUrl = window.API_CONFIG?.BASE_URL || 'http://localhost:4001';
             
             const response = await fetch(`${serverUrl}/api/auth/register`, {
                 method: 'POST',
@@ -440,7 +440,7 @@ class AuthSystem {
                 const modal = document.getElementById('authModal');
                 if (modal) modal.style.display = 'none';
 
-                showSuccess('Registration successful! Welcome to Ava Solutions!');
+                showSuccess('Registration successful! Welcome to SPA!');
                 
                 // Update UI
                 this.updateAuthUI();
@@ -472,7 +472,7 @@ class AuthSystem {
 
         try {
             // Use unified backend URL from API_CONFIG
-            const serverUrl = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
+            const serverUrl = window.API_CONFIG?.BASE_URL || 'http://localhost:4001';
             
             console.log('🔍 [SESSION-DEBUG] Validation request details:', {
                 serverUrl,
@@ -557,7 +557,7 @@ class AuthSystem {
         try {
             // Call logout endpoint if available
             if (this.authToken) {
-                const serverUrl = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
+                const serverUrl = window.API_CONFIG?.BASE_URL || 'http://localhost:4001';
                 await fetch(`${serverUrl}/api/auth/logout`, {
                     method: 'POST',
                     headers: {
@@ -697,7 +697,7 @@ class AuthSystem {
                 this.isLoggedIn = true;
                 
                 console.log('✅ Auth state restored:', {
-                    user: this.currentUser?.firstName || 'Daet Spa User',
+                    user: this.currentUser?.firstName || 'User',
                     tokenLength: authToken.length,
                     userObject: this.currentUser
                 });
@@ -809,7 +809,7 @@ class AuthSystem {
                             font-weight: 600;
                             font-size: 0.95rem;
                             margin-bottom: 0.25rem;
-                        ">Daet Massage and Spa</span>
+                        ">SPA</span>
                         <button onclick="authSystem.logout()" class="btn-logout" style="
                             background: #1e293b;
                             color: white;
@@ -864,9 +864,9 @@ class AuthSystem {
                 }
             }
             
-            // Update business name display - hardcoded for Daet Massage and Spa
+            // Update business name display - hardcoded for SPA
             if (businessNameElement) {
-                businessNameElement.textContent = 'Daet Massage and Spa';
+                businessNameElement.textContent = 'SPA';
             }
             
             // Show user menu
@@ -921,7 +921,7 @@ class AuthSystem {
         }
 
         // Default to production unified backend URL
-        this.serverUrl = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
+        this.serverUrl = window.API_CONFIG?.BASE_URL || 'http://localhost:4001';
         return this.serverUrl;
     }
 

@@ -1,7 +1,7 @@
 {
-  "name": "ava-solutions-marketing-website",
+  "name": "abc-massage-spa-marketing-website",
   "version": "1.0.0",
-  "description": "Ava Solutions Professional Marketing Website",
+  "description": "ABC Massage and Spa Professional Marketing Website",
   "main": "server.js",
   "type": "module",
   "scripts": {

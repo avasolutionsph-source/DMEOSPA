@@ -1,4 +1,4 @@
-// Enhanced Feature Flag System for Ava Solutions PWA
+// Enhanced Feature Flag System for SPA PWA
 // Integrates with config service and enhanced logger for comprehensive feature management
 
 class FeatureFlagSystem {

@@ -687,7 +687,7 @@ class ProductsManager {
             }
             
             // Get product from MongoDB API
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/products/${id}`, {
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/products/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -749,7 +749,7 @@ class ProductsManager {
             }
             
             // Delete product via MongoDB API
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/products/${id}`, {
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/products/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -844,7 +844,7 @@ class ProductsManager {
                     return;
                 }
                 
-                const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/products/${this.editingProduct._id || this.editingProduct.id}`, {
+                const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/products/${this.editingProduct._id || this.editingProduct.id}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -910,7 +910,7 @@ class ProductsManager {
                     return;
                 }
                 
-                const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/products`, {
+                const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/products`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,

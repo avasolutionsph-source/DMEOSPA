@@ -478,7 +478,7 @@ class PayrollManager {
                     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
                     
                     try {
-                        const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/payroll-requests`, {
+                        const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/payroll-requests`, {
                             headers: {
                                 'Authorization': `Bearer ${token}`,
                                 'Content-Type': 'application/json'
@@ -684,7 +684,7 @@ class PayrollManager {
                 const token = this.getAuthToken();
                 if (token) {
                     try {
-                        const apiUrl = `${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/payroll-requests`;
+                        const apiUrl = `${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/payroll-requests`;
                         console.log('📡 [PAYROLL] Calling API:', apiUrl);
                         console.log('🔑 [PAYROLL] Using token:', token.substring(0, 20) + '...');
                         
@@ -885,7 +885,7 @@ class PayrollManager {
                 return;
             }
             
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/payroll-requests/${requestId}`, {
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/payroll-requests/${requestId}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -1059,7 +1059,7 @@ class PayrollManager {
                 try {
                     const token = this.getAuthToken();
                     if (token) {
-                        const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/payroll-requests`, {
+                        const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/payroll-requests`, {
                             method: 'POST',
                             headers: {
                                 'Authorization': `Bearer ${token}`,
@@ -1156,7 +1156,7 @@ class PayrollManager {
             }
             
             // Direct API call to MongoDB (same as Employee Management)
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/employees`, {
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/employees`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -1958,7 +1958,7 @@ class PayrollManager {
             // IMPORTANT: This fetches from MongoDB via the backend API
             // This ensures payroll calculations use synced attendance data from all devices
             // The attendance sync system (attendance.js) handles syncing local records to MongoDB
-            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/attendance`, {
+            const response = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/attendance`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -2461,7 +2461,7 @@ class PayrollManager {
             </head>
             <body>
                 <div class="header">
-                    <div class="company-name">Ava Solutions</div>
+                    <div class="company-name">SPA</div>
                     <div class="payslip-title">PAYSLIP</div>
                 </div>
                 
@@ -3928,7 +3928,7 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                 return;
             }
             
-            const apiUrl = `${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/payroll-requests/${requestId}`;
+            const apiUrl = `${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/payroll-requests/${requestId}`;
             console.log('📡 Calling API to approve:', apiUrl);
             
             const response = await fetch(apiUrl, {
@@ -4045,7 +4045,7 @@ Net Pay: ₱${record.netPay.toFixed(2)}
                 return;
             }
             
-            const apiUrl = `${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/payroll-requests/${requestId}`;
+            const apiUrl = `${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/payroll-requests/${requestId}`;
             console.log('📡 Calling API to reject:', apiUrl);
             
             const response = await fetch(apiUrl, {

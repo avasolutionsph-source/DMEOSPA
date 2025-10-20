@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: abc-spa-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4001
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ALLOWED_ORIGINS
+        value: https://abc-spa-pwa.netlify.app,https://abc-massage-spa.netlify.app
+      - key: JWT_EXPIRES_IN
+        value: 7d
+    healthCheckPath: /health

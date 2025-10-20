@@ -1,4 +1,4 @@
-// Emergency Rollback System for Ava Solutions PWA
+// Emergency Rollback System for SPA PWA
 // Provides safe rollback capabilities for critical situations
 
 class RollbackSystem {

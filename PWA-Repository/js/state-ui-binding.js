@@ -1,4 +1,4 @@
-// State-UI Binding System for Ava Solutions PWA
+// State-UI Binding System for SPA PWA
 // Automatically updates UI elements when state changes
 
 class StateUIBinding {
@@ -58,7 +58,7 @@ class StateUIBinding {
         this.bind('business.name', {
             selectors: ['.business-name', '#businessName', 'h1.business-title'],
             property: 'textContent',
-            transform: (name) => name || 'Ava Solutions'
+            transform: (name) => name || 'SPA'
         });
         
         this.bind('business.type', {

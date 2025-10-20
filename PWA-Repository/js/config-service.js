@@ -1,10 +1,10 @@
-// Unified Configuration Service for Ava Solutions PWA
+// Unified Configuration Service for SPA PWA
 // Provides single API for all configuration management with backward compatibility
 
 class ConfigurationService {
     constructor() {
         // Use the main database instead of a separate one
-        this.dbName = 'AvaSolutionsDB';
+        this.dbName = 'SPADB';
         this.version = 4; // Match the main database version
         this.db = null;
         this.isInitialized = false;
@@ -22,7 +22,7 @@ class ConfigurationService {
         this.schema = {
             // API Configuration
             apiUrl: {
-                default: () => window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com',
+                default: () => window.API_CONFIG?.BASE_URL || 'http://localhost:4001',
                 sources: ['indexedDB:settings:apiUrl:value', 'hardcoded', 'localStorage:API_URL'],
                 type: 'string',
                 category: 'api'
@@ -30,7 +30,7 @@ class ConfigurationService {
             
             // Business Settings
             businessName: {
-                default: 'Ava Solutions',
+                default: 'SPA',
                 sources: ['indexedDB:settings:businessName:value', 'localStorage:businessName', 'hardcoded'],
                 type: 'string',
                 category: 'business'
@@ -787,8 +787,8 @@ class IndexedDBAdapter {
 class HardcodedAdapter {
     constructor() {
         this.hardcodedValues = {
-            apiUrl: () => window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com',
-            businessName: 'Ava Solutions',
+            apiUrl: () => window.API_CONFIG?.BASE_URL || 'http://localhost:4001',
+            businessName: 'SPA',
             theme: 'auto',
             performanceMode: 'auto',
             subscriptionPlan: 'unpaid',

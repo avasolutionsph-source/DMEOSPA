@@ -1,6 +1,6 @@
-# CLAUDE.md - Ava Solutions System Architecture Guide
+# CLAUDE.md - ABC Massage and Spa System Architecture Guide
 
-This file helps AI assistants understand the DAETSPA codebase architecture and design decisions.
+This file helps AI assistants understand the ABC Massage and Spa codebase architecture and design decisions.
 
 ## System Overview
 

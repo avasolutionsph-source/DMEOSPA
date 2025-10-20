@@ -1,4 +1,4 @@
-// State Management Helper Functions for Ava Solutions PWA
+// State Management Helper Functions for SPA PWA
 // Provides convenient methods for common state operations
 
 class StateHelpers {
@@ -21,7 +21,7 @@ class StateHelpers {
                 );
             } else {
                 // Fallback to direct fetch
-                const serverUrl = window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com';
+                const serverUrl = window.API_CONFIG?.BASE_URL || 'http://localhost:4001';
                 const response = await fetch(`${serverUrl}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -199,7 +199,7 @@ class StateHelpers {
     }
     
     getBusinessName() {
-        return this.state.getState('business.name') || 'Ava Solutions';
+        return this.state.getState('business.name') || 'SPA';
     }
     
     getBusinessType() {

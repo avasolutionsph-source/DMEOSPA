@@ -1,4 +1,4 @@
-// Unified State Management System for Ava Solutions PWA
+// Unified State Management System for SPA PWA
 // Centralizes all application state with observable pattern and backward compatibility
 
 class StateManager {

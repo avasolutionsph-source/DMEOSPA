@@ -144,7 +144,7 @@ class POSSystem {
         
         try {
             // FIXED: Use dedicated stock adjustment endpoint that preserves all fields
-            const stockUpdateResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'https://daetspa-backend.onrender.com'}/api/inventory/${itemId}/stock`, {
+            const stockUpdateResponse = await fetch(`${window.API_CONFIG?.BASE_URL || 'http://localhost:4001'}/api/inventory/${itemId}/stock`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,

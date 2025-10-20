@@ -1,0 +1,93 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+marketing-website/.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+.nyc_output
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build
+dist/
+build/
+*.tgz
+
+# Temporary files
+tmp/
+temp/
+.cache/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Database
+*.sqlite
+*.db
+
+# Documentation (keep only production docs)
+ANALYSIS-*.md
+CONSOLE-DIAGNOSTIC.md
+CUSTOMER-*.md
+DECISION-*.md
+IMPLEMENTATION-*.md
+OFFLINE-*.md
+TESTING-*.md
+TEST_*.md
+CASH-DRAWER-*.md
+
+# Test files
+test-*.html
+qa-*.html
+reset-*.html
+safety-*.html
+sync-*.html
+check-*.html
+clear-*.html
+
+# Netlify
+.netlify/
+
+# PWA test/diagnostic files
+PWA-Repository/test-*.html
+PWA-Repository/qa-*.html
+PWA-Repository/reset-*.html
+PWA-Repository/safety-*.html
+PWA-Repository/sync-*.html
+PWA-Repository/check-*.html
+PWA-Repository/clear-*.html
+PWA-Repository/customer-diagnostic.html
+
+# Keep important files
+!README.md
+!CLAUDE.md
+!DEMO-READINESS-REPORT.md
+!ABC-SPA-SAMPLE-DATA.md

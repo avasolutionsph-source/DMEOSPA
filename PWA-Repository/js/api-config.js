@@ -1,4 +1,4 @@
-// API Configuration for Ava Solutions PWA
+// API Configuration for SPA PWA
 // Centralized configuration for unified backend connection
 
 (function() {
@@ -11,13 +11,13 @@
     // API Configuration
     const API_CONFIG = {
         // Base URLs
-        BASE_URL: isProduction 
-            ? 'https://daetspa-backend.onrender.com'
+        BASE_URL: isProduction
+            ? 'https://your-backend-url.com' // TODO: Replace with your production backend URL
             : 'http://localhost:4001',
-        
+
         // WebSocket URL for real-time updates
         WS_URL: isProduction
-            ? 'wss://daetspa-backend.onrender.com'
+            ? 'wss://your-backend-url.com' // TODO: Replace with your production backend URL
             : 'ws://localhost:4001',
         
         // API Version
@@ -35,7 +35,7 @@
         CACHE_DURATION: 5 * 60 * 1000, // 5 minutes
         
         // Database Configuration
-        DB_NAME: 'AvaSolutionsDB',
+        DB_NAME: 'SPADB',
         DB_VERSION: 15,
         MAX_INIT_RETRIES: 3,
         INIT_RETRY_DELAY: 100,

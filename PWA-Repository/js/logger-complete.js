@@ -1,4 +1,4 @@
-// Fixed Logger System for Ava Solutions PWA
+// Fixed Logger System for SPA PWA
 // Resolves race conditions, IndexedDB issues, and adds error boundaries
 
 class FixedLogger {

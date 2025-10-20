@@ -1,4 +1,4 @@
-// Backup Manager UI Controller for Ava Solutions PWA
+// Backup Manager UI Controller for SPA PWA
 class BackupManager {
     constructor() {
         this.initialized = false;

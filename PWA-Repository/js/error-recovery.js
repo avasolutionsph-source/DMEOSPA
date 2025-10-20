@@ -1,4 +1,4 @@
-// Automated Error Reporting and Recovery System for Ava Solutions PWA
+// Automated Error Reporting and Recovery System for SPA PWA
 // Integrates with enhanced logger and config service for comprehensive error handling
 
 class ErrorRecoverySystem {
@@ -544,7 +544,7 @@ class ErrorRecoverySystem {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            appName: 'Ava Solutions PWA',
+                            appName: 'SPA PWA',
                             version: '1.0.0',
                             errors: batch
                         })

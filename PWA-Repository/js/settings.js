@@ -465,7 +465,7 @@ class SettingsManager {
             }
 
             this.settings = {
-                businessName: businessName?.value || 'Ava Solutions',
+                businessName: businessName?.value || 'SPA',
                 lastSync: lastSync?.value || null
             };
 
@@ -483,7 +483,7 @@ class SettingsManager {
     async saveSettings() {
         try {
             const businessNameInput = document.getElementById('businessNameInput');
-            const businessName = businessNameInput ? businessNameInput.value : 'Ava Solutions';
+            const businessName = businessNameInput ? businessNameInput.value : 'SPA';
             
 
             // Update business name
@@ -798,7 +798,7 @@ class SettingsManager {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `ava_solutions_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `spa_backup_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             
             showNotification('Data exported successfully', 'success');
@@ -845,7 +845,7 @@ Type "DELETE" to confirm:`;
             // Reset settings to defaults
             await window.db.update('settings', {
                 key: 'businessName',
-                value: 'Ava Solutions'
+                value: 'SPA'
             });
             await window.db.update('settings', {
                 key: 'apiUrl',

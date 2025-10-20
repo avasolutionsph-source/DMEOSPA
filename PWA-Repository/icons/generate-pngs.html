@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon PNG Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .icon-preview {
+            display: inline-block;
+            margin: 20px;
+            text-align: center;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            margin: 10px 0;
+        }
+        button {
+            background: #800020;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #600015;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>SPA - Icon PNG Generator</h1>
+    <p>This tool will generate PNG icons from the SVG templates.</p>
+
+    <div class="status" id="status">Ready to generate icons...</div>
+
+    <button onclick="generateAllIcons()">Generate All PNG Icons</button>
+
+    <div id="previews"></div>
+
+    <script>
+        const icons = [
+            { name: 'icon-192.png', size: 192, purpose: 'any' },
+            { name: 'icon-512.png', size: 512, purpose: 'any' },
+            { name: 'icon-512-maskable.png', size: 512, purpose: 'maskable' },
+            { name: 'apple-touch-icon.png', size: 180, purpose: 'apple' }
+        ];
+
+        function updateStatus(message) {
+            document.getElementById('status').innerHTML = message;
+        }
+
+        function createIconCanvas(size, isMaskable) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // Create gradient background
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#800020');
+            gradient.addColorStop(1, '#600015');
+            ctx.fillStyle = gradient;
+
+            if (isMaskable) {
+                // Maskable icon - no rounded corners, full bleed
+                ctx.fillRect(0, 0, size, size);
+            } else {
+                // Regular icon - rounded corners
+                const radius = size * 0.166; // ~16.6% radius for modern look
+                ctx.beginPath();
+                ctx.moveTo(radius, 0);
+                ctx.lineTo(size - radius, 0);
+                ctx.quadraticCurveTo(size, 0, size, radius);
+                ctx.lineTo(size, size - radius);
+                ctx.quadraticCurveTo(size, size, size - radius, size);
+                ctx.lineTo(radius, size);
+                ctx.quadraticCurveTo(0, size, 0, size - radius);
+                ctx.lineTo(0, radius);
+                ctx.quadraticCurveTo(0, 0, radius, 0);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Draw decorative circles
+            ctx.globalAlpha = 0.15;
+            ctx.fillStyle = 'white';
+            const radius1 = isMaskable ? size * 0.36 : size * 0.365;
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, radius1, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.globalAlpha = 0.2;
+            const radius2 = isMaskable ? size * 0.26 : size * 0.26;
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, radius2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw diamond shape
+            ctx.globalAlpha = 0.9;
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const diamondSize = isMaskable ? size * 0.22 : size * 0.21;
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY - diamondSize);
+            ctx.lineTo(centerX + diamondSize, centerY);
+            ctx.lineTo(centerX, centerY + diamondSize);
+            ctx.lineTo(centerX - diamondSize, centerY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw center circle
+            ctx.globalAlpha = 1;
+            const centerRadius = isMaskable ? size * 0.098 : size * 0.104;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, centerRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Add "AVA" text (except for maskable)
+            if (!isMaskable) {
+                ctx.font = `bold ${size * 0.125}px Arial, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('AVA', centerX, size * 0.86);
+            }
+
+            return canvas;
+        }
+
+        function downloadCanvas(canvas, filename) {
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }
+
+        async function generateAllIcons() {
+            const previewsDiv = document.getElementById('previews');
+            previewsDiv.innerHTML = '';
+            updateStatus('Generating icons...');
+
+            for (const icon of icons) {
+                const isMaskable = icon.purpose === 'maskable';
+                const canvas = createIconCanvas(icon.size, isMaskable);
+
+                const div = document.createElement('div');
+                div.className = 'icon-preview';
+                div.innerHTML = `
+                    <h3>${icon.name}</h3>
+                    <p>${icon.size}x${icon.size} - ${icon.purpose}</p>
+                `;
+
+                // Scale down preview
+                const preview = document.createElement('canvas');
+                preview.width = 128;
+                preview.height = 128;
+                const previewCtx = preview.getContext('2d');
+                previewCtx.drawImage(canvas, 0, 0, 128, 128);
+                div.appendChild(preview);
+
+                const downloadBtn = document.createElement('button');
+                downloadBtn.textContent = `Download ${icon.name}`;
+                downloadBtn.onclick = () => downloadCanvas(canvas, icon.name);
+                div.appendChild(document.createElement('br'));
+                div.appendChild(downloadBtn);
+
+                previewsDiv.appendChild(div);
+
+                // Auto-download
+                await new Promise(resolve => setTimeout(resolve, 500));
+                downloadCanvas(canvas, icon.name);
+            }
+
+            updateStatus('✅ All icons generated! Check your Downloads folder. Save them to the icons/ directory.');
+        }
+    </script>
+</body>
+</html>

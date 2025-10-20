@@ -1,4 +1,4 @@
-// Activity Logger Module for Ava Solutions PWA
+// Activity Logger Module for SPA PWA
 // Tracks all additions and deletions throughout the system
 
 class ActivityLogger {
