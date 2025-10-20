@@ -1,0 +1,44 @@
+# 🚀 ABC Spa - Production Deployment URLs
+
+## ✅ All Services Deployed
+
+### 1. Backend API (Render)
+URL: https://dmeospa.onrender.com
+Status: ✅ LIVE
+Purpose: API server, database connection, authentication
+
+### 2. PWA Application (Netlify)
+URL: https://denisoaapp.netlify.app
+Status: ✅ LIVE
+Purpose: Business management app (POS, Inventory, Employees, etc.)
+
+### 3. Marketing Website (Netlify)
+URL: https://demosepaweb.netlify.app
+Status: ✅ LIVE
+Purpose: Public marketing website
+
+---
+
+## 🔧 Required Configuration Updates
+
+### Step 1: Update PWA API Config (GitHub)
+File: PWA-Repository/js/api-config.js
+Line 15: BASE_URL: 'https://dmeospa.onrender.com'
+Line 20: WS_URL: 'wss://dmeospa.onrender.com'
+
+### Step 2: Update Render CORS (Render Dashboard)
+Service: dmeospa
+Environment Variable: ALLOWED_ORIGINS
+Value: https://denisoaapp.netlify.app,https://demosepaweb.netlify.app
+
+---
+
+## 📋 Quick Access Links
+
+Backend Dashboard: https://dashboard.render.com
+PWA Dashboard: https://app.netlify.com
+Marketing Dashboard: https://app.netlify.com
+
+---
+
+Date Deployed: October 20, 2025

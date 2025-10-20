@@ -12,12 +12,12 @@
     const API_CONFIG = {
         // Base URLs
         BASE_URL: isProduction
-            ? 'https://your-backend-url.com' // TODO: Replace with your production backend URL
+            ? 'https://dmeospa.onrender.com'
             : 'http://localhost:4001',
 
         // WebSocket URL for real-time updates
         WS_URL: isProduction
-            ? 'wss://your-backend-url.com' // TODO: Replace with your production backend URL
+            ? 'wss://dmeospa.onrender.com'
             : 'ws://localhost:4001',
         
         // API Version
