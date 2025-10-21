@@ -7,6 +7,7 @@ window.API_BASE_URL = window.API_BASE_URL || (window.location.hostname === 'loca
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize all enhancements
+    loadDynamicBranding(); // Load branding first for hero section
     initScrollEffects();
     initAnimations();
     initInteractiveElements();
@@ -183,12 +184,12 @@ function checkAuthStatus() {
                 `;
             } else {
                 // For business users and admins
-                const dashboardText = user.role === 'superAdmin' ? 'Admin Panel' : 
-                                      user.role === 'admin' ? 'Dashboard' : 
+                const dashboardText = user.role === 'superAdmin' ? 'Admin Panel' :
+                                      user.role === 'admin' ? 'Dashboard' :
                                       'Business';
-                
+
                 const dashboardUrl = user.role === 'superAdmin' ? '/admin' :
-                                     user.role === 'admin' ? '/admin-dashboard' : 
+                                     user.role === 'admin' ? '/admin-dashboard' :
                                      '/business-dashboard';
                 
                 navAuth.innerHTML = `
@@ -527,3 +528,140 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// ============================================
+// DYNAMIC HERO BRANDING LOADER
+// ============================================
+
+/**
+ * Load and apply dynamic branding to hero section
+ * Fetches branding settings from API and updates hero banner
+ */
+async function loadDynamicBranding() {
+    const heroSection = document.getElementById('dynamic-hero');
+
+    if (!heroSection) {
+        console.log('Hero section not found - skipping dynamic branding');
+        return;
+    }
+
+    try {
+        // Get business ID from URL query param or use default
+        const urlParams = new URLSearchParams(window.location.search);
+        const businessId = urlParams.get('business') || getDefaultBusinessId();
+
+        if (!businessId) {
+            console.log('No business ID found - using default template');
+            return;
+        }
+
+        // Fetch branding settings
+        const response = await fetch(`${window.API_BASE_URL}/api/branding/${businessId}`);
+
+        if (!response.ok) {
+            console.warn('Failed to load branding, using defaults');
+            return;
+        }
+
+        const data = await response.json();
+
+        if (data.success && data.data) {
+            applyBranding(data.data);
+        }
+
+    } catch (error) {
+        console.error('Error loading dynamic branding:', error);
+        // Fail silently and keep default styling
+    }
+}
+
+/**
+ * Apply branding settings to hero section
+ */
+function applyBranding(branding) {
+    const heroSection = document.getElementById('dynamic-hero');
+    const heroTitle = document.getElementById('hero-business-name');
+    const heroSubtitle = document.getElementById('hero-subtitle');
+    const heroCta = document.getElementById('hero-cta-button');
+
+    // Update text content
+    if (heroTitle && branding.heroTitle) {
+        heroTitle.textContent = branding.heroTitle;
+    }
+
+    if (heroSubtitle && branding.heroSubtitle) {
+        heroSubtitle.textContent = branding.heroSubtitle;
+    }
+
+    if (heroCta && branding.ctaButtonText) {
+        heroCta.textContent = branding.ctaButtonText;
+    }
+
+    if (heroCta && branding.ctaButtonLink) {
+        heroCta.href = branding.ctaButtonLink;
+    }
+
+    // Update hero background
+    if (heroSection) {
+        // Remove all template classes
+        heroSection.classList.remove(
+            'hero-template1',
+            'hero-template2',
+            'hero-template3',
+            'hero-template4',
+            'hero-template5',
+            'hero-custom'
+        );
+
+        // Apply template or custom image
+        if (branding.heroTemplate === 'custom' && branding.heroImageUrl) {
+            heroSection.classList.add('hero-custom');
+            heroSection.style.backgroundImage = `url(${window.API_BASE_URL}${branding.heroImageUrl})`;
+        } else {
+            const templateClass = `hero-${branding.heroTemplate || 'template1'}`;
+            heroSection.classList.add(templateClass);
+            heroSection.style.backgroundImage = ''; // Clear custom image
+        }
+    }
+
+    // Apply brand colors (optional - can be used for CTA button, etc.)
+    if (branding.primaryColor) {
+        document.documentElement.style.setProperty('--brand-primary', branding.primaryColor);
+    }
+
+    if (branding.accentColor) {
+        document.documentElement.style.setProperty('--brand-accent', branding.accentColor);
+    }
+}
+
+/**
+ * Get default business ID from localStorage or first registered user
+ * This can be customized based on your multi-tenant setup
+ */
+function getDefaultBusinessId() {
+    // Option 1: Get from admin token if logged in
+    const adminToken = localStorage.getItem('adminToken');
+    if (adminToken) {
+        try {
+            const payload = JSON.parse(atob(adminToken.split('.')[1]));
+            return payload.userId;
+        } catch (error) {
+            console.error('Error decoding admin token:', error);
+        }
+    }
+
+    // Option 2: Get from regular user token
+    const userToken = localStorage.getItem('token');
+    if (userToken) {
+        try {
+            const payload = JSON.parse(atob(userToken.split('.')[1]));
+            return payload.userId;
+        } catch (error) {
+            console.error('Error decoding user token:', error);
+        }
+    }
+
+    // Option 3: Use default demo business ID (you can set this)
+    // For now, return null to use default template
+    return null;
+}

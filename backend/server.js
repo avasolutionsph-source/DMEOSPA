@@ -1,5 +1,6 @@
 // Unified Backend Server for ABC Massage and Spa
 // Consolidates marketing-website, pwa-backend, and redirect backend into one cohesive system
+// Updated middleware for admin-portal routes
 
 import 'dotenv/config';
 import express from 'express';
@@ -28,6 +29,8 @@ import { requireSuperAdmin } from './middleware/superAdmin.js';
 import apiRouter from './routes/api/index.js';
 import marketingRouter from './routes/marketing/index.js';
 import adminRouter from './routes/admin/index.js';
+import brandingRouter from './routes/api/branding.js';
+import adminPortalRouter from './routes/api/admin-portal.js';
 
 import syncRouter from './routes/sync/index.js';
 import realtimeRouter from './routes/realtime/index.js';
@@ -246,6 +249,9 @@ app.use('/marketing', express.static(path.join(__dirname, '../marketing-website/
 // Serve marketing assets at root level for compatibility
 app.use('/assets', express.static(path.join(__dirname, '../marketing-website/public/assets')));
 
+// Serve uploaded branding files (public access)
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+
 // ============================================
 // API ROUTES (MUST come before static routes)
 // ============================================
@@ -305,7 +311,19 @@ app.get('/pwa/*', (req, res) => {
 app.use('/admin/dashboard', express.static(path.join(__dirname, '../admin-dashboard/build')));
 
 // CRITICAL SECURITY: ALL /api/admin routes require super admin authentication
-app.use('/api/admin*', authenticateJWT, requireSuperAdmin);
+// Note: This does NOT apply to /api/admin-portal which has its own auth middleware
+app.use('/api/admin', (req, res, next) => {
+  // Only apply super admin middleware to /api/admin routes, NOT /api/admin-portal
+  if (req.path === '/' || req.path.startsWith('/')) {
+    // First apply JWT authentication
+    return authenticateJWT(req, res, (err) => {
+      if (err) return next(err);
+      // Then check super admin role
+      return requireSuperAdmin(req, res, next);
+    });
+  }
+  next();
+});
 
 // Direct admin routes in server.js (PROTECTED by super admin middleware above)
 app.get('/api/admin', (req, res) => {
@@ -650,8 +668,10 @@ app.post('/api/admin/fix-user-subscription/:userId', async (req, res) => {
 });
 
 // Mount routers with clear separation
+app.use('/api/branding', brandingRouter); // Branding customization endpoints
+app.use('/api/admin-portal', adminPortalRouter); // Admin portal endpoints (for regular admin role)
 app.use('/api', apiRouter);           // Main API endpoints for PWA
-app.use('/api/sync', syncRouter);     // Sync endpoints for PWA data  
+app.use('/api/sync', syncRouter);     // Sync endpoints for PWA data
 app.use('/api/realtime', realtimeRouter); // Real-time updates via Socket.IO
 
 // Admin router mounting - use proper admin routes with real synced data

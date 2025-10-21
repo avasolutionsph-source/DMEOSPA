@@ -156,6 +156,8 @@
             const userData = JSON.parse(localStorage.getItem('userData') || '{}');
             if (userData.role === 'superAdmin') {
                 window.location.href = '/admin';
+            } else if (userData.role === 'admin') {
+                window.location.href = '/admin-dashboard';
             }
         }
 
@@ -192,9 +194,11 @@
                     localStorage.setItem('adminToken', data.token);
                     localStorage.setItem('userToken', data.token);
                     localStorage.setItem('userData', JSON.stringify(data.user));
-                    
+
                     if (data.user.role === 'superAdmin') {
                         window.location.href = '/admin';
+                    } else if (data.user.role === 'admin') {
+                        window.location.href = '/admin-dashboard';
                     } else {
                         showError('Admin access required. Contact administrator.');
                     }

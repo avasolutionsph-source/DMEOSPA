@@ -136,6 +136,7 @@
                         if (user.role === 'superAdmin') {
                             window.location.href = '/admin';
                         } else if (user.role === 'admin') {
+                            // Admin users go to admin dashboard
                             window.location.href = '/admin-dashboard';
                         } else if (user.role === 'client') {
                             window.location.href = '/';

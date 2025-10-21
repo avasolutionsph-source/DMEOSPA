@@ -651,6 +651,10 @@
                 <span class="admin-badge">Admin</span>
             </div>
             <div class="header-actions">
+                <a href="/admin-branding.html" class="btn" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-paint-brush"></i>
+                    Website Branding
+                </a>
                 <div class="user-info">
                     <i class="fas fa-user-circle"></i>
                     <span id="adminName">Loading...</span>
@@ -999,52 +1003,36 @@
                 return;
             }
 
-            // Verify admin role
-            checkAdminAccess();
+            // Check role BEFORE making API calls to prevent 403 errors
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                console.log('User role detected:', payload.role);
+
+            } catch (e) {
+                console.error('Token decode error:', e);
+                alert('Invalid session. Please log in again.');
+                logout();
+                return;
+            }
+
+            // Verify admin role (regular admin, NOT superAdmin)
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            console.log('User role:', payload.role);
+
+            if (payload.role !== 'admin') {
+                // Only 'admin' role can access this dashboard
+                if (payload.role === 'superAdmin') {
+                    window.location.href = '/admin'; // SuperAdmin goes to /admin
+                } else {
+                    window.location.href = '/business-dashboard'; // Branch goes to business dashboard
+                }
+                return;
+            }
+
+            // Admin role confirmed, load dashboard data
             loadUserInfo();
             loadCreatedAccounts();
         });
-
-        async function checkAdminAccess() {
-            try {
-                const response = await fetch(`${window.API_BASE_URL}/admin/stats`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (response.status === 401) {
-                    alert('Your session has expired. Please log in again.');
-                    logout();
-                    return;
-                }
-
-                if (response.status === 403) {
-                    alert('Access denied. Admin role required.');
-                    window.location.href = '/';
-                    return;
-                }
-
-                // Decode token to check role
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                if (payload.role !== 'admin') {
-                    alert('Access denied. This page is for Admin role only.');
-                    // Redirect based on actual role
-                    if (payload.role === 'superAdmin') {
-                        window.location.href = '/admin';
-                    } else {
-                        window.location.href = '/business-dashboard';
-                    }
-                    return;
-                }
-
-            } catch (error) {
-                console.error('Admin access check error:', error);
-                alert('Authentication error. Please log in again.');
-                logout();
-            }
-        }
 
         async function loadUserInfo() {
             try {
@@ -1067,7 +1055,7 @@
             noAccountsEl.style.display = 'none';
 
             try {
-                const response = await fetch(`${window.API_BASE_URL}/admin/my-created-accounts`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/admin-portal/my-created-accounts`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
