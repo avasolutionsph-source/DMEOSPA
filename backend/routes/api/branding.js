@@ -93,9 +93,15 @@ router.get('/:userId', async (req, res) => {
           gradientAngle: '135',
           useCustomGradient: false,
           showHeroBanner: true,
+          aboutHeroTitle: 'About ABC Massage and Spa',
+          aboutHeroSubtitle: 'Your premier destination for relaxation and wellness',
           aboutStory: '',
           aboutMission: '',
           aboutLocation: 'ABC, Camarines Norte',
+          aboutPhone: '09518999577',
+          aboutHours: 'Monday - Sunday: 9:00 AM - 9:00 PM',
+          values: [],
+          teamStats: [],
           services: []
         }
       });
@@ -120,9 +126,15 @@ router.get('/:userId', async (req, res) => {
       gradientAngle: user.branding?.gradientAngle || '135',
       useCustomGradient: user.branding?.useCustomGradient || false,
       showHeroBanner: user.branding?.showHeroBanner !== false,
+      aboutHeroTitle: user.branding?.aboutHeroTitle || 'About ABC Massage and Spa',
+      aboutHeroSubtitle: user.branding?.aboutHeroSubtitle || 'Your premier destination for relaxation and wellness',
       aboutStory: user.branding?.aboutStory || '',
       aboutMission: user.branding?.aboutMission || '',
       aboutLocation: user.branding?.aboutLocation || 'ABC, Camarines Norte',
+      aboutPhone: user.branding?.aboutPhone || '09518999577',
+      aboutHours: user.branding?.aboutHours || 'Monday - Sunday: 9:00 AM - 9:00 PM',
+      values: user.branding?.values || [],
+      teamStats: user.branding?.teamStats || [],
       services: user.branding?.services || []
     };
 
@@ -169,9 +181,15 @@ router.put('/:userId', authenticateJWT, async (req, res) => {
       gradientAngle,
       useCustomGradient,
       showHeroBanner,
+      aboutHeroTitle,
+      aboutHeroSubtitle,
       aboutStory,
       aboutMission,
       aboutLocation,
+      aboutPhone,
+      aboutHours,
+      values,
+      teamStats,
       services
     } = req.body;
 
@@ -216,9 +234,15 @@ router.put('/:userId', authenticateJWT, async (req, res) => {
     if (showHeroBanner !== undefined) user.branding.showHeroBanner = showHeroBanner;
 
     // About page content
+    if (aboutHeroTitle !== undefined) user.branding.aboutHeroTitle = aboutHeroTitle;
+    if (aboutHeroSubtitle !== undefined) user.branding.aboutHeroSubtitle = aboutHeroSubtitle;
     if (aboutStory !== undefined) user.branding.aboutStory = aboutStory;
     if (aboutMission !== undefined) user.branding.aboutMission = aboutMission;
     if (aboutLocation !== undefined) user.branding.aboutLocation = aboutLocation;
+    if (aboutPhone !== undefined) user.branding.aboutPhone = aboutPhone;
+    if (aboutHours !== undefined) user.branding.aboutHours = aboutHours;
+    if (values !== undefined) user.branding.values = values;
+    if (teamStats !== undefined) user.branding.teamStats = teamStats;
 
     // Services
     if (services !== undefined) user.branding.services = services;

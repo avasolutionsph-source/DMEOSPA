@@ -76,11 +76,13 @@ async function loadBrandingSettings() {
       applyBrandingToForm();
       updateLivePreview();
       loadServices(); // Load services after branding data is loaded
+      loadAboutPage(); // Load About page content
     }
   } catch (error) {
     console.error('Error loading branding:', error);
     showAlert('Failed to load branding settings', 'error');
     loadServices(); // Load default services even if branding fails
+    loadAboutPage(); // Load default About page content
   }
 }
 
@@ -357,9 +359,15 @@ async function saveBranding() {
     useCustomGradient: document.getElementById('use-custom-gradient').checked,
     showHeroBanner: true,
     // About page content
+    aboutHeroTitle: document.getElementById('aboutHeroTitle').value,
+    aboutHeroSubtitle: document.getElementById('aboutHeroSubtitle').value,
     aboutStory: document.getElementById('aboutStory').value,
     aboutMission: document.getElementById('aboutMission').value,
     aboutLocation: document.getElementById('aboutLocation').value,
+    aboutPhone: document.getElementById('aboutPhone').value,
+    aboutHours: document.getElementById('aboutHours').value,
+    values: values,
+    teamStats: teamStats,
     // Services
     services: services
   };
@@ -432,6 +440,10 @@ function getBrightness(color) {
 
 // Service Management
 let services = [];
+
+// About Page Management
+let values = [];
+let teamStats = [];
 
 // Load services on page load
 function loadServices() {
