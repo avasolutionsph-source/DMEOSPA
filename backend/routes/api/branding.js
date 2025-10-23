@@ -39,10 +39,20 @@ router.get('/public', async (req, res) => {
       accentColor: adminUser.branding.accentColor || '#3498db',
       showHeroBanner: adminUser.branding.showHeroBanner !== false,
       // About page content
+      aboutHeroTitle: adminUser.branding.aboutHeroTitle || 'About ABC Massage and Spa',
+      aboutHeroSubtitle: adminUser.branding.aboutHeroSubtitle || 'Your premier destination for relaxation and wellness',
       aboutStory: adminUser.branding.aboutStory || '',
       aboutMission: adminUser.branding.aboutMission || '',
       aboutLocation: adminUser.branding.aboutLocation || 'ABC, Camarines Norte',
-      // Services
+      aboutPhone: adminUser.branding.aboutPhone || '09518999577',
+      aboutHours: adminUser.branding.aboutHours || 'Monday - Sunday: 9:00 AM - 9:00 PM',
+      values: adminUser.branding.values || [],
+      teamStats: adminUser.branding.teamStats || [],
+      // Services page content
+      servicesHeroTitle: adminUser.branding.servicesHeroTitle || 'Our Services',
+      servicesHeroSubtitle: adminUser.branding.servicesHeroSubtitle || 'Professional massage therapy and spa treatments',
+      servicesCategoryTitle: adminUser.branding.servicesCategoryTitle || 'Massage Therapy',
+      servicesCategoryDesc: adminUser.branding.servicesCategoryDesc || 'Our skilled therapists offer a variety of massage techniques',
       services: adminUser.branding.services || []
     };
 

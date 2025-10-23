@@ -248,30 +248,92 @@
                     ? 'http://localhost:4001'
                     : 'https://daetspa-backend.onrender.com';
 
-                // Fetch branding data (we'll need to get the admin's userId - for now use a public endpoint)
+                // Fetch branding data from public endpoint
                 const response = await fetch(`${API_BASE_URL}/api/branding/public`);
                 const data = await response.json();
 
                 if (data.success && data.data) {
                     const branding = data.data;
 
+                    // Update Hero Title
+                    const heroTitle = document.querySelector('.hero-section h1');
+                    if (heroTitle && branding.aboutHeroTitle) {
+                        heroTitle.textContent = branding.aboutHeroTitle;
+                    }
+
+                    // Update Hero Subtitle
+                    const heroSubtitle = document.querySelector('.hero-section .hero-subtitle');
+                    if (heroSubtitle && branding.aboutHeroSubtitle) {
+                        heroSubtitle.textContent = branding.aboutHeroSubtitle;
+                    }
+
                     // Update About Story
                     if (branding.aboutStory) {
                         const storyContent = document.getElementById('aboutStoryContent');
-                        // Split by newlines and create paragraphs
-                        const paragraphs = branding.aboutStory.split('\n\n').filter(p => p.trim());
-                        storyContent.innerHTML = paragraphs.map(p => `<p>${p.trim()}</p>`).join('');
+                        if (storyContent) {
+                            const paragraphs = branding.aboutStory.split('\n\n').filter(p => p.trim());
+                            storyContent.innerHTML = paragraphs.map(p => `<p>${p.trim()}</p>`).join('');
+                        }
                     }
 
                     // Update Mission
                     if (branding.aboutMission) {
-                        document.getElementById('aboutMissionContent').textContent = branding.aboutMission;
+                        const missionContent = document.getElementById('aboutMissionContent');
+                        if (missionContent) {
+                            missionContent.textContent = branding.aboutMission;
+                        }
+                    }
+
+                    // Update Values
+                    if (branding.values && branding.values.length > 0) {
+                        const valuesGrid = document.querySelector('.values-grid');
+                        if (valuesGrid) {
+                            valuesGrid.innerHTML = branding.values.map(value => `
+                                <div class="value-card">
+                                    <i class="fas ${value.icon}" style="font-size: 48px; color: #0066cc; margin-bottom: 16px;"></i>
+                                    <h3>${value.title}</h3>
+                                    <p>${value.description}</p>
+                                </div>
+                            `).join('');
+                        }
+                    }
+
+                    // Update Team Stats
+                    if (branding.teamStats && branding.teamStats.length > 0) {
+                        const statsContainer = document.querySelector('.team-stats');
+                        if (statsContainer) {
+                            statsContainer.innerHTML = branding.teamStats.map(stat => `
+                                <div class="stat-item">
+                                    <h3 style="font-size: 48px; color: #0066cc; margin-bottom: 8px;">${stat.number}</h3>
+                                    <p style="color: #86868b;">${stat.label}</p>
+                                </div>
+                            `).join('');
+                        }
                     }
 
                     // Update Location
                     if (branding.aboutLocation) {
-                        document.getElementById('aboutLocationText').textContent = branding.aboutLocation;
-                        document.getElementById('aboutLocationAddress').textContent = branding.aboutLocation + ', Philippines';
+                        const locationText = document.getElementById('aboutLocationText');
+                        const locationAddress = document.getElementById('aboutLocationAddress');
+                        if (locationText) locationText.textContent = branding.aboutLocation;
+                        if (locationAddress) locationAddress.textContent = branding.aboutLocation + ', Philippines';
+                    }
+
+                    // Update Phone
+                    if (branding.aboutPhone) {
+                        const phoneElements = document.querySelectorAll('[href^="tel:"]');
+                        phoneElements.forEach(el => {
+                            el.textContent = branding.aboutPhone;
+                            el.href = `tel:${branding.aboutPhone}`;
+                        });
+                    }
+
+                    // Update Hours
+                    if (branding.aboutHours) {
+                        const hoursElement = document.querySelector('.location-info .info-item:nth-child(3) p');
+                        if (hoursElement) {
+                            hoursElement.textContent = branding.aboutHours;
+                        }
                     }
                 }
             } catch (error) {

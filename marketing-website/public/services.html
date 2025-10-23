@@ -332,9 +332,37 @@
                 const response = await fetch(`${API_BASE_URL}/api/branding/public`);
                 const data = await response.json();
 
-                if (data.success && data.data && data.data.services && data.data.services.length > 0) {
-                    const services = data.data.services;
-                    renderServices(services);
+                if (data.success && data.data) {
+                    const branding = data.data;
+
+                    // Update Hero Title
+                    const heroTitle = document.querySelector('.hero-section h1');
+                    if (heroTitle && branding.servicesHeroTitle) {
+                        heroTitle.textContent = branding.servicesHeroTitle;
+                    }
+
+                    // Update Hero Subtitle
+                    const heroSubtitle = document.querySelector('.hero-section .hero-subtitle');
+                    if (heroSubtitle && branding.servicesHeroSubtitle) {
+                        heroSubtitle.textContent = branding.servicesHeroSubtitle;
+                    }
+
+                    // Update Category Title (first h2)
+                    const categoryTitle = document.querySelector('.services-section h2');
+                    if (categoryTitle && branding.servicesCategoryTitle) {
+                        categoryTitle.textContent = branding.servicesCategoryTitle;
+                    }
+
+                    // Update Category Description (first p after h2)
+                    const categoryDesc = document.querySelector('.services-section > p');
+                    if (categoryDesc && branding.servicesCategoryDesc) {
+                        categoryDesc.textContent = branding.servicesCategoryDesc;
+                    }
+
+                    // Render services if available
+                    if (branding.services && branding.services.length > 0) {
+                        renderServices(branding.services);
+                    }
                 }
             } catch (error) {
                 console.error('Error loading services:', error);
