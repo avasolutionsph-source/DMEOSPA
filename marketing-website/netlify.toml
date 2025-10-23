@@ -2,10 +2,31 @@
   publish = "public"
   command = "echo 'No build required - static marketing site'"
 
+# Don't redirect admin pages - serve them directly
+[[redirects]]
+  from = "/admin-branding.html"
+  to = "/admin-branding.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin-dashboard.html"
+  to = "/admin-dashboard.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin-login.html"
+  to = "/admin-login.html"
+  status = 200
+  force = true
+
+# Redirect all other routes to index.html for homepage
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
 
 [build.environment]
   NODE_VERSION = "18"

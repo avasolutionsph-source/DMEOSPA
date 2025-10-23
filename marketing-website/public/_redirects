@@ -1,0 +1,11 @@
+# Admin pages - serve directly without redirect
+/admin-branding.html  /admin-branding.html  200!
+/admin-dashboard.html  /admin-dashboard.html  200!
+/admin-login.html  /admin-login.html  200!
+/admin.html  /admin.html  200!
+/admin-bookings.html  /admin-bookings.html  200!
+/register.html  /register.html  200!
+/login.html  /login.html  200!
+
+# All other routes - redirect to homepage
+/*  /index.html  200
