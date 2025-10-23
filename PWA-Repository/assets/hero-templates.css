@@ -1,0 +1,156 @@
+/*
+ * Hero Banner Templates - Generic Spa/Massage Designs
+ * Facebook Cover Photo Style (1920x1080px recommended)
+ */
+
+/* Base hero styles - applies to all templates */
+.apple-hero.template-based {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Overlay for better text readability */
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1;
+}
+
+.apple-hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+/* Template 1: Zen Stones & Bamboo (Calming blue-green gradient) */
+.hero-template1 {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-image:
+    linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%),
+    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080"><defs><radialGradient id="g1"><stop offset="0%" stop-color="%23fff" stop-opacity="0.1"/><stop offset="100%" stop-color="%23fff" stop-opacity="0"/></radialGradient></defs><circle cx="300" cy="300" r="200" fill="url(%23g1)"/><circle cx="1600" cy="800" r="250" fill="url(%23g1)"/><circle cx="800" cy="600" r="150" fill="url(%23g1)"/></svg>');
+}
+
+/* Template 2: Lotus Flower (Pink & Purple spa vibes) */
+.hero-template2 {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background-image:
+    linear-gradient(135deg, rgba(240, 147, 251, 0.85) 0%, rgba(245, 87, 108, 0.85) 100%),
+    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080"><defs><pattern id="lotus" x="0" y="0" width="400" height="400" patternUnits="userSpaceOnUse"><circle cx="200" cy="200" r="80" fill="rgba(255,255,255,0.1)"/><ellipse cx="200" cy="200" rx="100" ry="60" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="1920" height="1080" fill="url(%23lotus)"/></svg>');
+}
+
+/* Template 3: Tropical Leaves (Green & Teal natural) */
+.hero-template3 {
+  background: linear-gradient(135deg, #0ba360 0%, #3cba92 100%);
+  background-image:
+    linear-gradient(135deg, rgba(11, 163, 96, 0.8) 0%, rgba(60, 186, 146, 0.8) 100%),
+    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080"><defs><g id="leaf"><ellipse cx="0" cy="0" rx="60" ry="120" fill="rgba(255,255,255,0.08)"/></g></defs><use href="%23leaf" x="200" y="200" transform="rotate(45 200 200)"/><use href="%23leaf" x="1700" y="300" transform="rotate(-30 1700 300)"/><use href="%23leaf" x="400" y="800" transform="rotate(15 400 800)"/><use href="%23leaf" x="1500" y="700" transform="rotate(-60 1500 700)"/></svg>');
+}
+
+/* Template 4: Hot Stones (Warm orange & brown) */
+.hero-template4 {
+  background: linear-gradient(135deg, #f79d00 0%, #64f38c 100%);
+  background-image:
+    linear-gradient(135deg, rgba(247, 157, 0, 0.75) 0%, rgba(100, 243, 140, 0.75) 100%),
+    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080"><defs><g id="stone"><ellipse cx="0" cy="0" rx="80" ry="60" fill="rgba(0,0,0,0.15)" opacity="0.5"/></g></defs><use href="%23stone" x="300" y="400"/><use href="%23stone" x="500" y="450" transform="scale(1.2)"/><use href="%23stone" x="700" y="420" transform="scale(0.9)"/><use href="%23stone" x="1400" y="600" transform="scale(1.1)"/><use href="%23stone" x="1600" y="650" transform="scale(0.95)"/></svg>');
+}
+
+/* Template 5: Ocean Waves (Blue & Aqua serenity) */
+.hero-template5 {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background-image:
+    linear-gradient(135deg, rgba(79, 172, 254, 0.8) 0%, rgba(0, 242, 254, 0.8) 100%),
+    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080"><defs><path id="wave" d="M0,50 Q150,20 300,50 T600,50 T900,50 T1200,50 T1500,50 T1800,50 L1920,50 L1920,0 L0,0 Z" fill="rgba(255,255,255,0.1)"/></defs><use href="%23wave" y="200"/><use href="%23wave" y="400" opacity="0.7"/><use href="%23wave" y="600" opacity="0.5"/><use href="%23wave" y="800" opacity="0.3"/></svg>');
+}
+
+/* Custom uploaded image */
+.hero-custom {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Ensure Book Now button is always visible and styled */
+.hero-cta-section {
+  position: relative;
+  z-index: 3;
+  margin-top: 2rem;
+}
+
+.btn-apple-primary {
+  background: rgba(255, 255, 255, 0.95);
+  color: #1d1d1f;
+  padding: 14px 42px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.btn-apple-primary:hover {
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* Template preview cards (for admin panel) */
+.template-preview-card {
+  width: 280px;
+  height: 160px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 3px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.template-preview-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.template-preview-card.selected {
+  border-color: #007aff;
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
+}
+
+.template-preview-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .template-preview-card {
+    width: 100%;
+    height: 140px;
+  }
+
+  .btn-apple-primary {
+    padding: 12px 32px;
+    font-size: 1rem;
+  }
+}
