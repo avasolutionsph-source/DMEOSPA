@@ -77,12 +77,14 @@ async function loadBrandingSettings() {
       updateLivePreview();
       loadServices(); // Load services after branding data is loaded
       loadAboutPage(); // Load About page content
+      loadServicesPage(); // Load Services page content
     }
   } catch (error) {
     console.error('Error loading branding:', error);
     showAlert('Failed to load branding settings', 'error');
     loadServices(); // Load default services even if branding fails
     loadAboutPage(); // Load default About page content
+    loadServicesPage(); // Load default Services page content
   }
 }
 
@@ -368,7 +370,11 @@ async function saveBranding() {
     aboutHours: document.getElementById('aboutHours').value,
     values: window.values || [],
     teamStats: window.teamStats || [],
-    // Services
+    // Services page content
+    servicesHeroTitle: document.getElementById('servicesHeroTitle')?.value,
+    servicesHeroSubtitle: document.getElementById('servicesHeroSubtitle')?.value,
+    servicesCategoryTitle: document.getElementById('servicesCategoryTitle')?.value,
+    servicesCategoryDesc: document.getElementById('servicesCategoryDesc')?.value,
     services: services
   };
 

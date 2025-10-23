@@ -102,6 +102,10 @@ router.get('/:userId', async (req, res) => {
           aboutHours: 'Monday - Sunday: 9:00 AM - 9:00 PM',
           values: [],
           teamStats: [],
+          servicesHeroTitle: 'Our Services',
+          servicesHeroSubtitle: 'Professional massage therapy and spa treatments designed for your ultimate relaxation and wellness',
+          servicesCategoryTitle: 'Massage Therapy',
+          servicesCategoryDesc: 'Our skilled therapists offer a variety of massage techniques to address your specific needs and preferences.',
           services: []
         }
       });
@@ -135,6 +139,10 @@ router.get('/:userId', async (req, res) => {
       aboutHours: user.branding?.aboutHours || 'Monday - Sunday: 9:00 AM - 9:00 PM',
       values: user.branding?.values || [],
       teamStats: user.branding?.teamStats || [],
+      servicesHeroTitle: user.branding?.servicesHeroTitle || 'Our Services',
+      servicesHeroSubtitle: user.branding?.servicesHeroSubtitle || 'Professional massage therapy and spa treatments designed for your ultimate relaxation and wellness',
+      servicesCategoryTitle: user.branding?.servicesCategoryTitle || 'Massage Therapy',
+      servicesCategoryDesc: user.branding?.servicesCategoryDesc || 'Our skilled therapists offer a variety of massage techniques to address your specific needs and preferences.',
       services: user.branding?.services || []
     };
 
@@ -190,7 +198,11 @@ router.put('/:userId', authenticateJWT, async (req, res) => {
       aboutHours,
       values,
       teamStats,
-      services
+      services,
+      servicesHeroTitle,
+      servicesHeroSubtitle,
+      servicesCategoryTitle,
+      servicesCategoryDesc
     } = req.body;
 
     // Verify user owns this account or is admin/superAdmin
@@ -206,12 +218,20 @@ router.put('/:userId', authenticateJWT, async (req, res) => {
       });
     }
 
-    const user = await User.findById(userId);
+    let user = await User.findById(userId);
 
+    // If user doesn't exist, create a basic user record for branding
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
+      console.log('[BRANDING-UPDATE] User not found, creating basic user record');
+      user = new User({
+        _id: userId,
+        email: req.user.email || `admin-${userId}@placeholder.com`,
+        firstName: req.user.firstName || 'Admin',
+        lastName: req.user.lastName || 'User',
+        businessName: 'My Business',
+        role: req.user.role || 'admin',
+        password: 'placeholder-no-login', // Won't be used since admin authenticates elsewhere
+        branding: {}
       });
     }
 
@@ -244,7 +264,11 @@ router.put('/:userId', authenticateJWT, async (req, res) => {
     if (values !== undefined) user.branding.values = values;
     if (teamStats !== undefined) user.branding.teamStats = teamStats;
 
-    // Services
+    // Services page content
+    if (servicesHeroTitle !== undefined) user.branding.servicesHeroTitle = servicesHeroTitle;
+    if (servicesHeroSubtitle !== undefined) user.branding.servicesHeroSubtitle = servicesHeroSubtitle;
+    if (servicesCategoryTitle !== undefined) user.branding.servicesCategoryTitle = servicesCategoryTitle;
+    if (servicesCategoryDesc !== undefined) user.branding.servicesCategoryDesc = servicesCategoryDesc;
     if (services !== undefined) user.branding.services = services;
 
     user.branding.lastUpdated = new Date();
