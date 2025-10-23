@@ -509,24 +509,62 @@
       </div>
     </div>
 
-    <!-- Services Content -->
+    <!-- Services Page Content -->
     <div class="branding-section">
-      <h2>Services & Pricing</h2>
-      <p style="color: #6e6e73; margin-bottom: 24px;">Manage your service offerings and prices</p>
+      <h2>Services Page Content</h2>
+      <p style="color: #6e6e73; margin-bottom: 24px;">Edit all content displayed on your Services page</p>
 
-      <div id="servicesContainer">
-        <!-- Services will be loaded dynamically -->
+      <!-- Hero Section -->
+      <div style="border-left: 3px solid #0066cc; padding-left: 16px; margin-bottom: 24px;">
+        <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">Hero Section</h3>
+
+        <div class="form-group">
+          <label for="servicesHeroTitle">Page Title</label>
+          <input type="text" id="servicesHeroTitle" placeholder="e.g., Our Services">
+        </div>
+
+        <div class="form-group">
+          <label for="servicesHeroSubtitle">Subtitle</label>
+          <textarea id="servicesHeroSubtitle" rows="2" placeholder="e.g., Professional massage therapy and spa treatments..."></textarea>
+        </div>
       </div>
 
-      <button class="btn btn-secondary" onclick="addService()" style="margin-top: 16px;">
-        + Add New Service
-      </button>
+      <!-- Category Info -->
+      <div style="border-left: 3px solid #0066cc; padding-left: 16px; margin-bottom: 24px;">
+        <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">Category Description</h3>
 
-      <!-- Services Preview -->
-      <div style="margin-top: 24px; padding: 20px; background: #f5f5f7; border-radius: 12px; border: 1px solid #e0e0e5;">
-        <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1d1d1f;">Live Preview</h3>
-        <div id="servicesPreview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; margin-top: 16px;">
-          <!-- Services preview will be loaded dynamically -->
+        <div class="form-group">
+          <label for="servicesCategoryTitle">Category Title</label>
+          <input type="text" id="servicesCategoryTitle" placeholder="e.g., Massage Therapy">
+        </div>
+
+        <div class="form-group">
+          <label for="servicesCategoryDesc">Category Description</label>
+          <textarea id="servicesCategoryDesc" rows="2" placeholder="e.g., Our skilled therapists offer a variety of massage techniques..."></textarea>
+        </div>
+      </div>
+
+      <!-- Services List -->
+      <div style="border-left: 3px solid #0066cc; padding-left: 16px; margin-bottom: 24px;">
+        <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">Services & Pricing</h3>
+        <div id="servicesContainer">
+          <!-- Services will be loaded dynamically -->
+        </div>
+        <button class="btn btn-secondary" onclick="addService()" style="margin-top: 16px;">
+          + Add New Service
+        </button>
+      </div>
+
+      <!-- Full Page Preview -->
+      <div style="margin-top: 32px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="font-size: 18px; font-weight: 600; margin: 0;">Full Page Preview</h3>
+          <button class="btn btn-secondary" onclick="openServicesPreview()" style="padding: 8px 16px; font-size: 14px;">
+            <i class="fas fa-external-link-alt"></i> Open in New Tab
+          </button>
+        </div>
+        <div style="border: 2px solid #e0e0e5; border-radius: 12px; overflow: hidden; background: white;">
+          <iframe id="servicesPagePreview" style="width: 100%; height: 600px; border: none;"></iframe>
         </div>
       </div>
     </div>
@@ -540,5 +578,6 @@
 
   <script src="/assets/admin-branding.js"></script>
   <script src="/assets/admin-branding-about.js"></script>
+  <script src="/assets/admin-branding-services.js"></script>
 </body>
 </html>

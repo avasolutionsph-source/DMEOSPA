@@ -51,13 +51,16 @@ function loadAboutPage() {
   document.getElementById('aboutPhone').value = currentBranding.aboutPhone || '09518999577';
   document.getElementById('aboutHours').value = currentBranding.aboutHours || 'Monday - Sunday: 9:00 AM - 9:00 PM';
 
-  // Setup listeners
-  document.getElementById('aboutHeroTitle').addEventListener('input', updateAboutPreviewIframe);
-  document.getElementById('aboutHeroSubtitle').addEventListener('input', updateAboutPreviewIframe);
-  document.getElementById('aboutPhone').addEventListener('input', updateAboutPreviewIframe);
-  document.getElementById('aboutHours').addEventListener('input', updateAboutPreviewIframe);
+  // Setup listeners for live updates
+  document.getElementById('aboutHeroTitle').addEventListener('input', applyAboutContentToIframe);
+  document.getElementById('aboutHeroSubtitle').addEventListener('input', applyAboutContentToIframe);
+  document.getElementById('aboutStory').addEventListener('input', applyAboutContentToIframe);
+  document.getElementById('aboutMission').addEventListener('input', applyAboutContentToIframe);
+  document.getElementById('aboutPhone').addEventListener('input', applyAboutContentToIframe);
+  document.getElementById('aboutHours').addEventListener('input', applyAboutContentToIframe);
+  document.getElementById('aboutLocation').addEventListener('input', applyAboutContentToIframe);
 
-  // Initial preview update
+  // Initial load of actual About page in iframe
   updateAboutPreviewIframe();
 }
 
@@ -180,27 +183,91 @@ function updateAboutPreviewIframe() {
   const iframe = document.getElementById('aboutPagePreview');
   if (!iframe) return;
 
-  // Get all the data
-  const aboutData = {
-    heroTitle: document.getElementById('aboutHeroTitle')?.value || 'About ABC Massage and Spa',
-    heroSubtitle: document.getElementById('aboutHeroSubtitle')?.value || 'Your premier destination for relaxation',
-    story: document.getElementById('aboutStory')?.value || '',
-    mission: document.getElementById('aboutMission')?.value || '',
-    values: window.values,
-    teamStats: window.teamStats,
-    location: document.getElementById('aboutLocation')?.value || 'ABC, Camarines Norte',
-    phone: document.getElementById('aboutPhone')?.value || '09518999577',
-    hours: document.getElementById('aboutHours')?.value || 'Monday - Sunday: 9:00 AM - 9:00 PM'
-  };
+  // Load the actual about page if not already loaded
+  if (!iframe.src || iframe.src === 'about:blank' || iframe.src === '') {
+    iframe.src = window.location.origin + '/about';
 
-  // Create preview HTML
-  const previewHTML = generateAboutPreviewHTML(aboutData);
+    // Wait for iframe to load, then update content
+    iframe.onload = function() {
+      setTimeout(() => applyAboutContentToIframe(), 500);
+    };
+  } else {
+    // Iframe already loaded, just update content
+    applyAboutContentToIframe();
+  }
+}
 
-  // Write to iframe
-  const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-  iframeDoc.open();
-  iframeDoc.write(previewHTML);
-  iframeDoc.close();
+function applyAboutContentToIframe() {
+  const iframe = document.getElementById('aboutPagePreview');
+  if (!iframe || !iframe.contentWindow) return;
+
+  try {
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    if (!iframeDoc) return;
+
+    // Update hero title
+    const heroTitle = iframeDoc.querySelector('.hero-section h1, .about-hero h1, h1');
+    if (heroTitle) {
+      heroTitle.textContent = document.getElementById('aboutHeroTitle')?.value || 'About ABC Massage and Spa';
+    }
+
+    // Update hero subtitle
+    const heroSubtitle = iframeDoc.querySelector('.hero-section .hero-subtitle, .hero-section p');
+    if (heroSubtitle) {
+      heroSubtitle.textContent = document.getElementById('aboutHeroSubtitle')?.value || 'Your premier destination for relaxation and wellness';
+    }
+
+    // Update story
+    const aboutStory = iframeDoc.querySelector('.about-section h2');
+    if (aboutStory && aboutStory.textContent === 'Our Story') {
+      const storyDiv = aboutStory.nextElementSibling;
+      const storyValue = document.getElementById('aboutStory')?.value || '';
+      if (storyDiv && storyValue) {
+        storyDiv.innerHTML = storyValue.split('\n\n').map(p => `<p>${p}</p>`).join('');
+      }
+    }
+
+    // Update mission
+    const missionHeading = Array.from(iframeDoc.querySelectorAll('h2')).find(h => h.textContent === 'Our Mission');
+    if (missionHeading) {
+      const missionP = missionHeading.nextElementSibling;
+      if (missionP) {
+        missionP.textContent = document.getElementById('aboutMission')?.value || '';
+      }
+    }
+
+    // Update values
+    const valuesHeading = Array.from(iframeDoc.querySelectorAll('h2')).find(h => h.textContent === 'Our Values');
+    if (valuesHeading && window.values && window.values.length > 0) {
+      const valuesGrid = valuesHeading.nextElementSibling;
+      if (valuesGrid) {
+        valuesGrid.innerHTML = window.values.map(value => `
+          <div class="value-card">
+            <i class="fas ${value.icon}" style="font-size: 48px; color: #0066cc; margin-bottom: 16px;"></i>
+            <h3>${value.title}</h3>
+            <p>${value.description}</p>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Update team stats
+    const teamHeading = Array.from(iframeDoc.querySelectorAll('h2')).find(h => h.textContent.includes('Team'));
+    if (teamHeading && window.teamStats && window.teamStats.length > 0) {
+      const statsContainer = teamHeading.nextElementSibling;
+      if (statsContainer) {
+        statsContainer.innerHTML = window.teamStats.map(stat => `
+          <div class="stat-card">
+            <h3 style="font-size: 48px; color: #0066cc;">${stat.number}</h3>
+            <p>${stat.label}</p>
+          </div>
+        `).join('');
+      }
+    }
+
+  } catch (error) {
+    console.error('Error updating About iframe:', error);
+  }
 }
 
 function generateAboutPreviewHTML(data) {
