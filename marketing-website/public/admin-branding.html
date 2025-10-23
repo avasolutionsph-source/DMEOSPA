@@ -425,6 +425,41 @@
       </div>
     </div>
 
+    <!-- About Page Content -->
+    <div class="branding-section">
+      <h2>About Page Content</h2>
+      <p style="color: #6e6e73; margin-bottom: 24px;">Edit the content displayed on your About page</p>
+
+      <div class="form-group">
+        <label for="aboutStory">Our Story</label>
+        <textarea id="aboutStory" rows="5" placeholder="Tell your spa's story..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="aboutMission">Our Mission</label>
+        <textarea id="aboutMission" rows="3" placeholder="Describe your mission..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="aboutLocation">Location Details</label>
+        <input type="text" id="aboutLocation" placeholder="e.g., ABC, Camarines Norte">
+      </div>
+    </div>
+
+    <!-- Services Content -->
+    <div class="branding-section">
+      <h2>Services & Pricing</h2>
+      <p style="color: #6e6e73; margin-bottom: 24px;">Manage your service offerings and prices</p>
+
+      <div id="servicesContainer">
+        <!-- Services will be loaded dynamically -->
+      </div>
+
+      <button class="btn btn-secondary" onclick="addService()" style="margin-top: 16px;">
+        + Add New Service
+      </button>
+    </div>
+
     <!-- Save Button -->
     <div class="button-group">
       <button class="btn btn-primary" onclick="saveBranding()">Save All Changes</button>

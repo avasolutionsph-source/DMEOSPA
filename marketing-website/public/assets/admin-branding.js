@@ -75,10 +75,12 @@ async function loadBrandingSettings() {
       currentBranding = data.data;
       applyBrandingToForm();
       updateLivePreview();
+      loadServices(); // Load services after branding data is loaded
     }
   } catch (error) {
     console.error('Error loading branding:', error);
     showAlert('Failed to load branding settings', 'error');
+    loadServices(); // Load default services even if branding fails
   }
 }
 
@@ -90,6 +92,11 @@ function applyBrandingToForm() {
   document.getElementById('cta-link').value = currentBranding.ctaButtonLink || '';
   document.getElementById('primary-color').value = currentBranding.primaryColor || '#2c3e50';
   document.getElementById('accent-color').value = currentBranding.accentColor || '#3498db';
+
+  // Load About page content
+  document.getElementById('aboutStory').value = currentBranding.aboutStory || '';
+  document.getElementById('aboutMission').value = currentBranding.aboutMission || '';
+  document.getElementById('aboutLocation').value = currentBranding.aboutLocation || 'ABC, Camarines Norte';
 
   // Select current template
   const templates = document.querySelectorAll('.template-preview-card');
@@ -325,7 +332,13 @@ async function saveBranding() {
     gradientColor2: document.getElementById('gradient-color-2').value,
     gradientAngle: document.getElementById('gradient-angle').value,
     useCustomGradient: document.getElementById('use-custom-gradient').checked,
-    showHeroBanner: true
+    showHeroBanner: true,
+    // About page content
+    aboutStory: document.getElementById('aboutStory').value,
+    aboutMission: document.getElementById('aboutMission').value,
+    aboutLocation: document.getElementById('aboutLocation').value,
+    // Services
+    services: services
   };
 
   try {
@@ -376,4 +389,94 @@ function getBrightness(color) {
 
   // Calculate brightness using standard formula
   return (r * 299 + g * 587 + b * 114) / 1000;
+}
+
+// Service Management
+let services = [];
+
+// Load services on page load
+function loadServices() {
+  // Default services if none exist
+  if (!currentBranding.services || currentBranding.services.length === 0) {
+    services = [
+      { name: 'Swedish Massage', description: 'Classic relaxation massage using long, flowing strokes to ease tension and promote circulation.', duration: '60 min', price: '800' },
+      { name: 'Deep Tissue Massage', description: 'Therapeutic massage targeting deep muscle layers to relieve chronic tension and pain.', duration: '60 min', price: '1,000' },
+      { name: 'Hot Stone Massage', description: 'Relaxing massage using heated stones to melt away tension and stress.', duration: '75 min', price: '1,200' },
+      { name: 'Aromatherapy Massage', description: 'Therapeutic massage enhanced with essential oils for mind and body wellness.', duration: '60 min', price: '900' },
+      { name: 'Prenatal Massage', description: 'Gentle massage specially designed for expecting mothers to relieve pregnancy discomfort.', duration: '60 min', price: '950' },
+      { name: 'Sports Massage', description: 'Targeted massage for athletes to prevent injury and enhance performance.', duration: '60 min', price: '1,100' }
+    ];
+  } else {
+    services = currentBranding.services;
+  }
+  renderServices();
+}
+
+// Render services to the UI
+function renderServices() {
+  const container = document.getElementById('servicesContainer');
+  container.innerHTML = '';
+
+  services.forEach((service, index) => {
+    const serviceCard = document.createElement('div');
+    serviceCard.className = 'branding-section';
+    serviceCard.style.marginBottom = '16px';
+    serviceCard.style.padding = '20px';
+    serviceCard.style.border = '1px solid #e5e7eb';
+
+    serviceCard.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0;">Service ${index + 1}</h3>
+        <button class="btn btn-danger" onclick="removeService(${index})" style="font-size: 0.875rem; padding: 6px 12px;">Remove</button>
+      </div>
+
+      <div class="form-group">
+        <label>Service Name</label>
+        <input type="text" value="${service.name}" onchange="updateService(${index}, 'name', this.value)" placeholder="e.g., Swedish Massage">
+      </div>
+
+      <div class="form-group">
+        <label>Description</label>
+        <textarea rows="2" onchange="updateService(${index}, 'description', this.value)" placeholder="Brief description of the service">${service.description}</textarea>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-group">
+          <label>Duration</label>
+          <input type="text" value="${service.duration}" onchange="updateService(${index}, 'duration', this.value)" placeholder="e.g., 60 min">
+        </div>
+
+        <div class="form-group">
+          <label>Price (₱)</label>
+          <input type="text" value="${service.price}" onchange="updateService(${index}, 'price', this.value)" placeholder="e.g., 800">
+        </div>
+      </div>
+    `;
+
+    container.appendChild(serviceCard);
+  });
+}
+
+// Add new service
+function addService() {
+  services.push({
+    name: 'New Service',
+    description: 'Service description',
+    duration: '60 min',
+    price: '0'
+  });
+  renderServices();
+}
+
+// Remove service
+function removeService(index) {
+  if (confirm('Are you sure you want to remove this service?')) {
+    services.splice(index, 1);
+    renderServices();
+  }
+}
+
+// Update service field
+function updateService(index, field, value) {
+  services[index][field] = value;
 }
