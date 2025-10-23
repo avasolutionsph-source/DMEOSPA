@@ -6,6 +6,61 @@ import { uploadSingleImage, handleUploadError, deleteOldFile } from '../../middl
 const router = express.Router();
 
 /**
+ * GET /api/branding/public
+ * Get public branding settings (first admin's branding)
+ * Public route - returns branding for display on About/Services pages
+ */
+router.get('/public', async (req, res) => {
+  try {
+    // Find first admin user with branding data
+    const adminUser = await User.findOne({
+      role: { $in: ['admin', 'superAdmin'] },
+      'branding': { $exists: true }
+    }).select('branding businessName');
+
+    if (!adminUser || !adminUser.branding) {
+      return res.status(404).json({
+        success: false,
+        message: 'No branding data found'
+      });
+    }
+
+    // Return complete branding settings including About and Services
+    const branding = {
+      businessName: adminUser.businessName,
+      heroImageUrl: adminUser.branding.heroImageUrl || null,
+      heroTemplate: adminUser.branding.heroTemplate || 'template1',
+      heroTitle: adminUser.branding.heroTitle || 'Massage & Spa',
+      heroSubtitle: adminUser.branding.heroSubtitle || 'Where tranquility meets expertise',
+      ctaButtonText: adminUser.branding.ctaButtonText || 'Book Now',
+      ctaButtonLink: adminUser.branding.ctaButtonLink || '/book-appointment',
+      logoUrl: adminUser.branding.logoUrl || null,
+      primaryColor: adminUser.branding.primaryColor || '#2c3e50',
+      accentColor: adminUser.branding.accentColor || '#3498db',
+      showHeroBanner: adminUser.branding.showHeroBanner !== false,
+      // About page content
+      aboutStory: adminUser.branding.aboutStory || '',
+      aboutMission: adminUser.branding.aboutMission || '',
+      aboutLocation: adminUser.branding.aboutLocation || 'ABC, Camarines Norte',
+      // Services
+      services: adminUser.branding.services || []
+    };
+
+    res.json({
+      success: true,
+      data: branding
+    });
+
+  } catch (error) {
+    console.error('Error fetching public branding:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch branding settings'
+    });
+  }
+});
+
+/**
  * GET /api/branding/:userId
  * Get branding settings for a specific user/business
  * Public route - anyone can view branding settings
@@ -72,7 +127,11 @@ router.put('/:userId', authenticateJWT, async (req, res) => {
       gradientColor2,
       gradientAngle,
       useCustomGradient,
-      showHeroBanner
+      showHeroBanner,
+      aboutStory,
+      aboutMission,
+      aboutLocation,
+      services
     } = req.body;
 
     // Verify user owns this account or is admin/superAdmin
@@ -109,6 +168,14 @@ router.put('/:userId', authenticateJWT, async (req, res) => {
     if (gradientAngle !== undefined) user.branding.gradientAngle = gradientAngle;
     if (useCustomGradient !== undefined) user.branding.useCustomGradient = useCustomGradient;
     if (showHeroBanner !== undefined) user.branding.showHeroBanner = showHeroBanner;
+
+    // About page content
+    if (aboutStory !== undefined) user.branding.aboutStory = aboutStory;
+    if (aboutMission !== undefined) user.branding.aboutMission = aboutMission;
+    if (aboutLocation !== undefined) user.branding.aboutLocation = aboutLocation;
+
+    // Services
+    if (services !== undefined) user.branding.services = services;
 
     user.branding.lastUpdated = new Date();
 

@@ -52,8 +52,8 @@
             <div class="service-category">
                 <h2>Massage Therapy</h2>
                 <p>Our skilled therapists offer a variety of massage techniques to address your specific needs and preferences.</p>
-                
-                <div class="services-grid">
+
+                <div id="servicesGrid" class="services-grid">
                     <div class="service-card">
                         <div class="service-icon">
                             <i class="fas fa-spa"></i>
@@ -319,5 +319,81 @@
 
     <script src="/assets/main.js"></script>
     <script src="/assets/cookie-consent.js"></script>
+
+    <script>
+        // Load dynamic Services from admin-edited branding
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const API_BASE_URL = window.location.hostname === 'localhost'
+                    ? 'http://localhost:4001'
+                    : 'https://daetspa-backend.onrender.com';
+
+                // Fetch branding data
+                const response = await fetch(`${API_BASE_URL}/api/branding/public`);
+                const data = await response.json();
+
+                if (data.success && data.data && data.data.services && data.data.services.length > 0) {
+                    const services = data.data.services;
+                    renderServices(services);
+                }
+            } catch (error) {
+                console.error('Error loading services:', error);
+                // Keep default content if loading fails
+            }
+        });
+
+        // Icon mapping for services
+        const iconMap = {
+            'swedish': 'fa-spa',
+            'deep tissue': 'fa-hand-rock',
+            'hot stone': 'fa-fire',
+            'aromatherapy': 'fa-seedling',
+            'prenatal': 'fa-baby',
+            'sports': 'fa-running',
+            'facial': 'fa-female',
+            'body scrub': 'fa-shower',
+            'foot': 'fa-socks'
+        };
+
+        function getServiceIcon(serviceName) {
+            const name = serviceName.toLowerCase();
+            for (const [key, icon] of Object.entries(iconMap)) {
+                if (name.includes(key)) {
+                    return icon;
+                }
+            }
+            return 'fa-spa'; // default icon
+        }
+
+        function renderServices(services) {
+            const servicesGrid = document.getElementById('servicesGrid');
+            if (!servicesGrid) return;
+
+            // Clear existing services
+            servicesGrid.innerHTML = '';
+
+            // Render each service
+            services.forEach(service => {
+                const serviceCard = document.createElement('div');
+                serviceCard.className = 'service-card';
+
+                const icon = getServiceIcon(service.name);
+
+                serviceCard.innerHTML = `
+                    <div class="service-icon">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <h3>${service.name}</h3>
+                    <p>${service.description}</p>
+                    <div class="service-details">
+                        <span class="duration">${service.duration}</span>
+                        <span class="price">₱${service.price}</span>
+                    </div>
+                `;
+
+                servicesGrid.appendChild(serviceCard);
+            });
+        }
+    </script>
 </body>
 </html>

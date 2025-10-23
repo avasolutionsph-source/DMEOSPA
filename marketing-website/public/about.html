@@ -50,14 +50,16 @@
             <div class="about-content">
                 <div class="about-story">
                     <h2>Our Story</h2>
-                    <p>Founded with a passion for wellness and relaxation, ABC Massage and Spa has been serving the community of ABC, Camarines Norte with exceptional therapeutic treatments and spa services. Our commitment to excellence and customer satisfaction has made us the premier destination for those seeking ultimate relaxation and rejuvenation.</p>
-                    
-                    <p>We believe that wellness is not just a luxury, but an essential part of a healthy lifestyle. Our skilled therapists and modern facilities provide a serene environment where you can escape the stresses of daily life and reconnect with your inner peace.</p>
+                    <div id="aboutStoryContent">
+                        <p>Founded with a passion for wellness and relaxation, ABC Massage and Spa has been serving the community of ABC, Camarines Norte with exceptional therapeutic treatments and spa services. Our commitment to excellence and customer satisfaction has made us the premier destination for those seeking ultimate relaxation and rejuvenation.</p>
+
+                        <p>We believe that wellness is not just a luxury, but an essential part of a healthy lifestyle. Our skilled therapists and modern facilities provide a serene environment where you can escape the stresses of daily life and reconnect with your inner peace.</p>
+                    </div>
                 </div>
 
                 <div class="about-mission">
                     <h2>Our Mission</h2>
-                    <p>To provide exceptional massage therapy and spa treatments that promote physical wellness, mental relaxation, and overall well-being for our valued clients. We are committed to creating a tranquil sanctuary where healing and rejuvenation take place.</p>
+                    <p id="aboutMissionContent">To provide exceptional massage therapy and spa treatments that promote physical wellness, mental relaxation, and overall well-being for our valued clients. We are committed to creating a tranquil sanctuary where healing and rejuvenation take place.</p>
                 </div>
 
                 <div class="about-values">
@@ -112,14 +114,14 @@
 
                 <div class="about-location">
                     <h2>Our Location</h2>
-                    <p>Conveniently located in the heart of ABC, Camarines Norte, our spa is easily accessible and provides a peaceful retreat from the bustling city life. We've designed our space to be a sanctuary of calm where you can unwind and rejuvenate.</p>
+                    <p>Conveniently located in the heart of <span id="aboutLocationText">ABC, Camarines Norte</span>, our spa is easily accessible and provides a peaceful retreat from the bustling city life. We've designed our space to be a sanctuary of calm where you can unwind and rejuvenate.</p>
 
                     <div class="location-info">
                         <div class="info-item">
                             <i class="fas fa-map-marker-alt"></i>
                             <div>
                                 <h4>Address</h4>
-                                <p>ABC, Camarines Norte, Philippines</p>
+                                <p id="aboutLocationAddress">ABC, Camarines Norte, Philippines</p>
                             </div>
                         </div>
                         <div class="info-item">
@@ -237,5 +239,46 @@
 
     <script src="/assets/main.js"></script>
     <script src="/assets/cookie-consent.js"></script>
+
+    <script>
+        // Load dynamic About page content from admin-edited branding
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const API_BASE_URL = window.location.hostname === 'localhost'
+                    ? 'http://localhost:4001'
+                    : 'https://daetspa-backend.onrender.com';
+
+                // Fetch branding data (we'll need to get the admin's userId - for now use a public endpoint)
+                const response = await fetch(`${API_BASE_URL}/api/branding/public`);
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    const branding = data.data;
+
+                    // Update About Story
+                    if (branding.aboutStory) {
+                        const storyContent = document.getElementById('aboutStoryContent');
+                        // Split by newlines and create paragraphs
+                        const paragraphs = branding.aboutStory.split('\n\n').filter(p => p.trim());
+                        storyContent.innerHTML = paragraphs.map(p => `<p>${p.trim()}</p>`).join('');
+                    }
+
+                    // Update Mission
+                    if (branding.aboutMission) {
+                        document.getElementById('aboutMissionContent').textContent = branding.aboutMission;
+                    }
+
+                    // Update Location
+                    if (branding.aboutLocation) {
+                        document.getElementById('aboutLocationText').textContent = branding.aboutLocation;
+                        document.getElementById('aboutLocationAddress').textContent = branding.aboutLocation + ', Philippines';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading About page content:', error);
+                // Keep default content if loading fails
+            }
+        });
+    </script>
 </body>
 </html>
