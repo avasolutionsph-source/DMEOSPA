@@ -68,19 +68,44 @@ router.get('/public', async (req, res) => {
 router.get('/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
+    console.log('[BRANDING-GET] Fetching branding for user:', userId);
 
-    const user = await User.findById(userId).select('branding businessName');
+    const user = await User.findById(userId).select('branding businessName firstName lastName');
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
+      console.log('[BRANDING-GET] User not found, returning default branding');
+      // Return default branding instead of 404 to allow initialization
+      return res.json({
+        success: true,
+        data: {
+          businessName: 'My Business',
+          heroImageUrl: null,
+          heroTemplate: 'template1',
+          heroTitle: 'Massage & Spa',
+          heroSubtitle: 'Where tranquility meets expertise',
+          ctaButtonText: 'Book Now',
+          ctaButtonLink: '/book-appointment',
+          logoUrl: null,
+          primaryColor: '#2c3e50',
+          accentColor: '#3498db',
+          gradientColor1: '#667eea',
+          gradientColor2: '#764ba2',
+          gradientAngle: '135',
+          useCustomGradient: false,
+          showHeroBanner: true,
+          aboutStory: '',
+          aboutMission: '',
+          aboutLocation: 'ABC, Camarines Norte',
+          services: []
+        }
       });
     }
 
+    console.log('[BRANDING-GET] User found, returning branding');
+
     // Return branding settings with defaults if not set
     const branding = {
-      businessName: user.businessName,
+      businessName: user.businessName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'My Business',
       heroImageUrl: user.branding?.heroImageUrl || null,
       heroTemplate: user.branding?.heroTemplate || 'template1',
       heroTitle: user.branding?.heroTitle || 'Massage & Spa',
@@ -90,7 +115,15 @@ router.get('/:userId', async (req, res) => {
       logoUrl: user.branding?.logoUrl || null,
       primaryColor: user.branding?.primaryColor || '#2c3e50',
       accentColor: user.branding?.accentColor || '#3498db',
-      showHeroBanner: user.branding?.showHeroBanner !== false // Default to true
+      gradientColor1: user.branding?.gradientColor1 || '#667eea',
+      gradientColor2: user.branding?.gradientColor2 || '#764ba2',
+      gradientAngle: user.branding?.gradientAngle || '135',
+      useCustomGradient: user.branding?.useCustomGradient || false,
+      showHeroBanner: user.branding?.showHeroBanner !== false,
+      aboutStory: user.branding?.aboutStory || '',
+      aboutMission: user.branding?.aboutMission || '',
+      aboutLocation: user.branding?.aboutLocation || 'ABC, Camarines Norte',
+      services: user.branding?.services || []
     };
 
     res.json({
@@ -99,7 +132,7 @@ router.get('/:userId', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching branding:', error);
+    console.error('[BRANDING-GET] Error fetching branding:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch branding settings'
