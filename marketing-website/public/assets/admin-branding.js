@@ -220,7 +220,19 @@ async function uploadHeroImage() {
   formData.append('image', selectedImage);
 
   try {
-    const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+    const token = localStorage.getItem('adminToken') || localStorage.getItem('userToken') || localStorage.getItem('token');
+    console.log('Upload - Token:', token ? 'Found' : 'Missing', 'User ID:', userId);
+
+    if (!token) {
+      showAlert('No authentication token found. Please login again.', 'error');
+      return;
+    }
+
+    if (!userId) {
+      showAlert('User ID not found. Please refresh the page.', 'error');
+      return;
+    }
+
     const response = await fetch(`${window.API_BASE_URL}/api/branding/${userId}/upload-hero`, {
       method: 'POST',
       headers: {
@@ -229,7 +241,9 @@ async function uploadHeroImage() {
       body: formData
     });
 
+    console.log('Upload - Response status:', response.status);
     const data = await response.json();
+    console.log('Upload - Response data:', data);
 
     if (data.success) {
       currentBranding.heroImageUrl = data.data.imageUrl;
@@ -245,11 +259,12 @@ async function uploadHeroImage() {
       clearImagePreview();
       updateLivePreview();
     } else {
+      console.error('Upload failed:', data.message);
       showAlert(data.message || 'Failed to upload image', 'error');
     }
   } catch (error) {
     console.error('Error uploading image:', error);
-    showAlert('Failed to upload image', 'error');
+    showAlert('Failed to upload image: ' + error.message, 'error');
   }
 }
 
@@ -342,7 +357,20 @@ async function saveBranding() {
   };
 
   try {
-    const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+    const token = localStorage.getItem('adminToken') || localStorage.getItem('userToken') || localStorage.getItem('token');
+    console.log('Save - Token:', token ? 'Found' : 'Missing', 'User ID:', userId);
+    console.log('Save - Branding data:', brandingData);
+
+    if (!token) {
+      showAlert('No authentication token found. Please login again.', 'error');
+      return;
+    }
+
+    if (!userId) {
+      showAlert('User ID not found. Please refresh the page.', 'error');
+      return;
+    }
+
     const response = await fetch(`${window.API_BASE_URL}/api/branding/${userId}`, {
       method: 'PUT',
       headers: {
@@ -352,7 +380,9 @@ async function saveBranding() {
       body: JSON.stringify(brandingData)
     });
 
+    console.log('Save - Response status:', response.status);
     const data = await response.json();
+    console.log('Save - Response data:', data);
 
     if (data.success) {
       showAlert('Branding settings saved successfully!', 'success');
@@ -360,11 +390,12 @@ async function saveBranding() {
         window.location.href = '/';
       }, 1500);
     } else {
+      console.error('Save failed:', data.message);
       showAlert(data.message || 'Failed to save branding', 'error');
     }
   } catch (error) {
     console.error('Error saving branding:', error);
-    showAlert('Failed to save branding settings', 'error');
+    showAlert('Failed to save branding settings: ' + error.message, 'error');
   }
 }
 

@@ -131,6 +131,80 @@ const userSchema = new mongoose.Schema({
   notes: {
     type: String,
     trim: true
+  },
+
+  // Website branding customization
+  branding: {
+    // Hero section customization
+    heroImageUrl: {
+      type: String,
+      default: null // Custom uploaded image or template selection
+    },
+    heroTemplate: {
+      type: String,
+      enum: ['template1', 'template2', 'template3', 'template4', 'template5', 'custom'],
+      default: 'template1' // Default to first template
+    },
+    heroTitle: {
+      type: String,
+      default: 'Massage & Spa' // Customizable title
+    },
+    heroSubtitle: {
+      type: String,
+      default: 'Where tranquility meets expertise' // Customizable subtitle
+    },
+    ctaButtonText: {
+      type: String,
+      default: 'Book Now' // CTA button text
+    },
+    ctaButtonLink: {
+      type: String,
+      default: '/book-appointment' // CTA button link
+    },
+
+    // Business logo
+    logoUrl: {
+      type: String,
+      default: null
+    },
+
+    // Color scheme
+    primaryColor: {
+      type: String,
+      default: '#2c3e50' // Brand primary color
+    },
+    accentColor: {
+      type: String,
+      default: '#3498db' // Brand accent color
+    },
+
+    // Custom gradient colors
+    gradientColor1: {
+      type: String,
+      default: '#667eea' // Gradient start color
+    },
+    gradientColor2: {
+      type: String,
+      default: '#764ba2' // Gradient end color
+    },
+    gradientAngle: {
+      type: String,
+      default: '135deg' // Gradient direction
+    },
+    useCustomGradient: {
+      type: Boolean,
+      default: false // Use custom gradient instead of template colors
+    },
+
+    // Advanced settings
+    showHeroBanner: {
+      type: Boolean,
+      default: true // Enable/disable hero banner
+    },
+    lastUpdated: {
+      type: Date,
+      default: Date.now
+    }
   }
 }, {
   timestamps: true

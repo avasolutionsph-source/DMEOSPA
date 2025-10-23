@@ -115,6 +115,14 @@ router.get('/:userId', async (req, res) => {
 router.put('/:userId', authenticateJWT, async (req, res) => {
   try {
     const { userId } = req.params;
+    console.log('[BRANDING-UPDATE] Request from:', {
+      requestUserId: userId,
+      authUserId: req.user.userId,
+      authId: req.user.id,
+      role: req.user.role,
+      email: req.user.email
+    });
+
     const {
       heroTemplate,
       heroTitle,
@@ -136,6 +144,11 @@ router.put('/:userId', authenticateJWT, async (req, res) => {
 
     // Verify user owns this account or is admin/superAdmin
     if (req.user.userId !== userId && req.user.role !== 'superAdmin' && req.user.role !== 'admin') {
+      console.error('[BRANDING-UPDATE] Unauthorized:', {
+        requestUserId: userId,
+        authUserId: req.user.userId,
+        role: req.user.role
+      });
       return res.status(403).json({
         success: false,
         message: 'Unauthorized to update this branding'
@@ -204,9 +217,22 @@ router.put('/:userId', authenticateJWT, async (req, res) => {
 router.post('/:userId/upload-hero', authenticateJWT, uploadSingleImage, handleUploadError, async (req, res) => {
   try {
     const { userId } = req.params;
+    console.log('[BRANDING-UPLOAD] Request from:', {
+      requestUserId: userId,
+      authUserId: req.user.userId,
+      authId: req.user.id,
+      role: req.user.role,
+      email: req.user.email,
+      hasFile: !!req.file
+    });
 
     // Verify user owns this account or is admin/superAdmin
     if (req.user.userId !== userId && req.user.role !== 'superAdmin' && req.user.role !== 'admin') {
+      console.error('[BRANDING-UPLOAD] Unauthorized:', {
+        requestUserId: userId,
+        authUserId: req.user.userId,
+        role: req.user.role
+      });
       return res.status(403).json({
         success: false,
         message: 'Unauthorized to upload image'
@@ -214,6 +240,7 @@ router.post('/:userId/upload-hero', authenticateJWT, uploadSingleImage, handleUp
     }
 
     if (!req.file) {
+      console.error('[BRANDING-UPLOAD] No file in request');
       return res.status(400).json({
         success: false,
         message: 'No file uploaded'

@@ -221,8 +221,8 @@
                 console.log('🚀 Sending client registration data:', userData);
                 
                 // For deployed version, use PWA backend with client registration flag
-                const backendUrl = window.location.hostname === 'localhost' 
-                    ? 'http://localhost:3003'
+                const backendUrl = window.location.hostname === 'localhost'
+                    ? 'http://localhost:4001'
                     : 'https://daetspa-backend.onrender.com';
                 
                 const response = await fetch(`${backendUrl}/api/auth/register-client`, {
