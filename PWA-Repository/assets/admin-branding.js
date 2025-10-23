@@ -98,6 +98,9 @@ function applyBrandingToForm() {
   document.getElementById('aboutMission').value = currentBranding.aboutMission || '';
   document.getElementById('aboutLocation').value = currentBranding.aboutLocation || 'ABC, Camarines Norte';
 
+  // Update About preview after loading
+  updateAboutPreview();
+
   // Select current template
   const templates = document.querySelectorAll('.template-preview-card');
   templates.forEach(card => {
@@ -281,6 +284,11 @@ function setupLivePreview() {
   document.getElementById('gradient-color-2').addEventListener('input', updateLivePreview);
   document.getElementById('gradient-angle').addEventListener('change', updateLivePreview);
   document.getElementById('use-custom-gradient').addEventListener('change', updateLivePreview);
+
+  // Add About page listeners
+  document.getElementById('aboutStory').addEventListener('input', updateAboutPreview);
+  document.getElementById('aboutMission').addEventListener('input', updateAboutPreview);
+  document.getElementById('aboutLocation').addEventListener('input', updateAboutPreview);
 }
 
 // Update live preview
@@ -486,6 +494,9 @@ function renderServices() {
 
     container.appendChild(serviceCard);
   });
+
+  // Update services preview after rendering
+  updateServicesPreview();
 }
 
 // Add new service
@@ -510,4 +521,73 @@ function removeService(index) {
 // Update service field
 function updateService(index, field, value) {
   services[index][field] = value;
+  updateServicesPreview();
+}
+
+// Update About preview
+function updateAboutPreview() {
+  const preview = document.getElementById('aboutPreview');
+  const story = document.getElementById('aboutStory').value;
+  const mission = document.getElementById('aboutMission').value;
+  const location = document.getElementById('aboutLocation').value;
+
+  let html = '';
+
+  if (story) {
+    html += `<div style="margin-bottom: 20px;">
+      <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 8px; color: #1d1d1f;">Our Story</h4>
+      <p style="margin: 0; white-space: pre-wrap;">${story}</p>
+    </div>`;
+  }
+
+  if (mission) {
+    html += `<div style="margin-bottom: 20px;">
+      <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 8px; color: #1d1d1f;">Our Mission</h4>
+      <p style="margin: 0; white-space: pre-wrap;">${mission}</p>
+    </div>`;
+  }
+
+  if (location) {
+    html += `<div>
+      <h4 style="font-size: 15px; font-weight: 600; margin-bottom: 8px; color: #1d1d1f;">Location</h4>
+      <p style="margin: 0;">${location}</p>
+    </div>`;
+  }
+
+  if (!html) {
+    html = '<p style="color: #86868b; font-style: italic;">Your About page preview will appear here as you type...</p>';
+  }
+
+  preview.innerHTML = html;
+}
+
+// Update Services preview
+function updateServicesPreview() {
+  const preview = document.getElementById('servicesPreview');
+
+  if (services.length === 0) {
+    preview.innerHTML = '<p style="color: #86868b; font-style: italic; grid-column: 1/-1; text-align: center;">Your services will appear here. Click "+ Add New Service" to get started.</p>';
+    return;
+  }
+
+  preview.innerHTML = '';
+
+  services.forEach(service => {
+    const card = document.createElement('div');
+    card.style.cssText = 'background: white; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e5; box-shadow: 0 1px 3px rgba(0,0,0,0.05);';
+
+    card.innerHTML = `
+      <div style="text-align: center; margin-bottom: 12px;">
+        <i class="fas fa-spa" style="font-size: 32px; color: #0066cc;"></i>
+      </div>
+      <h4 style="font-size: 16px; font-weight: 600; margin: 0 0 8px 0; color: #1d1d1f; text-align: center;">${service.name || 'Service Name'}</h4>
+      <p style="font-size: 13px; color: #6e6e73; margin: 0 0 12px 0; line-height: 1.4; text-align: center;">${service.description || 'Service description'}</p>
+      <div style="display: flex; justify-content: space-between; padding-top: 12px; border-top: 1px solid #f0f0f0;">
+        <span style="font-size: 13px; color: #6e6e73;">${service.duration || '60 min'}</span>
+        <span style="font-size: 15px; font-weight: 600; color: #0066cc;">₱${service.price || '0'}</span>
+      </div>
+    `;
+
+    preview.appendChild(card);
+  });
 }
