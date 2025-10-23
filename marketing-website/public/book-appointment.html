@@ -1071,14 +1071,26 @@
         function displayTherapists(therapists) {
             const container = document.getElementById('therapistsContainer');
             container.innerHTML = '';
-            
-            therapists.forEach(therapist => {
+
+            // Filter to only show therapists (exclude managers, receptionists, etc.)
+            const therapistRoles = ['therapist', 'senior_therapist', 'junior_therapist', 'massage therapist'];
+            const filteredTherapists = therapists.filter(emp => {
+                const position = (emp.position || '').toLowerCase();
+                return therapistRoles.some(role => position.includes(role));
+            });
+
+            if (filteredTherapists.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #ef4444;">No therapists available for this branch.</p>';
+                return;
+            }
+
+            filteredTherapists.forEach(therapist => {
                 const therapistCard = document.createElement('div');
                 therapistCard.className = 'therapist-card';
                 therapistCard.onclick = () => selectTherapist(therapist, therapistCard);
-                
-                // Use actual employee data structure
-                const therapistName = `${therapist.firstName || ''} ${therapist.lastName || ''}`.trim() || 'Therapist';
+
+                // Use only first name for privacy
+                const therapistName = therapist.firstName || 'Therapist';
                 const position = therapist.position || 'Therapist';
                 
                 // Calculate experience from hire date if available
