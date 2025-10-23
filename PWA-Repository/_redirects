@@ -1,0 +1,5 @@
+# Admin pages - serve directly without redirect
+/admin-branding.html  /admin-branding.html  200
+
+# SPA routing - redirect all other routes to index.html
+/*  /index.html  200
