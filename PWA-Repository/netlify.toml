@@ -2,10 +2,19 @@
   publish = "."
   command = "echo 'No build required - static PWA'"
 
+# Don't redirect admin pages - serve them directly
+[[redirects]]
+  from = "/admin-branding.html"
+  to = "/admin-branding.html"
+  status = 200
+  force = true
+
+# Redirect all other routes to index.html for SPA routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
 
 [build.environment]
   NODE_VERSION = "18"
@@ -30,3 +39,8 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
     Content-Type = "application/manifest+json"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
