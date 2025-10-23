@@ -1181,9 +1181,9 @@
 
         async function loadBusinessData(accountId) {
             const detailsEl = document.getElementById(`details-${accountId}`);
-            
+
             try {
-                const response = await fetch(`${window.API_BASE_URL}/admin/branch-data/${accountId}`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/admin-portal/branch-data/${accountId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -1343,7 +1343,7 @@
             submitButton.disabled = true;
 
             try {
-                const response = await fetch(`${window.API_BASE_URL}/admin/create-account`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/admin-portal/create-account`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

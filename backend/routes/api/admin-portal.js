@@ -95,4 +95,119 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// POST /api/admin-portal/create-account
+// Create new branch account
+router.post('/create-account', async (req, res) => {
+  try {
+    const User = (await import('../../models/User.js')).default;
+    const bcrypt = (await import('bcrypt')).default;
+
+    const { email, password, firstName, lastName, businessName, phone } = req.body;
+
+    // Validate required fields
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'An account with this email already exists'
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create new branch user
+    const newUser = new User({
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      firstName: firstName || 'Branch',
+      lastName: lastName || 'User',
+      businessName: businessName || `${firstName} ${lastName}`,
+      phone: phone || '',
+      role: 'branch',
+      subscriptionPlan: 'free',
+      subscriptionStatus: 'active',
+      createdBy: req.user.userId // Track who created this account
+    });
+
+    await newUser.save();
+
+    res.json({
+      success: true,
+      message: 'Branch account created successfully',
+      account: {
+        id: newUser._id,
+        email: newUser.email,
+        businessName: newUser.businessName,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName
+      }
+    });
+
+  } catch (error) {
+    console.error('Error creating branch account:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create branch account'
+    });
+  }
+});
+
+// GET /api/admin-portal/branch-data/:accountId
+// Get branch account details
+router.get('/branch-data/:accountId', async (req, res) => {
+  try {
+    const User = (await import('../../models/User.js')).default;
+    const { accountId } = req.params;
+
+    const account = await User.findById(accountId).select('-password').lean();
+
+    if (!account) {
+      return res.status(404).json({
+        success: false,
+        message: 'Account not found'
+      });
+    }
+
+    // Verify this admin created this account (optional - remove if admins should see all)
+    // if (account.createdBy !== req.user.userId) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: 'You do not have permission to view this account'
+    //   });
+    // }
+
+    res.json({
+      success: true,
+      data: {
+        id: account._id.toString(),
+        email: account.email,
+        businessName: account.businessName,
+        firstName: account.firstName,
+        lastName: account.lastName,
+        phone: account.phone,
+        role: account.role,
+        subscriptionPlan: account.subscriptionPlan,
+        subscriptionStatus: account.subscriptionStatus,
+        createdAt: account.createdAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching branch data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch branch data'
+    });
+  }
+});
+
 export default router;
