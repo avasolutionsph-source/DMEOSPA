@@ -366,8 +366,8 @@ async function saveBranding() {
     aboutLocation: document.getElementById('aboutLocation').value,
     aboutPhone: document.getElementById('aboutPhone').value,
     aboutHours: document.getElementById('aboutHours').value,
-    values: values,
-    teamStats: teamStats,
+    values: window.values || [],
+    teamStats: window.teamStats || [],
     // Services
     services: services
   };
@@ -440,10 +440,6 @@ function getBrightness(color) {
 
 // Service Management
 let services = [];
-
-// About Page Management
-let values = [];
-let teamStats = [];
 
 // Load services on page load
 function loadServices() {

@@ -1,6 +1,10 @@
 // About Page Management Functions
 // This file contains all functions for managing the About page content
 
+// Make these global so they can be accessed from both files
+window.values = window.values || [];
+window.teamStats = window.teamStats || [];
+
 // Icon options for Font Awesome
 const iconOptions = [
   'fa-heart', 'fa-star', 'fa-leaf', 'fa-shield-alt', 'fa-users', 'fa-handshake',
@@ -10,12 +14,15 @@ const iconOptions = [
 
 // Load About Page data
 function loadAboutPage() {
+  // Use window.values and window.teamStats for global access
+  const values = window.values;
+  const teamStats = window.teamStats;
   // Load values
   if (currentBranding.values && currentBranding.values.length > 0) {
-    values = currentBranding.values;
+    window.values = currentBranding.values;
   } else {
     // Default values
-    values = [
+    window.values = [
       { icon: 'fa-heart', title: 'Care & Compassion', description: 'We treat every client with genuine care and attention to their individual needs.' },
       { icon: 'fa-star', title: 'Excellence', description: 'We strive for the highest standards in all our treatments and services.' },
       { icon: 'fa-leaf', title: 'Natural Healing', description: 'We believe in the power of natural therapeutic treatments for holistic wellness.' },
@@ -26,10 +33,10 @@ function loadAboutPage() {
 
   // Load team stats
   if (currentBranding.teamStats && currentBranding.teamStats.length > 0) {
-    teamStats = currentBranding.teamStats;
+    window.teamStats = currentBranding.teamStats;
   } else {
     // Default stats
-    teamStats = [
+    window.teamStats = [
       { number: '5+', label: 'Years of Experience' },
       { number: '10+', label: 'Licensed Therapists' },
       { number: '1000+', label: 'Happy Clients' },
@@ -57,9 +64,11 @@ function loadAboutPage() {
 // Values Management
 function renderValues() {
   const container = document.getElementById('valuesContainer');
+  if (!container) return;
+
   container.innerHTML = '';
 
-  values.forEach((value, index) => {
+  window.values.forEach((value, index) => {
     const valueCard = document.createElement('div');
     valueCard.style.cssText = 'background: #f9f9fb; padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #e5e7eb;';
 
@@ -95,7 +104,7 @@ function renderValues() {
 }
 
 function addValue() {
-  values.push({
+  window.values.push({
     icon: 'fa-heart',
     title: 'New Value',
     description: 'Description of this value'
@@ -105,22 +114,24 @@ function addValue() {
 
 function removeValue(index) {
   if (confirm('Are you sure you want to remove this value?')) {
-    values.splice(index, 1);
+    window.values.splice(index, 1);
     renderValues();
   }
 }
 
 function updateValue(index, field, value) {
-  values[index][field] = value;
+  window.values[index][field] = value;
   updateAboutPreviewIframe();
 }
 
 // Team Stats Management
 function renderTeamStats() {
   const container = document.getElementById('teamStatsContainer');
+  if (!container) return;
+
   container.innerHTML = '';
 
-  teamStats.forEach((stat, index) => {
+  window.teamStats.forEach((stat, index) => {
     const statCard = document.createElement('div');
     statCard.style.cssText = 'background: #f9f9fb; padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #e5e7eb; display: grid; grid-template-columns: 1fr 1fr auto; gap: 16px; align-items: end;';
 
@@ -145,7 +156,7 @@ function renderTeamStats() {
 }
 
 function addTeamStat() {
-  teamStats.push({
+  window.teamStats.push({
     number: '0+',
     label: 'New Stat'
   });
@@ -154,31 +165,32 @@ function addTeamStat() {
 
 function removeTeamStat(index) {
   if (confirm('Are you sure you want to remove this stat?')) {
-    teamStats.splice(index, 1);
+    window.teamStats.splice(index, 1);
     renderTeamStats();
   }
 }
 
 function updateTeamStat(index, field, value) {
-  teamStats[index][field] = value;
+  window.teamStats[index][field] = value;
   updateAboutPreviewIframe();
 }
 
 // Full Page Preview
 function updateAboutPreviewIframe() {
   const iframe = document.getElementById('aboutPagePreview');
+  if (!iframe) return;
 
   // Get all the data
   const aboutData = {
-    heroTitle: document.getElementById('aboutHeroTitle').value,
-    heroSubtitle: document.getElementById('aboutHeroSubtitle').value,
-    story: document.getElementById('aboutStory').value,
-    mission: document.getElementById('aboutMission').value,
-    values: values,
-    teamStats: teamStats,
-    location: document.getElementById('aboutLocation').value,
-    phone: document.getElementById('aboutPhone').value,
-    hours: document.getElementById('aboutHours').value
+    heroTitle: document.getElementById('aboutHeroTitle')?.value || 'About ABC Massage and Spa',
+    heroSubtitle: document.getElementById('aboutHeroSubtitle')?.value || 'Your premier destination for relaxation',
+    story: document.getElementById('aboutStory')?.value || '',
+    mission: document.getElementById('aboutMission')?.value || '',
+    values: window.values,
+    teamStats: window.teamStats,
+    location: document.getElementById('aboutLocation')?.value || 'ABC, Camarines Norte',
+    phone: document.getElementById('aboutPhone')?.value || '09518999577',
+    hours: document.getElementById('aboutHours')?.value || 'Monday - Sunday: 9:00 AM - 9:00 PM'
   };
 
   // Create preview HTML

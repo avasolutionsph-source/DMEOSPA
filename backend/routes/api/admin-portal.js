@@ -22,19 +22,34 @@ router.use(requireAdmin);
 // Returns branch accounts created by this admin
 router.get('/my-created-accounts', async (req, res) => {
   try {
+    console.log('[ADMIN-PORTAL] my-created-accounts - User:', {
+      userId: req.user.userId,
+      id: req.user.id,
+      role: req.user.role,
+      email: req.user.email
+    });
+
     const User = (await import('../../models/User.js')).default;
 
-    // Get all users created by this admin
-    // For now, we'll return users where createdBy matches the admin's ID
-    // You'll need to add a 'createdBy' field to your User model for this to work properly
+    // Get all branch accounts created by this admin
+    // Filter by createdBy field if it exists, otherwise show all branch accounts
+    const query = {
+      role: 'branch'
+    };
 
-    const accounts = await User.find({
-      role: 'branch',
-      // createdBy: req.user.userId // Uncomment this when you add createdBy field
-    })
+    // If the user has createdBy records, filter by them
+    if (req.user.userId) {
+      query.createdBy = req.user.userId;
+    }
+
+    console.log('[ADMIN-PORTAL] Query:', query);
+
+    const accounts = await User.find(query)
     .select('-password')
     .sort({ createdAt: -1 })
     .lean();
+
+    console.log('[ADMIN-PORTAL] Found accounts:', accounts.length);
 
     // Format the accounts for the frontend
     const formattedAccounts = accounts.map(account => ({
