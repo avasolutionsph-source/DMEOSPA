@@ -12,16 +12,38 @@ const router = express.Router();
  */
 router.get('/public', async (req, res) => {
   try {
+    console.log('[BRANDING-PUBLIC] Fetching public branding data');
+
     // Find first admin user with branding data
     const adminUser = await User.findOne({
-      role: { $in: ['admin', 'superAdmin'] },
-      'branding': { $exists: true }
-    }).select('branding businessName');
+      role: { $in: ['admin', 'superAdmin'] }
+    }).select('branding businessName').sort({ createdAt: -1 });
 
-    if (!adminUser || !adminUser.branding) {
-      return res.status(404).json({
-        success: false,
-        message: 'No branding data found'
+    console.log('[BRANDING-PUBLIC] Admin user found:', adminUser ? 'Yes' : 'No');
+    console.log('[BRANDING-PUBLIC] Has branding:', adminUser?.branding ? 'Yes' : 'No');
+
+    // If no admin user found, return defaults
+    if (!adminUser) {
+      console.log('[BRANDING-PUBLIC] No admin user found, returning defaults');
+      return res.json({
+        success: true,
+        data: {
+          businessName: 'ABC Massage and Spa',
+          aboutHeroTitle: 'About ABC Massage and Spa',
+          aboutHeroSubtitle: 'Your premier destination for relaxation and wellness',
+          aboutStory: '',
+          aboutMission: '',
+          aboutLocation: 'ABC, Camarines Norte',
+          aboutPhone: '09518999577',
+          aboutHours: 'Monday - Sunday: 9:00 AM - 9:00 PM',
+          values: [],
+          teamStats: [],
+          servicesHeroTitle: 'Our Services',
+          servicesHeroSubtitle: 'Professional massage therapy and spa treatments',
+          servicesCategoryTitle: 'Massage Therapy',
+          servicesCategoryDesc: 'Our skilled therapists offer a variety of massage techniques',
+          services: []
+        }
       });
     }
 
